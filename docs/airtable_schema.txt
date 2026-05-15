@@ -1,0 +1,97 @@
+AIRTABLE SCHEMA — Content Creation Automation
+Last updated: April 2026
+
+============================================================
+TABLE: Candidates (main pipeline table)
+============================================================
+- Event Title (single line text) [PRIMARY FIELD]
+- Added to Base Date (created time) [auto]
+- Category (single select)
+- City (single select): Vaughan / Richmond Hill / Markham
+- DescriptionRaw (long text)
+- Event in Window (formula)
+- Event is Expired (formula)
+- Featured in NL (checkbox)
+- Has Event Date (formula)
+- IssueItems (link → IssueItems table)
+- Last Auto Update (date) — audit/debug
+- LLM_ParseError (single line text)
+- LLM_Rationale (long text)
+- LocationName (single line text)
+- NeedsReview (checkbox)
+- Publish Date (date)
+- R2Status (single select): Pending / NeedsReview / Enriched
+- Reviewed by Human (checkbox)
+- RuleSuggestions (link → RuleSuggestions table)
+- Score_Final (formula)
+- Score_Manual (number)
+- SegmentConfidence (number, 0–1)
+- SegmentSuggested (single select): For Families / For Couples / For Golden Age Readers / Local Aroma / Trust Me Recipe
+- Short Description (long text)
+- Source (single line text)
+- Start Date (date)
+- Status (single select): New / Needs Review / Approved / Rejected / Featured
+- UniqueEventID (single line text)
+- URL (url)
+
+============================================================
+TABLE: RuleSuggestions (system improvement — not in pipeline)
+============================================================
+- SuggestionID (single line text) [PRIMARY FIELD]
+- Candidate (link → Candidates)
+- LLMConfidence (number)
+- LLM_Confidence (number)
+- LLM_Rationale (long text)
+- LLM_SegmentSuggested (single select)
+- ProposedKeywords (long text)
+- ProposedSegment (single select)
+- Status (single select): Proposed / Approved / Rejected
+- WhereToAdd (single select): strong / weak
+
+============================================================
+TABLE: Historical (dedupe log)
+============================================================
+- UniqueEventID (single line text) [PRIMARY FIELD]
+
+============================================================
+TABLE: Issues
+============================================================
+- IssueDate (date) [PRIMARY FIELD]
+- City (single select)
+- IssueItems (link → IssueItems table)
+- SelectionNotes (long text)
+- Status (single select): Planned / Draft / Sent
+
+============================================================
+TABLE: IssueItems
+============================================================
+- Name (single line text) [PRIMARY FIELD]
+- Added to Base (single line text)
+- Candidate (link → Candidates)
+- CandidateStartDate (date)
+- CandidateURL (url)
+- Issue (link → Issues)
+- Lock (checkbox)
+- NewsletterBlurb (long text)
+- Notes (long text)
+- Section (single select): For Families / For Couples / For Golden Age Readers / Local Aroma / Trust Me Recipe
+- SectionOrder (number)
+- Slot (number, 1–5; Recipe 1–2)
+
+============================================================
+TABLE: Instructions + Purpose of Each View (internal docs)
+============================================================
+- Name of View (single line text) [PRIMARY FIELD]
+- Purpose of Each View (long text)
+
+============================================================
+VIEWS (Candidates table)
+============================================================
+- Original
+- Inbox
+- Approved - All Cities
+- Approved and Featured - All Cities
+- R2 - To Enrich
+- R2 - LLM_ParseError not empty
+- R2 - NeedsReview
+- R2 - Enriched

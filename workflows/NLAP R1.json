@@ -1,0 +1,875 @@
+{
+  "name": "NLAP R1",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -192
+      ],
+      "id": "d1e3864e-8cc2-492b-9b87-464307e585eb",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "https://www.inoreader.com/stream/user/1003818288/tag/VB%3A%20Vaughan",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        -64
+      ],
+      "id": "cd06f35f-512d-40f6-a8a4-0a1008580f2e",
+      "name": "RSS Read"
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = [];\nfunction pickDescription(j) {\n  const rss =\n    j.contentSnippet ||\n    j.content ||\n    j.summary ||\n    j.description ||\n    j[\"content:encoded\"] ||\n    \"\";\n  const eb =\n    j.summary ||\n    (j.description && (j.description.text || j.description.html)) ||\n    j.structured_content ||\n    \"\";\n  const d = (eb || rss || \"\").toString().trim();\n  return d;\n}\nfor (const item of items) {\n  const j = item.json || {};\n  const title = (j.title || j.name || \"\").toString().trim();\n  const link = (j.link || j.url || \"\").toString().trim();\n  if (!title || !link) continue;\n  const isoDate = (j.isoDate || j.start_date || j.startDate || \"\").toString().trim();\n  const guid = (j.guid || j.eventbrite_event_id || j.id || \"\").toString().trim();\n  const DescriptionRaw = pickDescription(j);\n  out.push({\n    json: {\n      title,\n      link,\n      pubDate: (j.pubDate || \"\").toString(),\n      isoDate,\n      guid,\n      DescriptionRaw,\n      _valid: true,\n    },\n  });\n}\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        -368
+      ],
+      "id": "afa1c2eb-2646-4766-b832-ec9dcc9e7a31",
+      "name": "Clean/Filter"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sort items newest → oldest based on isoDate or pubDate\nfunction toTs(x) {\n  if (!x) return 0;\n  const d = new Date(x);\n  return isNaN(d.getTime()) ? 0 : d.getTime();\n}\n\nconst arr = items.map(i => i);\narr.sort((a, b) => {\n  const A = toTs(a.json.isoDate || a.json.pubDate);\n  const B = toTs(b.json.isoDate || b.json.pubDate);\n  return B - A;\n});\n\nreturn arr;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -64
+      ],
+      "id": "58fb575f-549c-48cd-9313-c59ef7075ab4",
+      "name": "Sort (Newest First)"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "function norm(s) {\n  return (s || \"\").toString().trim().toLowerCase().replace(/\\s+/g, \" \");\n}\nfunction dateOnly(d) {\n  const dt = new Date(d);\n  if (isNaN(dt.getTime())) return \"\";\n  return dt.toISOString().slice(0, 10);\n}\nconst rawTitle = $json.title || $json.event_name || \"\";\nconst titleNorm = norm(rawTitle);\nconst link =\n  $json.link ||\n  $json.url ||\n  $json.linkUrl ||\n  $json.link_url ||\n  \"\";\nconst day = dateOnly($json.isoDate || $json.pubDate);\nconst hasUrl = !!link;\nconst hasDate = !!day;\nreturn {\n  ...$json,\n  event_name: rawTitle,\n  url: link,\n  start_date: day,\n  uniqueEventID: `${titleNorm}|${day}`,\n  city: \"Vaughan\",\n  _valid: hasUrl && hasDate,\n  _invalid_reason: !hasUrl ? \"missing_url\" : (!hasDate ? \"missing_date\" : \"\"),\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        -368
+      ],
+      "id": "2b22b3fd-cc87-43d6-af46-c62f13f42071",
+      "name": "Make UniqueEventID"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appVXHOyQcgQAk1gV",
+          "mode": "list",
+          "cachedResultName": "Content Creation Automation",
+          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblRsboN66ZLzyDrM",
+          "mode": "list",
+          "cachedResultName": "Candidates",
+          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV/tblRsboN66ZLzyDrM"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Event Title": "={{$json.event_name}}",
+            "City": "Vaughan",
+            "Status": "New",
+            "Score_Manual": 0,
+            "URL": "={{$json.url}}",
+            "Start Date": "={{$json.start_date}}",
+            "SegmentConfidence": 0,
+            "DescriptionRaw": "={{$json.DescriptionRaw}}",
+            "UniqueEventID": "={{$json.uniqueEventID}}"
+          },
+          "matchingColumns": [
+            "UniqueEventID"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true
+            },
+            {
+              "id": "Event Title",
+              "displayName": "Event Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "For Families",
+                  "value": "For Families"
+                },
+                {
+                  "name": "For Couples",
+                  "value": "For Couples"
+                },
+                {
+                  "name": "For Golden Age Readers",
+                  "value": "For Golden Age Readers"
+                },
+                {
+                  "name": "Local Aroma",
+                  "value": "Local Aroma"
+                },
+                {
+                  "name": "The “Trust Me” Recipe",
+                  "value": "The “Trust Me” Recipe"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Added to Base Date",
+              "displayName": "Added to Base Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Publish Date",
+              "displayName": "Publish Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Start Date",
+              "displayName": "Start Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "LocationName",
+              "displayName": "LocationName",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "New",
+                  "value": "New"
+                },
+                {
+                  "name": "Needs Review",
+                  "value": "Needs Review"
+                },
+                {
+                  "name": "Approved",
+                  "value": "Approved"
+                },
+                {
+                  "name": "Rejected",
+                  "value": "Rejected"
+                },
+                {
+                  "name": "Featured",
+                  "value": "Featured"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Score_Manual",
+              "displayName": "Score_Manual",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Score_Final",
+              "displayName": "Score_Final",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Short Description",
+              "displayName": "Short Description",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Last Auto Update",
+              "displayName": "Last Auto Update",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Reviewed by Human",
+              "displayName": "Reviewed by Human",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Has Event Date",
+              "displayName": "Has Event Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Event is Expired",
+              "displayName": "Event is Expired",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Event in Window",
+              "displayName": "Event in Window",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "R2Status",
+              "displayName": "R2Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                },
+                {
+                  "name": "Enriched",
+                  "value": "Enriched"
+                },
+                {
+                  "name": "NeedsReview",
+                  "value": "NeedsReview"
+                },
+                {
+                  "name": "Failed",
+                  "value": "Failed"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "DescriptionRaw",
+              "displayName": "DescriptionRaw",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "UniqueEventID",
+              "displayName": "UniqueEventID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "City",
+              "displayName": "City",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Vaughan",
+                  "value": "Vaughan"
+                },
+                {
+                  "name": "Richmond Hill",
+                  "value": "Richmond Hill"
+                },
+                {
+                  "name": "Markham",
+                  "value": "Markham"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Featured in NL ",
+              "displayName": "Featured in NL ",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "SegmentSuggested",
+              "displayName": "SegmentSuggested",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "For Families",
+                  "value": "For Families"
+                },
+                {
+                  "name": "For Couples",
+                  "value": "For Couples"
+                },
+                {
+                  "name": "Local Aroma",
+                  "value": "Local Aroma"
+                },
+                {
+                  "name": "For Golden Age Readers",
+                  "value": "For Golden Age Readers"
+                },
+                {
+                  "name": "Trust Me Recipe",
+                  "value": "Trust Me Recipe"
+                },
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                },
+                {
+                  "name": "checked",
+                  "value": "checked"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "SegmentConfidence",
+              "displayName": "SegmentConfidence",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "NeedsReview",
+              "displayName": "NeedsReview",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "RuleSuggestions",
+              "displayName": "RuleSuggestions",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "LLM_ParseError",
+              "displayName": "LLM_ParseError",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "LLM_Rationale",
+              "displayName": "LLM_Rationale",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "IssueItems",
+              "displayName": "IssueItems",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "typecast": true
+        }
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1936,
+        -368
+      ],
+      "id": "06cbc4d3-1a00-49ca-9d2d-179ee1bc7996",
+      "name": "Upsert Candidates",
+      "alwaysOutputData": true,
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "M4nWbeUFeR35flxq",
+          "name": "Airtable Personal Access Token account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "appVXHOyQcgQAk1gV",
+          "mode": "list",
+          "cachedResultName": "Content Creation Automation",
+          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tbl7jlk9s5HG8rRd9",
+          "mode": "list",
+          "cachedResultName": "Historical",
+          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV/tbl7jlk9s5HG8rRd9"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "UniqueEventID": "={{$node[\"Make UniqueEventID\"].json.uniqueEventID}}"
+          },
+          "matchingColumns": [
+            "UniqueEventID"
+          ],
+          "schema": [
+            {
+              "id": "UniqueEventID",
+              "displayName": "UniqueEventID",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Attachments",
+              "displayName": "Attachments",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "Attachment Summary",
+              "displayName": "Attachment Summary",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        2096,
+        -192
+      ],
+      "id": "8d891a72-aac4-4d7e-9e8b-bd9464c4b975",
+      "name": "Create Historical",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "M4nWbeUFeR35flxq",
+          "name": "Airtable Personal Access Token account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e8b300af-6983-4053-a4c6-f17114b0feb7",
+              "leftValue": "={{$json._valid",
+              "rightValue": "={{$json._valid}}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1568,
+        -64
+      ],
+      "id": "4952d047-6174-4952-b30c-9139532917b6",
+      "name": "Validity Filter"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.eventbrite.com/api/v3/destination/city-browse/",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Content-Type\": \"application/json\",\n  \"Referer\": \"https://www.eventbrite.com/d/canada--york/events/\",\n  \"X-CSRFToken\": \"YOURTOKEN\",\n  \"Cookie\": \"csrftoken=YOURTOKEN\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"place_id\": \"101740741\",\n  \"online_events_only\": false,\n  \"expand.destination_event\": [\n    \"event_sales_status\",\n    \"image\",\n    \"primary_venue\",\n    \"saves\",\n    \"series\",\n    \"ticket_availability\",\n    \"primary_organizer\"\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        336,
+        -368
+      ],
+      "id": "67691cea-32b4-46b2-b253-95c3a850d9ec",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        784,
+        -192
+      ],
+      "id": "0feeaa3f-b40a-4440-b8e5-9feb06f33b8c",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const DAYS_AHEAD = 30;\n\nconst today = new Date();\nconst startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());\nconst endDate = new Date(startOfToday);\nendDate.setDate(endDate.getDate() + DAYS_AHEAD);\n\nconst startRaw = $json.start_date || $json.isoDate || '';\n\nif (!startRaw) {\n  return null; // drop if no date\n}\n\nconst eventDate = new Date(startRaw);\nif (isNaN(eventDate.getTime())) {\n  return null; // drop invalid date\n}\n\nconst eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());\n\nif (eventDateOnly < startOfToday) {\n  return null; // drop past events\n}\n\nif (eventDateOnly > endDate) {\n  return null; // drop too far in future\n}\n\nreturn $json;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        -192
+      ],
+      "id": "3d367d30-6c83-4586-a76f-93c7fbefdd3a",
+      "name": "DateWindow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\nconst allEvents = [];\n\nfor (const bucket of response.buckets || []) {\n  for (const event of bucket.events || []) {\n    allEvents.push({\n      json: event\n    });\n  }\n}\n\nreturn allEvents;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        -368
+      ],
+      "id": "8ad1172d-0e9f-46d5-97a1-b5e52efe5276",
+      "name": "BucketMaker"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RSS Read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Clean/Filter": {
+      "main": [
+        [
+          {
+            "node": "Sort (Newest First)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sort (Newest First)": {
+      "main": [
+        [
+          {
+            "node": "Make UniqueEventID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make UniqueEventID": {
+      "main": [
+        [
+          {
+            "node": "Validity Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert Candidates": {
+      "main": [
+        [
+          {
+            "node": "Create Historical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validity Filter": {
+      "main": [
+        [
+          {
+            "node": "DateWindow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "BucketMaker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Clean/Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DateWindow": {
+      "main": [
+        [
+          {
+            "node": "Upsert Candidates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BucketMaker": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f75a6126-7e5c-414e-a8f3-6cf8ca9351d1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5229ad676c3a8d293c6db345f673ae85f2faeec97332d940e6b8ecea4c050d50"
+  },
+  "id": "7HsVm0pPg19CJX2k",
+  "tags": []
+}

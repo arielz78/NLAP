@@ -1,0 +1,11 @@
+.env
+NLAP_Airtable.env
+node_modules/
+.claude/
+data/
+output/
+logs/
+meetings/
+NA/
+CLAUDE.md
+Execution_Log.md

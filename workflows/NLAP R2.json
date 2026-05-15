@@ -1,0 +1,1172 @@
+{
+  "name": "NLAP R2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "7323819f-a802-4769-b4b1-fe4446fbd036",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "base": {
+          "__rl": true,
+          "value": "appVXHOyQcgQAk1gV",
+          "mode": "list",
+          "cachedResultName": "Content Creation Automation",
+          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblRsboN66ZLzyDrM",
+          "mode": "list",
+          "cachedResultName": "Candidates",
+          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV/tblRsboN66ZLzyDrM"
+        },
+        "filterByFormula": "{R2Status} = \"Pending\"",
+        "returnAll": false,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "4d29f2a0-c9c3-44af-bed4-4a8ebdc44608",
+      "name": "Search records",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "M4nWbeUFeR35flxq",
+          "name": "Airtable Personal Access Token account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appVXHOyQcgQAk1gV",
+          "mode": "list",
+          "cachedResultName": "Content Creation Automation",
+          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblRsboN66ZLzyDrM",
+          "mode": "list",
+          "cachedResultName": "Candidates",
+          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV/tblRsboN66ZLzyDrM"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Reviewed by Human": false,
+            "Featured in NL ": false,
+            "NeedsReview": "={{$json.NeedsReview}}",
+            "id": "={{$json.id}}",
+            "R2Status": "={{$json.R2Status}}",
+            "SegmentSuggested": "={{$json.SegmentSuggested}}",
+            "SegmentConfidence": "={{$json.SegmentConfidence}}",
+            "Score_Manual": 0
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Event Title",
+              "displayName": "Event Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "City",
+              "displayName": "City",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Vaughan",
+                  "value": "Vaughan"
+                },
+                {
+                  "name": "Richmond Hill",
+                  "value": "Richmond Hill"
+                },
+                {
+                  "name": "Markham",
+                  "value": "Markham"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Auto Category",
+              "displayName": "Auto Category",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "For Families",
+                  "value": "For Families"
+                },
+                {
+                  "name": "For Couples",
+                  "value": "For Couples"
+                },
+                {
+                  "name": "For Golden Age Readers",
+                  "value": "For Golden Age Readers"
+                },
+                {
+                  "name": "Local Aroma",
+                  "value": "Local Aroma"
+                },
+                {
+                  "name": "The “Trust Me” Recipe",
+                  "value": "The “Trust Me” Recipe"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Added to Base Date",
+              "displayName": "Added to Base Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Publish Date",
+              "displayName": "Publish Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Start Date",
+              "displayName": "Start Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "New",
+                  "value": "New"
+                },
+                {
+                  "name": "Needs Review",
+                  "value": "Needs Review"
+                },
+                {
+                  "name": "Approved",
+                  "value": "Approved"
+                },
+                {
+                  "name": "Rejected",
+                  "value": "Rejected"
+                },
+                {
+                  "name": "Featured",
+                  "value": "Featured"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Score_Manual",
+              "displayName": "Score_Manual",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Score_Final",
+              "displayName": "Score_Final",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Short Description",
+              "displayName": "Short Description",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Last Auto Update",
+              "displayName": "Last Auto Update",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Reviewed by Human",
+              "displayName": "Reviewed by Human",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Has Event Date",
+              "displayName": "Has Event Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Event is Expired",
+              "displayName": "Event is Expired",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Event in Window",
+              "displayName": "Event in Window",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "DescriptionRaw",
+              "displayName": "DescriptionRaw",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Featured in NL ",
+              "displayName": "Featured in NL ",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "R2Status",
+              "displayName": "R2Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                },
+                {
+                  "name": "Enriched",
+                  "value": "Enriched"
+                },
+                {
+                  "name": "NeedsReview",
+                  "value": "NeedsReview"
+                },
+                {
+                  "name": "Failed",
+                  "value": "Failed"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "SegmentSuggested",
+              "displayName": "SegmentSuggested",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "For Families",
+                  "value": "For Families"
+                },
+                {
+                  "name": "For Couples",
+                  "value": "For Couples"
+                },
+                {
+                  "name": "For Golden Age Readers",
+                  "value": "For Golden Age Readers"
+                },
+                {
+                  "name": "Local Aroma",
+                  "value": "Local Aroma"
+                },
+                {
+                  "name": "Trust Me Recipe",
+                  "value": "Trust Me Recipe"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "SegmentConfidence",
+              "displayName": "SegmentConfidence",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "NeedsReview",
+              "displayName": "NeedsReview",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "RuleSuggestions",
+              "displayName": "RuleSuggestions",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        624,
+        0
+      ],
+      "id": "b63744a8-6087-440b-b0fb-ebdf4a75e0ba",
+      "name": "Update record",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "M4nWbeUFeR35flxq",
+          "name": "Airtable Personal Access Token account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// R2 v1: Rules-first classification with gap-score confidence.\n// Outputs: SegmentSuggested, SegmentConfidence, NeedsReview, plus debug fields.\n\nconst SEGMENTS = [\n  { key: 'Local Aroma', strong: ['grand opening','now open','new opening','tasting menu','chef','food festival','restaurant week','cooking class','baking class','espresso class','culinary'], weak: ['cafe','café','coffee','espresso','latte','bakery','brunch','market','pop-up','popup','recipe','cook','bake'] },\n  { key: 'For Families', strong: ['kids','kid-friendly','family','children','toddler','storytime','march break','pa day','camp'], weak: ['craft','museum','workshop','all ages','play','sensory','face painting'] },\n  { key: 'For Golden Age Readers', strong: ['seniors','senior','55+','60+','65+','retirement','retired'], weak: ['community centre','daytime','lecture','walking','social','wellness'] },\n  { key: 'For Couples', strong: ['date night','valentine','wine tasting','cocktail','live music','comedy show','theatre','theater','candle making'], weak: ['concert','show','karaoke','trivia','paint night','sip and paint','night out'] },\n];\n\nfunction norm(s) {\n  return (s || '').toString().toLowerCase();\n}\n\nfunction countHits(text, phrases) {\n  let hits = 0;\n  for (const p of phrases) {\n    if (!p) continue;\n    if (text.includes(p)) hits += 1;\n  }\n  return hits;\n}\n\nconst title = $json['Event Title'] || $json.title || '';\nconst desc  = $json['DescriptionRaw'] || $json['Short Description'] || $json.description || '';\nconst venue = $json['Venue'] || $json['LocationName'] || '';\nconst source = $json['Source'] || $json.source || '';\n\nconst text = norm(`${title} ${desc} ${venue} ${source}`);\n\nconst businessBad = ['realtor','commission','mortgage','tax','cra','insurance','sales training','webinar','networking'];\nconst isBusinessy = businessBad.some(w => text.includes(w));\n\nconst scores = [];\n\nfor (const seg of SEGMENTS) {\n  const strongHits = countHits(text, seg.strong);\n  const weakHits = countHits(text, seg.weak);\n  let score = strongHits * 2 + weakHits;\n  scores.push({ segment: seg.key, score, strongHits, weakHits });\n}\n\nscores.sort((a,b) => b.score - a.score);\n\nconst top = scores[0];\nconst second = scores[1] || { score: 0 };\nconst topScore = top.score;\nconst gap = top.score - second.score;\n\nlet accept = false;\nif (topScore >= 2) accept = (gap >= 0);\n\nconst SegmentSuggested = accept ? top.segment : null;\nconst SegmentConfidence = Math.max(0, Math.min(1, gap / 4));\nconst NeedsReview = !accept;\nconst R2Status = NeedsReview ? 'NeedsReview' : 'Enriched';\n\nreturn {\n  json: {\n    ...$json,\n    SegmentSuggested,\n    SegmentConfidence,\n    NeedsReview,\n    R2Status,\n    _r2_topSegment: top.segment,\n    _r2_topScore: topScore,\n    _r2_gap: gap,\n    _r2_scores: scores\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "ac32d1be-55b1-4812-b794-b300571275eb",
+      "name": "Classification"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "936b2fff-f798-4cd9-9844-8d29367736b7",
+              "leftValue": "={{$json.fields.NeedsReview}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        864,
+        0
+      ],
+      "id": "49ceabde-c93c-48d2-a3e6-0505fb16a763",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You classify local events for a lifestyle newsletter targeting adults in the Greater Toronto Area.\n\nSegments and definitions:\n\nFor Families\nEvents primarily intended for children or families with kids.\nExamples: kids activities, family workshops, storytime, camps, child-friendly events, family-friendly festivals, educational kids programs, kids cooking or craft classes.\n\nFor Couples\nAdult social, nightlife, or date-style activities.\nExamples: wine tastings, live music, comedy nights, candle making, paint nights, galas, dance nights, nightlife, club events, adult parties, 19+ events, romantic activities, upscale social experiences, concerts, cultural celebrations with bar/nightlife elements.\n\nFor Golden Age Readers\nEvents mainly targeted at seniors or retirees.\nExamples: senior programs, daytime lectures, retirement activities, wellness for seniors, gentle fitness for older adults.\n\nLocal Aroma\nFood and drink experiences, restaurant events, and hands-on food/drink classes or workshops at a venue.\nExamples: tastings, scotch/whisky/wine/chocolate pairings, chef events, restaurant openings, food festivals, markets, food pop-ups, espresso classes, baking workshops for adults, cooking experiences at a restaurant or culinary venue.\n\nRules:\n- Always choose the closest segment. Never return null or empty.\n- If the event is adult nightlife, party, gala, or 19+, choose For Couples even if the description is vague.\n- If the event involves food/drink pairing, tasting, or a hands-on food/drink class at a venue for adults, choose Local Aroma.\n- If a food/drink class is specifically for kids, choose For Families.\n- If the event is B2B, professional development, a career fair, real estate seminar, or business workshop with no lifestyle angle, still choose closest segment but set confidence below 0.4.\n- If the event is not in English or targets a non-GTA audience, still choose closest segment but set confidence below 0.3.\n- If genuinely uncertain, default to For Families with low confidence.\n- Use confidence to signal uncertainty — low confidence triggers human review automatically.\n\nReturn ONLY JSON:\n{\n  \"segment\": \"For Families | For Couples | For Golden Age Readers | Local Aroma\",\n  \"confidence\": 0.0-1.0,\n  \"reason\": \"short explanation referencing words from the event\"\n}"
+            },
+            {
+              "content": "=Classify this event.\n\nTitle: {{$json[\"Event Title\"]}}\nDescription: {{$json[\"DescriptionRaw\"]}}\nSource: {{$json[\"Source\"]}}"
+            }
+          ]
+        },
+        "simplify": false,
+        "builtInTools": {},
+        "options": {
+          "maxTokens": 250,
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          },
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1280,
+        0
+      ],
+      "id": "e97756e9-cbe2-4a56-9ee2-7386cfacaab6",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "2xpYrd1Zpz6pOKgZ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const raw =\n  $json.output?.[0]?.content?.[0]?.text ??\n  $json.text ??\n  $json.response ??\n  $json.data ??\n  $json.output ??\n  $json.body ??\n  null;\n\nlet parsed = {};\nlet parseError = null;\n\nif (typeof raw === 'string') {\n  try {\n    parsed = JSON.parse(raw.trim());\n  } catch (e) {\n    parseError = \"JSON parse failed: \" + e.message;\n  }\n} else if (typeof raw === 'object' && raw !== null) {\n  parsed = raw;\n} else {\n  parseError = \"No usable output from model\";\n}\n\nconst validSegments = [\n  \"For Families\",\n  \"For Couples\",\n  \"For Golden Age Readers\",\n  \"Local Aroma\",\n  \"Trust Me Recipe\"\n];\n\nconst segment = parsed.segment ?? null;\nconst validatedSegment = validSegments.includes(segment) ? segment : null;\n\nif (!parseError && validatedSegment === null) {\n  parseError = \"Invalid or empty segment: \" + JSON.stringify(segment);\n}\n\nreturn {\n  json: {\n    id: $('Filter').item.json.id,\n    LLM_SegmentSuggested: validatedSegment,\n    LLM_Confidence: parsed.confidence ?? null,\n    LLM_Rationale: parsed.reason ?? null,\n    LLM_ParseError: parseError,\n    NeedsReview:\n      validatedSegment === null || (parsed.confidence ?? 0) < 0.5\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        0
+      ],
+      "id": "c1df7dd2-6d51-4899-a087-db3dd4e4036d",
+      "name": "Parse LLM Response"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "base": {
+          "__rl": true,
+          "value": "appVXHOyQcgQAk1gV",
+          "mode": "list",
+          "cachedResultName": "Content Creation Automation",
+          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblRsboN66ZLzyDrM",
+          "mode": "list",
+          "cachedResultName": "Candidates",
+          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV/tblRsboN66ZLzyDrM"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Reviewed by Human": false,
+            "Featured in NL ": false,
+            "NeedsReview": "={{$json.NeedsReview}}",
+            "SegmentSuggested": "={{$json.LLM_SegmentSuggested}}",
+            "SegmentConfidence": "={{$json.LLM_Confidence}}",
+            "R2Status": "={{$json.NeedsReview ? \"NeedsReview\" : \"Enriched\"}}",
+            "Score_Manual": 0,
+            "id": "={{$json.id}}",
+            "LLM_ParseError": "={{$json.LLM_ParseError}}",
+            "LLM_Rationale": "={{$json.LLM_Rationale}}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Event Title",
+              "displayName": "Event Title",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "URL",
+              "displayName": "URL",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Source",
+              "displayName": "Source",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "City",
+              "displayName": "City",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Vaughan",
+                  "value": "Vaughan"
+                },
+                {
+                  "name": "Richmond Hill",
+                  "value": "Richmond Hill"
+                },
+                {
+                  "name": "Markham",
+                  "value": "Markham"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "For Families",
+                  "value": "For Families"
+                },
+                {
+                  "name": "For Couples",
+                  "value": "For Couples"
+                },
+                {
+                  "name": "For Golden Age Readers",
+                  "value": "For Golden Age Readers"
+                },
+                {
+                  "name": "Local Aroma",
+                  "value": "Local Aroma"
+                },
+                {
+                  "name": "The “Trust Me” Recipe",
+                  "value": "The “Trust Me” Recipe"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Added to Base Date",
+              "displayName": "Added to Base Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Publish Date",
+              "displayName": "Publish Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Start Date",
+              "displayName": "Start Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "New",
+                  "value": "New"
+                },
+                {
+                  "name": "Needs Review",
+                  "value": "Needs Review"
+                },
+                {
+                  "name": "Approved",
+                  "value": "Approved"
+                },
+                {
+                  "name": "Rejected",
+                  "value": "Rejected"
+                },
+                {
+                  "name": "Featured",
+                  "value": "Featured"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Score_Manual",
+              "displayName": "Score_Manual",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Score_Final",
+              "displayName": "Score_Final",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Short Description",
+              "displayName": "Short Description",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Last Auto Update",
+              "displayName": "Last Auto Update",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Reviewed by Human",
+              "displayName": "Reviewed by Human",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Has Event Date",
+              "displayName": "Has Event Date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Event is Expired",
+              "displayName": "Event is Expired",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "Event in Window",
+              "displayName": "Event in Window",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "R2Status",
+              "displayName": "R2Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                },
+                {
+                  "name": "Enriched",
+                  "value": "Enriched"
+                },
+                {
+                  "name": "NeedsReview",
+                  "value": "NeedsReview"
+                },
+                {
+                  "name": "Failed",
+                  "value": "Failed"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "DescriptionRaw",
+              "displayName": "DescriptionRaw",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Featured in NL ",
+              "displayName": "Featured in NL ",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "SegmentSuggested",
+              "displayName": "SegmentSuggested",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "For Families",
+                  "value": "For Families"
+                },
+                {
+                  "name": "For Couples",
+                  "value": "For Couples"
+                },
+                {
+                  "name": "For Golden Age Readers",
+                  "value": "For Golden Age Readers"
+                },
+                {
+                  "name": "Local Aroma",
+                  "value": "Local Aroma"
+                },
+                {
+                  "name": "Trust Me Recipe",
+                  "value": "Trust Me Recipe"
+                },
+                {
+                  "name": "Pending",
+                  "value": "Pending"
+                },
+                {
+                  "name": "checked",
+                  "value": "checked"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "SegmentConfidence",
+              "displayName": "SegmentConfidence",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "NeedsReview",
+              "displayName": "NeedsReview",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "boolean",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "RuleSuggestions",
+              "displayName": "RuleSuggestions",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "array",
+              "readOnly": false,
+              "removed": true
+            },
+            {
+              "id": "LLM_ParseError",
+              "displayName": "LLM_ParseError",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "LLM_Rationale",
+              "displayName": "LLM_Rationale",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        1808,
+        0
+      ],
+      "id": "5adc5c81-3c1b-477e-a499-d741a1714a51",
+      "name": "LLM Update Node",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "M4nWbeUFeR35flxq",
+          "name": "Airtable Personal Access Token account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    id: $json.id,\n    ...$json.fields\n  }\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        0
+      ],
+      "id": "d660abc7-8602-46d4-8bff-abd30b5d910d",
+      "name": "Flatten Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Search records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search records": {
+      "main": [
+        [
+          {
+            "node": "Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classification": {
+      "main": [
+        [
+          {
+            "node": "Update record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Flatten Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Parse LLM Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse LLM Response": {
+      "main": [
+        [
+          {
+            "node": "LLM Update Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update record": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten Fields": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "ec9058ee-c97e-41e8-83cc-6e9c2cc6cf98",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5229ad676c3a8d293c6db345f673ae85f2faeec97332d940e6b8ecea4c050d50"
+  },
+  "id": "f7wQt9wKaVA3NrAq",
+  "tags": []
+}

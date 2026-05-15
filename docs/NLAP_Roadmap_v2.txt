@@ -1,0 +1,363 @@
+NEWSLETTER AUTOMATION MACHINE (OPTION B)
+Release + Week-by-Week Execution Plan (copy/paste friendly)
+Date: 2026-01-15 (America/Toronto)
+Owner: Ariel
+Time budget: 4 hours/week (plan fits this; optional stretch to 7)
+
+============================================================
+END GOAL (what “Run” should do)
+===============================
+
+Button-run (or scheduled run) produces:
+A) Intake: all sources (including previously blocked) flow into Airtable.
+B) Normalization: each Item has at minimum:
+
+* Title
+* StartDate (and EndDate if relevant)
+* LocationName (best effort)
+* City
+* Link
+* DescriptionRaw (source text) + DescriptionClean (factual 1–2 sentences)
+  C) Dedupe: reruns do not create duplicates (UniqueEventID-based upsert).
+  D) Scoring + Segment suggestion (Families/Couples/Golden Age/Local Aroma/Recipe).
+  E) Multi-issue planning: auto-fills next 2–3 weekly Issues with quotas:
+* For Families: 5
+* For Couples: 5
+* Golden Age Readers: 5
+* Local Aroma: 5
+* Trust Me Recipe: 1–2
+  while avoiding repeats and respecting event dates.
+  F) Copywriting: generates newsletter blurbs per scheduled item.
+  G) Beehiiv sync: pushes draft post directly to Beehiiv for editorial review.
+
+============================================================
+CURRENT MVP (what you already have)
+===================================
+
+* RSS -> Airtable Items
+* Views and editorial steps:
+
+  1. Inbox: review new items; set Status = Approved or Rejected.
+  2. Approved - All Cities: pool of usable items.
+  3. Optional: check Featured while Approved.
+  4. Approved and Featured - All Cities: highlight pool.
+
+============================================================
+NON-NEGOTIABLES (keep the project sane)
+=======================================
+
+1. Editorial control remains: automation suggests; editor approves.
+2. Source-specific quirks stay inside ingestion; downstream logic stays uniform.
+3. Canonical schema: every source maps to the same field set.
+4. “Locks” exist: manual overrides are never overwritten by reruns.
+5. All ingestion paths must be idempotent (rerunning produces the same outcome).
+
+============================================================
+DATA MODEL (final target)
+=========================
+
+TABLE: Items
+Required fields (minimum viable):
+
+* UniqueEventID (stable hash; used for upsert/dedupe)
+* Title
+* StartDate
+* City
+* LocationName (or blank + NeedsReview)
+* Link
+* DescriptionRaw
+* Status (New Needs Review / Approved / Rejected / Scheduled / Final; choose your final set)
+  Optional but recommended:
+* EndDate
+* Address
+* ImageURL
+* SourceName, SourceURL
+* SegmentSuggested (one of 5)
+* SegmentConfidence (0–1)
+* Score (0–1)
+* Confidence (0–1)
+* NeedsReview (checkbox)
+* Featured (checkbox)
+* RunID (ingestion batch identifier)
+
+TABLE: Issues
+
+* IssueDate (weekly send/publish date)
+* City (or All Cities)
+* Status (Planned / Draft / Sent)
+
+TABLE: IssueItems
+
+* Issue (link)
+* Item (link)
+* Section (Families/Couples/Golden Age/Local Aroma/Recipe)
+* Slot (1..5; Recipe 1..2)
+* Lock (checkbox)
+* NewsletterBlurb (text)
+* Notes (text)
+
+TABLE: ExecutionLog (NEW)
+
+* RunID
+* SourceName
+* ItemsCreated
+* ItemsUpdated
+* Errors
+* Timestamp
+
+VIEWS (add to what you already have)
+Items:
+
+* Needs Review: NeedsReview checked OR missing StartDate/City/Link OR low confidence
+* Eligible for Scheduling: Status=Approved AND StartDate within allowed window AND has required fields
+  Issues:
+* Next 3 Issues: IssueDate ascending
+  IssueItems:
+* By Issue
+* Empty Slots (missing assignments)
+
+============================================================
+RELEASES (client-visible milestones)
+====================================
+
+Release 1: Reliable Intake & Source Coverage
+Release 2: Assisted Curation (segment suggestion + basic scoring)
+Release 3: Multi-Issue Planner (script-based auto-fill for next 2–3 issues)
+Release 4: Copywriting + Exports (newsletter-ready drafts)
+Release 5 (optional): Monitoring + ESP Sync + polish + scaling
+
+============================================================
+SOURCE HURDLE: METHODS (use cheapest per source)
+================================================
+
+Decision order per blocked source:
+
+1. Hidden RSS / Atom
+2. ICS calendar export
+3. Underlying JSON endpoint (site API)
+4. Email -> pipeline
+5. RSS builder SaaS (page -> RSS)
+6. Light scrape (HTML fetch + parse; no JS render)
+7. Screenshot -> Vision/OCR extraction
+8. Headless scraping (Playwright/Puppeteer)
+9. Manual drop zone (guaranteed fallback)
+
+============================================================
+WEEK-BY-WEEK EXECUTION (4 hours/week)
+=====================================
+
+---
+
+RELEASE 1 — RELIABLE INTAKE
+Exit criteria:
+
+* All key sources (including blocked) create Items in Airtable.
+* UniqueEventID upsert works (no duplicates on rerun).
+* Date window filter prevents floods of irrelevant/past items.
+* NeedsReview catches missing/low-confidence items.
+* Data integrity guards prevent invalid records from being created.
+
+---
+
+WEEK R1-W1 (4h): Source triage + selection
+
+1. Build a source list (priority order):
+
+   * Working sources
+   * Blocked sources (4–5) with URLs
+2. For each blocked source (cap 30–40 min each): test methods 1–5 above.
+3. Record a decision per source:
+
+   * chosen method
+   * endpoint/feed URL
+   * refresh frequency
+   * known failure mode
+     Deliverables:
+
+* “Source Decision Sheet” (simple doc/table)
+* At least 1 blocked source producing ingestible output
+
+WEEK R1-W2 (4h): Integrate chosen methods + canonicalizer + integrity guards
+
+1. Implement ingestion for each chosen method so all flow into the SAME Items schema.
+2. Canonicalizer (single step) sets:
+
+   * Title clean
+   * StartDate parse
+   * City infer (from source default if missing)
+   * Link
+   * DescriptionRaw
+   * Confidence + NeedsReview
+3. Data Integrity Guards (NEW):
+
+   * If missing StartDate OR Link → auto-set NeedsReview
+   * If invalid date → reject or quarantine
+   * Assign RunID to all ingested items
+4. Define UniqueEventID formula (stable):
+
+   * prefer link if stable; otherwise hash(title+startDate+city+source)
+5. Add upsert/dedupe:
+
+   * upsert on UniqueEventID
+6. Add date window filter:
+
+   * include events in next 21–30 days
+   * exclude events older than today
+7. Log each run in ExecutionLog table.
+   Deliverables:
+
+* All sources land in Airtable
+* Rerun does not duplicate
+* Invalid data is quarantined
+
+WEEK R1-W3 (4h): Stabilize + document + client demo
+
+1. Run workflow 2–3 times; note failures by source.
+2. Fix top 2 failures (date parsing, missing link/location).
+3. Create Release 1 Operating Guide (1 page).
+4. Demo: show blocked sources now flowing + dedupe working.
+   Exit Release 1.
+
+---
+
+RELEASE 2 — ASSISTED CURATION
+Exit criteria:
+
+* SegmentSuggested for most items
+* Score computed for most items
+* No auto-approval; only suggestions
+
+---
+
+WEEK R2-W4 (4h): Segment suggestion (rules + LLM fallback)
+
+1. Define rule keywords/heuristics per segment.
+2. Implement rule-first classifier -> SegmentSuggested.
+3. LLM fallback only if rule confidence is low.
+4. NeedsReview if SegmentConfidence below threshold.
+   Deliverables:
+
+* SegmentSuggested filled for >=70% new items
+
+WEEK R2-W5 (4h): Scoring v1 (simple + explainable)
+
+1. Define score components (0–1).
+2. Compute Score in pipeline and store on Items.
+3. Add view “Top Scored (Approved)” and sanity-check outputs.
+   Exit Release 2.
+
+---
+
+RELEASE 3 — MULTI-ISSUE PLANNER (2–3 issues ahead)
+Exit criteria:
+
+* Issues + IssueItems tables exist
+* Script-based “Build next 2–3 issues” fills quotas without repeats
+* Lock prevents overwrites
+
+---
+
+WEEK R3-W6 (4h): Create Issues/IssueItems + eligibility
+
+1. Create Issues table; precreate next 3 IssueDates.
+2. Create IssueItems table with Section + Slot + Lock.
+3. Create Items view “Eligible for Scheduling.”
+4. Define date-window rule for scheduling.
+   Deliverables:
+
+* Tables exist and eligibility pool makes sense
+
+WEEK R3-W7 (4h): Allocation algorithm v1 (SCRIPT-BASED)
+
+1. Implement allocation using:
+
+   * n8n Code node OR Airtable Scripting Block
+2. For each IssueDate in order:
+   a) pull eligible items once
+   b) exclude items already scheduled in next 3 issues
+   c) sort by Score desc
+   d) fill quotas per section
+3. Enforce diversity (avoid same venue twice per section).
+4. Respect Lock: do not overwrite locked IssueItems.
+   Deliverables:
+
+* “Build Issues” script populates IssueItems for next 2–3 issues reliably
+
+WEEK R3-W8 (4h): Refinements + client feedback
+
+1. Add fallback logic if a section has insufficient items.
+2. Add “SelectionNotes” when fallback happens.
+3. Client review of planned issues; adjust rules.
+   Exit Release 3.
+
+---
+
+RELEASE 4 — COPYWRITING + EXPORTS
+Exit criteria:
+
+* DescriptionClean and NewsletterBlurb generated
+* Doc/CSV export per Issue
+
+---
+
+WEEK R4-W9 (4h): Two-layer writing system
+
+1. Generate DescriptionClean (factual 1–2 sentences).
+2. Generate NewsletterBlurb per segment.
+3. Store outputs on Items and IssueItems.
+   Deliverables:
+
+* One Issue fully drafted in Airtable
+
+WEEK R4-W10 (4h): Beehiiv integration
+
+1. Research Beehiiv API — draft post creation, template field mapping.
+2. Map IssueItems fields (DisplayTitle, Description, CTA, CandidateURL) → Beehiiv template.
+3. Build pushToBeehiiv.js — creates a draft post per issue date.
+4. Add --dry-run flag: print Beehiiv payload without pushing.
+   Deliverables:
+* Draft Beehiiv post created from IssueItems for an upcoming issue
+   Exit Release 4.
+
+---
+
+## RELEASE 5 (OPTIONAL) — MONITORING + ESP SYNC
+
+Possible tasks:
+
+* Scheduled weekly runs
+* Error alerts
+* Per-source health tracking
+* Optional Direct ESP Draft Sync (beehiiv/Mailchimp API)
+* CTR priors (after data exists)
+
+============================================================
+WEEKLY RISK CHECKLIST (run every week)
+======================================
+
+* Any source failing frequently?
+* Any duplicate spikes after reruns?
+* Any items missing StartDate/Link/City?
+* Any empty slots in IssueItems?
+* Copy too long or off-tone?
+
+============================================================
+WHAT YOU MUST PROVIDE (so any new chat can continue with zero confusion)
+========================================================================
+
+1. Airtable schema
+2. Complete source list
+3. Weekly publish day + definition of IssueDate
+4. Date-window rule
+5. 2–3 examples of blurbs
+6. Whether images matter
+
+============================================================
+COPY-PASTE CONTINUATION BLOCK
+=============================
+
+We are building Option B newsletter automation. We are executing the plan in Jan_2026_newsletter_automation_roadmap_UPDATED.
+Current position: [e.g., R1-W2].
+Today’s goal: [1 sentence].
+Current blockers: [list].
+Here are the source URLs and Airtable schema: [paste].
