@@ -1,7 +1,24 @@
 # NLAP Project Guide
-*Last updated: 2026-05-15*
+*Last updated: 2026-05-16*
 
 A single reference for how this project is organized and how to operate within it.
+
+---
+
+## End of Session Protocol
+
+**After every work session, do these three things:**
+
+1. **Close your Issues** — close anything you finished, leave a comment with what you did
+2. **Flag blockers** — if you're stuck, comment on the Issue and drop a note in `#pipeline`
+3. **Post a handoff in `#handoffs`:**
+```
+What I did: [1 line]
+What's open: [1–2 lines]
+What you need to do next: [1 line]
+```
+
+If a decision was architectural → also add it to `docs/Decision_Log.md`.
 
 ---
 
@@ -67,12 +84,6 @@ Two additional labels distinguish work type:
 Milestones: Prerequisite, R5, R6, R7, R8
 
 **R5 issues** are assigned to Nathan. **R6+ issues** are assigned to Ariel.
-
-**After every work session:**
-- Close any Issues you finished
-- Leave a comment with what you did and any decisions made
-- If you hit a blocker, comment on the Issue and drop a note in `#pipeline`
-- If the decision was architectural, also add it to `docs/Decision_Log.md`
 
 ---
 
