@@ -60,11 +60,37 @@ R1–R4 are complete and stable. R5–R8 are the active roadmap.
 
 Labels map to releases: `r5` `r6` `r7` `r8` `prerequisite` `spike`
 
+Two additional labels distinguish work type:
+- `roadmap` — planned release work (what we're building next)
+- `debt` — unplanned open items (deferred fixes, improvements)
+
 Milestones: Prerequisite, R5, R6, R7, R8
 
 **R5 issues** are assigned to Nathan. **R6+ issues** are assigned to Ariel.
 
 When you finish an issue: close it and leave a comment with what you did and any decisions made. If the decision was architectural, also add it to `docs/Decision_Log.md`.
+
+---
+
+## Log + Handoff Format
+
+**`#run-logs` (after every pipeline run):**
+```
+Date: YYYY-MM-DD
+Scripts run: [e.g. connectAirtable.js → generateBlurbs.js]
+Result: [e.g. 25 IssueItems written, 3 NeedsReview flagged]
+Errors: [none / describe if any]
+```
+
+**`#handoffs` (end of every work session):**
+```
+What ran / was built: [1 line]
+What's open: [1–2 lines]
+What the other person needs to do next: [1 line]
+```
+
+**`docs/Decision_Log.md` (architectural decisions only):**
+New section per decision. Include: what was decided, why, and what was ruled out. Not for routine fixes or config changes.
 
 ---
 
