@@ -68,7 +68,11 @@ Milestones: Prerequisite, R5, R6, R7, R8
 
 **R5 issues** are assigned to Nathan. **R6+ issues** are assigned to Ariel.
 
-When you finish an issue: close it and leave a comment with what you did and any decisions made. If the decision was architectural, also add it to `docs/Decision_Log.md`.
+**After every work session:**
+- Close any Issues you finished
+- Leave a comment with what you did and any decisions made
+- If you hit a blocker, comment on the Issue and drop a note in `#pipeline`
+- If the decision was architectural, also add it to `docs/Decision_Log.md`
 
 ---
 
