@@ -99,15 +99,3 @@ node scripts/pushToBeehiiv.js
 
 R1 and R2 run inside n8n — import the workflow JSON files from `workflows/`.
 
----
-
-## Data Rules (non-negotiable)
-
-- Never overwrite IssueItems where `Lock = true`
-- UniqueEventID format: `title|date` (not title|date|source)
-- Date window: IssueDate+1 through IssueDate+10 inclusive
-- Segment quotas: For Families 5, For Couples 5, For Golden Age Readers 5, Local Aroma 5, Trust Me Recipe 1–2
-- Trust Me Recipe: manual only — never auto-allocated
-- Max 1 venue per section per issue
-- Reject: B2B, civic, professional development, non-GTA events
-- Publish day: Thursday
