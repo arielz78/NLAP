@@ -238,7 +238,7 @@ Full SOP (step-by-step with edge cases) is a separate document — not yet writt
 | Issues table auto-creation | Manual | Planned for R8-W8 (Debt #15) |
 | SegmentConfidence floor threshold | Mechanism designed (section 6); value TBD | R2 eval distribution (post-MVP prerequisite #1) |
 | Quality metric thresholds | Structure agreed (section 16); targets deferred | 2–3 live issues of data |
-| Multi-tenant base architecture | base-per-newsletter recommended (section 15) | Confirmation from Nathan (post-MVP prerequisite #6) |
+| Multi-tenant base architecture | base-per-newsletter confirmed (section 15) | Closed 2026-05-20 |
 
 ---
 
@@ -393,7 +393,7 @@ Base-per-newsletter chosen because:
 
 **Implementation:** Each newsletter has a config file at `/newsletters/{name}.json` (e.g. `vaughan.json`, `mississauga.json`). Config contains: airtableBaseId, beehiivPubId, segments, sources, geography, quotas, scoringWeights, prompts. Scripts accept a `--newsletter=vaughan` flag, load the config, and filter every query through it. Adding a new newsletter = creating a config file, no code changes required.
 
-**Status:** recommendation confirmed 2026-05-10. Pending final sign-off from Nathan (post-MVP prerequisite #6) before R5-W2 builds on it.
+**Status:** closed 2026-05-20. Base-per-newsletter confirmed with Nathan. Mississauga base cloned from Vaughan schema at R8-W10 (not earlier — schema must be stable first).
 
 ---
 

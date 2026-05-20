@@ -10,9 +10,9 @@
 ## Pre-R5 Gate
 
 ### Ariel — exam week (before May 26)
-- [ ] **Prereq #6** — multi-tenant base decision (with Nathan, ~30min)
-  - Recommendation: base-per-newsletter (isolation, no record-limit ceiling, cleaner permissions)
-  - Must lock before R5-W2 starts
+- [x] **Prereq #6** — multi-tenant base decision (with Nathan, ~30min) — CLOSED 2026-05-20
+  - Confirmed: base-per-newsletter (isolation, no record-limit ceiling, cleaner permissions)
+  - Mississauga base cloned from Vaughan schema at R8-W10
 - [ ] **Prereq #5** — quality metric (client call, ~30min) — separate day from #6
   - Propose: editor acceptance rate (blurbs published as-is vs. edited) as primary metric
   - Not blocking R5 — blocking R6. If not resolved here, carry to next client meeting.
