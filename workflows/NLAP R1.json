@@ -94,7 +94,8 @@
             "Start Date": "={{$json.start_date}}",
             "SegmentConfidence": 0,
             "DescriptionRaw": "={{$json.DescriptionRaw}}",
-            "UniqueEventID": "={{$json.uniqueEventID}}"
+            "UniqueEventID": "={{$json.uniqueEventID}}",
+            "Last Auto Update": "={{$now}}"
           },
           "matchingColumns": [
             "UniqueEventID"

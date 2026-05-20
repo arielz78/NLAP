@@ -36,6 +36,7 @@ Key fields:
 - **LLM_Rationale** — the reasoning GPT-4o provided when assigning a segment. Useful for understanding why a record was classified a certain way, and for auditing misclassifications over time. If filled, it means it went through MAM (message a model) node in R2 n8n run. If empty, event was classified based on keyword match.
 - **Score_Final** — intended for ranking candidates within each segment. **Not yet implemented** — all records currently have 0 or null. See section 6.
 - **NeedsReview** — boolean. Set to true when R2 confidence < 0.5 OR when R2 cannot assign a segment at all. Marks records that require human judgment before they can be allocated.
+- **Last Auto Update** — timestamp written by R1 on every upsert. Sort Candidates by this field descending to see exactly which records the most recent R1 run touched. If the count is lower than expected, records were dropped before reaching the upsert — either failed the Validity Filter (missing URL or date) or fell outside the 30-day DateWindow. Dropped records mean R1 fetched them from the source but could not write them to Airtable, so the candidate pool is smaller than the source actually contains. Was not populated before 2026-05-20.
 - **Lock** — on IssueItems (not Candidates). See section 5.
 
 ### Important: the pipeline is append-based
