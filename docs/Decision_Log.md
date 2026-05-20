@@ -1,5 +1,5 @@
 # NLAP Decision Log
-*Last updated: 2026-05-10*
+*Last updated: 2026-05-20*
 
 This document records the reasoning behind every significant design and editorial decision in the pipeline. It is intended to be read by anyone who needs to understand not just what the system does, but why it works the way it does — including future collaborators (Nate) and future-you after time away.
 
@@ -518,4 +518,29 @@ This is the operational definition of "CTR doesn't materially drop issue-over-is
 **Implementation timing:** R8-W8. Add the field when building the clean IssueItems view so the client learns both in one walkthrough session.
 
 **Client framing:** "If you change a blurb, just check this box — it helps me track quality over time." One sentence. Doesn't feel like reporting.
+
+---
+
+## 22. R2 GPT-4o Failure Behavior
+
+**Decision: retry-once-then-flag. Not skip-and-flag.**
+
+*Implemented 2026-05-20. Prereq #3 (Debt #25).*
+
+**What changed:** Three settings added to the "Message a model" node in the R2 n8n workflow: `retryOnFail: true`, `maxTries: 2`, `waitBetweenTries: 5000ms`, and `onError: continueRegularOutput`.
+
+**Why retry-once:** GPT-4o API failures are usually transient (rate limits, timeouts). A single retry with a 5-second wait resolves the majority of these without human intervention. Two total attempts is the right balance — more retries add latency across a full batch run without meaningfully improving success rate.
+
+**Why continueRegularOutput:** without this, a persistent GPT failure halts the entire workflow and the item is never written back to Airtable. The failure is invisible unless you check n8n execution logs manually. With `continueRegularOutput`, the failed item flows downstream to Parse LLM Response, which catches the null output and writes an explicit error to the record.
+
+**Possible outcomes and what they mean in Airtable:**
+
+| Situation | NeedsReview | LLM_ParseError | R2Status |
+|-----------|-------------|----------------|----------|
+| GPT succeeds, confidence ≥ 0.5 | false | blank | Enriched |
+| GPT succeeds, confidence < 0.5 | true | blank | NeedsReview |
+| GPT returns null or invalid segment | true | "Invalid or empty segment: null" | NeedsReview |
+| GPT fails after both attempts | true | "No usable output from model" | NeedsReview |
+
+A blank `LLM_ParseError` means the LLM ran cleanly. A populated `LLM_ParseError` tells you exactly what went wrong without touching n8n. All failure cases land in the `R2 - NeedsReview` Airtable view for human triage.
 

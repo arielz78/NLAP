@@ -572,6 +572,10 @@
       ],
       "id": "e97756e9-cbe2-4a56-9ee2-7386cfacaab6",
       "name": "Message a model",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput",
       "credentials": {
         "openAiApi": {
           "id": "2xpYrd1Zpz6pOKgZ",
