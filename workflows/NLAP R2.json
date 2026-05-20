@@ -572,16 +572,17 @@
       ],
       "id": "e97756e9-cbe2-4a56-9ee2-7386cfacaab6",
       "name": "Message a model",
+      "alwaysOutputData": false,
       "retryOnFail": true,
       "maxTries": 2,
       "waitBetweenTries": 5000,
-      "onError": "continueRegularOutput",
       "credentials": {
         "openAiApi": {
           "id": "2xpYrd1Zpz6pOKgZ",
           "name": "OpenAi account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1166,7 +1167,7 @@
     "executionOrder": "v1",
     "availableInMCP": false
   },
-  "versionId": "ec9058ee-c97e-41e8-83cc-6e9c2cc6cf98",
+  "versionId": "7e81455f-6342-4082-9350-d227dbdafed4",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "5229ad676c3a8d293c6db345f673ae85f2faeec97332d940e6b8ecea4c050d50"
