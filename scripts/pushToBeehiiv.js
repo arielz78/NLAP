@@ -54,21 +54,30 @@ function timedFetch(url, opts = {}, ms = 30000) {
 }
 
 // ── Airtable helpers ──────────────────────────────────────────────────────────
-async function atFetch(urlPath, opts = {}) {
+async function atFetch(urlPath, opts = {}, retries = 3) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/${urlPath}`;
-  const res = await timedFetch(url, {
-    ...opts,
-    headers: {
-      Authorization: `Bearer ${AIRTABLE_KEY}`,
-      'Content-Type': 'application/json',
-      ...(opts.headers || {}),
-    },
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Airtable ${opts.method || 'GET'} /${urlPath} → ${res.status}: ${body}`);
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await timedFetch(url, {
+      ...opts,
+      headers: {
+        Authorization: `Bearer ${AIRTABLE_KEY}`,
+        'Content-Type': 'application/json',
+        ...(opts.headers || {}),
+      },
+    });
+    if (res.status === 429) {
+      if (attempt === retries) throw new Error(`Airtable rate limit hit on /${urlPath} — out of retries`);
+      const wait = parseInt(res.headers.get('Retry-After') ?? '1', 10) * 1000;
+      console.warn(`Rate limited on /${urlPath} — retrying in ${wait}ms (attempt ${attempt + 1})`);
+      await new Promise((r) => setTimeout(r, wait));
+      continue;
+    }
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Airtable ${opts.method || 'GET'} /${urlPath} → ${res.status}: ${body}`);
+    }
+    return res.json();
   }
-  return res.json();
 }
 
 async function getAllRecords(tableId, params = {}) {
@@ -88,14 +97,15 @@ async function fetchIssueId(date) {
   const formula = `IS_SAME({IssueDate}, "${date}", "day")`;
   const records = await getAllRecords(ISSUES_TABLE_ID, { filterByFormula: formula });
   if (!records.length) throw new Error(`No issue found for date: ${date}`);
+  if (records.length > 1) throw new Error(`Multiple Issues records found for date: ${date} — remove the duplicate in Airtable`);
   return records[0].id;
 }
 
 // ── Fetch IssueItems for an issue ─────────────────────────────────────────────
 async function fetchIssueItems(issueId) {
-  const all = await getAllRecords(ISSUEITEMS_TABLE_ID);
-  return all
-    .filter(r => (r.fields.Issue || []).includes(issueId))
+  const formula = `SEARCH("${issueId}", ARRAYJOIN({Issue})) > 0`;
+  const records = await getAllRecords(ISSUEITEMS_TABLE_ID, { filterByFormula: formula });
+  return records
     .map(r => ({
       id:           r.id,
       section:      r.fields.Section      || '',
@@ -200,7 +210,7 @@ async function main() {
   if (missing.length) {
     console.warn(`\n⚠️  ${missing.length} item(s) missing blurbs — run generateBlurbs.js first:`);
     missing.forEach(i => console.warn(`   [${i.section} / Slot ${i.slot}] ${i.displayTitle || '(no title)'}`));
-    console.warn('');
+    throw new Error('Execution stopped: missing blurbs on one or more IssueItems. Run generateBlurbs.js first.');
   }
 
   // 4. Group by section and log

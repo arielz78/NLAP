@@ -74,21 +74,30 @@ async function ensureIssueItemFields() {
   if (!toCreate.length) console.log('  Fields DisplayTitle, Description, CTA already exist.');
 }
 
-async function atFetch(path, opts = {}) {
+async function atFetch(path, opts = {}, retries = 3) {
   const url = `https://api.airtable.com/v0/${BASE_ID}/${path}`;
-  const res = await timedFetch(url, {
-    ...opts,
-    headers: {
-      Authorization: `Bearer ${AIRTABLE_KEY}`,
-      'Content-Type': 'application/json',
-      ...(opts.headers || {})
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await timedFetch(url, {
+      ...opts,
+      headers: {
+        Authorization: `Bearer ${AIRTABLE_KEY}`,
+        'Content-Type': 'application/json',
+        ...(opts.headers || {})
+      }
+    });
+    if (res.status === 429) {
+      if (attempt === retries) throw new Error(`Airtable rate limit hit on /${path} — out of retries`);
+      const wait = parseInt(res.headers.get('Retry-After') ?? '1', 10) * 1000;
+      console.warn(`Rate limited on /${path} — retrying in ${wait}ms (attempt ${attempt + 1})`);
+      await new Promise((r) => setTimeout(r, wait));
+      continue;
     }
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Airtable ${opts.method || 'GET'} /${path} → ${res.status}: ${body}`);
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Airtable ${opts.method || 'GET'} /${path} → ${res.status}: ${body}`);
+    }
+    return res.json();
   }
-  return res.json();
 }
 
 async function getAllRecords(table, formula) {
@@ -218,8 +227,8 @@ async function main() {
   console.log(`✅ Issue: ${issueId}  status=${issue.fields.Status || 'unknown'}`);
 
   // 2. Fetch IssueItems
-  const allItems = await getAllRecords('IssueItems');
-  const rawItems = allItems.filter(r => (r.fields.Issue || []).includes(issueId));
+  const formula = `SEARCH("${issueId}", ARRAYJOIN({Issue})) > 0`;
+  const rawItems = await getAllRecords('IssueItems', formula);
   if (!rawItems.length) throw new Error('No IssueItems found for this issue.');
   console.log(`📋 IssueItems: ${rawItems.length}`);
 

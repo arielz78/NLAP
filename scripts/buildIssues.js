@@ -79,15 +79,22 @@ function buildIssues(eligibleItems, lockedAssignments = [], issueDates = null, a
 
     // Track filled slots per section for this issue (seed from locked assignments)
     const filledSlots = {};
+
+    // Per-section venue count: { section: { venueName: count } }
+    const venueCount = {};
+
     for (const a of lockedAssignments) {
       if (a.IssueDate === issueDateStr && a.Section in QUOTAS) {
         filledSlots[a.Section] ??= new Set();
         filledSlots[a.Section].add(a.Slot);
+        const lockedItem = eligibleItems.find((i) => i.id === a.ItemID);
+        if (lockedItem?.LocationName) {
+          venueCount[a.Section] ??= {};
+          venueCount[a.Section][lockedItem.LocationName] =
+            (venueCount[a.Section][lockedItem.LocationName] ?? 0) + 1;
+        }
       }
     }
-
-    // Per-section venue count: { section: { venueName: count } }
-    const venueCount = {};
 
     for (const item of eligible) {
       if (assignedIds.has(item.id)) continue;
@@ -306,7 +313,7 @@ function runTests() {
   // 5. F6 overflow: quota is 5 — F6 should land in a later issue or not at all
   const issue1Ids = new Set((byIssue[THURSDAY1] ?? []).map((r) => r.ItemID));
   if (issue1Ids.has("F6")) {
-    const f1Count = (byIssue[THURSDAY1] ?? []).filter((r) => r.Section === "Families").length;
+    const f1Count = (byIssue[THURSDAY1] ?? []).filter((r) => r.Section === "For Families").length;
     if (f1Count > 5)
       errors.push(`FAIL: Families in issue 1 exceeds quota (${f1Count})`);
   }

@@ -34,22 +34,31 @@ function timedFetch(url, opts = {}, ms = 30000) {
 // Airtable helpers
 // ---------------------------------------------------------------------------
 
-async function airtableFetch(path, options = {}) {
+async function airtableFetch(path, options = {}, retries = 3) {
   const apiKey = process.env.AIRTABLE_API_KEY;
   const url = `https://api.airtable.com/v0/${path}`;
-  const res = await timedFetch(url, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Airtable ${options.method ?? "GET"} /${path} → ${res.status}: ${body}`);
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await timedFetch(url, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        ...(options.headers ?? {}),
+      },
+    });
+    if (res.status === 429) {
+      if (attempt === retries) throw new Error(`Airtable rate limit hit on /${path} — out of retries`);
+      const wait = parseInt(res.headers.get("Retry-After") ?? "1", 10) * 1000;
+      console.warn(`Rate limited on /${path} — retrying in ${wait}ms (attempt ${attempt + 1})`);
+      await new Promise((r) => setTimeout(r, wait));
+      continue;
+    }
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Airtable ${options.method ?? "GET"} /${path} → ${res.status}: ${body}`);
+    }
+    return res.json();
   }
-  return res.json();
 }
 
 async function fetchAllRecords(tableId, params = {}) {
@@ -179,7 +188,9 @@ async function fetchIssues() {
   const today = new Date().toISOString().slice(0, 10);
   for (const r of records) {
     const date = r.fields["IssueDate"];
-    if (date && date >= today) map[date] = r.id;
+    if (!date || date < today) continue;
+    if (map[date]) throw new Error(`Duplicate IssueDate in Issues table: ${date}`);
+    map[date] = r.id;
   }
   return map;
 }
@@ -214,7 +225,13 @@ async function deleteUnlockedIssueItems(records) {
     const batch = toDelete.slice(i, i + 10);
     const query = new URLSearchParams();
     batch.forEach((r) => query.append("records[]", r.airtableId));
-    await airtableFetch(`${BASE_ID}/${TABLES.issueItems}?${query}`, { method: "DELETE" });
+    try {
+      await airtableFetch(`${BASE_ID}/${TABLES.issueItems}?${query}`, { method: "DELETE" });
+      console.log(`Deleted batch: ${batch.map((r) => r.airtableId).join(", ")}`);
+    } catch (err) {
+      console.error(`Failed to delete batch: ${batch.map((r) => r.airtableId).join(", ")} — ${err.message}`);
+      throw err;
+    }
   }
   console.log(`Deleted ${toDelete.length} unlocked IssueItem(s).`);
 }
@@ -269,16 +286,25 @@ async function writeIssueItems(issueItems, issueMap, startDateMap, urlMap) {
   });
 
   // Airtable batch create: max 10 records per request
-  let created = 0;
+  const createdIds = [];
   for (let i = 0; i < records.length; i += 10) {
     const batch = records.slice(i, i + 10);
-    await airtableFetch(`${BASE_ID}/${TABLES.issueItems}`, {
-      method: "POST",
-      body: JSON.stringify({ records: batch }),
-    });
-    created += batch.length;
+    try {
+      const result = await airtableFetch(`${BASE_ID}/${TABLES.issueItems}`, {
+        method: "POST",
+        body: JSON.stringify({ records: batch }),
+      });
+      createdIds.push(...result.records.map((r) => r.id));
+    } catch (err) {
+      console.error(
+        `Batch ${Math.floor(i / 10) + 1} failed. ` +
+        `${createdIds.length} records already created. ` +
+        `Created IDs: ${createdIds.join(", ")}`
+      );
+      throw err;
+    }
   }
-  return created;
+  return createdIds.length;
 }
 
 // ---------------------------------------------------------------------------
