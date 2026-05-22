@@ -40,7 +40,7 @@ An automation pipeline that turns raw event data into a ready-to-publish weekly 
 | R2 | n8n | Classifies each candidate into a segment using GPT-4o. Flags low-confidence records. |
 | R3 | Node.js | Allocates approved candidates to newsletter issues. Enforces quotas, date windows, venue diversity. |
 | R4 | Node.js | Generates blurbs per IssueItem. Exports 5 HTML snippets for Beehiiv. |
-| R5–R8 | Node.js | Post-MVP: source expansion, scoring, classification quality, handoff. |
+| R5–R8 | Node.js & n8n | Post-MVP: source expansion (n8n), scoring, classification quality, handoff. |
 
 R1–R4 are complete and stable. R5–R8 are the active roadmap.
 
