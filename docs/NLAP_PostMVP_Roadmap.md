@@ -2,10 +2,11 @@
 Release + Week-by-Week Execution Plan
 
 **Date:** 2026-05-10 (America/Toronto)  
-**Owner:** Ariel  
+**Updated:** 2026-05-22  
 **Architecture:** Multi-tenant (Vaughan + Mississauga confirmed, end of summer launch)  
-**Time budget:** 6h/week  
-**Total estimate:** ~45h (~7.5 weeks)
+**Time budget:** 10h/week each (Ariel + Nathan, 20h combined)  
+**Ownership:** Nathan owns R5, then pivots to PI for VB. Ariel owns R6–R8.  
+**Internal deadline:** R5 + R6 both done by June 4.
 
 ---
 
@@ -124,6 +125,7 @@ validated pipeline — not before it.
 ---
 
 ### Release 5 — Source Expansion + Multi-Tenant Foundation
+**Owner: Nathan | Deadline: June 4 | After R5: Nathan pivots to PI for VB, Dependant on Ariel scoping out what's needed for PI to be working / MVP**
 
 **Exit criteria:**
 - Source audit complete — all events from 5–7 past issues tallied by
@@ -222,6 +224,7 @@ validated pipeline — not before it.
 ---
 
 ### Release 6 — Scoring
+**Owner: Ariel | Deadline: June 4**
 
 **Exit criteria:**
 - Beehiiv clicks CSV analyzed — scoring weights grounded in real
@@ -302,6 +305,7 @@ formula until that list is in hand.
 ---
 
 ### Release 7 — Classification Quality
+**Owner: Ariel**
 
 **Exit criteria:**
 - Dynamic few-shot examples injected into R2 prompt at runtime, drawn
@@ -362,6 +366,7 @@ Do not start until clicks analysis (R6-W4) is complete.
 ---
 
 ### Release 8 — Handoff
+**Owner: Ariel**
 
 **Exit criteria:**
 - End-to-end pipeline run completed successfully on real Vaughan issue date.
@@ -483,12 +488,12 @@ Do not start until clicks analysis (R6-W4) is complete.
 
 ## Open Items Requiring Client Input
 
-1. Beehiiv clicks report CSV — needed in prerequisite block (#4).
-   Confirm link-level vs post-level granularity. Analyze in Claude.ai.
+1. ~~Beehiiv clicks report CSV~~ — CLOSED 2026-05-13. Link-level confirmed.
+   Scoring metric locked: Verified Unique Clicks. See Decision_Log §19.
 2. Facebook manual intake format — confirm Airtable form vs CSV drop
    before R5-W3.
-3. Multi-tenant ownership terms — confirm with Nathan in prerequisite
-   block (#6). Lock in writing before R5-W2.
+3. ~~Multi-tenant ownership terms~~ — CLOSED 2026-05-20. Base-per-newsletter
+   confirmed with Nathan. See Decision_Log §15.
 4. Quality metric definition — agree on editor edit-rate (or
    alternative) before R6 ships. See prerequisite block (#5).
 

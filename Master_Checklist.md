@@ -32,7 +32,7 @@
   - Count Status = Approved in Candidates table
   - Log in `NA/Vaughan_Metrics_Log.md` + `NA/VB_Portfolio_Case_Study.md` (same row, same time)
 - [ ] **IssueItems view cleanup** (~15min, with client) — confirm field set
-- [ ] **Roadmap update** (~15min) — add owner per release (R5 = Nathan, R6/R7 = Ariel, R8 = both), update Nathan's time budget (10h/week)
+- [x] **Roadmap update** — DONE 2026-05-22
 - [ ] **R5 scope doc** (~1h) — Nathan reads this before touching W1
   - Cover W1/W2/W3 deliverables
   - Open as GitHub Issues for live visibility — Nathan closes as he goes
