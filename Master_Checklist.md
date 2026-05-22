@@ -19,9 +19,9 @@
 
 ### Nathan — same period, in this order
 - [ ] **#43** n8n workflow review
-- [ ] **#42** script review
+- [x] **#42** script review — CLOSED 2026-05-21
 - [ ] **#44** schema doc update
-- [ ] **#41** R1 language filter bug *(German confirmed, likely affects other non-English languages — find source node, patch if straightforward)*
+- [ ] **#41** R1 ingestion filter bug *(non-English events + events outside Markham/Richmond Hill/Vaughan range slipping through — find source node, patch both)*
 - [ ] **Facebook TOS research** *(gates R5-W1 + R5-W3 — if Facebook can be automated, source audit and intake design both change)*
 
 ### Ariel — after May 26

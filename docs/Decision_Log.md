@@ -522,6 +522,22 @@ This is the operational definition of "CTR doesn't materially drop issue-over-is
 
 ---
 
+## 23. ExecutionLog Airtable Table — Not Building
+
+**Decision: close #18. No ExecutionLog Airtable table.**
+
+*Decided 2026-05-21.*
+
+**What was proposed:** a dedicated Airtable table to log each script run — errors, 429s, batch counts — so failures are visible without terminal access.
+
+**Why not building it:** client runs scripts locally on their own machine. Terminal output is immediate and sufficient. The only scenario where a centralized log adds value is a managed service model where NA runs scripts remotely on a server on the client's behalf — that's not the current architecture and not the planned direction.
+
+Multi-tenant doesn't change this: each newsletter client has their own base and runs their own scripts locally. There's no centralized server to aggregate from.
+
+If NA ever shifts to a managed service model, server-side logging (stdout to file or a logging service) is the right tool — not an Airtable table.
+
+---
+
 ## 22. R2 GPT-4o Failure Behavior
 
 **Decision: retry-once-then-flag. Not skip-and-flag.**
