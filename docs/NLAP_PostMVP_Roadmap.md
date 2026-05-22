@@ -163,30 +163,35 @@ validated pipeline — not before it.
 
 #### R5-W2 (5h): Integrate sources + multi-tenant plumbing + integrity guards
 
-1. Build source adapter registry pattern: each source = function with
-   standard input/output, registered by name. Not hardcoded fetches.
-2. Build ingestion for 2–3 new sources into the registry.
-3. Externalize Vaughan config to /newsletters/vaughan.json. Scripts
-   take --newsletter=vaughan flag, load config, filter every query.
-4. Map all sources to canonical Candidates schema.
-5. Fix recurring events (Debt #8): use EndDate to gate expiry when
+All source ingestion stays in n8n (R1 workflow). New sources added as
+additional branches in the existing workflow — native nodes where available,
+Code nodes for anything without a native integration. No Node.js rewrite.
+
+1. Add 2–3 new source branches to R1 workflow, one per source identified
+   in W1. Each branch fetches, normalizes, and merges into the existing
+   Candidates upsert node.
+2. Add newsletter scoping to R1: store Vaughan config (segments, geography,
+   quotas, sources) in a Set node or sub-workflow at the top of R1.
+   Mississauga gets its own workflow clone at R8-W10 — no flag needed now.
+3. Map all new sources to canonical Candidates schema before the merge node.
+4. Fix recurring events (Debt #8): use EndDate to gate expiry when
    EndDate is present, rather than StartDate. Prevents active recurring
    events from falling outside the date window.
-6. Fix source normalization (Debt #5): define fixed domain→name mapping
-   in config (e.g. inoreader.com → McMichael RSS). Consistent naming
-   feeds into source quality scoring in R6.
-7. Add pre-R2 schema validator: hard-reject records missing StartDate,
+5. Fix source normalization (Debt #5): define fixed domain→name mapping
+   in a Set or Code node (e.g. inoreader.com → McMichael RSS). Consistent
+   naming feeds into source quality scoring in R6.
+6. Add pre-R2 schema validator: hard-reject records missing StartDate,
    Link, or Title. Write typed rejection reasons (MISSING_DATE,
-   MISSING_LINK, MISSING_TITLE) to ExecutionLog.
-8. Add Airtable rate limit retry logic to all ingestion writes
-   (exponential backoff, max 3 retries). Will cause silent failures
-   during full-issue allocation runs without it.
-9. Test idempotency: rerun does not duplicate.
-10. Confirm new candidates flow through R2 classification correctly.
+   MISSING_LINK, MISSING_TITLE) to execution log output.
+7. Airtable rate limit retry already handled (Retry-After backoff added
+   in script review 2026-05-21) — confirm R1 n8n upsert node also has
+   retry enabled.
+8. Test idempotency: rerun does not duplicate.
+9. Confirm new candidates flow through R2 classification correctly.
 
 **Deliverables:**
-- 2–3 new sources live in R1 via adapter registry
-- Multi-tenant config in place; scripts accept --newsletter flag
+- 2–3 new sources live as branches in R1 n8n workflow
+- Newsletter config scoped within R1 workflow (Vaughan only for now)
 - Recurring events no longer dropped incorrectly
 - Source names consistent across all records
 - Invalid records rejected with typed reasons at ingestion
