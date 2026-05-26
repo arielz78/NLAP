@@ -13,7 +13,7 @@ TABLE: Candidates (main pipeline table)
 - Event is Expired (formula)
 - Featured in NL (checkbox)
 - Has Event Date (formula)
-- IssueItems (link → IssueItems table) <- this is not a field in any view of the table
+- IssueItems (link → IssueItems table)
 - Last Auto Update (date) — audit/debug
 - LLM_ParseError (single line text)
 - LLM_Rationale (long text)
@@ -22,7 +22,6 @@ TABLE: Candidates (main pipeline table)
 - Publish Date (date)
 - R2Status (single select): Pending / NeedsReview / Enriched
 - Reviewed by Human (checkbox)
-- RuleSuggestions (link → RuleSuggestions table)
 - Score_Final (formula)
 - Score_Manual (number)
 - SegmentConfidence (number, 0–1)
@@ -34,23 +33,6 @@ TABLE: Candidates (main pipeline table)
 - UniqueEventID (single line text)
 - URL (url)
 
-============================================================
-TABLE: RuleSuggestions (system improvement — not in pipeline)
-============================================================
-- SuggestionID (single line text) [PRIMARY FIELD]
-- Candidate (link → Candidates)
-
-// There are two fields for LLMConfidence in this table, it doesn't seem like they should both exist
-// Delete the one that's not in use unless they have different functionalities/purposes
-- LLMConfidence (number)
-- LLM_Confidence (number)
-
-- LLM_Rationale (long text)
-- LLM_SegmentSuggested (single select)
-- ProposedKeywords (long text)
-- ProposedSegment (single select)
-- Status (single select): Proposed / Approved / Rejected
-- WhereToAdd (single select): strong / weak
 
 ============================================================
 TABLE: Historical (dedupe log)
@@ -62,48 +44,29 @@ TABLE: Issues
 ============================================================
 - IssueDate (date) [PRIMARY FIELD]
 - City (single select)
+- Status (single select): Planned / Draft / Sent
 - IssueItems (link → IssueItems table)
 - SelectionNotes (long text)
-- Status (single select): Planned / Draft / Sent
 
-// The following were found in the table but were not in this document, it doesn't look like these fields should exist
-// I'll leave the deletion up to you in case they are needed and I'm missing something
-- LocalAromaTheme (single line tex)
-- ImageURL_Families (single line text)
-- ImageURL_Couples (single line text)
-- ImageURL_GoldenAge (single line text)
-- ImageURL_LocalAroma (single line text)
-- ImageURL_Recipe (single line text)
-- ImageURL_LocalAroma_1 (single line text)
-- ImageURL_LocalAroma_2 (single line text)
-- ImageURL_LocalAroma_3 (single line text)
-- ImageURL_LocalAroma_4 (single line text)
-- ImageURL_LocalAroma_5 (single line text)
 
 ============================================================
 TABLE: IssueItems
 ============================================================
 - Name (single line text) [PRIMARY FIELD]
-- Added to Base (single line text)
-- Candidate (link → Candidates)
+- Section (single select): For Families / For Couples / For Golden Age Readers / Local Aroma / Trust Me Recipe
+- Slot (number, 1–5; Recipe 1–2)
+- Lock (checkbox)
+- Issue (link → Issues)
 - CandidateStartDate (date)
-- CandidateURL (url)
-- CTA (text)
 - DisplayTitle (text)
 - Description (text)
-- Issue (link → Issues)
-- Lock (checkbox)
-- NewsletterBlurb (long text) <- this is not a field in any view of the table
+- CTA (text)
 - Notes (long text)
-- Section (single select): For Families / For Couples / For Golden Age Readers / Local Aroma / Trust Me Recipe
+- Candidate (link → Candidates)
+- CandidateURL (url)
+- Added to Base (single line text)
 - SectionOrder (number)
-- Slot (number, 1–5; Recipe 1–2)
 
-============================================================
-TABLE: Instructions + Purpose of Each View (internal docs)
-============================================================
-- Name of View (single line text) [PRIMARY FIELD]
-- Purpose of Each View (long text)
 
 ============================================================
 VIEWS (Candidates table)
@@ -113,7 +76,6 @@ VIEWS (Candidates table)
 - Approved - All Cities
 - Approved and Featured - All Cities
 - R2 - To Enrich
-- R2 - LLM_ParseError not empty <- not in view
 - R2 - NeedsReview
 - R2 - Enriched
 - R3 - Eligible for Scheduling
