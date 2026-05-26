@@ -1,5 +1,5 @@
 AIRTABLE SCHEMA — Content Creation Automation
-Last updated: April 2026
+Last updated: May 2026
 
 ============================================================
 TABLE: Candidates (main pipeline table)
@@ -13,7 +13,7 @@ TABLE: Candidates (main pipeline table)
 - Event is Expired (formula)
 - Featured in NL (checkbox)
 - Has Event Date (formula)
-- IssueItems (link → IssueItems table)
+- IssueItems (link → IssueItems table) <- this is not a field in any view of the table
 - Last Auto Update (date) — audit/debug
 - LLM_ParseError (single line text)
 - LLM_Rationale (long text)
@@ -39,8 +39,12 @@ TABLE: RuleSuggestions (system improvement — not in pipeline)
 ============================================================
 - SuggestionID (single line text) [PRIMARY FIELD]
 - Candidate (link → Candidates)
+
+// There are two fields for LLMConfidence in this table, it doesn't seem like they should both exist
+// Delete the one that's not in use unless they have different functionalities/purposes
 - LLMConfidence (number)
 - LLM_Confidence (number)
+
 - LLM_Rationale (long text)
 - LLM_SegmentSuggested (single select)
 - ProposedKeywords (long text)
@@ -62,6 +66,20 @@ TABLE: Issues
 - SelectionNotes (long text)
 - Status (single select): Planned / Draft / Sent
 
+// The following were found in the table but were not in this document, it doesn't look like these fields should exist
+// I'll leave the deletion up to you in case they are needed and I'm missing something
+- LocalAromaTheme (single line tex)
+- ImageURL_Families (single line text)
+- ImageURL_Couples (single line text)
+- ImageURL_GoldenAge (single line text)
+- ImageURL_LocalAroma (single line text)
+- ImageURL_Recipe (single line text)
+- ImageURL_LocalAroma_1 (single line text)
+- ImageURL_LocalAroma_2 (single line text)
+- ImageURL_LocalAroma_3 (single line text)
+- ImageURL_LocalAroma_4 (single line text)
+- ImageURL_LocalAroma_5 (single line text)
+
 ============================================================
 TABLE: IssueItems
 ============================================================
@@ -70,9 +88,12 @@ TABLE: IssueItems
 - Candidate (link → Candidates)
 - CandidateStartDate (date)
 - CandidateURL (url)
+- CTA (text)
+- DisplayTitle (text)
+- Description (text)
 - Issue (link → Issues)
 - Lock (checkbox)
-- NewsletterBlurb (long text)
+- NewsletterBlurb (long text) <- this is not a field in any view of the table
 - Notes (long text)
 - Section (single select): For Families / For Couples / For Golden Age Readers / Local Aroma / Trust Me Recipe
 - SectionOrder (number)
@@ -92,6 +113,7 @@ VIEWS (Candidates table)
 - Approved - All Cities
 - Approved and Featured - All Cities
 - R2 - To Enrich
-- R2 - LLM_ParseError not empty
+- R2 - LLM_ParseError not empty <- not in view
 - R2 - NeedsReview
 - R2 - Enriched
+- R3 - Eligible for Scheduling
