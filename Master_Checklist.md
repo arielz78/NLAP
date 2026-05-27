@@ -18,9 +18,9 @@
   - Not blocking R5 — blocking R6. If not resolved here, carry to next client meeting.
 
 ### Nathan — same period, in this order
-- [ ] **#43** n8n workflow review
+- [x] **#43** n8n workflow review — CLOSED 2026-05-26
 - [x] **#42** script review — CLOSED 2026-05-21
-- [ ] **#44** schema doc update
+- [x] **#44** schema doc update — CLOSED 2026-05-26
 - [ ] **#41** R1 ingestion filter bug *(non-English events + events outside Markham/Richmond Hill/Vaughan range slipping through — find source node, patch both)*
 - [ ] **Facebook TOS research** *(gates R5-W1 + R5-W3 — if Facebook can be automated, source audit and intake design both change)*
 
@@ -53,8 +53,8 @@
 
 ## Deferred — For Next Client
 
-- [ ] Website fix list + go-live
-- [ ] NA logo
+- [x] ~~Website fix list + go-live~~ — DONE 2026-05-27 (builtbyna.com shipped, fix list closed)
+- [x] ~~NA logo~~ — DONE 2026-05-27 (wordmark in header + footer)
 - [ ] Case study PDF export
 - [ ] ERD + architecture diagram
 - [ ] CRM (Airtable table)
