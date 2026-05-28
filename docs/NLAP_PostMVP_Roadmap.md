@@ -127,6 +127,8 @@ validated pipeline — not before it.
 ### Release 5 — Source Expansion + Multi-Tenant Foundation
 **Owner: Nathan | Deadline: June 4 | After R5: Nathan pivots to PI for VB, Dependant on Ariel scoping out what's needed for PI to be working / MVP**
 
+**Success =** Approved-candidate pool size ≥ 75 per cycle (3:1 ratio against 25 slots) sustained across 3 consecutive runs.
+
 **Exit criteria:**
 - Source audit complete — all events from 5–7 past issues tallied by
   source, Facebook vs. non-Facebook breakdown confirmed.
@@ -231,6 +233,8 @@ Code nodes for anything without a native integration. No Node.js rewrite.
 ### Release 6 — Scoring
 **Owner: Ariel | Deadline: June 4**
 
+**Success =** Score-ranked picks correlate with actual clicks better than earliest-date sort, validated by offline backtest on the frozen R6 eval set. CTOR is the post-launch outcome metric, not the development signal.
+
 **Exit criteria:**
 - Beehiiv clicks CSV analyzed — scoring weights grounded in real
   reader engagement, not guesses.
@@ -254,6 +258,12 @@ backtest + formula. Segment weights compute from client's tagged URL
 list (Talking Point A in meetings/2026-05-14.md) — do not start the
 formula until that list is in hand.
 
+0. **Freeze the R6 eval set.** Pick 10–15 past issues from the 71
+   available — spread across cohorts (early/mid/recent), avoid issues
+   with known data anomalies. Lock the list in `data/beehiiv/r6_eval_set.md`.
+   All backtest comparisons (rule-based vs. score-ranked vs. any future
+   regression validation) use *only* these issues. Prevents cherry-picking
+   when results disappoint.
 1. Analyze Beehiiv clicks CSV in Claude (not Claude Code) — map URLs
    back to event types and segments. Identify which segments and event
    categories drive the most clicks. [Mostly done 2026-05-13.
@@ -262,7 +272,10 @@ formula until that list is in hand.
 2. Run offline backtest before implementing: what would earliest-date
    sort have picked vs what got featured vs what got clicks vs what
    editors locked. Tests whether scoring beats trivial sort. If it
-   doesn't, simplify R6 further.
+   doesn't, simplify R6 further. Log code commit hash, candidate snapshot
+   ID (from `data/tracking/candidate_snapshots/`), and frozen eval set
+   version with every backtest run output — otherwise "the backtest
+   said X" decays into untraceable folklore in 3 months.
 3. Define scoring signal hierarchy (editorial actions strongest, clicks
    weaker because exposure-biased):
    - Locked/featured by editor (hard signal)
@@ -311,6 +324,8 @@ formula until that list is in hand.
 
 ### Release 7 — Classification Quality
 **Owner: Ariel**
+
+**Success =** NeedsReview rate drops measurably below the pre-R7 baseline AND classification accuracy on the frozen R7 eval set is at or above the current LLM baseline (no regression).
 
 **Exit criteria:**
 - Dynamic few-shot examples injected into R2 prompt at runtime, drawn
@@ -372,6 +387,8 @@ Do not start until clicks analysis (R6-W4) is complete.
 
 ### Release 8 — Handoff
 **Owner: Ariel**
+
+**Success =** Client runs the full weekly pipeline solo for 3 consecutive weeks without unrecovered errors or escalation.
 
 **Exit criteria:**
 - End-to-end pipeline run completed successfully on real Vaughan issue date.

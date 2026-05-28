@@ -176,6 +176,44 @@ One row per allocated slot. R3 writes these; R4 fills in the blurbs.
 
 ---
 
+## Client Funnel — Weekly Review
+
+*This is what the editor does each week, in Airtable, after R1 and R2 have run (cadence TBD).*
+
+**Your decisions matter from this point forward.** Every Approve / Reject you make is being captured as a real editorial decision — it determines what flows into the next issue *and* becomes the training data the scoring and improved classifier will be built against later. Treat each call as if it counts, because it does.
+
+### Step 1 — `R2 - Enriched` view (main queue)
+
+Events the classifier was confident about. Your main weekly work.
+
+| Action | Meaning | What happens |
+|---|---|---|
+| **Approve** | "This belongs in the newsletter." | Becomes eligible for the next issue. Drops out of the view. |
+| **Reject** | "This doesn't fit (B2B, civic, out of area, irrelevant)." | Permanently filtered out. Drops out of the view. |
+| **Leave alone** | "I'm undecided." | Stays in the queue for next time. |
+
+One-click decisions. Speed matters more than perfection — the scoring engine assumes you're making judgment calls quickly, not deliberating each row.
+
+### Step 2 — `R2 - NeedsReview` view (optional)
+
+Events the classifier wasn't confident about — missing fields, ambiguous segment, low confidence.
+
+*TBD at 2026-05-28 client meeting: whether the editor rescues these or skips them.*
+- **If rescuing:** check `SegmentSuggested` is correct (fix it manually if not), then Approve or Reject.
+- **If skipping:** they stay in the queue, no downstream impact. Skipping is fine — these are bonus pool depth, not required.
+
+### What "Approved" actually does
+
+A record with `Status = Approved` (plus a present Start Date and URL) appears in `R3 - Eligible for Scheduling`. That's the pool R3 picks from when it builds the next issue. **Approve is the only action that gets an event into a future issue.**
+
+### What's tracked automatically (no editor action needed)
+
+- The pool the editor reviewed each week (snapshot captured at every pipeline run)
+- When each Approve / Reject decision was made (via `StatusLastModified` field)
+- Which approved events actually made it into the published Beehiiv issue (matched post-publish by URL — no tagging required from editor)
+
+---
+
 ## Rules the Pipeline Enforces
 
 These are the editorial rules baked into the allocation logic. If you want to change any of them, speak to the developer — they require a code change.

@@ -1,5 +1,5 @@
 # NLAP Decision Log
-*Last updated: 2026-05-20*
+*Last updated: 2026-05-27*
 
 This document records the reasoning behind every significant design and editorial decision in the pipeline. It is intended to be read by anyone who needs to understand not just what the system does, but why it works the way it does — including future collaborators (Nate) and future-you after time away.
 
@@ -237,7 +237,10 @@ Full SOP (step-by-step with edge cases) is a separate document — not yet writt
 | GPT-5-mini for R2 | Using GPT-4o | Test on 20 records in R6-W4 (Debt #13) |
 | Issues table auto-creation | Manual | Planned for R8-W8 (Debt #15) |
 | SegmentConfidence floor threshold | Mechanism designed (section 6); value TBD | R2 eval distribution (post-MVP prerequisite #1) |
-| Quality metric thresholds | Structure agreed (section 16); targets deferred | 2–3 live issues of data |
+| Quality metric definition (prereq #5) | Closed 2026-05-27 — see §16 | — |
+| R6 regression validation (Option C) | Open. Rule-based R6 ships as planned; regression fit post-R6-W5 to validate rule weights. Escalate to Option A (regression as primary) only if validation proves value. | Frozen R6 eval set built (R6-W4 step 0); rule-based R6 shipped and backtested; tagged URL list returned by client. |
+| R7 implementation mechanism | Open. Prompt-tuning (current §17 plan) vs trained classifier (LinearSVC + TF-IDF on historical Beehiiv labels). Classifier path becomes viable if past Beehiiv issues are mineable for `(title, segment)` labels. | Beehiiv parseability spike #52 outcome. |
+| NLAP end-state intent (NLAP-only event source) | Open, pending client confirmation 2026-05-28 (Q7 in `meetings/2026-05-28.md`). See §26. | Client confirms or corrects framing at meeting. |
 | Multi-tenant base architecture | base-per-newsletter confirmed (section 15) | Closed 2026-05-20 |
 
 ---
@@ -399,19 +402,36 @@ Base-per-newsletter chosen because:
 
 ## 16. Quality Metrics
 
-**Decision: editor acceptance rate without modification is the primary quality metric.**
+**Decision: quality metric is two things, owned by two releases. Prereq #5 closed 2026-05-27.**
 
-*Defined 2026-05-10.*
+*Reframed 2026-05-27. Superseded the 2026-05-10 framing (editor acceptance rate as primary), which is preserved below as background.*
 
-**Primary metric:** blurbs published as-is vs. blurbs edited before export. Directly reflects whether the pipeline is producing output the editor trusts without intervention.
+### Quality metric is two distinct problems
 
-**Guardrails (secondary):**
-- CTR doesn't materially drop issue-over-issue
-- NeedsReview rate stays bounded below an agreed X%
+The original framing conflated two different things under one label. They have different mechanisms, different data, and live in different releases:
 
-**Threshold targets:** deferred until 2–3 live issues of data exist. The metric structure is agreed; the specific thresholds are not.
+| Stage | Metric | Owned by | How it's measured |
+|---|---|---|---|
+| **Selection quality** — did the system pick the right events? | R6 backtest result | R6 | Offline: do score-ranked picks correlate with actual clicks better than earliest-date sort, on the frozen R6 eval set? |
+| **Classification quality** — did the system assign the right segment? | NeedsReview rate + classification accuracy on frozen R7 eval set | R7 | NeedsReview rate drops below pre-R7 baseline AND classification accuracy ≥ current LLM baseline (no regression) |
 
-**Why this metric:** scoring is unfalsifiable without an agreed measurement of quality. Editor acceptance rate is directly observable at runtime via the manual override audit trail (R8-W8) and requires no additional instrumentation.
+CTOR is the **post-launch outcome metric** (3-month rolling average against the §20 baseline). It is **not the development signal** — too lagging, too confounded by subject lines (which §20 confirms are statistically independent of CTOR drivers).
+
+### Prereq #5 close — the one-sentence definition
+
+> **R6 success = scored picks correlate with clicks better than earliest-date sort, validated by offline backtest on the frozen R6 eval set (R6-W4 step 0, locked in `data/beehiiv/r6_eval_set.md`). CTOR is the post-launch outcome metric, not the development metric.**
+
+### Why this closes without client agreement
+
+The original framing required the client's behavior (`EditedByClient` checkbox usage) for the metric to produce data. That made it a client-agreement problem, not just a methodology problem. The new framing measures the score against clicks on past issues — a methodology decision that requires no behavior change from the client.
+
+### Why the original acceptance-rate framing was killed
+
+Confirmed at 2026-05-14 client meeting: client edits every AI-generated blurb regardless of quality, as a habit (voice/tone control), not as a reaction to bad copy. Acceptance rate would always be ~0% — unfalsifiable as a signal. The `EditedByClient` field remains in R8-W8 scope as cheap insurance (one checkbox, zero code) in case the pattern changes post-handoff. See §21.
+
+### Original 2026-05-10 framing (preserved for history)
+
+The earlier proposal was: editor acceptance rate (blurbs published as-is vs. edited) as primary, with CTR and NeedsReview as guardrails. Defended as: scoring is unfalsifiable without an agreed measurement of quality, and acceptance rate is observable at runtime via the manual override audit trail (R8-W8) with no additional instrumentation. Killed 2026-05-27 because the metric assumed the editor would only edit when quality was low — observed behavior shows he edits universally.
 
 ---
 
@@ -432,6 +452,14 @@ Base-per-newsletter chosen because:
 **Eval infrastructure:**
 - **Frozen eval set:** 15 high-confidence + 15 ambiguous examples per segment from Vaughan history. Permanent regression benchmark — every prompt or model change is replayed against it before shipping. Mississauga examples added once those issues exist.
 - **Prompt versioning:** R2 prompt versions stored in a versioned file with dates. Regressions are rollback-able without guessing what changed.
+
+### Open: implementation mechanism (added 2026-05-27)
+
+The prompt-tuning approach above assumed no clean labeled training data was available — only LLM-classified records, which are not human ground truth. **That assumption is wrong if past Beehiiv issues are parseable**: each published event has a known section (the editor placed it there), giving ~1,775 `(title, segment)` ground-truth labels across 71 past issues.
+
+If the Beehiiv parseability spike (#52) confirms the labels are extractable, the R7 path may shift entirely: train a LinearSVC + TF-IDF classifier on the mined labels, keep the LLM as a low-confidence fallback (and rationale generator for the tail). Classifier path captures editorial voice better than prompt-tuning at this data volume, removes the OpenAI dependency for the classification step, and gives a stronger portfolio line ("trained custom classifier on production data" > "we prompted GPT").
+
+Decision deferred to R7 scoping. See §9 Open Decisions and issue #52.
 
 ---
 
@@ -520,6 +548,14 @@ This is the operational definition of "CTR doesn't materially drop issue-over-is
 
 **Client framing:** "If you change a blurb, just check this box — it helps me track quality over time." One sentence. Doesn't feel like reporting.
 
+### Status update 2026-05-27
+
+The metric this field was built to support (blurb acceptance rate as primary quality KPI) is dead — see §16 for the reframe. Client confirmed at 2026-05-14 meeting that he edits every blurb regardless of quality, so acceptance rate is unfalsifiable.
+
+**The field still ships in R8-W8** as cheap insurance: one Airtable checkbox, zero code, near-zero client overhead. If the editing pattern shifts post-handoff (e.g. client stops editing blurbs he agrees with), the data starts producing signal automatically — no retroactive build needed. The cost of having it is near-zero; the cost of not having it if it becomes useful is rebuilding habit + losing months of data. Asymmetric trade favors keeping the field.
+
+It is no longer the primary quality metric. R6 backtest result is. See §16.
+
 ---
 
 ## 23. ExecutionLog Airtable Table — Not Building
@@ -560,4 +596,100 @@ If NA ever shifts to a managed service model, server-side logging (stdout to fil
 | GPT fails after both attempts | true | "No usable output from model" | NeedsReview |
 
 A blank `LLM_ParseError` means the LLM ran cleanly. A populated `LLM_ParseError` tells you exactly what went wrong without touching n8n. All failure cases land in the `R2 - NeedsReview` Airtable view for human triage.
+
+---
+
+## 24. R3 NeedsReview Gate Removal
+
+**Decision: R3 trusts `Status = Approved` as full editorial signoff. The `NeedsReview` boolean no longer gates R3 eligibility.**
+
+*Changed 2026-05-27.*
+
+### What changed
+
+- [buildIssues.js](../scripts/buildIssues.js) line 54 (`if (item.NeedsReview !== false) return false`) dropped. Eligibility now requires only `Status = Approved`, present Start Date, future date, URL.
+- `R3 - Eligible for Scheduling` Airtable view filter — `NeedsReview unchecked` condition removed for the same reason.
+- Test fixture `BAD3` (NeedsReview-true) and its assertion in `runTests()` removed accordingly. Tests pass.
+
+### Why
+
+The boolean was a redundant safety net. The funnel already routes events that R2 was uncertain about into the `R2 - NeedsReview` view for triage. If the editor reviews one of those and decides to use it, setting `Status = Approved` is the explicit "I've reviewed this, use it" signal. The additional requirement to also uncheck the boolean meant rescues required two clicks (plus often a segment fix when R2 returned null segment), which contradicts the "as simple as possible" client constraint.
+
+### What stays the same
+
+- The `NeedsReview` boolean is still set by R1 and R2 n8n workflows.
+- The `R2 - NeedsReview` view still surfaces flagged events for triage.
+- The boolean remains useful as a historical R7 quality signal — "which records did R2 originally fail on" is information we want to preserve for measuring R7 improvements.
+
+### Schema redundancy noted (deferred refactor)
+
+The `NeedsReview` concept now lives in three places: `R2Status` single-select value, `NeedsReview` boolean, and (previously) `Status = "Needs Review"` in the workflow dropdown. The Status dropdown value was removed 2026-05-27. The remaining boolean ↔ R2Status redundancy is a future schema cleanup — not urgent because both are set together by R2 and consistent in practice. Filed informally; not worth its own issue at current scale.
+
+---
+
+## 25. Picks Tracking via Beehiiv URL Match
+
+**Decision: capture "what the editor actually published" by reading the published Beehiiv issue HTML and matching URLs back to Candidates. Script-side, post-publish, zero client overhead.**
+
+*Decided 2026-05-27.*
+
+### Why this is the right capture mechanism
+
+The two viable alternatives:
+
+| Approach | Client overhead | Catches manually-sourced events too? |
+|---|---|---|
+| Editor tags `Featured` / `Used` on each published Candidate | one click per published event per week — adds up | No |
+| **URL match from Beehiiv HTML** | **zero** | **Yes — unmatched URLs = manually-sourced slots** |
+
+URL match wins on both axes: honors the "as simple as possible" client constraint, and surfaces the bonus signal of which slots NLAP did *not* supply (manual sourcing share). That second signal is load-bearing if NLAP's end-state is supplementary (see §26); it's transition tracking if end-state is NLAP-only.
+
+### What the script does
+
+For each published issue: fetch Beehiiv HTML, extract `(URL, section)` per event slot, match against `Candidates.URL`. Matched → known NLAP supply. Unmatched → manually-sourced slot.
+
+### What gets written back to Airtable
+
+Deferred until the script is built. Three options surfaced; decision postponed until the script lands:
+- Update existing `IssueItems` records with a `Published` flag (delta between "R3 picked it" and "editor actually published it" = his overrides — strongest signal for R6 backtest)
+- Add a `PublishedInIssues` link field on Candidates (symmetric with other Candidate fields)
+- Separate `PublishedItems` table (rejected — duplicates `IssueItems` structure for no gain)
+
+Pick when script is built. Default lean: option A.
+
+### Gates
+
+- Beehiiv parseability spike (#52) — confirms `(URL, section)` is extractable from past-issue HTML. Same spike also gates the R7 classifier path (§17).
+- Once GO from #52: ~1–2 days to build the script.
+
+### Relation to existing IssueItems flow
+
+R3's `IssueItems` represent the script's *picks* (currently earliest-date sort, will become Score_Final-ranked). The URL-match capture is the editor's *actual choices*. The two diverge when the editor swaps events before publishing — which the client confirmed 2026-05-27 he does, because NLAP is currently supplementary (see §26).
+
+---
+
+## 26. NLAP End-State Intent — Pending Confirmation 2026-05-28
+
+**Decision (pending client confirmation): once scoring (R6) + classification (R7) ship, NLAP becomes the client's only event-finding workflow. Facebook intake covers what R1 can't ingest. Current parallel manual sourcing is a stopgap, not durable intent.**
+
+*Surfaced 2026-05-27. Confirmation gate: Q7 in `meetings/2026-05-28.md`.*
+
+### Why this matters
+
+It shapes which success metric carries durable weight after R8:
+
+- **If end-state is NLAP-only:** "% of issue NLAP-supplied" trends to 100% by design. Becomes a *transition tracker* during the ramp, not a lasting KPI. The durable metrics are CTOR (vs §20 baseline), editorial time saved (vs the 4-hour baseline captured 2026-05-14), and pipeline reliability.
+- **If client expects to keep parallel sourcing indefinitely:** supply-share stays load-bearing as a durable KPI. Means a different shape of the case study and a different positioning of what the system delivers.
+
+### Why this is being noted as pending, not closed
+
+The framing reflects what NLAP is *being built for*, but the client has not yet been asked to commit to "I will stop my own sourcing once the pipeline is complete." His current parallel sourcing was characterized 2026-05-27 as experimentation while the pipeline is incomplete — but that's an interpretation, not his stated commitment. Surface and confirm at the 2026-05-28 meeting (Q7).
+
+### What changes if he pushes back
+
+If the client expects parallel sourcing to persist post-handoff, the URL-match script (§25) becomes more load-bearing — its unmatched-URL signal is the durable "what fraction of the issue did NLAP supply" metric. NLAP positioning shifts from "your sourcing workflow" to "one of your sourcing tools."
+
+### Why this is filed as a Decision_Log entry now rather than after the meeting
+
+The framing has already shaped multiple downstream choices today (R7 scoping, R25 capture design, R6 success line in roadmap). Codifying the assumption explicitly — with the "pending confirmation" marker — lets future readers see why those choices were made *and* what would have to change if Q7 surfaces a different answer. Marked PENDING so the entry is updated, not contradicted, after the meeting.
 

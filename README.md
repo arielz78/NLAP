@@ -50,7 +50,7 @@ R1–R4 are complete and stable. R5–R8 are the active roadmap.
 
 | File | What it is |
 |------|------------|
-| `docs/NLAP_PostMVP_Roadmap.txt` | Week-by-week plan for R5–R8. Start here to understand what we're building. |
+| `docs/NLAP_PostMVP_Roadmap.md` | Week-by-week plan for R5–R8. Start here to understand what we're building. |
 | `docs/Decision_Log.md` | Every significant architectural and editorial decision, with reasoning. Read this before changing anything structural. |
 | `scripts/connectAirtable.js` | Fetches Issues/Candidates, runs allocator, writes IssueItems (R3) |
 | `scripts/buildIssues.js` | Allocation logic — pure function, no Airtable dependency |
@@ -66,7 +66,7 @@ R1–R4 are complete and stable. R5–R8 are the active roadmap.
 | What | Where |
 |------|-------|
 | Open debt items | GitHub Issues — [arielz78/NLAP](https://github.com/arielz78/NLAP/issues) |
-| Release planning | `docs/NLAP_PostMVP_Roadmap.txt` |
+| Release planning | `docs/NLAP_PostMVP_Roadmap.md` |
 | Architectural decisions | `docs/Decision_Log.md` |
 | Past release history | `logs/` (R1_R2_Log.md, R3_Log.md, R4_Log.md) |
 | Client meeting notes | `meetings/` |

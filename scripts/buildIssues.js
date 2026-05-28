@@ -51,7 +51,6 @@ function buildIssues(eligibleItems, lockedAssignments = [], issueDates = null, a
   // Apply eligibility rules from SYSTEM_CONTEXT
   const eligible = eligibleItems.filter((item) => {
     if (item.Status !== "Approved")      return false;
-    if (item.NeedsReview !== false)      return false;
     if (!item["Start Date"])             return false;
     const start = toMidnight(item["Start Date"]);
     if (start < today)                   return false;
@@ -234,7 +233,6 @@ function runTests() {
     // Edge cases
     item("BAD1", "For Families",  99, "2026-03-15"),  // past start date — excluded
     item("BAD2", "For Couples",   99, WINDOW1_START, { status: "Pending" }),     // wrong status
-    item("BAD3", "For Couples",   99, WINDOW1_START, { needsReview: true }),     // needs review
     item("BAD4", "Unknown Segment", 99, WINDOW1_START),                          // unknown segment
     item("BAD5", "For Families",  99, WINDOW1_START),     // will be locked
 
@@ -287,7 +285,7 @@ function runTests() {
   }
 
   // 3. Bad items not included
-  const badIds = ["BAD1", "BAD2", "BAD3", "BAD4", "BAD5"];
+  const badIds = ["BAD1", "BAD2", "BAD4", "BAD5"];
   for (const id of badIds) {
     if (uniqueIds.has(id))
       errors.push(`FAIL: ${id} should have been excluded but was assigned`);

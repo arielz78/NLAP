@@ -1,5 +1,5 @@
 AIRTABLE SCHEMA — Content Creation Automation
-Last updated: May 2026
+Last updated: 2026-05-27
 
 ============================================================
 TABLE: Candidates (main pipeline table)
@@ -29,7 +29,10 @@ TABLE: Candidates (main pipeline table)
 - Short Description (long text)
 - Source (single line text)
 - Start Date (date)
-- Status (single select): New / Needs Review / Approved / Rejected / Featured
+- Status (single select): New / Approved / Rejected / Featured
+   (Note: "Needs Review" option removed 2026-05-27 — redundant with NeedsReview boolean and R2Status. "Featured" pending move to its own field — see issue #51.)
+- StatusLastModified (last modified time, watching Status field)
+   (Added 2026-05-27. Timestamps Approve/Reject decisions so tinker-era records (blank timestamp) can be filtered out of clean labeled sets.)
 - UniqueEventID (single line text)
 - URL (url)
 
