@@ -1,8 +1,10 @@
 // snapshotCandidates.js
-// Captures a full point-in-time snapshot of the Candidates table to a timestamped
-// JSON file. The candidate pool changes every run and is otherwise unrecoverable —
-// this is the raw data the R6 scoring backtest joins against later (pool → clicks).
-// Read-only against Airtable; writes only to data/tracking/candidate_snapshots/.
+// Captures a full point-in-time snapshot of the Candidates and IssueItems tables
+// to timestamped JSON files. The candidate pool changes every run and unlocked
+// IssueItems are overwritten on every R3 rerun — both are otherwise unrecoverable.
+// This is the raw data the R6 scoring backtest joins against later
+// (pool → R3 picks → clicks).
+// Read-only against Airtable; writes only to data/tracking/snapshots/.
 
 require("dotenv").config({ path: require("path").join(__dirname, "../NLAP_Airtable.env") });
 const fs = require("fs");
@@ -10,7 +12,8 @@ const path = require("path");
 
 const BASE_ID = process.env.AIRTABLE_BASE_ID;
 const CANDIDATES_TABLE = "tblRsboN66ZLzyDrM";
-const OUT_DIR = path.join(__dirname, "../data/tracking/candidate_snapshots");
+const ISSUEITEMS_TABLE = "tblrz2fZYUhxpZph2";
+const OUT_DIR = path.join(__dirname, "../data/tracking/snapshots");
 
 function timedFetch(url, opts = {}, ms = 30000) {
   const ctrl = new AbortController();
@@ -60,14 +63,18 @@ async function main() {
   if (!process.env.AIRTABLE_API_KEY) throw new Error("AIRTABLE_API_KEY environment variable is not set");
   if (!BASE_ID) throw new Error("AIRTABLE_BASE_ID environment variable is not set");
 
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+  const stamp = timestampForFilename();
+  const capturedAt = new Date().toISOString();
+
   console.log("Fetching all Candidates...");
-  const records = await fetchAllRecords(CANDIDATES_TABLE);
-  console.log(`Fetched ${records.length} candidate records.`);
+  const candidates = await fetchAllRecords(CANDIDATES_TABLE);
+  console.log(`Fetched ${candidates.length} candidate records.`);
 
   // At-a-glance counts — cheap weekly read on the pool's health.
   const byStatus = {};
   let needsReview = 0;
-  for (const r of records) {
+  for (const r of candidates) {
     const status = r.fields["Status"] ?? "(blank)";
     byStatus[status] = (byStatus[status] ?? 0) + 1;
     if (r.fields["NeedsReview"] === true) needsReview++;
@@ -75,19 +82,42 @@ async function main() {
   console.log("By Status:", byStatus);
   console.log(`NeedsReview = true: ${needsReview}`);
 
-  fs.mkdirSync(OUT_DIR, { recursive: true });
-  const stamp = timestampForFilename();
-  const outPath = path.join(OUT_DIR, `candidates_${stamp}.json`);
-  const payload = {
-    capturedAt: new Date().toISOString(),
+  const candidatesPath = path.join(OUT_DIR, `candidates_${stamp}.json`);
+  fs.writeFileSync(candidatesPath, JSON.stringify({
+    capturedAt,
     baseId: BASE_ID,
     tableId: CANDIDATES_TABLE,
-    recordCount: records.length,
+    recordCount: candidates.length,
     summary: { byStatus, needsReview },
-    records,
-  };
-  fs.writeFileSync(outPath, JSON.stringify(payload, null, 2));
-  console.log(`Snapshot written: ${outPath}`);
+    records: candidates,
+  }, null, 2));
+  console.log(`Candidates snapshot written: ${candidatesPath}`);
+
+  console.log("Fetching all IssueItems...");
+  const issueItems = await fetchAllRecords(ISSUEITEMS_TABLE);
+  console.log(`Fetched ${issueItems.length} IssueItem records.`);
+
+  // At-a-glance counts — IssueItems per section + lock count for pool health.
+  const bySection = {};
+  let locked = 0;
+  for (const r of issueItems) {
+    const section = r.fields["Section"] ?? "(blank)";
+    bySection[section] = (bySection[section] ?? 0) + 1;
+    if (r.fields["Lock"] === true) locked++;
+  }
+  console.log("By Section:", bySection);
+  console.log(`Locked: ${locked}`);
+
+  const issueItemsPath = path.join(OUT_DIR, `issueitems_${stamp}.json`);
+  fs.writeFileSync(issueItemsPath, JSON.stringify({
+    capturedAt,
+    baseId: BASE_ID,
+    tableId: ISSUEITEMS_TABLE,
+    recordCount: issueItems.length,
+    summary: { bySection, locked },
+    records: issueItems,
+  }, null, 2));
+  console.log(`IssueItems snapshot written: ${issueItemsPath}`);
 }
 
 main().catch((err) => {

@@ -273,7 +273,7 @@ formula until that list is in hand.
    sort have picked vs what got featured vs what got clicks vs what
    editors locked. Tests whether scoring beats trivial sort. If it
    doesn't, simplify R6 further. Log code commit hash, candidate snapshot
-   ID (from `data/tracking/candidate_snapshots/`), and frozen eval set
+   ID (from `data/tracking/snapshots/`), and frozen eval set
    version with every backtest run output — otherwise "the backtest
    said X" decays into untraceable folklore in 3 months.
 3. Define scoring signal hierarchy (editorial actions strongest, clicks

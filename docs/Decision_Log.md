@@ -1,5 +1,5 @@
 # NLAP Decision Log
-*Last updated: 2026-05-27*
+*Last updated: 2026-05-28*
 
 This document records the reasoning behind every significant design and editorial decision in the pipeline. It is intended to be read by anyone who needs to understand not just what the system does, but why it works the way it does — including future collaborators (Nate) and future-you after time away.
 
@@ -240,7 +240,9 @@ Full SOP (step-by-step with edge cases) is a separate document — not yet writt
 | Quality metric definition (prereq #5) | Closed 2026-05-27 — see §16 | — |
 | R6 regression validation (Option C) | Open. Rule-based R6 ships as planned; regression fit post-R6-W5 to validate rule weights. Escalate to Option A (regression as primary) only if validation proves value. | Frozen R6 eval set built (R6-W4 step 0); rule-based R6 shipped and backtested; tagged URL list returned by client. |
 | R7 implementation mechanism | Open. Prompt-tuning (current §17 plan) vs trained classifier (LinearSVC + TF-IDF on historical Beehiiv labels). Classifier path becomes viable if past Beehiiv issues are mineable for `(title, segment)` labels. | Beehiiv parseability spike #52 outcome. |
-| NLAP end-state intent (NLAP-only event source) | Open, pending client confirmation 2026-05-28 (Q7 in `meetings/2026-05-28.md`). See §26. | Client confirms or corrects framing at meeting. |
+| NLAP end-state intent (NLAP-only event source) | Closed 2026-05-28 — "mostly NLAP, one-offs from elsewhere." See §26. | — |
+| Editor workflow (segment vs quality decoupling) | Closed 2026-05-28 — see §27 | — |
+| Relationship between Step 2 editor picks and R3 script output | Open. Picks at R3-Eligible may inform Locks on R3-allocated IssueItems, may bypass R3 entirely, or may run in parallel. | Wait for R6 to ship and pick volume to be observable. |
 | Multi-tenant base architecture | base-per-newsletter confirmed (section 15) | Closed 2026-05-20 |
 
 ---
@@ -668,28 +670,94 @@ R3's `IssueItems` represent the script's *picks* (currently earliest-date sort, 
 
 ---
 
-## 26. NLAP End-State Intent — Pending Confirmation 2026-05-28
+## 26. NLAP End-State Intent — Mostly NLAP, One-Offs Allowed
 
-**Decision (pending client confirmation): once scoring (R6) + classification (R7) ship, NLAP becomes the client's only event-finding workflow. Facebook intake covers what R1 can't ingest. Current parallel manual sourcing is a stopgap, not durable intent.**
+**Decision (confirmed 2026-05-28 client meeting): once scoring (R6) + classification (R7) ship, NLAP becomes the client's *primary* event-finding workflow. The client expects to source the bulk of each issue through the pipeline but reserves the option to add one-off events from elsewhere. Facebook intake covers what R1 can't ingest.**
 
-*Surfaced 2026-05-27. Confirmation gate: Q7 in `meetings/2026-05-28.md`.*
+*Surfaced 2026-05-27, confirmed 2026-05-28 (Q7 in `meetings/2026-05-28.md`).*
+
+### What the client actually said
+
+"Mostly NLAP — one-offs would use something else, but mostly NLAP." Softer than the §26 PENDING framing of "NLAP becomes your only workflow." Directionally aligned but with a non-zero unmatched-share floor expected to persist.
 
 ### Why this matters
 
-It shapes which success metric carries durable weight after R8:
+It shapes which success metric carries durable weight after R8. Client's actual answer ("mostly NLAP, one-offs from elsewhere") lands between the two poles originally framed:
 
-- **If end-state is NLAP-only:** "% of issue NLAP-supplied" trends to 100% by design. Becomes a *transition tracker* during the ramp, not a lasting KPI. The durable metrics are CTOR (vs §20 baseline), editorial time saved (vs the 4-hour baseline captured 2026-05-14), and pipeline reliability.
-- **If client expects to keep parallel sourcing indefinitely:** supply-share stays load-bearing as a durable KPI. Means a different shape of the case study and a different positioning of what the system delivers.
+- **Pure NLAP-only end-state:** "% of issue NLAP-supplied" trends to 100% by design — pure transition tracker, not a durable KPI.
+- **Pure parallel sourcing:** supply-share stays load-bearing as a durable KPI indefinitely.
+- **Client's actual position (confirmed 2026-05-28):** supply-share is partially durable — expect it to stabilize at a high-but-not-100% level (one-off share is the floor). Worth tracking, but the primary durable metrics remain CTOR (vs §20 baseline), editorial time saved (vs the 4-hour baseline captured 2026-05-14), and pipeline reliability.
 
-### Why this is being noted as pending, not closed
+### What this means for downstream design
 
-The framing reflects what NLAP is *being built for*, but the client has not yet been asked to commit to "I will stop my own sourcing once the pipeline is complete." His current parallel sourcing was characterized 2026-05-27 as experimentation while the pipeline is incomplete — but that's an interpretation, not his stated commitment. Surface and confirm at the 2026-05-28 meeting (Q7).
+The URL-match script (§25) is moderately load-bearing — its unmatched-URL signal becomes the durable "one-off rate" tracker. Not the headline metric, but worth keeping clean. NLAP positioning lands at "your primary sourcing workflow" rather than "your only sourcing workflow."
 
-### What changes if he pushes back
+R7 scoping and R6 success line remain valid as previously framed — those choices were made assuming high NLAP share, which the confirmed answer supports.
 
-If the client expects parallel sourcing to persist post-handoff, the URL-match script (§25) becomes more load-bearing — its unmatched-URL signal is the durable "what fraction of the issue did NLAP supply" metric. NLAP positioning shifts from "your sourcing workflow" to "one of your sourcing tools."
+---
 
-### Why this is filed as a Decision_Log entry now rather than after the meeting
+## 27. Editor Workflow — Segment vs Quality Decoupling
 
-The framing has already shaped multiple downstream choices today (R7 scoping, R25 capture design, R6 success line in roadmap). Codifying the assumption explicitly — with the "pending confirmation" marker — lets future readers see why those choices were made *and* what would have to change if Q7 surfaces a different answer. Marked PENDING so the entry is updated, not contradicted, after the meeting.
+**Decision: the editor's weekly review is split into two stages with two distinct decisions. Step 1 (R2-Enriched + R2-NeedsReview) is segment correctness only. Step 2 (R3-Eligible for Scheduling) is quality / "should this be in the next issue."**
+
+*Confirmed at 2026-05-28 client meeting.*
+
+### What the editor does (operational protocol)
+
+**Step 1 — R2-Enriched and R2-NeedsReview (both views, same logic):**
+
+| Situation | Action |
+|---|---|
+| `SegmentSuggested` is correct | Approve |
+| `SegmentSuggested` is wrong but event is good | **Fix the dropdown to the right segment, then Approve** |
+| Event is junk (B2B, civic, out of area, irrelevant) or segment is wrong and unfixable | Reject |
+| Unsure | Leave alone |
+
+The editor is NOT deciding whether the event belongs in the newsletter at Step 1. That decision is deferred to Step 2.
+
+**Step 2 — R3-Eligible for Scheduling (Candidates filtered Status=Approved, Start Date ≥ today, grouped by segment):**
+
+Editor curates the next issue from the approved pool, section by section against quotas (5 per main section, 1–2 for Trust Me Recipe). This is where editorial quality judgment lives.
+
+### Why decoupled
+
+Conflating "is the segment right?" with "is this newsletter-worthy?" loses signal in both directions:
+- An approve based on quality intent silently confirms a wrong segment — corrupts R7 training data.
+- A reject based on wrong segment throws away a potentially good event — and the rejection looks identical in the data to "event is junk," so R6 can't distinguish.
+
+Splitting them produces clean signals at each stage and matches the editor's actual cognitive flow (judging segment label is fast; judging "is this issue-worthy" requires comparing against other events in the pool).
+
+### Why "fix the segment" is operationally necessary
+
+R3-Eligible is grouped by segment. If a "For Couples"-worthy event is mislabeled "Local Aroma" and approved without correction, it lands in the Local Aroma pile at Step 2. When the editor curates For Couples, the event is invisible — effectively lost for the issue it was meant for. The correction is a 2-second dropdown change; the cost of skipping it is missing good events at Step 2.
+
+### What this implies for the data we collect
+
+Three signals captured automatically with no editor overhead beyond the workflow above:
+
+| Signal | Source | Used by |
+|---|---|---|
+| `(event text → confirmed segment)` labels | Every approve | R7 classifier training |
+| Segment corrections (R2's original `SegmentSuggested` vs final after edit) | Diff on approved records | R7 — highest-value training signal (model was wrong, here's the right answer) |
+| Quality picks | Step 2 — IssueItems records created from R3-Eligible | R6 scoring backtest |
+
+Rejects are operationally useful (clear the queue, exclude junk from future runs) but not training-data-load-bearing for either R6 or R7. R7 is multi-class — segment negatives come implicitly from other segments' positives. R6 only sees the approved pool. A "newsletter-worthy classifier" that would need clean reject data is not on the roadmap.
+
+### NeedsReview promoted from optional to part of weekly loop
+
+The 2026-05-27 framing left NeedsReview rescue as "optional — skipping is fine." Client confirmed 2026-05-28 he will work both views (R2-Enriched and R2-NeedsReview) every cycle using the same Step 1 logic. NeedsReview rescues are *especially* high-value as R7 training data — they're the cases where R2 was uncertain, so editor corrections on those records target exactly what the classifier needs to learn.
+
+### Why no extra editor tracking fields are needed (no comment box, no quality flag)
+
+Every manual editor capture step is a tax that fails silently the first busy week. The 4-stage quality funnel — approved → picked → published (Beehiiv URL match, §25) → clicked — captures everything R6 and R7 need without any new editor inputs. Adding fields now is premature; the next 4 weeks of real editor data will tell us if auto-capture is sufficient. If not, add then. Asymmetry favors waiting.
+
+### What changes in documented behavior
+
+- RUNBOOK §Client Funnel updated 2026-05-28 to reflect this protocol (two-stage, fix-and-approve, NeedsReview as part of weekly loop).
+- §4 R2 Classification triage steps (lines 105–110) and §8 Weekly Operational Flow step 3 remain accurate for the underlying mechanics — the segment-vs-quality decoupling layered on top is the new editorial framing.
+- StatusLastModified field (added 2026-05-27) is the time cutoff between tinker-era and clean editorial data. This decision (§27) is the rules-in-force record for what "clean editorial" *means* from 2026-05-28 onward. Together they answer "what data is trustworthy and under what rules" — the provenance pair needed before R6 backtest.
+
+### What was not changed
+
+R3 (the script) still runs unchanged — it allocates approved candidates to IssueItems by current logic (earliest-date sort until R6 ships). Step 2 (editor curation at R3-Eligible) is an *editorial* layer on top of the candidate pool, not a replacement for the R3 allocation script. The eventual relationship between editor picks at Step 2 and R3 script output is a downstream design question — picks may inform Locks on R3-allocated IssueItems, or may bypass R3 entirely with manual IssueItems creation. Decision deferred until R6 lands and pick volume is observable.
 

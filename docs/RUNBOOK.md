@@ -178,39 +178,49 @@ One row per allocated slot. R3 writes these; R4 fills in the blurbs.
 
 ## Client Funnel — Weekly Review
 
-*This is what the editor does each week, in Airtable, after R1 and R2 have run (cadence TBD).*
+*This is what the editor does each week, in Airtable, after R1 and R2 have run. Cadence: weekly on Fridays (confirmed 2026-05-28).*
 
-**Your decisions matter from this point forward.** Every Approve / Reject you make is being captured as a real editorial decision — it determines what flows into the next issue *and* becomes the training data the scoring and improved classifier will be built against later. Treat each call as if it counts, because it does.
+**The funnel has two distinct stages with two distinct decisions. Don't conflate them.**
 
-### Step 1 — `R2 - Enriched` view (main queue)
+- **Step 1 (`R2 - Enriched`):** Is the SEGMENT label correct?
+- **Step 2 (`R3 - Eligible for Scheduling`):** Is the EVENT good enough to go in the next issue?
 
-Events the classifier was confident about. Your main weekly work.
+Quality judgment does not happen at Step 1. Segment correctness does not happen at Step 2.
 
-| Action | Meaning | What happens |
-|---|---|---|
-| **Approve** | "This belongs in the newsletter." | Becomes eligible for the next issue. Drops out of the view. |
-| **Reject** | "This doesn't fit (B2B, civic, out of area, irrelevant)." | Permanently filtered out. Drops out of the view. |
-| **Leave alone** | "I'm undecided." | Stays in the queue for next time. |
+### Step 1 — `R2 - Enriched` view: segment correctness
 
-One-click decisions. Speed matters more than perfection — the scoring engine assumes you're making judgment calls quickly, not deliberating each row.
+Events the classifier confidently labeled. Your only question here: **is `SegmentSuggested` right?**
 
-### Step 2 — `R2 - NeedsReview` view (optional)
+| Action | When to use it |
+|---|---|
+| **Approve** | Segment is correct (either originally, or after you fixed it). |
+| **Fix segment → Approve** | Segment is wrong but the event fits another segment — change `SegmentSuggested` to the right one, then Approve. |
+| **Reject** | Segment is wrong and not worth fixing, OR the event is junk (B2B, civic, out of area, irrelevant). |
+| **Leave alone** | Undecided. Stays in the queue. |
+
+You are NOT deciding whether the event belongs in the newsletter at this stage. That decision happens at Step 2. Speed matters — one-click decisions, don't deliberate.
+
+### Step 2 — `R3 - Eligible for Scheduling` view: pick events for the next issue
+
+Filter: `Status = Approved`, Start Date ≥ today. Grouped by segment.
+
+This is where editorial judgment lives. From the approved pool, pick the events you actually want in the next issue, section by section against the quotas (5 per main section, 1–2 for Trust Me Recipe).
+
+Whether an event was "good" is revealed automatically by what you pick here and what ultimately publishes in Beehiiv — no quality flag to set.
+
+### Step 3 (optional) — `R2 - NeedsReview` view
 
 Events the classifier wasn't confident about — missing fields, ambiguous segment, low confidence.
 
-*TBD at 2026-05-28 client meeting: whether the editor rescues these or skips them.*
-- **If rescuing:** check `SegmentSuggested` is correct (fix it manually if not), then Approve or Reject.
-- **If skipping:** they stay in the queue, no downstream impact. Skipping is fine — these are bonus pool depth, not required.
-
-### What "Approved" actually does
-
-A record with `Status = Approved` (plus a present Start Date and URL) appears in `R3 - Eligible for Scheduling`. That's the pool R3 picks from when it builds the next issue. **Approve is the only action that gets an event into a future issue.**
+Same logic as Step 1: fix the segment if you can, then Approve. Otherwise Reject. Skipping is fine — these are bonus pool depth, not required.
 
 ### What's tracked automatically (no editor action needed)
 
 - The pool the editor reviewed each week (snapshot captured at every pipeline run)
 - When each Approve / Reject decision was made (via `StatusLastModified` field)
-- Which approved events actually made it into the published Beehiiv issue (matched post-publish by URL — no tagging required from editor)
+- Segment edits — when `SegmentSuggested` is changed from R2's original value, the diff is the training signal for the R7 improved classifier
+- Which approved events were picked for an issue (via IssueItems table)
+- Which picked events actually made it into the published Beehiiv issue (matched post-publish by URL — no tagging required from editor)
 
 ---
 
