@@ -21,8 +21,8 @@
 - [x] **#43** n8n workflow review — CLOSED 2026-05-26
 - [x] **#42** script review — CLOSED 2026-05-21
 - [x] **#44** schema doc update — CLOSED 2026-05-26
-- [ ] **#41** R1 ingestion filter bug *(non-English events + events outside Markham/Richmond Hill/Vaughan range slipping through — find source node, patch both)*
-- [ ] **Facebook TOS research** *(gates R5-W1 + R5-W3 — if Facebook can be automated, source audit and intake design both change)*
+- [x] **#41** R1 ingestion filter bug *(non-English events + events outside Markham/Richmond Hill/Vaughan range slipping through — find source node, patch both)* — delegated as debt
+- [x] **Facebook TOS research** *(gates R5-W1 + R5-W3 — if Facebook can be automated, source audit and intake design both change)* — automation ruled out, manual intake confirmed (Decision_Log § 18)
 
 ### Ariel — after May 26
 - [ ] **Prereq #1** — R2 classification eval (~2h)
@@ -33,9 +33,7 @@
   - Log in `NA/Vaughan_Metrics_Log.md` + `NA/VB_Portfolio_Case_Study.md` (same row, same time)
 - [ ] **IssueItems view cleanup** (~15min, with client) — confirm field set
 - [x] **Roadmap update** — DONE 2026-05-22
-- [ ] **R5 scope doc** (~1h) — Nathan reads this before touching W1
-  - Cover W1/W2/W3 deliverables
-  - Open as GitHub Issues for live visibility — Nathan closes as he goes
+- [x] **R5 scope doc** (~1h) — DONE 2026-05-27 — `docs/R5_Scope.md` covers W1/W2/W3; tasks tracked in #33/#34/#35
 
 ---
 
