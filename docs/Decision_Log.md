@@ -238,7 +238,7 @@ Full SOP (step-by-step with edge cases) is a separate document — not yet writt
 | Issues table auto-creation | Manual | Planned for R8-W8 (Debt #15) |
 | SegmentConfidence floor threshold | Mechanism designed (section 6); value TBD | R2 eval distribution (post-MVP prerequisite #1) |
 | Quality metric definition (prereq #5) | Closed 2026-05-27 — see §16 | — |
-| R6 regression validation (Option C) | Open. Rule-based R6 ships as planned; regression fit post-R6-W5 to validate rule weights. Escalate to Option A (regression as primary) only if validation proves value. | Frozen R6 eval set built (R6-W4 step 0); rule-based R6 shipped and backtested; tagged URL list returned by client. |
+| R6 regression role | Closed 2026-05-29 — regression is one-time weight-input analysis (R6-W4), NOT live model in production path. Backtest on frozen eval set is the validation step. See §28. | Closed. |
 | R7 implementation mechanism | Confirmed 2026-05-28 — LinearSVC + TF-IDF on 2,729 Beehiiv labels. LLM as fallback. See §17. | Closed. |
 | NLAP end-state intent (NLAP-only event source) | Closed 2026-05-28 — "mostly NLAP, one-offs from elsewhere." See §26. | — |
 | Editor workflow (segment vs quality decoupling) | Closed 2026-05-28 — see §27 | — |
@@ -764,4 +764,69 @@ Every manual editor capture step is a tax that fails silently the first busy wee
 ### What was not changed
 
 R3 (the script) still runs unchanged — it allocates approved candidates to IssueItems by current logic (earliest-date sort until R6 ships). Step 2 (editor curation at R3-Eligible) is an *editorial* layer on top of the candidate pool, not a replacement for the R3 allocation script. The eventual relationship between editor picks at Step 2 and R3 script output is a downstream design question — picks may inform Locks on R3-allocated IssueItems, or may bypass R3 entirely with manual IssueItems creation. Decision deferred until R6 lands and pick volume is observable.
+
+---
+
+## 28. R6 Regression Role — Weight-Input, Not Live Model
+
+**Decision: regression on historical events runs once in R6-W4 to inform rule weight ratios. Rules — not the regression model — score candidates in production. Backtest on the frozen eval set validates the rule formula.**
+
+*Decided 2026-05-29. Closes the Decision_Log §9 "Option C" framing, which described regression as a post-R6-W5 validation step (it isn't — backtest is).*
+
+### Three architectures considered
+
+| Architecture | Description | Verdict |
+|---|---|---|
+| **A. Live regression model** | Trained model predicts Score_Final for every new candidate at R2 time. Model IS the scoring engine. | Rejected. |
+| **B. One-time fit + rules in production** | Regression runs once, coefficients translate to hand-tuned rule weights, rules score candidates. | **Chosen.** |
+| **C. Periodic retune** | Same as B but re-run regression every quarter on accumulated data, update rule weights if coefficients shifted meaningfully. | Deferred. Build only if post-launch evidence shows drift. |
+
+### Why B and not A
+
+1. **Tautology.** Past events were chosen by editor judgment + earliest-date sort. A model fit to that history learns to predict editor-chosen events that got clicked — not to identify events the editor *would have* picked if presented with all options. Rules don't have this problem; they're explicit, not fit.
+
+2. **Slot-position confounding.** Slot 1 outperforms slot 5 regardless of event quality. A regression model without careful slot controls bakes slot-position dominance into Score_Final — every prediction effectively says "this event would do well if placed at slot 1." Rules can apply slot-position-prior as one signal among many, weighted explicitly.
+
+3. **Client trust.** Editor edits every blurb because he wants control (see §16). A rule formula he can read and adjust ("recency is weighted 3x source quality") matches that disposition. A black-box model that outputs Score=0.73 conflicts with it.
+
+4. **Transferability.** Mississauga inherits the rule formula with one config change (base-per-newsletter, §15). Live model architecture needs a new training set + retrain per newsletter, doubling operational cost across the portfolio.
+
+5. **Method fit.** Six features × ~2,500 events is real regression territory (~400 records per coefficient, well outside overfit zone). But the deliverable — ranking candidates within a 4-section newsletter where the editor makes the final call — is a rule problem, not an ML inference problem. Judgment of when *not* to use the fancy method matters as much as knowing the method.
+
+### What this looks like in practice
+
+**Design loop (one-time, R6-W4):**
+1. Build feature matrix from `issue_history.json` + clicks CSV + Candidates: section, slot position, source domain, repeat inclusion, date proximity, source quality. ~2,500 events (events with full features available; partial-feature events excluded from regression but included in backtest).
+2. Fit regression (linear on log-clicks, or logistic on "above median clicks") with slot-position interaction terms or per-slot subgroup models to handle the confound.
+3. Read coefficients. Translate signed magnitudes into rule weight ratios — e.g. if recency coefficient is 2x source-quality coefficient, set rule weight for recency at 2x source quality.
+4. Document the translation explicitly in this log (which coefficient produced which rule weight, what controls were applied).
+
+**Production loop (every R3 run, post-R6):**
+- R2 computes Score_Final using the hardcoded rule formula on stored features.
+- R3 sorts by Score_Final, picks top N per section.
+- No regression call, no model load — pure arithmetic on stored features.
+
+**Validation (R6-W5):**
+- Backtest rule formula against frozen eval set of 10–15 historical issues (R6-W4 step 0).
+- Compare: rule formula's top picks vs earliest-date sort vs what got published vs what got clicks.
+- Quality bar: rule formula's picks correlate with actual clicks better than earliest-date sort on the eval set.
+- Backtest is the validation. Regression was the design input.
+
+**Post-launch validation:**
+- CTOR per issue tracked against §20 baseline (avg 10.35%, range 7–12%).
+- Three consecutive issues above baseline = R6 working as designed.
+
+### When to revisit (Option C trigger)
+
+Run regression again only if:
+- CTOR drifts below §20 floor over 3+ consecutive issues post-R6, AND
+- Audit suggests rule weights are stale (e.g. source mix changed materially after R5 source expansion).
+
+Not on a fixed cadence. Trigger-based only.
+
+### Honest portfolio framing
+
+The defensible line is: *"Fit a regression on 2,500+ historical events to inform R6 scoring weights, validated against frozen eval backtest before deployment. Rules — not the regression model — score candidates in production, because the deliverable is a rule-tunable scoring formula, not an ML inference path."*
+
+That demonstrates judgment (you didn't blindly deploy a model when rules + analysis fit the problem better) — which reads as senior-level method fit, not method avoidance.
 

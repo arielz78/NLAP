@@ -284,8 +284,19 @@ formula until that list is in hand.
    ID (from `data/tracking/snapshots/`), and frozen eval set
    version with every backtest run output — otherwise "the backtest
    said X" decays into untraceable folklore in 3 months.
+2a. **Regression analysis to inform rule weights (one-time, not live).**
+   Build feature matrix from `issue_history.json` + clicks CSV +
+   Candidates: section, slot position, source domain, repeat inclusion,
+   date proximity, source quality. ~2,500 events with full features.
+   Fit regression (linear on log-clicks or logistic on above-median-clicks)
+   with slot-position interaction terms to handle the dominant confound.
+   Read coefficients, translate signed magnitudes into rule weight ratios.
+   Document the translation in Decision_Log §28 (which coefficient
+   produced which rule weight). Regression is design input only —
+   NOT deployed as a live model in production path. Rules score
+   candidates at runtime. See §28 for the full architectural rationale.
 3. Define scoring signal hierarchy (editorial actions strongest, clicks
-   weaker because exposure-biased):
+   weaker because exposure-biased). Weights informed by step 2a coefficients:
    - Locked/featured by editor (hard signal)
    - Repeat historical inclusion (venue/organizer — derived from
      `issue_history.json` URL recurrence)
