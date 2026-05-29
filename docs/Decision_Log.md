@@ -828,33 +828,63 @@ R3 (the script) still runs unchanged — it allocates approved candidates to Iss
 - R3-Eligible Airtable view also sorts by Score_Final (see §29 — both auto-allocation and Step 2 curation consume the same ranking).
 - No regression call, no model load — pure arithmetic on stored features.
 
-**Validation (R6-W5):**
-- Backtest rule formula against frozen eval set of 10–15 historical issues (R6-W4 step 0).
-- Compare: rule formula's top picks vs earliest-date sort vs what got published vs what got clicks.
-- Quality bar: rule formula's picks correlate with actual clicks better than earliest-date sort on the eval set.
-- Bootstrap confidence intervals across issues (per ChatGPT review) — 10–15 issues is small enough that the backtest can look decisive while still being noisy. Bootstrap protects against overreacting to weird issue mix.
-- Backtest is the validation. Regression (if needed) was the design input.
+**What the "backtest" actually is — REVISED 2026-05-29:**
 
-**Post-launch validation — REVISED:**
-- Backtest result on frozen eval set is the success signal (consistent with §16 — CTOR is *not* the dev signal).
-- CTOR is a **loose trend guardrail** against §20's trajectory (declining from 13.6% → 8.4% on list fatigue; ~8.5% realistic floor). NOT an absolute number to clear. R6 working = backtest passes AND CTOR stays within §20's expected fatigue-adjusted band, not above a fixed 10.35%.
-- The earlier "three consecutive issues above 10.35%" framing contradicted §20 and §16 — R6 could work perfectly and never clear that bar due to fatigue. Killed.
+A strict pre/post backtest ("would the formula have beaten earliest-date sort?") is not achievable on pre-pipeline data. The client didn't use NLAP blindly — he mixed pipeline picks, manual sourcing, and ChatGPT across the 15-month history inconsistently. The candidate pool before April 2026 is unrecoverable. And A/B testing (alternating scored vs unscored weeks) is not viable — you don't deliberately ship worse issues for a control group on a 13k-subscriber newsletter.
+
+**What you CAN do instead — two-phase validation:**
+
+**Phase 1 — Pre-launch signal correlation check (R6-W4/W5):**
+- Take post-pipeline issues only (April 2026+, ~7 issues where R1 candidate pool is known)
+- Score those candidates retroactively using the hand-set v1 formula
+- Check: within each issue, do higher-scored candidates correlate with more clicks?
+- This is a **smell test**, not a validation. It tells you the signals point in the right direction. It does not prove the formula beats any alternative.
+- If signals don't correlate at all → formula is wrong, revisit weights before shipping.
+
+**Phase 2 — Post-launch editorial override rate (4–6 issues after R6 ships):**
+- URL-match script (§25, gated on #54) captures what the editor actually published vs what R3 picked
+- **Swap rate = % of R6 picks the editor kept without overriding.** This is the real success metric.
+- Swap rate rising over time = editor trusts the formula and is doing less manual sourcing
+- Clicks on kept picks vs swapped picks = secondary signal (does R6's taste match reader taste?)
+- This data accumulates from normal operation — no experiment needed
+
+**Why swap rate, not CTOR:**
+R6's primary job is **editorial time savings**, not click optimization. The client's problem was 4h/week sourcing burden (§client meeting 2026-05-14). R6 succeeds if the editor spends less time overriding picks and less time sourcing manually — that's observable via swap rate. CTOR is too confounded (subject lines, seasonality, list fatigue per §20) to be a clean R6 signal.
+
+**Why clicks data still matters (just not as optimization target):**
+Clicks inform the scoring weights — which types of events readers engage with, which sources produce higher-quality candidates, which segments are underperforming. Used as a **design input** for weights, not as the success KPI. The distinction matters for portfolio framing.
+
+**Post-launch guardrails:**
+- CTOR tracked as a trend guardrail (per §20 fatigue-adjusted band, not absolute 10.35% bar)
+- If swap rate is consistently high (>50% overrides) → formula needs weight adjustment
+- If swap rate is consistently low (<20% overrides) → formula is earning editorial trust
 
 ### When to revisit (Option C trigger)
 
-Run regression again only if:
-- CTOR drifts below §20 floor over 3+ consecutive issues post-R6, AND
-- Audit suggests rule weights are stale (e.g. source mix changed materially after R5 source expansion).
+Run regression against accumulated post-pipeline data only if:
+- Swap rate stays high after 3+ months (formula not earning trust), AND
+- Signal correlation check (Phase 1) suggested weights were directionally off
 
-Not on a fixed cadence. Trigger-based only.
+Not pre-emptively. Not on a fixed cadence. Trigger-based only.
 
 ### Honest portfolio framing — REVISED 2026-05-29
 
-Updated after external review surfaced fragility in the original "fit regression first" framing. Current defensible line:
+**What R6 actually is:** an editorial surfacing tool — surfaces highest-quality candidates at the top of the pool so the editor spends less time on discovery and more time on judgment. Click data informs the weights; swap rate validates the formula.
 
-> *"Shipped R6 v1 with hand-set rule weights derived from documented domain knowledge (FB click share, section popularity, recency priors). Validated against frozen eval backtest with bootstrap confidence intervals. Regression scoped as fallback if backtest fails — not as primary mechanism, because rule-tunable scoring is the deliverable for a 4-section newsletter where the editor curates the final pick."*
+**Two-phase framing:**
 
-That demonstrates judgment (knew when not to overshoot the method) AND statistical literacy (knew the regression-as-first-pass had real fragility issues — eval leakage, raw-magnitude interpretation, slot-position circularity). Senior-level method fit comes from both knowing the method *and* knowing when its execution would be fragile enough to mislead.
+> *Phase 1 (pre-launch): signal correlation check on post-pipeline issues — do higher-scored candidates correlate with more clicks within each issue? Sanity check, not validation.*
+>
+> *Phase 2 (post-launch, in progress): editorial override rate tracked via URL-match attribution across post-pipeline issues. Primary success metric: swap rate — % of R6 picks the editor kept without overriding. Secondary: clicks on kept vs swapped picks once N issues accumulate.*
+
+**What this signals to a technical audience:**
+
+- You understand the difference between observational correlation and causal validation
+- You know when A/B testing isn't viable and what to do instead
+- You built the data collection infrastructure (URL-match, snapshots) before claiming the metric
+- You didn't oversell "click optimization" on data that can't support that claim
+
+That framing is more defensible AND more impressive than "we optimized CTR" — because it shows methodology literacy, not just method application.
 
 ### Amendments 2026-05-29 — from external LLM review
 

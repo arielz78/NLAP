@@ -242,18 +242,20 @@ Code nodes for anything without a native integration. No Node.js rewrite.
 ---
 
 ### Release 6 — Scoring
-**Owner: Ariel | Deadline: June 4**
+**Owner: Ariel | Deadline: ~mid-June (re-baselined 2026-05-29 — ~3 weeks solo at 10h/week, not June 4)**
 
-**Success =** Score-ranked picks correlate with actual clicks better than earliest-date sort, validated by offline backtest on the frozen R6 eval set. CTOR is the post-launch outcome metric, not the development signal.
+**Success =** Editorial override rate (swap rate) drops over the first 4–6 post-launch issues as the editor trusts R6's picks. Pre-launch: signal correlation check confirms scoring signals point in the right direction. See Decision_Log §28 for two-phase validation rationale.
 
 **Exit criteria:**
-- Beehiiv clicks CSV analyzed — scoring weights grounded in real
-  reader engagement, not guesses.
-- Offline backtest completed — scoring demonstrably beats earliest-
-  start-date sort, or formula simplified accordingly.
+- Click data analyzed — scoring weights grounded in real engagement
+  data, not guesses.
+- Pre-launch signal correlation check run on post-pipeline issues
+  (April 2026+) — signals directionally correct or weights adjusted.
 - Score_Final computed for all new candidates at R2 time.
 - Score_Final backfill pass completed for old candidates.
 - R3 allocates by Score_Final desc, start date asc as tiebreaker.
+- R3-Eligible Airtable view sorted by Score_Final desc (editorial
+  curation view — see Decision_Log §29).
 - Quality floor enforced — slot left empty rather than filled with junk.
 - Date spread constraint enforced in R3.
 - Weights documented and tunable without a code change.
@@ -340,18 +342,19 @@ formula until that list is in hand.
 6. Document final scoring formula. Share with client for gut-check.
 
 **Deliverables:**
-- Offline backtest complete — scoring justified or formula simplified
-- Scoring weights grounded in real click data
+- Signal correlation check complete on post-pipeline issues — weights directionally correct or adjusted
+- Scoring weights grounded in real click data, hand-set from domain knowledge
 - GPT-5-mini evaluation complete — switch or keep GPT-4o decided
-- Scoring formula documented in Decision Log
+- Scoring formula documented in Decision_Log §28
 
 #### R6-W5 (4h): Implement + backfill + R3 updates
 
 1. Add scoring logic to R2 (compute Score_Final per candidate after
    classification).
 2. Update R3 sort: Score_Final desc, start date asc as tiebreaker.
-3. Add quality floor: Score_Final must exceed threshold (start at 0.4)
-   for auto-allocation. Below threshold → leave slot empty + flag.
+3. Add quality floor: Score_Final must exceed threshold (start at 0.4,
+   interpretable because signals normalized [0,1] and weights sum to 1).
+   Below threshold → leave slot empty + flag.
 4. Add SegmentConfidence floor mechanism: records below threshold →
    NeedsReview instead of R3. Set threshold from R2 eval distribution
    (prerequisite #1), not hardcoded at 0.6.
@@ -360,13 +363,18 @@ formula until that list is in hand.
 6. Add date spread constraint in R3: if slots 1–5 fall in same 3-day
    window, force at least one slot from different part of issue window.
 7. Compute and store ScoreSignalCount per candidate.
-8. Run R3 on an upcoming issue. Compare output to previous earliest-
-   start-date output. Document obvious misses.
+8. Update R3-Eligible Airtable view sort order: Score_Final desc,
+   Start Date asc as tiebreaker (see Decision_Log §29 — editorial
+   curation view consumes same ranking as R3 auto-allocation).
+9. Run R3 on an upcoming issue. Note which picks are kept vs swapped
+   by editor — this is the start of swap-rate tracking (Phase 2
+   validation per §28).
 
 **Deliverables:**
 - Score_Final populated for all candidates (new + backfill)
-- R3 output demonstrably improved vs. earliest-start-date sort
+- R3 and R3-Eligible view both sorted by Score_Final
 - Quality floor and date spread constraints active
+- Swap rate tracking begun (URL-match script needed to automate — §25)
 
 ---
 
