@@ -239,7 +239,7 @@ Full SOP (step-by-step with edge cases) is a separate document — not yet writt
 | SegmentConfidence floor threshold | Mechanism designed (section 6); value TBD | R2 eval distribution (post-MVP prerequisite #1) |
 | Quality metric definition (prereq #5) | Closed 2026-05-27 — see §16 | — |
 | R6 regression validation (Option C) | Open. Rule-based R6 ships as planned; regression fit post-R6-W5 to validate rule weights. Escalate to Option A (regression as primary) only if validation proves value. | Frozen R6 eval set built (R6-W4 step 0); rule-based R6 shipped and backtested; tagged URL list returned by client. |
-| R7 implementation mechanism | Open. Prompt-tuning (current §17 plan) vs trained classifier (LinearSVC + TF-IDF on historical Beehiiv labels). Classifier path becomes viable if past Beehiiv issues are mineable for `(title, segment)` labels. | Beehiiv parseability spike #52 outcome. |
+| R7 implementation mechanism | Confirmed 2026-05-28 — LinearSVC + TF-IDF on 2,729 Beehiiv labels. LLM as fallback. See §17. | Closed. |
 | NLAP end-state intent (NLAP-only event source) | Closed 2026-05-28 — "mostly NLAP, one-offs from elsewhere." See §26. | — |
 | Editor workflow (segment vs quality decoupling) | Closed 2026-05-28 — see §27 | — |
 | Relationship between Step 2 editor picks and R3 script output | Open. Picks at R3-Eligible may inform Locks on R3-allocated IssueItems, may bypass R3 entirely, or may run in parallel. | Wait for R6 to ship and pick volume to be observable. |
@@ -455,13 +455,17 @@ The earlier proposal was: editor acceptance rate (blurbs published as-is vs. edi
 - **Frozen eval set:** 15 high-confidence + 15 ambiguous examples per segment from Vaughan history. Permanent regression benchmark — every prompt or model change is replayed against it before shipping. Mississauga examples added once those issues exist.
 - **Prompt versioning:** R2 prompt versions stored in a versioned file with dates. Regressions are rollback-able without guessing what changed.
 
-### Open: implementation mechanism (added 2026-05-27)
+### Implementation mechanism — CONFIRMED 2026-05-28 (was open, gated on #52)
 
-The prompt-tuning approach above assumed no clean labeled training data was available — only LLM-classified records, which are not human ground truth. **That assumption is wrong if past Beehiiv issues are parseable**: each published event has a known section (the editor placed it there), giving ~1,775 `(title, segment)` ground-truth labels across 71 past issues.
+Beehiiv parseability spike (#52) returned GO. 2,729 `(section, url)` pairs extracted across 72 issues via `scripts/fetchBeehiivHistory.js` → `data/beehiiv/issue_history.json`. Labels are editor ground-truth (the editor placed each event in its section).
 
-If the Beehiiv parseability spike (#52) confirms the labels are extractable, the R7 path may shift entirely: train a LinearSVC + TF-IDF classifier on the mined labels, keep the LLM as a low-confidence fallback (and rationale generator for the tail). Classifier path captures editorial voice better than prompt-tuning at this data volume, removes the OpenAI dependency for the classification step, and gives a stronger portfolio line ("trained custom classifier on production data" > "we prompted GPT").
+**R7 path confirmed: LinearSVC + TF-IDF classifier trained on historical Beehiiv labels, LLM as low-confidence fallback.**
 
-Decision deferred to R7 scoping. See §9 Open Decisions and issue #52.
+- ~2,700 labeled examples across 4 segments — sufficient for a real classifier at this scale
+- Removes OpenAI dependency from the classification step entirely
+- LLM retained for: low-confidence fallback, rationale generation (LLM_Rationale field), NeedsReview explanation
+- Classifier retrains periodically as `issue_history.json` accumulates new issues
+- Decision finalised at R7 scoping.
 
 ---
 
@@ -661,8 +665,8 @@ Pick when script is built. Default lean: option A.
 
 ### Gates
 
-- Beehiiv parseability spike (#52) — confirms `(URL, section)` is extractable from past-issue HTML. Same spike also gates the R7 classifier path (§17).
-- Once GO from #52: ~1–2 days to build the script.
+- ~~Beehiiv parseability spike (#52)~~ — **GO confirmed 2026-05-28.** 2,729 `(section, url)` pairs across 72 issues. `scripts/fetchBeehiivHistory.js` is the extraction script.
+- URL-match script is now unblocked — ~1–2 days to build.
 
 ### Relation to existing IssueItems flow
 

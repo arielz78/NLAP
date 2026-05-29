@@ -42,6 +42,10 @@
 ## Parallel to R5
 
 - [x] **Prereq #5** — quality metric — CLOSED 2026-05-27 (see Pre-R5 Gate section)
+- [x] **#52** — Beehiiv parseability spike — CLOSED 2026-05-28 — **GO**
+  - 2,729 `(section, url)` pairs across 72 issues via Beehiiv API (`scripts/fetchBeehiivHistory.js` → `data/beehiiv/issue_history.json`)
+  - R7 classifier path confirmed: LinearSVC + TF-IDF on Beehiiv labels (see Decision_Log §17)
+  - URL-match script unblocked (see Decision_Log §25)
 - [ ] **R6 prep** — blocked on client returning tagged URL list (sent 2026-05-15)
   - Join tagged URLs to clicks CSV → per-segment click averages (~1h)
   - Run offline backtest: earliest-date sort vs. scored vs. locked/featured (~1h)

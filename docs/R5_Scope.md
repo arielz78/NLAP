@@ -6,7 +6,9 @@
 
 **Read order:** this doc → `docs/source_decision_sheet.md` → roadmap (only if you need full release context).
 
-**Tracking:** Tasks live in GitHub Issues #33 (W1), #34 (W2), #35 (W3). Close them as you go.
+**Tracking:** Tasks live in GitHub Issues #33 (W1), #34 (W2), #35 (W3), #53 (data analysis input to W1). Close them as you go.
+
+**New input as of 2026-05-28:** `data/beehiiv/issue_history.json` contains 2,729 `(section, url)` pairs across all 72 past published issues — generated via Beehiiv API (script: `scripts/fetchBeehiivHistory.js`). This replaces the original manual 7-issue tally with full 15-month coverage. See #53 for the seven analyses to run before W1 task 1.
 
 **Gates:**
 - W1 must be reviewed with Ariel before W2 starts.
@@ -30,11 +32,19 @@ Determines what gets built in W2. Cannot start W2 without W1 reviewed and signed
 
 ### Tasks
 
-1. **Tally:** Across the last 7 Vaughan issues, count events by source. Confirm Facebook % and which non-Facebook sources dominate. Source: Beehiiv archive or client's sent issues.
+1. **Run the issue_history.json analyses (see #53).** Seven analyses across 2,729 historical events. Outputs you need before moving to task 3:
+   - Domain tally per section (which sources dominate, what % is Facebook)
+   - Section fill rate (which sections consistently underfill — your case for source expansion)
+   - Stale source detection (which domains went dead — do NOT wire these up in W2)
+   - Facebook share per section (sharpens or weakens the Decision_Log §18 framing)
+   - Plus venue repeats, candidate pool data quality, URL recurrence — fuller context
+   - One-line takeaway per analysis, posted in Discord #pipeline
 
-2. **Cross-reference two inputs:**
+2. **Cross-reference three inputs:**
+   - Output from task 1 above (15-month domain tally)
    - `docs/source_decision_sheet.md` — Ariel's audit of candidate URLs the client uses
    - Beehiiv clicks data (already analyzed 2026-05-13, see `data/beehiiv/clicks_analysis_2026-05-13.md`) — for which sources actually drive engagement
+   - **Reconcile contradictions.** If a source is in the decision sheet but appears stale in task 1, flag it. If a source dominates volume in task 1 but is missing from the decision sheet, flag it.
 
 3. **Probe each non-Facebook source** for integration method, in priority order (same priority that applies in W2):
    1. iCal endpoint
@@ -54,11 +64,11 @@ Determines what gets built in W2. Cannot start W2 without W1 reviewed and signed
 
 ### Done When
 
-- Source tally complete (counts per source from 7 issues)
-- 2–4 sources picked with method + endpoint documented
+- All seven analyses from #53 run; one-line takeaways posted in #pipeline
+- 2–4 sources picked with method + endpoint documented (stale sources from #53 excluded)
 - Vaughan config structure agreed with Ariel before W2 starts
 
-**Tracked in:** #33
+**Tracked in:** #33 (W1 tasks), #53 (data analysis input)
 
 ---
 
@@ -157,6 +167,8 @@ Confirm the R1 n8n upsert node has retry enabled. The Node.js scripts already ha
 ### Context
 
 Facebook is 58% of click volume (Decision_Log § 18, `data/beehiiv/clicks_analysis_2026-05-13.md`). Automation is ruled out — TOS risk, so manual intake is the path. This week makes that intake idempotent and reliable, and adds the safety checks that catch pool problems before R3 allocation runs.
+
+**Refer to #53 task 6** (Facebook share per section, from `issue_history.json`) before starting. If FB placement share is much lower than 58%, the click-volume framing is the right lens (FB is the clicks goldmine, not the volume source) — keep the reliability checks as scoped. If placement share is also ~58%, FB is both the volume and clicks source — strengthens the case for considering richer intake infra later.
 
 ---
 
