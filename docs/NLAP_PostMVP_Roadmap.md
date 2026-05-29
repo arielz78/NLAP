@@ -258,17 +258,25 @@ backtest + formula. Segment weights compute from client's tagged URL
 list (Talking Point A in meetings/2026-05-14.md) — do not start the
 formula until that list is in hand.
 
-0. **Freeze the R6 eval set.** Pick 10–15 past issues from the 71
-   available — spread across cohorts (early/mid/recent), avoid issues
-   with known data anomalies. Lock the list in `data/beehiiv/r6_eval_set.md`.
+0. **Freeze the R6 eval set.** Pick 10–15 past issues from
+   `data/beehiiv/issue_history.json` (72 issues available as of 2026-05-28)
+   — spread across cohorts (early/mid/recent), avoid issues with known
+   data anomalies. Lock the list in `data/beehiiv/r6_eval_set.md`.
    All backtest comparisons (rule-based vs. score-ranked vs. any future
    regression validation) use *only* these issues. Prevents cherry-picking
    when results disappoint.
+0a. **Extend fetchBeehiivHistory.js to extract editor-final blurbs +
+   slot position.** Same script, second pass through the email HTML.
+   Captures DisplayTitle, Description, CTA per event + position within
+   section. Output: `data/beehiiv/issue_history.json` enriched. ~30 min.
+   Unlocks: slot-position feature for R6, few-shot pool for R7 LLM fallback,
+   edit-distance health check (R4 generated vs editor-final).
 1. Analyze Beehiiv clicks CSV in Claude (not Claude Code) — map URLs
    back to event types and segments. Identify which segments and event
    categories drive the most clicks. [Mostly done 2026-05-13.
-   Remaining: join client's tagged URL list to compute real per-segment
-   click averages.]
+   Remaining: join client's tagged URL list + `issue_history.json`
+   to compute real per-segment AND per-source click averages
+   (15-month coverage, not 7-issue sample).]
 2. Run offline backtest before implementing: what would earliest-date
    sort have picked vs what got featured vs what got clicks vs what
    editors locked. Tests whether scoring beats trivial sort. If it
@@ -279,12 +287,14 @@ formula until that list is in hand.
 3. Define scoring signal hierarchy (editorial actions strongest, clicks
    weaker because exposure-biased):
    - Locked/featured by editor (hard signal)
-   - Repeat historical inclusion (venue/organizer)
+   - Repeat historical inclusion (venue/organizer — derived from
+     `issue_history.json` URL recurrence)
    - SegmentConfidence (combined weight with recency)
    - Recency fit: days between event start and issue date
-   - Source quality defaults (from config)
-   - Segment click weight (set to 1.0 neutral until CSV analysis
-     produces real weights)
+   - Source quality defaults (from per-source click averages, step 1)
+   - Segment click weight (from per-segment click averages, step 1)
+   - Slot-position prior (does slot 1 always strongest regardless of
+     content? Test before including as feature.)
 4. Add ScoreSignalCount field (0–5) for editorial transparency.
 5. Evaluate GPT-5-mini as replacement for GPT-4o in R2 LLM node
    (Debt #13): run on 20 records, compare SegmentSuggested quality.
@@ -325,63 +335,55 @@ formula until that list is in hand.
 ### Release 7 — Classification Quality
 **Owner: Ariel**
 
-**Success =** NeedsReview rate drops measurably below the pre-R7 baseline AND classification accuracy on the frozen R7 eval set is at or above the current LLM baseline (no regression).
+**Success =** Trained classifier on Beehiiv historical labels matches or beats GPT-4o accuracy on the frozen R7 eval set, AND NeedsReview rate drops measurably below the pre-R7 baseline.
+
+**Mechanism change 2026-05-28 (Decision_Log §17):** R7 was originally scoped as prompt-tuning with dynamic few-shot examples. After #52 (Beehiiv parseability) returned GO, 2,729 `(title, section)` ground-truth labels became extractable from past issues. R7 is now a trained classifier (LinearSVC + TF-IDF), with the LLM retained as low-confidence fallback and rationale generator.
 
 **Exit criteria:**
-- Dynamic few-shot examples injected into R2 prompt at runtime, drawn
-  from highest-performing IssueItems.
-- Frozen eval set built — 15 high-confidence + 15 ambiguous examples
-  per segment from Vaughan history. Permanent regression benchmark.
-- Newsletter-scoped few-shot queries (no cross-newsletter contamination).
-- Prompt versioning in place — regressions are rollback-able.
-- NeedsReview rate measurably lower than pre-tuning baseline.
-
-Note: this release is gated on Beehiiv engagement data from client.
-Do not start until clicks analysis (R6-W4) is complete.
+- LinearSVC + TF-IDF classifier trained on `issue_history.json` labels, deployed in R2 path before the LLM call.
+- High-confidence predictions (above tuned threshold) skip the LLM entirely — cost + latency reduction.
+- Low-confidence predictions fall through to GPT-4o for classification + rationale.
+- Frozen eval set built — 15 high-confidence + 15 ambiguous examples per segment, held out from training. Permanent regression benchmark.
+- Newsletter-scoped training data (Vaughan classifier ≠ Mississauga classifier — separate models per base).
+- Model versioning + retraining cadence in place (retrain when N new editor-corrected examples accumulate, or every N weeks).
+- NeedsReview rate measurably lower than pre-R7 baseline.
 
 > **Before R7 starts:** capture NeedsReview baseline.
 > Query Airtable — count of records in R2-NeedsReview view, broken down
 > by reason (segment confusion, low confidence, missing fields) if
 > distinguishable from LLM_Rationale. This is the before number for
-> the NeedsReview improvement metric. Do this before any prompt changes
+> the NeedsReview improvement metric. Do this before any classifier work
 > in R7-W6. One Airtable query, takes 5 minutes.
 > → Log in NA/Vaughan_Metrics_Log.md (NeedsReview baseline section)
 > → Update NA/VB_Portfolio_Case_Study.md update log (same row, same time)
 
-#### R7-W6 (3h): Few-shot mechanism + frozen eval set + prompt versioning
+#### R7-W6 (3h): Build training set + train classifier + frozen eval set
 
-1. At the start of each R2 run, query IssueItems for the last 10
-   locked/approved records per segment, sorted by click performance
-   (where available) then date desc. Filter by newsletter field to
-   prevent cross-newsletter contamination.
-2. Store selection logic in config helper so N per segment is easy
-   to adjust.
-3. Build frozen evaluation set: 15 high-confidence + 15 ambiguous
-   examples per segment from Vaughan history. Permanent benchmark —
-   every prompt or model change replayed against it. Add Mississauga
-   examples once those issues exist.
-4. Set up prompt versioning: store R2 prompt versions in a versioned
-   file with dates so regressions are rollback-able.
+1. Build training set from `issue_history.json` — extract `(event title, section)` pairs. Title comes from the editor-final DisplayTitle (extracted in R6-W4 step 0a) or from matching the URL back to Candidates.Title for events that flowed through the pipeline. Filter out Trust Me Recipe (not a real segment — manual only).
+2. Hold out frozen eval set FIRST — 15 high-confidence + 15 ambiguous examples per segment. These never enter training. Lock the list in `data/beehiiv/r7_eval_set.md`.
+3. Train LinearSVC + TF-IDF on the remaining labels. Tune confidence threshold against eval set — too high = wastes LLM on records the classifier could've handled; too low = classifier ships wrong predictions silently.
+4. Set up model versioning — pickled model + training data hash + eval accuracy stored per version. Regressions are rollback-able by reverting to the previous model file.
+5. Replay GPT-4o baseline against the same frozen eval set so the comparison is apples-to-apples.
 
 **Deliverables:**
-- Dynamic few-shot selection running at start of R2
-- Frozen eval set built and stored
-- Prompt versioning in place
+- Training set + frozen eval set built and stored
+- Classifier trained, accuracy measured against eval set
+- Comparison vs GPT-4o baseline documented
+- Model versioning in place
 
-#### R7-W7 (3h): Inject examples into R2 prompt + validate
+#### R7-W7 (3h): Deploy classifier to R2 + validate
 
-1. Update R2 classification prompt to include dynamically selected
-   examples per segment (2–4 canonical examples + 2–3 hard negatives per segment). No RAG needed.
-2. Add "What to Avoid" section per segment using LLM_Rationale from
-   past failures.
-3. Test on 20 records. Compare new vs. old SegmentSuggested output.
-   Measure agreement with client's expected classifications.
-4. Replay frozen eval set. Confirm no regression.
+1. Update R2 n8n workflow: add classifier prediction step before the LLM Message-a-Model node. High-confidence predictions (above tuned threshold) write SegmentSuggested directly and skip the LLM. Low-confidence predictions fall through to GPT-4o.
+2. LLM_Rationale still gets populated — for high-confidence classifier predictions, use a templated rationale ("Classified as X with confidence Y based on training data"). For low-confidence fallback, GPT-4o generates as before.
+3. Test on 20 records. Compare classifier+fallback vs old GPT-4o-only path.
+4. Replay frozen eval set. Confirm classifier accuracy holds in production path.
+5. Set retraining trigger — when N new editor-corrected examples accumulate (from the §27 fix-and-approve workflow), retrain and replay eval set before deploying new model.
 
 **Deliverables:**
-- R2 classification prompt updated with dynamic historical examples
-- Frozen eval set replayed — no regression confirmed
-- Measurable improvement in classification agreement rate
+- Classifier deployed in R2 path with LLM fallback
+- Frozen eval set replayed — accuracy confirmed in production path
+- Retraining trigger defined
+- Measurable NeedsReview rate reduction vs pre-R7 baseline
 
 ---
 
