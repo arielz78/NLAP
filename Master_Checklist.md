@@ -46,11 +46,15 @@
   - 2,729 `(section, url)` pairs across 72 issues via Beehiiv API (`scripts/fetchBeehiivHistory.js` → `data/beehiiv/issue_history.json`)
   - R7 classifier path confirmed: LinearSVC + TF-IDF on Beehiiv labels (see Decision_Log §17)
   - URL-match script unblocked (see Decision_Log §25)
-- [ ] **R6 prep** — blocked on client returning tagged URL list (sent 2026-05-15)
+- [ ] **R6 prep** — tagged URL list returned 2026-05-28 (see Execution_Log)
   - Join tagged URLs to clicks CSV → per-segment click averages (~1h)
-  - Run offline backtest: earliest-date sort vs. scored vs. locked/featured (~1h)
-  - Design scoring formula from backtest results (~1h)
+  - Hand-set v1 scoring weights from domain knowledge (§18, §20) — Decision_Log §28 revised 2026-05-29
+  - Build feature matrix from `issue_history.json` + clicks + Candidates (~1h)
+  - Run offline backtest with bootstrap CIs: earliest-date sort vs. hand-set v1 vs. locked/featured (~1.5h)
+  - If backtest fails: regression as refinement (see §28 Amendments) — only then, not pre-emptively
+  - Hand-check Beehiiv parser correctness on stratified sample BEFORE trusting labels — issue #54
   - Document formula → share with client for gut-check
+  - **Revised timing: R6 is ~3 weeks solo at 10h/week, not the original June 4 target.** External review (2026-05-29) flagged June 4 was infeasible — accept the re-baseline now rather than at the miss.
 - [ ] **Client meeting agenda:** case study quote · dry run scheduling
 
 ---

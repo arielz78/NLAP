@@ -467,6 +467,24 @@ Beehiiv parseability spike (#52) returned GO. 2,729 `(section, url)` pairs extra
 - Classifier retrains periodically as `issue_history.json` accumulates new issues
 - Decision finalised at R7 scoping.
 
+### Amendments 2026-05-29 — from external LLM review
+
+External review (Claude.ai + ChatGPT) surfaced four execution-level fixes the original spec missed. None challenge the classifier path — all sharpen its execution:
+
+1. **Train/serve feature skew (Claude CRITICAL).** Original spec trained on editor-final DisplayTitle ("🍁 Canada's Largest Maple Syrup Festival – Last Chance" — 6-word polished marketing copy). But at inference R2 classifies on the *raw* ingested title (e.g. "Spring Fair Richmond Hill Family Event Games Food Trucks Vendors"). Different distributions. Eval on the DisplayTitle pool would look great, production would degrade silently. **Fix:** train AND evaluate on `Candidates.Title` + `Candidates.DescriptionRaw` (the actual R2 input). For events without a Candidates match (pre-pipeline issues), accept they're a weaker label source and flag — don't mix them in unflagged.
+
+2. **Title-only features underdetermine 4-way segments (Claude MAJOR).** "Jazz Night at the Vineyard" is plausibly Couples / Local Aroma / Golden Age depending on framing. DescriptionRaw is available and would help materially. **Fix:** include both Title and DescriptionRaw in the TF-IDF feature space.
+
+3. **Class imbalance will tank minority-segment recall (Claude MAJOR).** Families is the most popular section (§1), so labels are imbalanced. LinearSVC defaults will favor Families and report high overall accuracy while quietly failing on the smaller segments. **Fix:** `class_weight='balanced'` AND report per-segment recall as the headline metric, not just accuracy.
+
+4. **LinearSVC margins are not probabilities (both reviewers).** The "tune confidence threshold" plan in R7-W6 assumes the margin is interpretable as confidence. It isn't. **Fix:** wrap with `CalibratedClassifierCV` (Platt scaling) on held-out data before the threshold means anything. Otherwise the LLM-fallback gating is thresholding on an arbitrary scale.
+
+5. **Parser correctness ≠ parser extractability (Claude MAJOR).** #52 confirmed the parser pulls SOMETHING from all 72 issues. It did NOT confirm the parser pulls the RIGHT things across template eras (Beehiiv may have changed email templates over the 15-month history). Slot position and section attribution could be wrong on older issues without anyone noticing. **Fix:** hand-check a stratified sample (early/mid/recent issues) before trusting the 2,729 labels or the slot feature. Filed as issue #54.
+
+6. **Retraining trigger will rarely fire at this volume (Claude MINOR).** ~5 events/segment/issue × a high-accuracy classifier = editor-corrected examples accumulate over months, not weeks. **Fix:** ship v1 as a static model; don't represent it as a self-improving loop in the case study until the data shows otherwise.
+
+What didn't change: classifier path itself, LLM-fallback architecture, frozen eval set discipline, model versioning.
+
 ---
 
 ## 18. Facebook Automation
@@ -795,26 +813,32 @@ R3 (the script) still runs unchanged — it allocates approved candidates to Iss
 
 ### What this looks like in practice
 
-**Design loop (one-time, R6-W4):**
-1. Build feature matrix from `issue_history.json` + clicks CSV + Candidates: section, slot position, source domain, repeat inclusion, date proximity, source quality. ~2,500 events (events with full features available; partial-feature events excluded from regression but included in backtest).
-2. Fit regression (linear on log-clicks, or logistic on "above median clicks") with slot-position interaction terms or per-slot subgroup models to handle the confound.
-3. Read coefficients. Translate signed magnitudes into rule weight ratios — e.g. if recency coefficient is 2x source-quality coefficient, set rule weight for recency at 2x source quality.
-4. Document the translation explicitly in this log (which coefficient produced which rule weight, what controls were applied).
+**Amended 2026-05-29 after external review (Claude.ai + ChatGPT):** the original "fit regression first, read magnitudes" plan was statistically fragile (eval leakage, raw-coefficient interpretation, slot-position circularity, log-clicks vs logistic spaces). Replaced with hand-set v1 + regression as fallback. See "Amendments" subsection below for full reasoning.
+
+**Design loop (one-time, R6-W4) — REVISED:**
+
+1. **Build feature matrix** from `issue_history.json` + clicks CSV + Candidates: section, source domain, repeat inclusion, date proximity, source quality (and segment as control). Exclude slot position from candidate features — it's the dominant confound, not a content signal (see Amendments). ~2,500 events. **Exclude the frozen R6 eval-set issues from this feature matrix** — otherwise regression weights are tuned on the same issues you later "validate" against, which is the cherry-picking trap eval-freeze was built to prevent.
+2. **Ship v1 with hand-set weights** based on documented domain knowledge: §18 (FB = 58% clicks), §20 (Families most popular, CTOR baseline), §10 (R4 client behavior), domain priors on recency/source quality. **Normalize each signal to [0,1] and have weights sum to 1** so the quality floor (0.4) has interpretable meaning.
+3. **Backtest the hand-set v1 formula** against the frozen eval set (R6-W5). If picks correlate with clicks better than earliest-date sort → done, regression not needed.
+4. **Only if backtest fails:** fit regression as refinement. Standardize features (z-score) before fitting; report partial-dependence or permutation importance, not raw magnitudes. Pick one model family (linear-on-log-clicks OR logistic) and stay there — coefficient spaces don't transfer. Use slot-position interaction terms (or per-slot subgroups) as a confound control, never as a candidate scoring feature. Document the translation explicitly (which coefficient produced which weight, what controls applied).
 
 **Production loop (every R3 run, post-R6):**
 - R2 computes Score_Final using the hardcoded rule formula on stored features.
 - R3 sorts by Score_Final, picks top N per section.
+- R3-Eligible Airtable view also sorts by Score_Final (see §29 — both auto-allocation and Step 2 curation consume the same ranking).
 - No regression call, no model load — pure arithmetic on stored features.
 
 **Validation (R6-W5):**
 - Backtest rule formula against frozen eval set of 10–15 historical issues (R6-W4 step 0).
 - Compare: rule formula's top picks vs earliest-date sort vs what got published vs what got clicks.
 - Quality bar: rule formula's picks correlate with actual clicks better than earliest-date sort on the eval set.
-- Backtest is the validation. Regression was the design input.
+- Bootstrap confidence intervals across issues (per ChatGPT review) — 10–15 issues is small enough that the backtest can look decisive while still being noisy. Bootstrap protects against overreacting to weird issue mix.
+- Backtest is the validation. Regression (if needed) was the design input.
 
-**Post-launch validation:**
-- CTOR per issue tracked against §20 baseline (avg 10.35%, range 7–12%).
-- Three consecutive issues above baseline = R6 working as designed.
+**Post-launch validation — REVISED:**
+- Backtest result on frozen eval set is the success signal (consistent with §16 — CTOR is *not* the dev signal).
+- CTOR is a **loose trend guardrail** against §20's trajectory (declining from 13.6% → 8.4% on list fatigue; ~8.5% realistic floor). NOT an absolute number to clear. R6 working = backtest passes AND CTOR stays within §20's expected fatigue-adjusted band, not above a fixed 10.35%.
+- The earlier "three consecutive issues above 10.35%" framing contradicted §20 and §16 — R6 could work perfectly and never clear that bar due to fatigue. Killed.
 
 ### When to revisit (Option C trigger)
 
@@ -824,9 +848,81 @@ Run regression again only if:
 
 Not on a fixed cadence. Trigger-based only.
 
-### Honest portfolio framing
+### Honest portfolio framing — REVISED 2026-05-29
 
-The defensible line is: *"Fit a regression on 2,500+ historical events to inform R6 scoring weights, validated against frozen eval backtest before deployment. Rules — not the regression model — score candidates in production, because the deliverable is a rule-tunable scoring formula, not an ML inference path."*
+Updated after external review surfaced fragility in the original "fit regression first" framing. Current defensible line:
 
-That demonstrates judgment (you didn't blindly deploy a model when rules + analysis fit the problem better) — which reads as senior-level method fit, not method avoidance.
+> *"Shipped R6 v1 with hand-set rule weights derived from documented domain knowledge (FB click share, section popularity, recency priors). Validated against frozen eval backtest with bootstrap confidence intervals. Regression scoped as fallback if backtest fails — not as primary mechanism, because rule-tunable scoring is the deliverable for a 4-section newsletter where the editor curates the final pick."*
+
+That demonstrates judgment (knew when not to overshoot the method) AND statistical literacy (knew the regression-as-first-pass had real fragility issues — eval leakage, raw-magnitude interpretation, slot-position circularity). Senior-level method fit comes from both knowing the method *and* knowing when its execution would be fragile enough to mislead.
+
+### Amendments 2026-05-29 — from external LLM review
+
+Findings that materially changed §28:
+
+| Finding | Source | What changed |
+|---|---|---|
+| Eval-set leakage in regression | Claude.ai CRITICAL | Design loop step 1 now explicitly excludes frozen eval issues from regression feature matrix |
+| Score_Final scale undefined → 0.4 floor uninterpretable | Claude.ai MAJOR | Design loop step 2: signals normalized to [0,1], weights sum to 1 |
+| Slot-position used as both confound AND scoring signal | Claude.ai MAJOR | Slot-position removed from candidate scoring features. Used only as confound control in regression. R6-W4 step 3 (roadmap) also updated. |
+| §20 vs §28 CTOR contradiction | Claude.ai MAJOR | Post-launch validation rewritten — backtest is success signal (per §16), CTOR is trend guardrail vs §20's fatigue-adjusted band, not absolute number |
+| Regression learns exposure bias even with controls | ChatGPT MAJOR | Reframed regression as fallback for refinement, not primary path. Hand-set v1 + backtest first. |
+| Eval set of 10–15 too small | ChatGPT MAJOR | Bootstrap confidence intervals added to backtest methodology |
+| Raw-magnitude coefficient reading is statistically unsound | Claude.ai MAJOR | Design loop step 4: standardize features (z-score), report partial-dependence or permutation importance |
+| Coefficient spaces don't transfer across model families | Claude.ai MAJOR | Design loop step 4: pick one model family (linear-on-log-clicks OR logistic), stay there |
+
+What didn't change: the rules-not-live-model decision itself. Both reviewers independently validated §28's core architectural choice. The amendments are about *how to do the regression correctly* if it's needed, not whether to ship a model.
+
+---
+
+## 29. Score_Final Flow — Sorts the Pool, Doesn't Replace the Editor
+
+**Decision: Score_Final ranks events within each segment. Both R3 auto-allocation AND the editor's Step 2 curation view consume the same ranking. R6 is a pool sorter, not an auto-decision maker.**
+
+*Decided 2026-05-29. Closes the §27 open question and the Decision_Log §9 row "Relationship between Step 2 editor picks and R3 script output."*
+
+### What was ambiguous
+
+§27 documented the two-stage editor workflow (Step 1 = segment correctness, Step 2 = quality pick) but explicitly left open: "the eventual relationship between Step 2 editor picks and R3 script output is a downstream design question — picks may inform Locks on R3-allocated IssueItems, or may bypass R3 entirely, or run in parallel."
+
+External review (Claude.ai MAJOR) flagged this must be resolved before R6 implementation, because:
+- If Score_Final feeds R3 auto-allocation only: the editor routes around it via manual swaps (§25), and the R6 build effort is wasted on a path that's not the load-bearing one.
+- If Score_Final sorts the Step 2 curation view: editor sees ranked candidates first, picks from a sorted pool → R6 directly improves the work the editor actually does.
+
+### Resolution
+
+**Score_Final is computed per candidate at R2 time. Both consumers use it:**
+
+| Consumer | How it uses Score_Final |
+|---|---|
+| **R3 auto-allocation** (unchanged behavior) | Sorts candidates by Score_Final desc within each section, picks top N per quota. Writes IssueItems. Editor can override via Lock + swap. |
+| **R3-Eligible Airtable view** (new behavior) | Sorts candidates by Score_Final desc within each segment so editor sees the highest-ranked events first when curating Step 2. The pool itself stays unchanged (Status = Approved, Start Date >= today); only display order changes. |
+
+Both consume the same numeric ranking. R6 work serves both surfaces with one formula.
+
+### Why this is the right resolution
+
+1. **Matches confirmed editor workflow.** §27 confirmed the editor curates Step 2 manually. R6 sorting the Step 2 view directly improves the work he actually does — best events float to the top, less scrolling/searching to identify quality picks.
+
+2. **Auto-allocation still has value.** Editor doesn't curate from scratch every week; he reviews R3's picks first, then overrides where needed. Better R3 picks = fewer overrides = less manual work, even if it's not zero.
+
+3. **Symmetric data leverage.** Same `(features, clicks)` history informs both R3's pick quality and the Step 2 view's sort order. One formula, two surfaces. No special-case logic.
+
+4. **Doesn't require a new mechanism.** Sorting an Airtable view by a field that already exists is a 30-second change, not a build. No new pipeline component, no new failure surface.
+
+### What changes in implementation
+
+R6-W5 deliverables (roadmap) implicitly assumed R3 auto-allocation was the only consumer. Explicit additions:
+- R3-Eligible Airtable view sort order: change from Start Date asc to Score_Final desc, then Start Date asc as tiebreaker.
+- Document in RUNBOOK §Client Funnel that the Step 2 view is sorted by quality score, not chronologically.
+
+### What doesn't change
+
+- R3 script behavior — still allocates by Score_Final → Start Date as already designed.
+- Editor's Lock + override capability — unchanged.
+- The §25 URL-match script — still captures editor's actual published picks (so we know when overrides happened and which events were sourced manually).
+
+### Open follow-up (deferred, not load-bearing)
+
+Whether Step 2 picks should automatically Lock corresponding IssueItems is a separate UX question — answer probably yes (so a re-run of R3 doesn't undo the editor's curation), but the mechanism (Airtable automation? Manual checkbox? New script?) is deferrable until R6 ships and editor pick volume is observable.
 

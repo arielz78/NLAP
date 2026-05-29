@@ -190,6 +190,16 @@ Code nodes for anything without a native integration. No Node.js rewrite.
    retry enabled.
 8. Test idempotency: rerun does not duplicate.
 9. Confirm new candidates flow through R2 classification correctly.
+10. **Per-source health check (added 2026-05-29 from external review).**
+    Each adapter needs its own expected-count floor — undocumented APIs
+    silently break, RSS feeds change schemas without notice. Same
+    failure-mode profile as Facebook (§18). Per-source pattern:
+    - Track historical mean submissions/run per source (after ~5 runs to
+      build baseline).
+    - If a source returns <50% of mean for 2+ consecutive runs, flag in
+      run log AND in #pipeline Discord. Loud failure, not silent.
+    - Generalize the §18 FB 0-submission detection to a config-driven
+      per-adapter check, not 5 hardcoded if-statements.
 
 **Deliverables:**
 - 2–3 new sources live as branches in R1 n8n workflow
@@ -197,6 +207,7 @@ Code nodes for anything without a native integration. No Node.js rewrite.
 - Recurring events no longer dropped incorrectly
 - Source names consistent across all records
 - Invalid records rejected with typed reasons at ingestion
+- Per-source expected-count floor active for every adapter (not just FB)
 
 #### R5-W3 (3h): Facebook manual intake + candidate pool checks
 
@@ -283,20 +294,35 @@ formula until that list is in hand.
    doesn't, simplify R6 further. Log code commit hash, candidate snapshot
    ID (from `data/tracking/snapshots/`), and frozen eval set
    version with every backtest run output — otherwise "the backtest
-   said X" decays into untraceable folklore in 3 months.
-2a. **Regression analysis to inform rule weights (one-time, not live).**
-   Build feature matrix from `issue_history.json` + clicks CSV +
-   Candidates: section, slot position, source domain, repeat inclusion,
-   date proximity, source quality. ~2,500 events with full features.
-   Fit regression (linear on log-clicks or logistic on above-median-clicks)
-   with slot-position interaction terms to handle the dominant confound.
-   Read coefficients, translate signed magnitudes into rule weight ratios.
-   Document the translation in Decision_Log §28 (which coefficient
-   produced which rule weight). Regression is design input only —
-   NOT deployed as a live model in production path. Rules score
-   candidates at runtime. See §28 for the full architectural rationale.
+   said X" decays into untraceable folklore in 3 months. **Bootstrap
+   confidence intervals across issues** (per 2026-05-29 ChatGPT review)
+   — 10–15 issues is small enough that a backtest can look decisive
+   while still being noisy. Bootstrap protects against overreacting to
+   weird issue mix.
+2a. **Hand-set v1 weights from domain knowledge (REVISED 2026-05-29).**
+   Original plan was "fit regression first, read magnitudes." External
+   review surfaced fragility (eval leakage, raw-coefficient
+   interpretation, slot circularity, exposure bias). New plan: ship
+   hand-set v1 grounded in documented domain analysis, regression only
+   as fallback if backtest fails.
+   - Hand-set weights from: §18 (FB = 58% clicks), §20 (Families most
+     popular), recency/source-quality priors, locked/featured as hard
+     signal.
+   - Normalize each signal to [0,1] and have weights sum to 1 so the
+     0.4 quality floor (R6-W5 step 3) is interpretable.
+   - **Drop slot-position from candidate scoring signals** — it's a
+     confound at allocation time (R3 assigns slot *from* score, not
+     score from slot). See §28 Amendments.
+   - If backtest (step 2) shows hand-set v1 beats earliest-date sort:
+     done, no regression needed.
+   - **Regression only if backtest fails.** Then: exclude frozen eval-set
+     issues from training matrix, z-score features before fitting, report
+     partial-dependence / permutation importance (not raw magnitudes),
+     pick one model family (linear-on-log-clicks OR logistic), use
+     slot-position interaction as confound control only. Document in
+     Decision_Log §28.
 3. Define scoring signal hierarchy (editorial actions strongest, clicks
-   weaker because exposure-biased). Weights informed by step 2a coefficients:
+   weaker because exposure-biased). Weights from step 2a:
    - Locked/featured by editor (hard signal)
    - Repeat historical inclusion (venue/organizer — derived from
      `issue_history.json` URL recurrence)
@@ -304,8 +330,9 @@ formula until that list is in hand.
    - Recency fit: days between event start and issue date
    - Source quality defaults (from per-source click averages, step 1)
    - Segment click weight (from per-segment click averages, step 1)
-   - Slot-position prior (does slot 1 always strongest regardless of
-     content? Test before including as feature.)
+   - **Slot-position is NOT a candidate scoring signal** (removed
+     2026-05-29 — circular, since R3 assigns slot from score; used only
+     as confound control in regression if needed. See §28 Amendments.)
 4. Add ScoreSignalCount field (0–5) for editorial transparency.
 5. Evaluate GPT-5-mini as replacement for GPT-4o in R2 LLM node
    (Debt #13): run on 20 records, compare SegmentSuggested quality.
@@ -368,18 +395,26 @@ formula until that list is in hand.
 > → Log in NA/Vaughan_Metrics_Log.md (NeedsReview baseline section)
 > → Update NA/VB_Portfolio_Case_Study.md update log (same row, same time)
 
-#### R7-W6 (3h): Build training set + train classifier + frozen eval set
+#### R7-W6 (4h): Build training set + train classifier + frozen eval set
 
-1. Build training set from `issue_history.json` — extract `(event title, section)` pairs. Title comes from the editor-final DisplayTitle (extracted in R6-W4 step 0a) or from matching the URL back to Candidates.Title for events that flowed through the pipeline. Filter out Trust Me Recipe (not a real segment — manual only).
-2. Hold out frozen eval set FIRST — 15 high-confidence + 15 ambiguous examples per segment. These never enter training. Lock the list in `data/beehiiv/r7_eval_set.md`.
-3. Train LinearSVC + TF-IDF on the remaining labels. Tune confidence threshold against eval set — too high = wastes LLM on records the classifier could've handled; too low = classifier ships wrong predictions silently.
-4. Set up model versioning — pickled model + training data hash + eval accuracy stored per version. Regressions are rollback-able by reverting to the previous model file.
-5. Replay GPT-4o baseline against the same frozen eval set so the comparison is apples-to-apples.
+**REVISED 2026-05-29 after external review** — train/serve feature skew, calibration, and class-balance gaps identified. See Decision_Log §17 Amendments for full reasoning.
+
+1. Build training set from `issue_history.json` — extract `(URL, section)` pairs, then match URL back to `Candidates.Title` + `Candidates.DescriptionRaw` (the actual R2 input fields, NOT editor-final DisplayTitle). For events without a Candidates match (pre-pipeline issues), flag separately — they're a weaker label source and may need to be excluded entirely. Filter out Trust Me Recipe (not a real segment — manual only).
+2. Hold out frozen eval set FIRST — 15 high-confidence + 15 ambiguous examples per segment. These never enter training. Lock the list in `data/beehiiv/r7_eval_set.md`. Eval set must use the same field source as training (Candidates.Title + DescriptionRaw) — no DisplayTitle leakage.
+3. Train LinearSVC + TF-IDF on the remaining labels. Required configuration:
+   - Features: TF-IDF on `Candidates.Title` + `Candidates.DescriptionRaw` (concat or separate vectorizers — try both)
+   - `class_weight='balanced'` — Families is the dominant class (§1); without rebalancing, recall on Couples / Golden Age / Local Aroma will silently tank
+   - Wrap with `CalibratedClassifierCV` (Platt scaling) on held-out data — LinearSVC margins are NOT probabilities. The confidence threshold for LLM fallback only means anything after calibration.
+4. Tune confidence threshold against eval set — too high = wastes LLM on records the classifier could've handled; too low = classifier ships wrong predictions silently. Threshold tuned on *calibrated* probabilities, not raw margins.
+5. **Headline metric: per-segment recall, not overall accuracy.** Class imbalance means overall accuracy is misleading. Report a 4×4 confusion matrix + per-segment precision/recall/F1.
+6. Set up model versioning — pickled model + training data hash + eval metrics stored per version. Regressions are rollback-able by reverting to the previous model file.
+7. Replay GPT-4o baseline against the same frozen eval set so the comparison is apples-to-apples. **GPT-4o-mini comparison too** (per Claude.ai review — if mini is close enough, the classifier infra cost may not be justified for 2 newsletters; decision: ship classifier if it materially beats mini on per-segment recall, otherwise stay with mini).
 
 **Deliverables:**
-- Training set + frozen eval set built and stored
-- Classifier trained, accuracy measured against eval set
-- Comparison vs GPT-4o baseline documented
+- Training set + frozen eval set built and stored, both using Candidates.Title + DescriptionRaw
+- Classifier trained with class_weight='balanced' + CalibratedClassifierCV calibration
+- Per-segment recall reported (not just accuracy)
+- Comparison vs GPT-4o AND GPT-4o-mini baselines documented
 - Model versioning in place
 
 #### R7-W7 (3h): Deploy classifier to R2 + validate
@@ -427,9 +462,25 @@ formula until that list is in hand.
 4. Add dry-run flags to R2, R3, R4 (pushToBeehiiv already has one).
    Critical for client running scripts independently.
 5. Add cost-per-run logging to ExecutionLog (token count + USD).
-   Threshold alert before client gets a surprise bill.
+   Threshold alert before client gets a surprise bill. **Pull this
+   forward to R5** (per 2026-05-29 review) — R5 triples R2 LLM-fallback
+   calls + R4 generation as the candidate pool grows toward 75. Cost
+   visibility matters before that scaling event, not after.
 6. Add manual override audit trail: when editor flips Status, Segment,
    or Lock, log it. Feeds few-shot mechanism and informs eval.
+7. **Preflight / smoke-test / bootstrap script (added 2026-05-29).**
+   Client is a non-engineer running scripts locally. Polished SOPs aren't
+   enough — the toolchain itself needs guardrails.
+   - `scripts/preflight.js` — verifies env vars present, API keys valid
+     (test ping per service), Airtable base reachable, expected tables/
+     fields exist. Runs first in the weekly sequence; exits with clear
+     error message if anything fails.
+   - `scripts/smoke_test.js` — runs each script (R3, R4, pushToBeehiiv)
+     in `--dry-run` mode against a known-good Issue date. Validates the
+     full pipeline path without writing to Airtable or generating costs.
+     Use before any real run after env or dependency changes.
+   - Document one-command bootstrap in RUNBOOK: `npm install` + env file
+     setup + preflight + smoke test, in that order.
 
 **Deliverables:**
 - Vaughan pipeline runs clean end-to-end
