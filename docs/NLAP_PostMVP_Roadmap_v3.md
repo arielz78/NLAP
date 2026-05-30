@@ -451,6 +451,7 @@ formula until that list is in hand.
 - Client can run all scripts independently for Vaughan.
 - Mississauga newsletter onboarded via config (no code changes).
 - Runbook + failure protocol written and signed off.
+- Execution interface decision made: assess whether client should be running scripts manually (VS Code + terminal) or whether a lower-friction path (scheduled automation, webhook trigger, simple UI) is warranted before handoff. Pick and scope the approach — don't hand off a terminal workflow to a non-technical client without a deliberate decision.
 
 #### R8-W8 (4h): Validate + harden (Vaughan)
 

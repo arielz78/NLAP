@@ -103,7 +103,7 @@ async function fetchIssueId(date) {
 
 // ── Fetch IssueItems for an issue ─────────────────────────────────────────────
 async function fetchIssueItems(issueId) {
-  const formula = `SEARCH("${issueId}", ARRAYJOIN({Issue})) > 0`;
+  const formula = `SEARCH("${TARGET_DATE}", {Name}) > 0`;
   const records = await getAllRecords(ISSUEITEMS_TABLE_ID, { filterByFormula: formula });
   return records
     .map(r => ({

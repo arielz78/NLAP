@@ -227,7 +227,7 @@ async function main() {
   console.log(`✅ Issue: ${issueId}  status=${issue.fields.Status || 'unknown'}`);
 
   // 2. Fetch IssueItems
-  const formula = `SEARCH("${issueId}", ARRAYJOIN({Issue})) > 0`;
+  const formula = `SEARCH("${TARGET_DATE}", {Name}) > 0`;
   const rawItems = await getAllRecords('IssueItems', formula);
   if (!rawItems.length) throw new Error('No IssueItems found for this issue.');
   console.log(`📋 IssueItems: ${rawItems.length}`);
