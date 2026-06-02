@@ -29,6 +29,7 @@ const SKIP_PATTERNS = [
   'threads.net/intent',
   'linkedin.com/sharing',
   'refind.com',
+  '_bhiiv=opp_',
 ];
 
 function stripUtm(url) {
@@ -53,10 +54,9 @@ function parseIssue(html) {
   for (const label of SECTIONS) {
     for (const variant of [label, label + ' ']) {
       const idx = html.indexOf('<b>' + variant + '</b>');
-      if (idx !== -1) {
-        positions.push({ section: label, pos: idx });
-        break;
-      }
+      if (idx !== -1) { positions.push({ section: label, pos: idx }); break; }
+      const idx2 = html.indexOf('<strong>' + variant + '</strong>');
+      if (idx2 !== -1) { positions.push({ section: label, pos: idx2 }); break; }
     }
   }
   positions.sort((a, b) => a.pos - b.pos);

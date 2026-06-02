@@ -271,6 +271,7 @@ backtest + formula. Segment weights compute from client's tagged URL
 list (Talking Point A in meetings/2026-05-14.md) — do not start the
 formula until that list is in hand.
 
+0. **Data scoping rules (from Issue #54 audit, 2026-06-02).** For Golden Age Readers: use March 2025 onward only — section did not exist in the template before that. For Families and For Couples: full 72-issue range safe, but Jan-Feb 2025 labels are the least-audited subset — check this cohort first if early-era backtest results look off. Trust Me Recipe and Local Aroma excluded from R6/R7 training entirely (editorial content, not events).
 0. **Freeze the R6 eval set.** Pick 10–15 past issues from
    `data/beehiiv/issue_history.json` (72 issues available as of 2026-05-28)
    — spread across cohorts (early/mid/recent), avoid issues with known
@@ -407,7 +408,7 @@ formula until that list is in hand.
 
 **REVISED 2026-05-29 after external review** — train/serve feature skew, calibration, and class-balance gaps identified. See Decision_Log §17 Amendments for full reasoning.
 
-1. Build training set from `issue_history.json` — extract `(URL, section)` pairs, then match URL back to `Candidates.Title` + `Candidates.DescriptionRaw` (the actual R2 input fields, NOT editor-final DisplayTitle). For events without a Candidates match (pre-pipeline issues), flag separately — they're a weaker label source and may need to be excluded entirely. Filter out Trust Me Recipe (not a real segment — manual only).
+1. Build training set from `issue_history.json` — extract `(URL, section)` pairs, then match URL back to `Candidates.Title` + `Candidates.DescriptionRaw` (the actual R2 input fields, NOT editor-final DisplayTitle). For events without a Candidates match (pre-pipeline issues), flag separately — they're a weaker label source and may need to be excluded entirely. Filter out Trust Me Recipe and Local Aroma (editorial content, not events). Filter out For Golden Age Readers labels before March 2025 (section did not exist in template). Jan-Feb 2025 For Families/For Couples labels are lowest-confidence — exclude if classifier performance on that cohort is weak.
 2. Hold out frozen eval set FIRST — 15 high-confidence + 15 ambiguous examples per segment. These never enter training. Lock the list in `data/beehiiv/r7_eval_set.md`. Eval set must use the same field source as training (Candidates.Title + DescriptionRaw) — no DisplayTitle leakage.
 3. Train LinearSVC + TF-IDF on the remaining labels. Required configuration:
    - Features: TF-IDF on `Candidates.Title` + `Candidates.DescriptionRaw` (concat or separate vectorizers — try both)

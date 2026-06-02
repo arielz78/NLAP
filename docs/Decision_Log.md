@@ -485,6 +485,24 @@ External review (Claude.ai + ChatGPT) surfaced four execution-level fixes the or
 
 What didn't change: classifier path itself, LLM-fallback architecture, frozen eval set discipline, model versioning.
 
+### Amendments 2026-06-02 — Issue #54 stratified parser audit closed
+
+Full 9-issue stratified correctness audit completed (3 issues × 3 eras: 2025 Q1-Q2, 2025 Q3-Q4, 2026 Q1-Q2). Verdict: labels are trustworthy for R6 and R7, with the following scoping rules and caveats.
+
+**Section exclusions (permanent):**
+- Trust Me Recipe and Local Aroma excluded from R6/R7 training entirely. These are editorial sections (a recipe and a restaurant pick), not events. Including them in an event classifier would corrupt it.
+
+**Data range restrictions:**
+- For Golden Age Readers: use March 2025 onward only. The section did not exist in the Beehiiv template before that — "Listen by Yourself" was used instead. Labels before March 2025 do not exist.
+- For Families, For Couples: full 72-issue range safe. Jan-Feb 2025 labels are the least-audited subset (one sample only in the early-era audit) — check this cohort first if early-era backtest results look off.
+- Trust Me Recipe: did not appear in the template until January 2026. Excluded regardless (see above).
+
+**Parser fixes applied (2026-06-02):**
+- Added `_bhiiv=opp_` to `SKIP_PATTERNS` — Beehiiv ad/partner links were slipping through into event sections. Issues #55 closed.
+- Added `<strong>` tag fallback in `parseIssue` section-detection loop alongside `<b>`. Existing `issue_history.json` unaffected (API returned `<b>` when the script ran). Protects against silent zero-extraction if API changes tag format. Issue #56 closed.
+
+**Template-era finding:** No section mis-attribution or `<b>` tag pattern failures found across any era for the three event sections. Section schema changed in early 2025 (Golden Age and Trust Me Recipe absent) but this is a structural gap, not a parser error.
+
 ---
 
 ## 18. Facebook Automation
