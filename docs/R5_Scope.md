@@ -2,71 +2,63 @@
 
 **Owner:** Nathan  
 **Deadline:** June 4  
-**Roadmap:** `docs/NLAP_PostMVP_Roadmap.md`
+**Roadmap:** `docs/NLAP_PostMVP_Roadmap_v3.md`
 
 **Read order:** this doc → `docs/source_decision_sheet.md` → roadmap (only if you need full release context).
 
 **Tracking:** Tasks live in GitHub Issues #33 (W1), #34 (W2), #35 (W3), #53 (data analysis input to W1). Close them as you go.
 
-**New input as of 2026-05-28:** `data/beehiiv/issue_history.json` contains 2,729 `(section, url)` pairs across all 72 past published issues — generated via Beehiiv API (script: `scripts/fetchBeehiivHistory.js`). This replaces the original manual 7-issue tally with full 15-month coverage. See #53 for the seven analyses to run before W1 task 1.
-
-**Gates:**
-- W1 must be reviewed with Ariel before W2 starts.
-- The 3-vs-4 sources decision is a W1 → W2 handoff (see W1 task 4).
+**Key data input:** `data/beehiiv/issue_history.json` contains 2,729 `(section, url)` pairs across 72 past published issues, generated from the Beehiiv API. This is the ground truth for W1 — it tells you what sources actually fed the newsletter over the last 15 months, which sections are thin, and which sources have gone stale. Everything in W1 builds off this file.
 
 ---
 
 ## W1 — Source Audit + Newsletter Config Design
 
-**Effort:** ~3h  
-**Prereq:** None  
-**Blocks:** W2
+**Effort:** ~3h | **Blocks:** W2
 
----
+### What W1 is for
 
-### Context
+The pipeline currently pulls from RSS feeds and Eventbrite only. The candidate pool is thin — not enough events to fill all five sections with quality picks. W1's job is to figure out which sources should be added in W2 by looking at what the client has actually been publishing over the last 15 months, confirming those sources still have live endpoints, and designing the config structure that W2 will build against. You can't start W2 without W1 signed off by Ariel, because W2 builds directly on the source decisions and config structure you produce here.
 
-Determines what gets built in W2. Cannot start W2 without W1 reviewed and signed off by Ariel.
+### Current state (2026-06-03)
 
----
+Some of this is already done. Here's where things stand:
+
+**Done:** The domain tally (#53 analysis 1) has been run against `issue_history.json`. Four sources have been identified with proposed integration methods — `calendar.trca.ca`, `markham.bibliocommons.com`, `mcmichael.com`, and `meetup.com`. A config schema has been drafted.
+
+**Still needed before the W1 gate:**
+
+Run #53 analyses 2–7 (section fill rate, venue repeat, data quality, stale source detection, Facebook share per section, URL recurrence) and post one-line takeaways in #pipeline. These aren't optional — the Facebook % breakdown is an explicit R5 exit criterion, and stale source detection tells you which sources not to wire up in W2.
+
+The Markham Bibliocommons method needs to be resolved. The source analysis says per-event iCal; the config says `"method": "api"`. Pick one — the priority order is iCal first, undocumented API second.
+
+The Meetup endpoint is a placeholder (`"(input list of group ical urls)"`). Find the actual group iCal URLs before W2.
+
+The config has two problems: JS-style comments (`//`) aren't valid JSON and need to be removed, and the multi-tenant fields are missing — add `airtableBaseId`, `beehiivPubId`, `scoringWeights`, and `prompts`. Without those four fields, the config is a source list, not a tenant config. The whole point of the config is that swapping those four fields is what makes the pipeline work for Mississauga instead of Vaughan.
+
+**Gates already resolved by Ariel — do not re-open:**
+
+Geography is confirmed: Markham and Richmond Hill are `include`, same tier as Vaughan. Move them out of `adjacent`. The newsletter covers all three equally.
+
+The idempotency key stays as `title|date`. The theoretical collision risk (same-day same-title events from high-volume sources) is low enough at this scale that adding venue back isn't worth the migration cost. Monitor in practice.
+
+Four sources are signed off. Proceed with all four if all have iCal or undocumented API.
+
+Prereq #1 (R2 classification eval) does not block you. That's Ariel's gate for R6/R7. W2 is ingestion plumbing — classification quality is irrelevant to whether the source branches work correctly.
 
 ### Tasks
 
-1. **Run the issue_history.json analyses (see #53).** Seven analyses across 2,729 historical events. Outputs you need before moving to task 3:
-   - Domain tally per section (which sources dominate, what % is Facebook)
-   - Section fill rate (which sections consistently underfill — your case for source expansion)
-   - Stale source detection (which domains went dead — do NOT wire these up in W2)
-   - Facebook share per section (sharpens or weakens the Decision_Log §18 framing)
-   - Plus venue repeats, candidate pool data quality, URL recurrence — fuller context
-   - One-line takeaway per analysis, posted in Discord #pipeline
+**Task 1 — Run the analyses.** Run all seven analyses from GitHub Issue #53 against `issue_history.json`. The ones that matter most for W2 are stale source detection (don't wire up dead sources) and Facebook share per section (context for W3 scoping). Post one-line takeaways per analysis in Discord #pipeline.
 
-2. **Cross-reference three inputs:**
-   - Output from task 1 above (15-month domain tally)
-   - `docs/source_decision_sheet.md` — Ariel's audit of candidate URLs the client uses
-   - Beehiiv clicks data (already analyzed 2026-05-13, see `data/beehiiv/clicks_analysis_2026-05-13.md`) — for which sources actually drive engagement
-   - **Reconcile contradictions.** If a source is in the decision sheet but appears stale in task 1, flag it. If a source dominates volume in task 1 but is missing from the decision sheet, flag it.
+**Task 2 — Cross-reference three inputs.** Take the analysis output from Task 1 and compare it against two other things you have: `docs/source_decision_sheet.md` (Ariel's audit of which websites the client sources from) and `data/beehiiv/clicks_analysis_2026-05-13.md` (which sources drive actual engagement). The goal is to reconcile contradictions — if a source is in the decision sheet but shows up as stale in Task 1, flag it. If a source dominates volume in Task 1 but isn't in the decision sheet, flag it. You want all three inputs pointing at the same four sources before you lock in W2.
 
-3. **Probe each non-Facebook source** for integration method, in priority order (same priority that applies in W2):
-   1. iCal endpoint
-   2. Undocumented API (browser dev tools → Network → XHR/Fetch)
-   3. JSON-LD in HTML (`<script type="application/ld+json">`)
-   4. HTML scraping (last resort — fragile)
+**Task 3 — Probe integration methods.** For each of the four sources, confirm the integration method by actually testing it. Try in this order: iCal endpoint first, then undocumented API (browser dev tools → Network → XHR/Fetch), then JSON-LD embedded in the HTML, then HTML scraping as a last resort. Document the confirmed method and endpoint for each source. If any source requires HTML scraping, drop to three sources — don't let one hard source eat the W2 budget.
 
-4. **Pick 2–4 sources to integrate.** Decision rule:
-   - 4 sources if all have iCal or undocumented API
-   - 3 sources if any require HTML scraping
-   - Document method + endpoint per source
-   - Gate this decision with Ariel before W2
-
-5. **Newsletter config:** Design how Vaughan-specific config (segments, geography Markham/RH/Vaughan, quotas, active sources) lives in R1 — Set node at top of workflow. No JSON config file, no `--newsletter` flag. Mississauga gets a cloned workflow at R8.
-
----
+**Task 4 — Fix and finalize the config.** Take the drafted config and close the open items: move Markham and Richmond Hill to `include`, fill in the Meetup group iCal URLs, resolve the Markham Bibliocommons method, remove JS comments, and add the four missing multi-tenant fields. The finished config is what Ariel reviews at the W1 gate.
 
 ### Done When
 
-- All seven analyses from #53 run; one-line takeaways posted in #pipeline
-- 2–4 sources picked with method + endpoint documented (stale sources from #53 excluded)
-- Vaughan config structure agreed with Ariel before W2 starts
+All seven #53 analyses are run and posted. Four sources (or three, if any need scraping) are confirmed with method and endpoint. The config is valid JSON with all multi-tenant fields present. Ariel has reviewed and signed off before W2 starts.
 
 **Tracked in:** #33 (W1 tasks), #53 (data analysis input)
 
@@ -74,84 +66,55 @@ Determines what gets built in W2. Cannot start W2 without W1 reviewed and signed
 
 ## W2 — Source Integration + Multi-Tenant Plumbing + Integrity Guards
 
-**Effort:** ~5h  
-**Prereq:** W1 source audit complete and reviewed with Ariel before starting
+**Effort:** ~5h | **Prereq:** W1 signed off by Ariel
 
----
+### What W2 is for
 
-## Context
+W2 takes the source decisions from W1 and builds them into the live R1 n8n workflow. Every new source becomes a separate branch that fetches, normalizes, and merges into the existing Candidates upsert node. On top of that, W2 fixes two known bugs in the existing pipeline — recurring events that get dropped too early (Debt #8) and inconsistent source names that will break R6 scoring (Debt #5) — and adds a schema validator that hard-rejects malformed records before they hit R2.
 
-All source ingestion stays in n8n (R1 workflow). New sources are added as additional branches — not Node.js scripts. Use native n8n nodes where available, Code nodes for anything without a native integration.
+All source ingestion stays in n8n. These are not Node.js scripts — use native n8n nodes where available, Code nodes where not.
 
-Read the updated R1 workflow and GitHub issue #34 before starting.
+### Safe Execution — Read This Before Touching Anything
 
----
+R1 ships a real newsletter every Thursday. W2 edits the running system, and three of the ten steps don't add new behavior — they change existing behavior (recurring event expiry, source renaming, schema rejection). Those are where corruption hides. Follow this discipline exactly.
 
-## Source Integration
+**Step 0 — before any changes.** Re-export the current live `NLAP R1` workflow to git (`workflows/NLAP_R1.json` may be stale — export the actual running version and commit it). This is your rollback. Then duplicate the workflow to `NLAP R1 - W2 dev` and do all W2 work on the copy. The live workflow keeps shipping Thursdays untouched. Point the dev copy at a scratch Candidates table, or disable the upsert node entirely, so dev runs never write to the live table. A dev run against the live table can silently overwrite editor-approved records — this is the single most important guardrail in W2.
 
-### Priority order per source
+**Phase 1 — additive source branches (safe).** Build one source branch at a time. Before connecting any branch to the merge node, use n8n's pin/execute-single-node to inspect its output in isolation and confirm the UniqueEventID is formatted correctly (`title|date`), dates are ISO, and the source name is normalized. One branch validated, then the next. Wrap every external fetch in `continueOnFail` so a dead source can't kill the whole run — undocumented APIs and iCal feeds will be flaky.
 
-Probe each source in this order. Stop at the first method that works.
+**Phase 2 — behavior changes (risky).** The recurring event fix and source normalization both change what the existing pipeline does to records it has already seen. Don't just make the change and see if it runs. Take last week's actual candidate set, run old logic vs new logic, and diff the outputs. Confirm no previously-valid event is newly dropped, no stale event is newly retained, and no source name is changed in a way that breaks a downstream consumer. Source renaming is sneakier than it looks — the max-1-venue-per-section rule, dedup, and R6 scoring all key on source name. A broken remap fragments dedup silently.
 
-1. **iCal** — HTTP Request node to `.ics` URL. Easiest. If the site has it, done in under an hour.
-2. **Undocumented API** — Open browser dev tools → Network tab → filter XHR/Fetch → load the events page and watch what API calls the site makes. If you find a JSON endpoint, use that URL directly in n8n via HTTP Request node. Reference: see how Eventbrite is implemented in the current R1 workflow — same pattern.
-3. **JSON-LD embedded in HTML** — Many event sites embed structured data in `<script type="application/ld+json">` tags. HTTP Request + Code node to extract.
-4. **HTML scraping** — Last resort. Fragile, breaks on redesigns. Only use if nothing else works.
+**Phase 3 — schema validator (log-only first).** Run the validator in count/log-only mode before enabling hard-reject. Have it emit `MISSING_DATE` / `MISSING_LINK` / `MISSING_TITLE` counts to the execution log without dropping anything. Inspect the list for false positives — a valid event with a quirky field format. Only flip to hard-reject once you've confirmed it's not eating good records. A too-aggressive validator silently shrinks the candidate pool, which is the opposite of what R5 is trying to do.
 
-### How many sources
+**Phase 4 — idempotency and R2 flow.** Run the dev copy twice against the scratch table and confirm the record count is stable (no dupes) and no Status churn. Then push a handful of new-source candidates through R2 classification and confirm they classify correctly without breaking the LLM path.
 
-- **4 sources** if W1 confirms all have iCal or undocumented API endpoints
-- **3 sources** if any require HTML scraping — don't let one hard source eat the budget
+**One thing to check before adding any branches.** There's a single merge node where all branches converge. In n8n, merge mode matters — if it's set to "combine by position" rather than "append," adding new branches misaligns rows. Confirm it's set to append before touching it.
 
-Gate this decision with Ariel after W1 before starting W2.
+**Upsert node rule — never map Status.** Every new branch maps Title, Date, Link, Source, etc. into the upsert node, but never map the `Status` field. Re-upserting an event the editor already set to Approved must not reset it to New. This fix was already applied to the existing R1 branches — apply the same rule to every branch you add.
 
-### Implementation
+**Cutover window.** Swap dev→live only on Fri–Mon. Never touch the workflow on Tue–Thu — Thursday is the live issue and you don't want to be debugging a broken workflow the day before it runs. On the first live run after cutover, compare the candidate count and source mix against the pre-W2 baseline (the 433-record snapshot from `snapshotCandidates.js`). An unexplained swing means something in the merge or dedup misfired.
 
-Each new source is a separate branch in R1, merging into the existing Candidates upsert node. Structure:
+### What to Build
+
+Each new source follows the same pattern:
 
 ```
 [Source Trigger] → [Fetch Events] → [Normalize to Candidates Schema] → [Merge]
 ```
 
-Map all sources to the canonical Candidates schema before the merge node. Fields required: Title, StartDate, EndDate (if available), Link, LocationName, City, Source.
+Map every source to the canonical Candidates schema before the merge node. Required fields: Title, StartDate, EndDate (if available), Link, LocationName, City, Source.
 
----
+**Newsletter config** lives as a Set node at the top of the R1 workflow. It stores Vaughan-specific config: segments, geography (Vaughan, Markham, Richmond Hill all `include`), quotas, and active sources. Mississauga gets its own cloned workflow at R8 — no flag or JSON config file is needed now. The point of externalizing this into a Set node is that it makes the Mississauga clone a two-minute job instead of a search-and-replace across the whole workflow.
 
-## Newsletter Config Scoping
+**Recurring events fix (Debt #8).** Currently the pipeline uses StartDate to decide whether an event is still in the date window. Events with an EndDate that extends past the window cutoff are being dropped even though they're still active. Fix: when EndDate is present, use EndDate to gate expiry instead of StartDate.
 
-Add Vaughan config to R1 as a Set node at the top of the workflow. Config covers: segments, geography (Markham / Richmond Hill / Vaughan), quotas, active sources. Mississauga gets its own workflow clone at R8 — no flag or JSON file needed now.
+**Source normalization (Debt #5).** Source names are inconsistent across the existing pipeline — the same site appears under multiple names depending on how it was ingested. This matters because R6 scoring weights per source, and dedup keys off source name. Add a Set or Code node that maps raw domain → canonical source name (e.g. `inoreader.com` → `McMichael RSS`) and apply it once, before the merge node, for every branch including the existing ones.
 
----
+**Airtable retry.** The Node.js scripts already have Retry-After header backoff added in the 2026-05-21 script review. Confirm the n8n upsert node also has retry enabled — it should match.
 
-## Integrity Guards
+### Done When
 
-### Recurring events (Debt #8)
-Use EndDate to gate expiry when EndDate is present, rather than StartDate. Prevents active recurring events from falling outside the date window.
-
-### Source normalization (Debt #5)
-Add a Set or Code node that maps domain → readable source name (e.g. `inoreader.com` → `McMichael RSS`). Consistent naming feeds into R6 scoring weights.
-
-### Pre-R2 schema validator
-Hard-reject records missing StartDate, Link, or Title before they hit R2. Write typed rejection reasons to execution log output:
-- `MISSING_DATE`
-- `MISSING_LINK`
-- `MISSING_TITLE`
-
-### Airtable retry
-Confirm the R1 n8n upsert node has retry enabled. The Node.js scripts already have Retry-After header backoff (added 2026-05-21) — make sure the n8n side matches.
-
----
-
-## Done When
-
-- 3–4 new sources live as branches in R1 n8n workflow
-- All new sources map to canonical Candidates schema
-- Newsletter config scoped in R1 Set node (Vaughan only)
-- Recurring events no longer dropped incorrectly
-- Source names consistent across all records
-- Invalid records rejected with typed reasons at ingestion
-- Rerun does not duplicate (idempotency confirmed)
-- New candidates flow through R2 classification correctly
+Three to four new source branches are live in R1, all mapping correctly to the Candidates schema. The newsletter config is in a Set node at the top of the workflow. Recurring events are no longer dropped incorrectly. Source names are consistent across all records. The schema validator is running and rejecting malformed records with typed reasons. Reruns don't create duplicates. New candidates flow through R2 classification correctly.
 
 **Tracked in:** #34
 
@@ -159,47 +122,28 @@ Confirm the R1 n8n upsert node has retry enabled. The Node.js scripts already ha
 
 ## W3 — Facebook Manual Intake + Candidate Pool Checks
 
-**Effort:** ~3h  
-**Prereq:** W2 source branches live (so the intake handler can merge into the same Candidates upsert)
+**Effort:** ~3h | **Prereq:** W2 source branches live
 
----
+### What W3 is for
 
-### Context
+Facebook drives 58% of click volume across the 15-month Beehiiv history (Decision_Log §18). Automating it is off the table — the TOS risk and fragility aren't worth it, and that decision is locked. What W3 builds instead is a reliable manual intake path: the client pastes Facebook events into a structured drop zone weekly, and the pipeline processes them identically to automated sources. W3 also adds the safety checks that catch candidate pool problems before R3 allocation runs — because if the pool is too thin, scoring in R6 is cosmetic and the newsletter ships with whatever's left.
 
-Facebook is 58% of click volume (Decision_Log § 18, `data/beehiiv/clicks_analysis_2026-05-13.md`). Automation is ruled out — TOS risk, so manual intake is the path. This week makes that intake idempotent and reliable, and adds the safety checks that catch pool problems before R3 allocation runs.
-
-**Refer to #53 task 6** (Facebook share per section, from `issue_history.json`) before starting. If FB placement share is much lower than 58%, the click-volume framing is the right lens (FB is the clicks goldmine, not the volume source) — keep the reliability checks as scoped. If placement share is also ~58%, FB is both the volume and clicks source — strengthens the case for considering richer intake infra later.
-
----
+Before starting W3, check the Facebook share per section output from #53 analysis 6. If Facebook's placement share across sections is much lower than its 58% click share, that tells you Facebook is the clicks goldmine but not the volume source — the reliability checks stay as scoped but the intake format matters less. If placement share is also ~58%, Facebook is both the volume and clicks engine, which strengthens the case for making the intake as friction-free as possible for the client.
 
 ### Tasks
 
-1. **Pick intake format.** Options: Airtable form (client fills weekly) or watched folder + CSV drop. Default to **Airtable form** unless reason to do otherwise — easier to validate at intake, no file-system dependency, no extra infra for client.
+**Task 1 — Pick the intake format.** The two options are an Airtable form the client fills weekly or a watched folder with a CSV drop. Default to the Airtable form — it's easier to validate at intake, has no file-system dependency, and requires no extra infrastructure for the client to manage.
 
-2. **Build intake handler.** Reads the drop zone, maps each entry to canonical Candidates schema (Title, StartDate, EndDate optional, Link, LocationName, City, Source = `"Facebook"`). Upserts via UniqueEventID (`title|date` format — see CLAUDE.md Data Rules).
+**Task 2 — Build the intake handler.** Reads from the drop zone and maps each entry to the canonical Candidates schema: Title, StartDate, EndDate (optional), Link, LocationName, City, Source = `"Facebook"`. Upserts via UniqueEventID in `title|date` format.
 
-3. **Test idempotency.** Submit same record twice → confirm no duplicate.
+**Task 3 — Test idempotency.** Submit the same record twice and confirm no duplicate is created. This is non-negotiable — idempotency is a pipeline non-negotiable and Facebook intake must behave identically to automated sources.
 
-4. **Test with real sample.** Pull 3–5 sample Facebook events client has submitted before. Confirm they flow through R2 classification correctly.
+**Task 4 — Test with a real sample.** Pull 3–5 actual Facebook events the client has submitted before and confirm they flow through R2 classification correctly. Don't test with synthetic data.
 
-5. **Pre-R3 pool count check.** Before R3 allocation runs, hard-flag if eligible candidates < minimum viable threshold. Threshold: 75 (rationale in task 7).
-
-6. **Facebook 0-submission detection.** In each run, count Facebook records. If 0 and 8+ days since last Facebook submission, flag in run log.
-
-7. **Candidate-to-slot ratio gate.** 25 slots total (5 segments × 5). If eligible pool < 75 (3:1 ratio), flag as go/no-go before R6 — scoring is cosmetic at low pool sizes.
-
----
-
-### Reliability note (context, not a task)
-
-Facebook drives 58% of click volume. If the client misses a weekly submission, the affected issue loses more than half its click potential. The 0-submission check catches misses after the fact — earlier signal is a future improvement, not in scope for R5.
-
----
+**Task 5 — Add pool safety checks.** Three checks: (1) Before R3 runs, hard-flag if the eligible candidate pool is below 75 — that's the 3:1 ratio against 25 allocation slots, and below that number R6 scoring is cosmetic. (2) In each run, count Facebook records. If zero and it's been 8+ days since the last Facebook submission, flag it in the run log — the client committed to weekly submission and a miss loses more than half the issue's click potential. (3) After W2 and W3 both ship, document the candidate-to-slot ratio in the run log as a go/no-go signal before starting R6.
 
 ### Done When
 
-- Client can submit Facebook events manually; pipeline processes them identically to automated sources
-- Idempotency confirmed (rerun does not duplicate)
-- Pool count, Facebook 0-submission, and candidate-to-slot ratio checks all in place and tested
+The client can submit Facebook events manually and the pipeline processes them identically to automated sources. Idempotency is confirmed. Pool count, Facebook 0-submission detection, and candidate-to-slot ratio checks are all in place and tested.
 
 **Tracked in:** #35
