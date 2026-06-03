@@ -6,7 +6,7 @@ Release + Week-by-Week Execution Plan
 **Architecture:** Multi-tenant (Vaughan + Mississauga confirmed, end of summer launch)  
 **Time budget:** 10h/week each (Ariel + Nathan, 20h combined)  
 **Ownership:** Nathan owns R5, then pivots to PI for VB. Ariel owns R6–R8.  
-**Internal deadline:** R5 + R6 both done by June 4.
+**Internal deadline:** R5 done by June 4. R6 ~mid-June.
 
 ---
 
@@ -45,12 +45,11 @@ Plus handoff prep at the end.
 
 ~5h total. Must clear all six items before R5-W1 begins.
 
-### #1 — R2 classification eval (Debt #9, ~2h)
-Pull 20–30 classified candidates from Airtable (R2Status = Enriched).
-Stratified sample: across source types, confidence levels, segments.
-Not just clean records. Manually review SegmentSuggested +
-LLM_Rationale. Document failure patterns. Tighten R2 prompt or
-keyword rules. Rerun on same records, measure improvement.
+### #1 — R2 classification eval (Debt #9, ~2h) — CLOSED 2026-06-03
+Superseded by R7 classifier. Only remaining use was setting the
+SegmentConfidence floor in R6-W5 step 4 — start at 0.6 and adjust
+from live behavior. Prompt tuning is wasted work given R7 replaces
+the GPT-4o path.
 
 ### #2 — LLM_ParseError field check (Debt #10, ~30min)
 Confirm LLM_ParseError is writing to Airtable correctly. Open

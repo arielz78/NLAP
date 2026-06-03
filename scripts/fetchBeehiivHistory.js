@@ -1,5 +1,5 @@
 // Fetches all published Vaughan Brief issues via Beehiiv API.
-// Extracts (date, section, url) per event + published blurb text.
+// Extracts (date, section, slot, url, displayTitle, description, cta) per event.
 // Output: data/beehiiv/issue_history.json
 //
 // Run: node scripts/fetchBeehiivHistory.js
@@ -32,6 +32,18 @@ const SKIP_PATTERNS = [
   '_bhiiv=opp_',
 ];
 
+function stripTags(html) {
+  return html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function stripUtm(url) {
   try {
     const u = new URL(url);
@@ -63,15 +75,33 @@ function parseIssue(html) {
 
   const events = [];
   for (let i = 0; i < positions.length; i++) {
-    const start = positions[i].pos;
-    const end = i + 1 < positions.length ? positions[i + 1].pos : html.length;
-    const chunk = html.slice(start, end);
+    const sectionStart = positions[i].pos;
+    const sectionEnd = i + 1 < positions.length ? positions[i + 1].pos : html.length;
+    const chunk = html.slice(sectionStart, sectionEnd);
 
-    const urls = [...chunk.matchAll(/href="(https?:\/\/[^"]+)"/g)]
-      .map(m => stripUtm(m[1]))
-      .filter(isEventUrl);
+    const olRegex = /<ol[^>]+start="(\d+)"[^>]*>([\s\S]*?)<\/ol>/g;
+    let olMatch;
+    while ((olMatch = olRegex.exec(chunk)) !== null) {
+      const slot = parseInt(olMatch[1]);
+      const liContent = olMatch[2];
 
-    urls.forEach(url => events.push({ section: positions[i].section, url }));
+      const urlMatches = [...liContent.matchAll(/href="(https?:\/\/[^"]+)"/g)];
+      if (urlMatches.length === 0) continue;
+
+      const url = stripUtm(urlMatches[0][1]);
+      if (!isEventUrl(url)) continue;
+
+      const lines = liContent.split(/<br\s*\/?>/i)
+        .map(l => stripTags(l).trim())
+        .filter(l => l.length > 0);
+
+      // Remove leading emoji from displayTitle
+      const displayTitle = (lines[0] || '').replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, '').trim();
+      const description = lines[1] || '';
+      const cta = lines[2] || '';
+
+      events.push({ section: positions[i].section, slot, url, displayTitle, description, cta });
+    }
   }
 
   return events;
