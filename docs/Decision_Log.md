@@ -1,5 +1,5 @@
 # NLAP Decision Log
-*Last updated: 2026-05-28*
+*Last updated: 2026-06-04*
 
 This document records the reasoning behind every significant design and editorial decision in the pipeline. It is intended to be read by anyone who needs to understand not just what the system does, but why it works the way it does — including future collaborators (Nate) and future-you after time away.
 
@@ -973,4 +973,38 @@ R6-W5 deliverables (roadmap) implicitly assumed R3 auto-allocation was the only 
 ### Open follow-up (deferred, not load-bearing)
 
 Whether Step 2 picks should automatically Lock corresponding IssueItems is a separate UX question — answer probably yes (so a re-run of R3 doesn't undo the editor's curation), but the mechanism (Airtable automation? Manual checkbox? New script?) is deferrable until R6 ships and editor pick volume is observable.
+
+---
+
+## 30. Recency / Date-Proximity Dropped from Scoring Formula
+
+**Decision: drop date-proximity entirely from Score_Final. Within the eligibility window (IssueDate+1 through IssueDate+10), all days are treated equally.**
+
+*Decided 2026-06-04, client meeting.*
+
+### What was open
+
+R6 scoring design had "Recency fit: days between event start and issue date" as a candidate signal. Three shapes were on the table: CURVE (day 3–4 peak), THRESHOLD (minimum notice cutoff), SPREAD (distribution preference, not a score signal).
+
+### What the client said
+
+Client confirmed dates don't matter to readers — only event quality. No preference for imminent vs. later events within the 10-day window.
+
+### Data check
+
+Attempted to verify against historical click data. Finding: the historical data cannot support this analysis. `issue_history.json` stores event URLs but not event dates. Pre-pipeline issues were built manually in Beehiiv with no IssueItems in Airtable, so EventDate cannot be reconstructed. The data to test date-proximity effects doesn't exist yet; it will accumulate after 10–15 live pipeline issues.
+
+### Resolution
+
+Drop recency from the formula. The date window still gates eligibility — events must fall within IssueDate+1 through IssueDate+10 — but within that window proximity has no effect on Score_Final. If 10–15 post-pipeline issues accumulate and proximity shows a detectable signal, revisit then.
+
+---
+
+## 31. Local Aroma and Trust Me Recipe — Parked
+
+**Decision: no automation scope for Local Aroma or Trust Me Recipe at this time.**
+
+*Decided 2026-06-04, client meeting.*
+
+Both sections were on the agenda as potential candidates for blurb generation (Option A), intake structure (Option B), or full discovery automation (Option C). Client confirmed both sections are parked — no build work on either. They remain manual indefinitely until client raises them again.
 

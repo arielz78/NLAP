@@ -245,6 +245,15 @@ Code nodes for anything without a native integration. No Node.js rewrite.
 
 **Success =** Editorial override rate (swap rate) drops over the first 4–6 post-launch issues as the editor trusts R6's picks. Pre-launch: signal correlation check confirms scoring signals point in the right direction. See Decision_Log §28 for two-phase validation rationale.
 
+> **AMENDMENT 2026-06-04 (client meeting + live-data audit) — read before any R6 work:**
+> - **Recency/date-proximity DROPPED** from the formula (client: dates don't matter, only quality). Window still gates eligibility. See Decision_Log §30. → strike step 3 "Recency fit" and the recency prior in step 2a.
+> - **Source prior is INERT on the current pool.** Live Candidates are ~93% Eventbrite (monoculture); `Source` and `LocationName` fields are **0% populated** (484-record audit). Source/venue signals cannot discriminate until R5 diversifies sourcing AND `LocationName` is populated at ingestion (new R5 dependency).
+> - **Venue recurrence salvage = client-curated trusted-venue list** (incoming), matched on `Event Title`. Not derived from history (no clean venue key in `issue_history.json`).
+> - **R6 is now gated on R5** (pool diversity) + the venue list. With recency gone, today's pool has **zero working scoring signals** — do not build a scorer until R5 lands.
+> - **Method-fit shift:** client wants "quality" = editorial judgment → an **LLM/hybrid picker** is now the leading approach over a weighted formula (the engineered formula has little left to weight). Decide product-vs-portfolio framing post-R5; R7 carries the ML-rigor portfolio load regardless.
+> - **Date-spread constraint (W5 step 6): PENDING DECISION** — drop for consistency with §30, or keep as editorial variety. Leaning drop.
+> - **Segment click weight: CUT** — inert under hard per-segment quotas (constant within a segment ⇒ no effect on within-segment ranking).
+
 **Exit criteria:**
 - Click data analyzed — scoring weights grounded in real engagement
   data, not guesses.
@@ -256,7 +265,7 @@ Code nodes for anything without a native integration. No Node.js rewrite.
 - R3-Eligible Airtable view sorted by Score_Final desc (editorial
   curation view — see Decision_Log §29).
 - Quality floor enforced — slot left empty rather than filled with junk.
-- Date spread constraint enforced in R3.
+- Date spread constraint in R3 — **pending decision (2026-06-04), may be dropped per §30.**
 - Weights documented and tunable without a code change.
 - Client has reviewed one full issue allocated by score and signed off.
 
@@ -328,10 +337,14 @@ formula until that list is in hand.
    - Locked/featured by editor (hard signal)
    - Repeat historical inclusion (venue/organizer — derived from
      `issue_history.json` URL recurrence)
-   - SegmentConfidence (combined weight with recency)
-   - Recency fit: days between event start and issue date
+   - Trusted venue/organizer boost (client-supplied list, pending receipt)
+   - SegmentConfidence
    - Source quality defaults (from per-source click averages, step 1)
    - Segment click weight (from per-segment click averages, step 1)
+   - **Recency fit (date-proximity) is NOT a scoring signal** (dropped
+     2026-06-04 — client confirmed dates don't matter, only quality.
+     Historical data cannot test this anyway — event dates not stored
+     in issue_history.json for pre-pipeline issues. See Decision_Log §30.)
    - **Slot-position is NOT a candidate scoring signal** (removed
      2026-05-29 — circular, since R3 assigns slot from score; used only
      as confound control in regression if needed. See §28 Amendments.)
@@ -360,8 +373,10 @@ formula until that list is in hand.
    (prerequisite #1), not hardcoded at 0.6.
 5. Add Score_Final backfill pass for old candidates (Score_Final = 0
    will silently sink to bottom without it).
-6. Add date spread constraint in R3: if slots 1–5 fall in same 3-day
-   window, force at least one slot from different part of issue window.
+6. **PENDING DECISION (2026-06-04):** date spread constraint — drop for
+   consistency with §30 (client: dates don't matter), or keep as editorial
+   variety. Leaning drop. If kept: if slots 1–5 fall in same 3-day window,
+   force at least one slot from different part of issue window.
 7. Compute and store ScoreSignalCount per candidate.
 8. Update R3-Eligible Airtable view sort order: Score_Final desc,
    Start Date asc as tiebreaker (see Decision_Log §29 — editorial
@@ -716,6 +731,10 @@ for client #2 pitches.
   interesting. Compute ad-hoc during eval, don't bake in.
 - **Scarcity weighting in allocation** — premature; the failure mode hasn't
   been observed at volume yet.
+- **Local Aroma and Trust Me Recipe automation** — all three options
+  (blurb-only, intake + blurb, full discovery) presented to client
+  2026-06-04. Client parked both sections. Neither is in scope until
+  client raises them again. See Decision_Log §31.
 - **Batch blurb generation with neighbor visibility** — substantial rewrite.
   Defer until after handoff if blurb quality is still flagged as off.
 
@@ -741,6 +760,9 @@ for client #2 pitches.
    confirmed with Nathan. See Decision_Log §15.
 4. Quality metric definition — agree on editor edit-rate (or
    alternative) before R6 ships. See prerequisite block (#5).
+5. Trusted venues / organizers list — client to send (2026-06-04).
+   ~10–20 venue/organizer names readers reliably show up for. Feeds
+   venue-boost signal in R6 scoring formula (step 3 above).
 
 ---
 
