@@ -518,6 +518,93 @@ formula until that list is in hand.
    Fill in the R8 Handoff section and Case Study Numbers section in
    NA/Vaughan_Metrics_Log.md and NA/VB_Portfolio_Case_Study.md update log.
    This completes the case study baseline.
+9. **Scoring effectiveness validation (optional but high-value).**
+   If you want real evidence that R6 scoring improves editorial output,
+   the client needs to commit to one condition: run 100% through the
+   NLAP pipeline for 4–6 consecutive weeks with no off-pipeline sourcing.
+   Mixed sourcing makes the swap rate data uninterpretable — any event
+   the client sources manually won't appear in IssueItems, the URL-match
+   script flags it, and that issue gets excluded from the calculation.
+   The client doesn't need to self-report; the data detects contamination
+   automatically.
+
+   **Ask at this walkthrough:** "For the next 4–6 issues, are you willing
+   to source exclusively through the pipeline? It's the only way we can
+   measure whether the scoring system is actually saving you time."
+
+   **The right before/after comparison is R1–R4 vs R6** — not pre-pipeline
+   vs post-pipeline. Pre-pipeline issues used completely different sourcing,
+   no candidate pool data exists, and the editorial workflow was different.
+   The clean comparison is earliest-date sort (R1–R4, April 2026+) vs
+   scored picks (R6, mid-June 2026+). Lock the R1–R4 per-section click
+   averages as the baseline during the R6-W4 clicks analysis — don't wait
+   until R8 to capture it.
+
+   **Metrics — ranked by signal quality:**
+
+   HIGH SIGNAL (directly attributable to scoring, no confounds):
+   - **Swap rate** — % of R6 IssueItems picks the editor kept without
+     overriding. Measured via URL-match script (§25): IssueItems URLs
+     matched against published Beehiiv URLs per issue. High swap rate =
+     formula surfaces what editor would've chosen = scoring is working.
+     This is the primary metric. Target: rising trend over 4–6 issues.
+   - **Score_Final vs. clicks correlation** — after R6 ships, do
+     higher-scored candidates actually get more clicks within each issue?
+     Computed from Score_Final in Airtable joined to per-URL click data.
+     Direct test of whether scoring weights are calibrated correctly. If
+     high-scored events consistently outclick low-scored events, the
+     formula is working. If not, weights need tuning.
+   - **Per-section click rate** — average verified unique clicks per event
+     per section per issue. More granular than CTOR — isolates scoring
+     impact from subject line, ad placement, and other issue-level noise.
+     Baseline: compute from R1–R4 issues (April 2026+) during clicks
+     analysis. Compare against R6 issues after 4–6 clean issues.
+   - **Curation time delta (specific, not total)** — time spent reviewing
+     and swapping R3 picks, not total editorial time. Client's 4h baseline
+     includes ads, subject line, testing — those don't change with scoring.
+     The curation step specifically (~45 min in the 2026-05-14 baseline)
+     should compress as swap rate rises. Track this step separately.
+
+   MEDIUM SIGNAL (directional, noisy — use as supporting evidence only):
+   - **CTOR per issue** — overall click-to-open rate from Beehiiv analytics.
+     Confounded by subject line quality, ad count, seasonality, and external
+     events. Don't lead with this. Use as a directional trend over 10+ issues,
+     not 6. A rising CTOR alongside rising swap rate strengthens the case;
+     CTOR alone proves nothing about scoring.
+   - **Section fill rate** — how often each section fills all 5 slots vs.
+     fewer. Signals whether R5 source expansion solved the thin-pool problem.
+     Should improve post-R5, independent of scoring.
+   - **NeedsReview rate trend** — count of R2-NeedsReview records per week
+     over time. Should drop after R7 classifier ships. Useful for R7
+     justification; also signals overall pipeline health.
+   - **Candidate pool size trend** — weekly Candidates snapshot already
+     captures this. Track Approved count per week post-R5. Should rise
+     as new sources bed in.
+
+   LOW SIGNAL (skip — too many confounds, too slow to move):
+   - Open rate — almost entirely subject line dependent. Nothing to do
+     with event selection or scoring.
+   - Subscriber growth — too many external factors, too slow to attribute.
+   - Unsubscribe rate — low volume, very noisy signal.
+
+   **What this data is worth:**
+   - **Portfolio:** "Scoring formula reduced editorial override rate by X%
+     over 6 issues, with per-section click rate up Y%" is a concrete,
+     defensible outcome — not "I built a scoring system." Answers "did it
+     work?" for any technical interviewer or client #2.
+   - **Case study:** Replaces the current "in progress" framing with real
+     before/after numbers. Transforms the case study from process description
+     to outcome proof.
+   - **Client #2 pitch:** Swap rate + curation time delta is a replicable
+     measurement framework — you can promise the same instrumentation to
+     the next client, which signals you know how to evaluate your own work.
+     That's the product differentiator: not just automation, but automation
+     with a measurement layer that tells you if it's working.
+   - **Product improvement:** Score_Final vs. clicks correlation tells you
+     exactly which weights to adjust after each 4-issue window. The
+     measurement framework isn't just proof — it's the feedback loop that
+     makes the product better over time.
+
 8. Stress-test portfolio claims: bring the full NA/ folder to Claude.ai
    and ask it to validate every claim in VB_Portfolio_Case_Study.md
    against the real numbers now in Vaughan_Metrics_Log.md. Flag anything
@@ -543,6 +630,69 @@ formula until that list is in hand.
 **Deliverables:**
 - Mississauga pipeline running end-to-end via config only
 - Client has run Mississauga pipeline independently at least once
+
+---
+
+---
+
+### Performance Intelligence (PI) — Post-R8
+**Owner: Nathan (after R5, in parallel with Ariel's R6–R8) | Scoped by Ariel after R5 ships**
+
+**What PI is:** A measurement dashboard that surfaces the metrics above automatically
+after each issue, so you're not manually querying Airtable and Beehiiv every week.
+The scoring validation metrics and the PI outputs are the same thing — PI is the
+infrastructure that makes the measurement framework repeatable rather than one-off.
+
+**Why now:** The data is already in hand (15-month Beehiiv export + Airtable IssueItems
+history + candidate snapshots). No need to wait for NLAP to finish shipping. Nathan
+can build PI in parallel with R6–R8 using the existing data, and the dashboard is
+ready to show real post-R6 numbers as soon as scoring ships.
+
+**Shared data join with R6:** One connector — Airtable IssueItems + tagged Beehiiv
+clicks CSV — produces two outputs: scoring weights for the pipeline (R6) and
+performance data for the dashboard (PI). Build the join once, use it in both places.
+
+**MVP stack:** Airtable API + tagged Beehiiv clicks CSV → Google Sheets → Looker Studio.
+No custom UI, no warehouse. Fast to build, easy for the client to read.
+
+**PI dashboard — what to include:**
+
+*Per-issue metrics (one row per issue):*
+- CTOR — from Beehiiv analytics export
+- Total verified unique clicks — from Beehiiv clicks CSV
+- Section fill rate — how many of 25 slots were filled (from IssueItems)
+- Swap rate — % of IssueItems kept in published newsletter (from URL-match script, post-R6)
+- Curation time (if client tracks it) — optional self-reported field in Airtable
+
+*Per-section metrics (one row per section per issue):*
+- Average verified unique clicks per event — from Beehiiv clicks CSV joined to IssueItems
+- Fill count — how many slots filled in this section this issue
+- Swap rate per section — which sections does the editor override most? (post-R6)
+
+*Per-source metrics (rolling, not per-issue):*
+- Average clicks per event by source domain — from issue_history.json + clicks CSV
+- Submission count per source per run — from R1 execution logs
+- NeedsReview rate per source — which sources produce the most classification failures?
+
+*Scoring health metrics (post-R6 only):*
+- Score_Final vs. clicks correlation per issue — do higher-scored events outclick
+  lower-scored events within each issue? Plotted as a scatter per issue.
+- Weight drift signal — if correlation weakens over time, weights need retuning.
+
+*Pipeline health metrics (ongoing):*
+- Candidate pool size (Approved count) — from weekly snapshots
+- NeedsReview rate — from Airtable R2-NeedsReview view count per week
+- R1 submission count per source — flags dead or degraded sources early
+
+**Scoping note:** Ariel scopes PI in 1–2 days after R5 ships. Nathan builds in parallel
+with R6/R8. The Looker Studio dashboard can be shared directly with the client as a
+read-only view — gives him visibility into his own newsletter performance without
+needing to query Airtable himself. That's an additional client deliverable at R8 handoff.
+
+**Transferability:** The PI framework is newsletter-agnostic. Mississauga gets the same
+dashboard from day one — swap the Airtable base ID and Beehiiv publication ID in the
+connector, everything else is identical. This is the "measurement layer" differentiator
+for client #2 pitches.
 
 ---
 
