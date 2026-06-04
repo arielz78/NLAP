@@ -921,6 +921,23 @@ Findings that materially changed §28:
 
 What didn't change: the rules-not-live-model decision itself. Both reviewers independently validated §28's core architectural choice. The amendments are about *how to do the regression correctly* if it's needed, not whether to ship a model.
 
+### Amendments 2026-06-04 — signal audit + live-data findings
+
+A first-principles signal audit plus a 484-record live-Candidates audit collapsed the R6 signal set. **Core principle established: a signal is inert if it does not vary between two candidates competing for the same slot.** Under hard per-segment quotas with no cross-segment competition (`buildIssues.js` fills each section from its own pool), any signal constant within a segment cannot change which candidates are picked. This is the test that now governs all signal inclusion.
+
+| Finding | What changed |
+|---|---|
+| **Segment click weight inert** | CUT. Constant within a segment ⇒ identical within-segment ranking ⇒ same picks. A per-segment weight adds the same constant to every event in the section and moves no decision. |
+| **Live pool ~93% Eventbrite monoculture; `Source` + `LocationName` 0% populated** (484-record audit) | Source prior and venue recurrence cannot discriminate on the current pool. Both **blocked until R5** diversifies sourcing AND `LocationName` is populated at ingestion (new R5 dependency). |
+| **Recency dropped** (client: dates don't matter, only quality) | Removed from the formula; the date window remains an eligibility filter only. See §30. |
+| **Featured/locked-by-editor** | CUT — label leakage ("featured" is the outcome being predicted; "locked" is already removed from the pool by the allocator). Durable intent re-keyed to venue recurrence. |
+| **Source ≠ venue** | They diverge at aggregators (the majority + highest-click, FB = 58% per §18). Venue recurrence is the real signal for aggregator-sourced events but needs a clean venue key the current data lacks. Salvage: client-curated trusted-venue boost, matched on `Event Title`. |
+| **SegmentConfidence** | Confirmed NOT a ranking signal — it is a pre-ranking **gate** (low confidence → NeedsReview), distinct from the quality floor (low score → empty slot). Two floors, two stages. |
+
+**Net effect on v1:** with recency dropped, source inert, and venue blocked, the current pool has **zero working scoring signals**. R6 is gated on R5 (pool diversity + `LocationName` population) plus the incoming client venue list. No scorer is built until R5 lands.
+
+**Method-fit shift — formula vs LLM picker:** the client's "only quality matters" is fuzzy editorial judgment, which a weighted-rule formula captures poorly. With the structured signals gutted, an **LLM/hybrid picker** (deterministic numerics as context + LLM for the qualitative pick + editor approval + logged rationale) becomes the leading candidate over the rule formula. This does not reverse the rules-not-live-model decision for a *structured* path — it reopens whether R6 should be a structured scorer at all. Because R7 (trained classifier) already carries the ML-rigor portfolio load, R6 is free to optimize for product fit. **Decision deferred to post-R5**, evaluated against a real diversified pool.
+
 ---
 
 ## 29. Score_Final Flow — Sorts the Pool, Doesn't Replace the Editor
