@@ -147,3 +147,55 @@ Before starting W3, check the Facebook share per section output from #53 analysi
 The client can submit Facebook events manually and the pipeline processes them identically to automated sources. Idempotency is confirmed. Pool count, Facebook 0-submission detection, and candidate-to-slot ratio checks are all in place and tested.
 
 **Tracked in:** #35
+
+---
+
+## R6-Substrate Lens — Field Capture, Source Selection & Ingestion Risk (added 2026-06-04)
+
+**Status:** Ariel taking over R5. This section layers R6-scoring concerns and risk findings on top of the W1–W3 plan above — it does **not** replace them. Source: signal-design audit + 484-record live-data audit, 2026-06-04 (see `Execution_Log.md` 2026-06-04 deep-session entry, `docs/Decision_Log.md` §28 amendment, §30, §31).
+
+### Why this section exists — the reframe
+
+R5 isn't just "add volume." **It's the data substrate R6 scoring runs on.** Ingestion sets the ceiling: you can't score on a field you didn't capture, and you can't backfill history retroactively. Done right, **R5 is the first half of R6** — you're laying the rails the scoring later runs on. This is the "check the substrate before designing on top of it" lesson, pointed forward.
+
+### Live-data findings that drive this (484-record audit, 2026-06-04)
+
+- Pool is **~93% Eventbrite monoculture** (almost all Eventbrite + allevents.in). The diverse sources in `issue_history.json` (Facebook 240, McMichael, bibliocommons, visitvaughan) are the editor's 15-month *manual* history — the automated pipeline currently pulls ≈only Eventbrite.
+- **`LocationName` and `Source` are 0% populated** in the live Candidates table. The existing Eventbrite branch doesn't write them, even though W2's schema lists them as required. **Fixing the existing branch to populate them is in-scope and is a live-behavior change — treat it per the W2 Phase 2 diff discipline above.**
+- **~30 foreign Eventbrite domains** (`.de`/`.fr`/`.sg`/`.com.au`) leaking past the GTA geo-filter. Correctness hole, filed as a GitHub issue.
+
+### How a pro frames this (pro-approach digest)
+
+- **Domain:** data engineering — a schema-contract + ingestion-normalization problem, not a scoring problem. The 0% population is an *enforcement* failure, not a missing field.
+- **The reframe:** the task isn't "capture venue" — it's "define the contract that guarantees the fields are populated and normalized *regardless of which adapter produced the record*."
+- **Validate before building:** pull a real sample from each candidate feed and inventory it — **field contents AND segment skew** — before designing the schema or picking sources. The whole plan assumes the feeds carry the fields; confirm it (you already paid once for assuming a field was populated when it was 0%).
+- **Not a rebuild.** Additive branches + one shared normalization node + one targeted fix to the existing branch. Rebuilding a working idempotent Thursday pipeline to satisfy an abstraction is the over-engineering trap; the locked W2 plan (additive branches, stays in n8n) stands.
+
+### Decisions / discipline (gutcheck-hardened)
+
+1. **Split field capture by cost.** *Cheap* payload fields already in the feed (venue, category, description, source) → map via the normalization node now, near-free, serves both R6 paths. *Expensive* structured extraction (fuzzy venue resolution, scraping venue from unstructured sources) → **DEFER until the R6 formula-vs-LLM decision (post-R5).** If R6 goes LLM/hybrid it reasons over Title + Description and won't need structured venue/category — don't gold-plate fields one path won't use.
+2. **Field population ≠ signal. Diversity is the lever.** Populating `Source` on monoculture records writes "Eventbrite" 93% of the time — zero discriminating power. The new diverse *sources* unblock the source prior; field capture just records them. Keep the two payoffs separate in your head.
+3. **Source selection = segment coverage, not raw volume.** Criterion for which sources to add: *which segments does Eventbrite starve, and which sources fill them?* (library/bibliocommons → Golden Age + Families programs; cultural venues → Couples/Golden Age.) Target thin sections so every segment has surplus and ranking matters everywhere. **Prereq: measure per-section candidate depth first** (#53 analysis 2) — pick sources to fill measured gaps, not blind.
+4. **Consumer-driven schema, not source-driven.** Derive required fields from what R2/R6 *consume*, not from what Vaughan's feeds happen to provide. Source-driven over-fits Vaughan and won't port to Mississauga. Map each source into the contract; accept that some sources won't fill every field (neutral default in scoring, not a penalty).
+5. **Shared normalization node = the Debt #5 fix.** Keep it — inline-per-branch mapping recreates the source-name drift you're fixing. But routing the *existing* Eventbrite branch through it is the one live-behavior change — isolate and idempotency-test it per W2 Phase 2/4.
+6. **Capture raw inputs, not derived scores.** Source, venue, category, description. No `Score_Final` sub-fields or weights — those are R6, built from these inputs later.
+7. **Auto-capture from the payload; no new manual tracking fields.** Take what the feed already carries; don't add manual-entry fields "to have metrics."
+
+### Risk register (gutcheck — silent / Thursday failures)
+
+1. **Geo-filter fix (foreign Eventbrite) — the riskiest item, disguised as a small fix.** Wrong reject logic silently drops valid GTA events → section under-fills → short Thursday issue. **Run log-only first** (like the schema validator, W2 Phase 3); log every rejection with a typed reason; test against a known-good GTA set before flipping to hard-reject. More care than the additive work, not less.
+2. **Partial / wrong field population.** A new source fills venue for 60% of records and blanks the rest, or maps the wrong payload field into `LocationName` → R6 later computes priors on contaminated data, silently. **Add a per-source population-rate check at ingestion.** Plausibly-wrong is worse than empty.
+3. **Idempotency break on the live upsert.** A new adapter's title format shifts `UniqueEventID` → duplicates in the live pool. Per W2 Phase 4 rerun test. The upsert node is the one place a mistake corrupts editor-approved data.
+
+### The portable asset
+
+The **canonical Candidates schema + adapter contract** (each adapter = a pure function `raw feed → canonical record with required fields`). 100% reusable for Mississauga — new city, new sources, same contract, same downstream. Hardcode the Vaughan-specifics (aggregator domain list, GTA geo-filter, source endpoints). The contract is the product asset: it's what lets client #2 onboard via config.
+
+### Concrete next actions (in order)
+
+1. **Sample each candidate feed** → inventory fields + segment skew (gates field capture *and* source selection).
+2. **Measure per-section candidate depth** on a recent issue → identify which segments Eventbrite starves.
+3. **Pick/confirm sources to fill the thin segments** (overlaps W1 Tasks 1–3).
+4. **Add cheap-payload field mapping** via the shared normalization node; fix the existing Eventbrite branch to populate `LocationName`/`Source` (W2 Phase 2 discipline).
+5. **Geo-filter fix as log-only first** (W2 Phase 3 discipline).
+6. **Defer** expensive structured extraction + the R6 formula-vs-LLM call to post-R5.
