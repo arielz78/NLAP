@@ -88,19 +88,29 @@ W2 takes the source decisions from W1 and builds them into the live R1 n8n workf
 
 All source ingestion stays in n8n. These are not Node.js scripts — use native n8n nodes where available, Code nodes where not.
 
+### Pool target (revised 2026-06-05)
+
+Floor is **125 candidates** (5:1 against 25 allocation slots), up from 75 (3:1). Higher is fine — this is a floor. Update the W3 pool check threshold to match.
+
+### RSS findings (2026-06-05 — execution #313)
+
+RSS cap fix done (`?n=500`). Result: RSS Read now fetches 500 items, but only +16 net new candidates reached Airtable. Root cause: **Issue #58 (date parsing bug)** — pipeline uses `isoDate` (RSS publication date) as the event start date. Events published months ago are dropped by DateWindow as "past" even when the event itself is upcoming. Confirmed via content inspection: events dated June 27, June 12-13, June 7 are in the feed but filtered as past. Additionally, **Issue #59 (geo-leakage)** confirmed — non-Vaughan events (Toronto FanCon, Little Manila, etc.) pass through the RSS branch unchecked.
+
+**Decision:** #58 and #59 must ship together in W2c (they are coupled — unlocking date parsing without the geo-filter floods Airtable with non-Vaughan events). Proceed with W2a first; revisit W2c if pool is still short after W2a + W3.
+
 ### Rollout Sequence — Ship in Risk-Ordered Slices (do NOT cut over all of W2 at once)
 
 W2 is ~10–15h and contains one live-table mutation mixed with safe additive work. **Shipping it as a single dev→live cutover means that if Thursday looks wrong, you have seven suspects and no way to isolate the cause.** Split it into three slices, each cut over and verified across a full Thursday cycle *before* the next:
 
 | Slice | Contents | Risk | Gates R5 sign-off? |
 |---|---|---|---|
-| **W2a — Additive source branches** | The 3–4 new source branches (TRCA, BiblioCommons, McMichael, Meetup) + recurring fix (Debt #8) + source normalization (Debt #5, **new branches only**). New branches capture `LocationName`/`Source` for free. | Low — additive, isolated per branch | **YES.** This is what moves the pool toward ≥75 — R5's actual exit criterion. |
+| **W2a — Additive source branches** | TRCA + McMichael branches (confirmed). Meetup: decide fate before building — current config groups (torontobikemeetup, women-that) are Toronto-based/defunct and wrong. Recurring fix (Debt #8) + source normalization (Debt #5, **new branches only**). New branches capture `LocationName`/`Source` for free. | Low — additive, isolated per branch | **YES.** This is what moves the pool toward ≥125 — R5's actual exit criterion. |
 | **W2b — Eventbrite branch retrofit (#4)** | Route the *existing* live Eventbrite branch through normalization to populate `LocationName`/`Source`. | **High — the only live-write mutation in R5.** | No — R6-enabling. Doesn't change pool size. |
-| **W2c — Guards + geo-filter** | Schema validator, geo-filter #5, population-rate check #8, per-source health check, cost logging. | Medium — log-only first, then enforce | Partly — pool checks gate W3; substrate guards are R6-enabling. |
+| **W2c — Guards + geo-filter + RSS date fix** | Schema validator; geo-filter Issue #59 **paired with** RSS date parsing fix Issue #58 (must ship together); population-rate check #8; per-source health check; cost logging. | Medium — log-only first, then enforce | Partly — pool checks gate W3; substrate guards are R6-enabling. |
 
 **Two rules this encodes:**
 
-1. **R5 sign-off is gated on pool size (W2a + W3), not on the R6-substrate work.** R5 is "done" when the approved pool hits ≥75 over 3 runs. W2b (#4 retrofit) and the substrate guards (#8) make the pool *better for R6* but don't make it *bigger* — they are **R6-enabling fast-follow**, shipped after R5 is signed off, and they do not block it. Capturing `LocationName` on *new* branches (W2a) is free and stays; *retrofitting the existing branch* (W2b) is the separable risk.
+1. **R5 sign-off is gated on pool size (W2a + W3), not on the R6-substrate work.** R5 is "done" when the approved pool hits ≥125 over 3 runs. W2b (#4 retrofit) and the substrate guards (#8) make the pool *better for R6* but don't make it *bigger* — they are **R6-enabling fast-follow**, shipped after R5 is signed off, and they do not block it. Capturing `LocationName` on *new* branches (W2a) is free and stays; *retrofitting the existing branch* (W2b) is the separable risk.
 
 2. **W2b ships alone.** Never bundle the live Eventbrite mutation into a cutover with other changes. One change, one cutover, one Thursday of verification — so a pool anomaly has exactly one suspect.
 
