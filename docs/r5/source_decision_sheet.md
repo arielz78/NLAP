@@ -83,4 +83,30 @@ I prioritized sources that are most likely to provide **structured** event data 
 - At least **1 previously blocked source** producing ingestible output:
   - Best candidates to get working fastest: **TRCA Black Creek category** or **Markham BiblioCommons .ics links**.
 
-MD
+---
+
+## Task 3 — Source Probe Results (2026-06-05)
+
+Probed all 4 confirmed sources headlessly (curl + Node) to validate integration method and field coverage before any W2 build work.
+
+| Source | Method confirmed | title | date | LocationName | Verdict |
+|---|---|---|---|---|---|
+| TRCA | JSON-LD per event page (iCal dead — WordPress ignores `?ical=1`) | ✓ | ✓ | ✓ full address | **PASS** |
+| McMichael | iCal direct (`/events/?ical=1` and `/events/category/adult-programs/?ical=1`) | ✓ | ✓ | ✗ buried in description HTML | **PASS — flag for W2** |
+| Markham BiblioCommons | — | — | — | — | **DROP** |
+| Meetup | iCal direct, headless confirmed (no browser required) | ✓ | ✓ | ✗ not in feed | **PASS — flag for W2** |
+
+### Notes
+
+**TRCA integration path:**
+1. Fetch listing page (`/event_listing_category/the-village-at-black-creek/`) → extract event slugs
+2. Fetch each event page → parse `<script type="application/ld+json">` block where `@type = "Event"`
+3. Fields: `name` (title), `startDate`, `Location.name` (full address)
+
+**McMichael LocationName gap:** No `LOCATION` field in iCal records — location is embedded in the `DESCRIPTION` HTML blob. W2 will need to either extract it or leave LocationName blank (soft-required field, won't crater the pool).
+
+**Meetup LocationName gap:** No location field in the iCal feed at all. Same handling as McMichael — blank is acceptable per R5_Scope hard-reject vs soft-required distinction.
+
+**Markham BiblioCommons — drop rationale:** Fully client-side React SPA. No public API, no iCal export, no JSON-LD on event pages. Browser dev tools inspection confirmed only 2 network calls on page load (systemMessages + jQuery state), neither returning event data. Server-side rendered with no structured data accessible to a headless fetch. Requires browser execution — worse than scraping. Dropped per R5_Scope rule ("if any source requires HTML scraping, drop to three sources").
+
+**Net: 3 confirmed sources** (TRCA, McMichael, Meetup). W2 builds branches for these three only.

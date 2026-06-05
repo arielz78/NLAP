@@ -81,11 +81,10 @@
     },
     "markham_bibliocommons": {
       "canonicalName": "Markham Public Library",
-      "active": true,
-      "method": "per_event_ical",
+      "active": false,
+      "dropReason": "React SPA — no public API, no iCal, no JSON-LD. Confirmed 2026-06-05 via endpoint probe + browser dev tools inspection.",
+      "method": "none",
       "listingUrl": "https://markham.bibliocommons.com/v2/events",
-      "eventUrlPattern": "https://markham.bibliocommons.com/events/{eventId}",
-      "icalPattern": "https://markham.bibliocommons.com/events/{eventId}.ics",
       "segments": [
         "for_families",
         "for_golden_age"
