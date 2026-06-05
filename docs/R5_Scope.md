@@ -94,7 +94,7 @@ W2 is ~10–15h and contains one live-table mutation mixed with safe additive wo
 
 | Slice | Contents | Risk | Gates R5 sign-off? |
 |---|---|---|---|
-| **W2a — Additive source branches** | The 3–4 new source branches (TRCA, BiblioCommons, McMichael, Meetup) + recurring fix (Debt #8) + source normalization (Debt #5). New branches capture `LocationName`/`Source` for free. | Low — additive, isolated per branch | **YES.** This is what moves the pool toward ≥75 — R5's actual exit criterion. |
+| **W2a — Additive source branches** | The 3–4 new source branches (TRCA, BiblioCommons, McMichael, Meetup) + recurring fix (Debt #8) + source normalization (Debt #5, **new branches only**). New branches capture `LocationName`/`Source` for free. | Low — additive, isolated per branch | **YES.** This is what moves the pool toward ≥75 — R5's actual exit criterion. |
 | **W2b — Eventbrite branch retrofit (#4)** | Route the *existing* live Eventbrite branch through normalization to populate `LocationName`/`Source`. | **High — the only live-write mutation in R5.** | No — R6-enabling. Doesn't change pool size. |
 | **W2c — Guards + geo-filter** | Schema validator, geo-filter #5, population-rate check #8, per-source health check, cost logging. | Medium — log-only first, then enforce | Partly — pool checks gate W3; substrate guards are R6-enabling. |
 
@@ -143,7 +143,7 @@ Map every source to the canonical Candidates schema before the merge node. Schem
 
 **Recurring events fix (Debt #8).** Currently the pipeline uses StartDate to decide whether an event is still in the date window. Events with an EndDate that extends past the window cutoff are being dropped even though they're still active. Fix: when EndDate is present, use EndDate to gate expiry instead of StartDate.
 
-**Source normalization (Debt #5).** Source names are inconsistent across the existing pipeline — the same site appears under multiple names depending on how it was ingested. This matters because R6 scoring weights per source, and dedup keys off source name. Add a Set or Code node that maps raw domain → canonical source name (e.g. `inoreader.com` → `McMichael RSS`) and apply it once, before the merge node, for every branch including the existing ones.
+**Source normalization (Debt #5).** Source names are inconsistent across the existing pipeline — the same site appears under multiple names depending on how it was ingested. This matters because R6 scoring weights per source, and dedup keys off source name. Add a Set or Code node that maps raw domain → canonical source name (e.g. `inoreader.com` → `McMichael RSS`) and apply it before the merge node for **every new branch (W2a)**. Applying it to the **existing Eventbrite branch** is the same physical reroute as #4 — that one belongs to **W2b**, shipped alone with the shadow-week protocol. **Do not normalize the existing branch during W2a.**
 
 ### R6-Substrate Tasks (folded into W2 from the substrate lens — read the phase tags)
 
