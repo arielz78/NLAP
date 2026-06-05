@@ -1,0 +1,151 @@
+{
+  "newsletter": "vaughan",
+  "airtableBaseId": "appVXHOyQcgQAk1gV",
+  "beehiivPubId": "pub_ff7a12c2-7452-46da-9792-771ec6ece149",
+  "geography": {
+    "primary": "Vaughan",
+    "include": [
+      "Vaughan",
+      "Woodbridge",
+      "Maple",
+      "Kleinburg",
+      "Thornhill",
+      "Markham",
+      "Richmond Hill"
+    ],
+    "adjacent": [],
+    "exclude": []
+  },
+  "segments": {
+    "for_families": {
+      "label": "For Families",
+      "active": true
+    },
+    "for_couples": {
+      "label": "For Couples",
+      "active": true
+    },
+    "for_golden_age": {
+      "label": "For Golden Age Readers",
+      "active": true
+    },
+    "local_aroma": {
+      "label": "Local Aroma",
+      "active": false
+    },
+    "trust_me_recipe": {
+      "label": "Trust Me Recipe",
+      "active": false
+    }
+  },
+  "quotas": {
+    "for_families": {
+      "min": 5,
+      "max": 5
+    },
+    "for_couples": {
+      "min": 5,
+      "max": 5
+    },
+    "for_golden_age": {
+      "min": 5,
+      "max": 5
+    },
+    "local_aroma": {
+      "min": 0,
+      "max": 0
+    },
+    "trust_me_recipe": {
+      "min": 0,
+      "max": 0
+    }
+  },
+  "sources": {
+    "calendar_trca": {
+      "canonicalName": "TRCA Calendar",
+      "active": true,
+      "method": "ical_or_json_ld",
+      "endpoints": [
+        "https://calendar.trca.ca/events/?ical=1",
+        "https://calendar.trca.ca/event_listing_category/the-village-at-black-creek/?ical=1"
+      ],
+      "fallback": {
+        "method": "json_ld_per_event_page",
+        "listingUrl": "https://calendar.trca.ca/event_listing_category/the-village-at-black-creek/"
+      },
+      "segments": [
+        "for_families",
+        "for_couples",
+        "for_golden_age"
+      ]
+    },
+    "markham_bibliocommons": {
+      "canonicalName": "Markham Public Library",
+      "active": true,
+      "method": "per_event_ical",
+      "listingUrl": "https://markham.bibliocommons.com/v2/events",
+      "eventUrlPattern": "https://markham.bibliocommons.com/events/{eventId}",
+      "icalPattern": "https://markham.bibliocommons.com/events/{eventId}.ics",
+      "segments": [
+        "for_families",
+        "for_golden_age"
+      ]
+    },
+    "mcmichael": {
+      "canonicalName": "McMichael",
+      "active": true,
+      "method": "ical",
+      "endpoints": [
+        "https://mcmichael.com/events/?ical=1",
+        "https://mcmichael.com/events/category/adult-programs/?ical=1"
+      ],
+      "segments": [
+        "for_families",
+        "for_couples",
+        "for_golden_age"
+      ]
+    },
+    "meetup": {
+      "canonicalName": "Meetup",
+      "active": true,
+      "method": "group_ical",
+      "groupIcalUrls": [
+        "https://www.meetup.com/torontobikemeetup/events/ical/",
+        "https://www.meetup.com/women-that/events/ical/"
+      ],
+      "sourceIssueHistoryUrls": [
+        "https://www.meetup.com/torontobikemeetup/events/313742806/",
+        "https://www.meetup.com/women-that/events/314684754/"
+      ],
+      "segments": [
+        "for_couples"
+      ]
+    },
+    "facebook_manual": {
+      "canonicalName": "Facebook",
+      "active": false,
+      "method": "manual_intake",
+      "endpoint": null,
+      "segments": [
+        "for_families",
+        "for_couples",
+        "for_golden_age"
+      ]
+    }
+  },
+  "scoringWeights": {
+    "status": "inert_until_r6_post_r5_gate",
+    "sourceQualityDefault": 1,
+    "trustedVenueBoost": 0,
+    "segmentConfidenceGate": 0.6
+  },
+  "prompts": {
+    "r2Classifier": "workflows/NLAP R2.json",
+    "r4Blurbs": "scripts/generateBlurbs.js"
+  },
+  "deduplication": {
+    "uniqueEventId": "title|date",
+    "dedupWindowIssues": 4,
+    "maxUrlReuseBeforeReview": 2
+  }
+}

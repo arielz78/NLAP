@@ -1025,3 +1025,64 @@ Drop recency from the formula. The date window still gates eligibility — event
 
 Both sections were on the agenda as potential candidates for blurb generation (Option A), intake structure (Option B), or full discovery automation (Option C). Client confirmed both sections are parked — no build work on either. They remain manual indefinitely until client raises them again.
 
+---
+
+## 32. R5-W1 Source Gate and Facebook Framing
+
+**Decision: proceed to W2 with TRCA, Markham BiblioCommons, McMichael, and Meetup as the four source branches; keep Facebook for W3 manual intake.**
+
+*Decided 2026-06-04 from R5-W1 last-7-issue audit. See `docs/r5/R5-W1_revised.md` and `docs/r5/R5_W1_analysis_last7.md`.*
+
+### What changed
+
+The R5-W1 source audit now uses an explicit last-7-issue domain tally rather than an asserted manual summary. In that slice, Facebook accounts for 85 of 383 raw placements (22.2%), while the earlier clicks analysis found Facebook accounts for 58% of event clicks. This changes the W3 framing: Facebook is not necessarily the majority volume source in recent issues, but it is high-click inventory. The manual intake path is still required because missing Facebook submissions likely removes high-value events, not merely a large count of events.
+
+### Source decisions
+
+- **TRCA / Black Creek:** proceed. `calendar.trca.ca` produced 23 placements across Families, Couples, and Golden Age in the last 7 issues. Prefer iCal if available; fall back to JSON-LD per event page.
+- **Markham BiblioCommons:** proceed. 23 placements, mostly Golden Age. Use per-event iCal rather than an undocumented API as the first implementation method.
+- **McMichael:** proceed. Last-7 volume is lower, but the clicks analysis shows strong average clicks on a small sample. Use as a source-selection signal only; do not create a source-specific scoring weight until sample size is larger.
+- **Meetup:** proceed, but configure from concrete group feeds rather than the global seniors search page. Last-7 Meetup placements were in For Couples, not Golden Age, so senior-specific Meetup coverage requires a separate curated group list.
+
+### Config decision
+
+The R5 config must be tenant-shaped, not just a Vaughan source list. Required fields are `airtableBaseId`, `beehiivPubId`, `segments`, `sources`, `geography`, `quotas`, `scoringWeights`, and `prompts`. Geography is closed: Markham and Richmond Hill are included alongside Vaughan. The idempotency key remains `title|date`.
+
+### Remaining blocker
+
+The published URL to Airtable Candidates.URL cross-reference (analysis 4) remains blocked until a current Candidates snapshot or Airtable credentials are available. W2 source-branch work can start after the W1 check-in, but this data-quality check should be completed before relying on historical match rates for scoring or PI claims. **Note (2026-06-04, Ariel): superseded in substance by the 484-record live audit — pool is ~93% Eventbrite, `LocationName`/`Source` 0% populated. Analysis 4 is low-value to chase and is not a W2 blocker.**
+
+---
+
+## 33. Config Lives in n8n Set Node for R5 — JSON File Is a Snapshot, Not a Live Consumer
+
+**Decision: for R5, the newsletter config is canonical in an n8n Set node at the top of R1. The committed `vaughan` JSON file is a version-tracked snapshot/seed, not read by any runtime in R5. Script-side `--newsletter` file loading is an R8 concern.**
+
+*Decided 2026-06-04, Ariel. Reconciles §15 and the R5_Scope W2 section, which described different multi-tenant config mechanisms.*
+
+### The contradiction this resolves
+
+- **§15** describes config as a file at `/newsletters/{name}.json`, loaded by scripts via a `--newsletter` flag.
+- **R5_Scope W2** describes config as an n8n Set node, *no JSON file needed now*, with Mississauga getting a cloned workflow at R8.
+
+These are not two phrasings of one plan — they describe two different mechanisms. They are not actually in conflict once split by runtime: the pipeline is heterogeneous. **§15 describes the Node.js script half (R3/R4), which reads files and takes flags naturally. W2 describes the n8n half (R1/R2), which cannot read a file on disk or take a flag and is natively configured by a Set node.** Each doc spoke as if its mechanism covered the whole pipeline; neither does.
+
+### Resolution
+
+- **R5 is entirely n8n work.** The only runtime consumer of config in R5 is the n8n Set node. The R3/R4 scripts keep Vaughan hardcoded until R8 — out of scope to change now.
+- **The JSON file (`vaughan.r5-w1.config.json`, in `docs/r5/`) is the spec and the R8 seed.** It pins down the portable schema shape (the *keys*) and is what script-side multi-tenancy will load at R8. It is read by nothing in R5.
+
+### Sync direction — n8n is canonical, file is the snapshot
+
+Both the Set node and the file exist, so they can drift. The sync flows **n8n → file**, never file → n8n:
+
+- Edit the Set node (the only thing that runs), then commit an updated copy of the JSON file in the same change.
+- If the export-to-file step is forgotten, only the *reference* is stale — nothing live breaks.
+- The inverse (edit file, copy to n8n) is rejected: forgetting the copy means n8n silently ships a stale config on Thursday.
+
+No automated sync (HTTP-fetch-from-git) is built. At 2 newsletters with rarely-changing config, that adds a live-pipeline failure mode to save a hand-copy that happens a handful of times. Revisit only at newsletter #5+.
+
+### Portable asset
+
+The reusable contract is the config **schema shape** — the key set (`airtableBaseId`, `beehiivPubId`, `geography`, `segments`, `quotas`, `sources`, `scoringWeights`, `prompts`). Mississauga reuses the keys verbatim with different values. Invest in the keys being right and complete; the values are Vaughan-specific.
+
