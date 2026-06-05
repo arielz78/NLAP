@@ -241,6 +241,8 @@ Code nodes for anything without a native integration. No Node.js rewrite.
 ---
 
 ### Release 6 — Scoring
+> **Before starting R6:** open GitHub issues for each W4 and W5 work item (label `r6`). Do this first, before any build work.
+
 **Owner: Ariel | Deadline: ~mid-June (re-baselined 2026-05-29 — ~3 weeks solo at 10h/week, not June 4)**
 
 **Success =** Editorial override rate (swap rate) drops over the first 4–6 post-launch issues as the editor trusts R6's picks. Pre-launch: signal correlation check confirms scoring signals point in the right direction. See Decision_Log §28 for two-phase validation rationale.
@@ -394,6 +396,8 @@ formula until that list is in hand.
 ---
 
 ### Release 7 — Classification Quality
+> **Before starting R7:** open GitHub issues for each W6 and W7 work item (label `r7`). Do this first, before any build work.
+
 **Owner: Ariel**
 
 **Success =** Trained classifier on Beehiiv historical labels matches or beats GPT-4o accuracy on the frozen R7 eval set, AND NeedsReview rate drops measurably below the pre-R7 baseline.
@@ -457,6 +461,8 @@ formula until that list is in hand.
 ---
 
 ### Release 8 — Handoff
+> **Before starting R8:** open GitHub issues for each W8 work item (label `r8`). Do this first, before any build work.
+
 **Owner: Ariel**
 
 **Success =** Client runs the full weekly pipeline solo for 3 consecutive weeks without unrecovered errors or escalation.
