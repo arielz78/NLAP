@@ -255,6 +255,7 @@ Code nodes for anything without a native integration. No Node.js rewrite.
 > - **Method-fit shift:** client wants "quality" = editorial judgment → an **LLM/hybrid picker** is now the leading approach over a weighted formula (the engineered formula has little left to weight). Decide product-vs-portfolio framing post-R5; R7 carries the ML-rigor portfolio load regardless.
 > - **Date-spread constraint (W5 step 6): PENDING DECISION** — drop for consistency with §30, or keep as editorial variety. Leaning drop.
 > - **Segment click weight: CUT** — inert under hard per-segment quotas (constant within a segment ⇒ no effect on within-segment ranking).
+> - **Content-pattern click signal (idea, 2026-06-05) — evaluate when R6 starts, not before.** Once the click↔content join exists (R6-W4), pull top- vs bottom-clicked events per segment and *read them* — human-in-the-loop discovery, not a learned model. At ~100/segment with click noise (slot position, issue open-rate, exposure bias), a trained content→click regressor over-fits folklore; a human spotting 3-4 robust patterns, validated against the editor's gut, is the better method-fit. Surviving patterns become modest additive features (keyword/binary, fully transparent), encoded in newsletter config so client #2 supplies its own patterns. Gate: the URL round-trip (clicks → CandidateURL → DescriptionRaw) must be confirmed clean first — if lossy, the sample is an artifact of what joined, not what got clicks. Test patterns only on held-out issues you didn't read. One signal among several, not the scorer.
 
 **Exit criteria:**
 - Click data analyzed — scoring weights grounded in real engagement
@@ -787,3 +788,4 @@ for client #2 pitches.
 | #25 | GPT-4o timeout/fallback | Prerequisite #3 |
 | #26 | Client failure protocol | R8-W9 |
 | #27 | SOP | R8-W9 |
+
