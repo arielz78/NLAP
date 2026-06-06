@@ -1207,3 +1207,30 @@ At newsletter scale with scraped sources (TRCA: 3 pages, ~30 events; McMichael: 
 
 All future source branches follow the same pattern: source node outputs N items → HTTP Request runs N times automatically → Code node processes all N results → Merge → existing downstream path. No loop nodes unless a rate-limit or batch-control requirement is explicitly identified.
 
+---
+
+## 38. Source Probe Methodology — DevTools-First (2026-06-06)
+
+**Decision: all future source probes start with Chrome DevTools network inspection before any blind endpoint probing.**
+
+*Decided 2026-06-06, Ariel. Emerged from source probe session where three sources were initially assessed as DROP or headless-browser-only, then confirmed fully automatable once DevTools was applied.*
+
+### What went wrong
+
+visitvaughan.ca, unionville.ca, and VPL were all probed by guessing common endpoint patterns (RSS paths, WP REST API, JSON-LD, iCal). All three returned dead ends. The correct data endpoints were only found after opening Chrome DevTools → Network tab → inspecting what the page actually requests on load. visitvaughan.ca and unionville.ca both use WordPress `admin-ajax.php` with plugin-specific action parameters (`haven_calendar`, `load_upcoming_events`) that are invisible to blind probing. VPL's events are server-side rendered HTML — dismissed as a client-side SPA because the BiblioCommons subdomain (which IS a SPA) was probed instead of the correct `vaughanpl.info` domain.
+
+### The correct probe order
+
+1. **DevTools first** — Network → Fetch/XHR → reload → find the data call → Payload tab → replicate as direct POST/GET
+2. **Check main HTML document** — Network → Doc → first request → Response tab — catches server-rendered pages
+3. Only then: blind probing (RSS paths, WP REST API, JSON-LD, iCal, admin-ajax patterns)
+4. Headless browser is last resort, only after all above are confirmed dead ends
+
+### Why this matters
+
+Three false DROP verdicts in one session from the same root cause. The correct signal is always in the network traffic — what the browser actually fetches is the ground truth, not what we guess an endpoint might be. Two minutes in DevTools replaces 30 minutes of blind probing.
+
+### Applies to
+
+All future source probes for R5 remaining sources and Mississauga onboarding. Previously dropped sources (CityPlayhouse, Markham BiblioCommons, Meetup) to be re-verified via DevTools before drops are finalized — DevTools was not applied to all of them at time of original assessment.
+
