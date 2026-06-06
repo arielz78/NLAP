@@ -64,12 +64,22 @@ Prereq #1 (R2 classification eval) does not block you. That's Ariel's gate for R
 
 All seven #53 analyses are run and posted. Four sources (or three, if any need scraping) are confirmed with method and endpoint. Field inventory + segment skew captured per source (Task 3). Per-section candidate depth measured and the four sources validated against the starvation map (Task 3.5). The config is valid JSON with all multi-tenant fields present. Ariel has reviewed and signed off before W2 starts.
 
+### W1 Sign-off (2026-06-06)
+
+**Ariel signed off. W1 is closed.**
+
+Active sources locked: TRCA (JSON-LD), McMichael (iCal), AllEvents (JSON-LD, ships with W2c geo-filter). Meetup dropped — both original groups wrong geography/defunct, York Region alternatives low-yield, any Meetup events via Facebook W3. BiblioCommons dropped — React SPA, no accessible endpoint.
+
+`vaughan.r5-w1.config.json` cleanup (remove dead sources, reflect final state) deferred to end-of-R5 as a one-time deliverable. File is a snapshot/seed — not live, not read by the pipeline.
+
 ### W1 → W2 Gate (go/no-go before any branch is built)
+
+**STATUS: CLEARED 2026-06-06**
 
 Do not start W2 source-branch builds until this clears:
 
 1. **Each chosen source has a confirmed, non-scrape integration method** (Task 3).
-2. **Each chosen source's field inventory is documented** — specifically, does it carry `LocationName` and a real event date? (Task 3.) **PARTIAL as of 2026-06-05:** Title, StartDate, EndDate, URL, Description, LocationName confirmed per source. **Still open: City and category fields not checked for any source; segment skew (what types of events each source actually produces) not validated against segment config.** These feed the W2 normalization mapping and consumer-driven required-field set — must be completed before W2 branch builds start.
+2. **Each chosen source's field inventory is documented** — specifically, does it carry `LocationName` and a real event date? (Task 3.) **PARTIAL as of 2026-06-05:** Title, StartDate, EndDate, URL, Description, LocationName confirmed per source. **Still open: City fields not checked for any source.** Category: confirmed omit/blank for R5 — none of the three confirmed sources (TRCA, McMichael, AllEvents) carry a clean category field. No downstream R5 or R6 consumer needs it. Do not attempt extraction. These feed the W2 normalization mapping and consumer-driven required-field set — must be completed before W2 branch builds start.
 3. **The starvation map confirms the four sources fill the under-supplied sections** (Task 3.5). If a starved section still has no source feeding it, close that gap (add/swap a source) before building — otherwise W2 builds branches that don't solve the pool problem R5 exists to fix.
 
 This gate exists because the R6 collapse was a substrate problem: building ingestion that doesn't populate the right fields, or doesn't fill the starved sections, produces a larger pool that R6 still can't score. Confirm the substrate is right *before* the build, not after.

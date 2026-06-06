@@ -113,6 +113,30 @@ Probed all 4 confirmed sources headlessly (curl + Node) to validate integration 
 
 ---
 
+## Meetup Group Audit (2026-06-06)
+
+The two groups Nate selected for the config were pulled from real past newsletter issue URLs — they appeared in 5 Couples placements across the last 7 issues. Likely entered via Facebook manual intake, not directly from Meetup.
+
+| Group | iCal events | York Region events | Verdict |
+|---|---|---|---|
+| `torontobikemeetup` | 10 (iCal cap) | 0 — all Toronto/Niagara cycling routes | **DROP** |
+| `women-that` | 0 — defunct | — | **DROP** |
+
+**iCal cap:** Meetup iCal feeds cap at ~10 upcoming events regardless of how many the group has scheduled. Web page showed 19 for `torontobikemeetup`; iCal returned 10. Applies to any Meetup group added to the pipeline.
+
+**Decision:** Both groups dropped. Any Meetup events will come through Facebook manual intake (W3). Meetup branch not built for R5. York Region alternatives (Forest Footprints, Dim Sum Meetup) still to be probed — if viable, add as additional groups rather than replacements.
+
+### York Region alternatives probed (2026-06-06)
+
+| Group | Members | iCal events | York Region yield | Verdict |
+|---|---|---|---|---|
+| Forest Footprints (Richmond Hill) | 811 | 10 (cap) | ~3/10 after geo-filter — no LOCATION field | **Skip** |
+| Dim Sum Meetup (Markham) | 1,186 | 1 | 1 event per cycle | **Skip** |
+
+**Final Meetup decision for R5:** Skip entirely. iCal cap of ~10 events per group + heavy geo-filtering = 2–4 usable events per run at best. AllEvents direct branch is the higher-ROI lever. Revisit after AllEvents lands if pool is still short. Any Meetup events enter via Facebook manual intake (W3).
+
+---
+
 ## AllEvents.in Probe (2026-06-06)
 
 | Source | Method confirmed | title | date | LocationName | url | Verdict |
@@ -128,6 +152,8 @@ Probed all 4 confirmed sources headlessly (curl + Node) to validate integration 
 4. Fields: `name` (title), `startDate` (clean YYYY-MM-DD), `url`, `location.name`, `location.address.addressLocality`
 
 **Yield:** `/vaughan-on/all` → **135 events across 3 pages** (45 per page). `/vaughan-on` only shows 12 featured events — use `/all`. Page count fluctuates with season; do not hardcode 3.
+
+**Trending page (confirmed 2026-06-06):** `/vaughan-on` homepage "Trending Events" section shows 9 events — all 9 confirmed present in `/vaughan-on/all`. Strict subset, no separate branch needed. Scrape `/all` only.
 
 **Pagination:** Standard HTML pagination via `<link rel="next">`. Follow `rel="next"` dynamically until absent — handles 2 pages in a slow week or 6 pages in summer without code changes.
 
