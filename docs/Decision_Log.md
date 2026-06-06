@@ -1,5 +1,5 @@
 # NLAP Decision Log
-*Last updated: 2026-06-04*
+*Last updated: 2026-06-06*
 
 This document records the reasoning behind every significant design and editorial decision in the pipeline. It is intended to be read by anyone who needs to understand not just what the system does, but why it works the way it does — including future collaborators (Nate) and future-you after time away.
 
@@ -1085,6 +1085,98 @@ No automated sync (HTTP-fetch-from-git) is built. At 2 newsletters with rarely-c
 ### Portable asset
 
 The reusable contract is the config **schema shape** — the key set (`airtableBaseId`, `beehiivPubId`, `geography`, `segments`, `quotas`, `sources`, `scoringWeights`, `prompts`). Mississauga reuses the keys verbatim with different values. Invest in the keys being right and complete; the values are Vaughan-specific.
+
+---
+
+## 35. AllEvents Vaughan — Direct JSON-LD Branch + W2c Coupling
+
+**Decision: AllEvents Vaughan is integrated as a direct JSON-LD branch fetching `allevents.in/vaughan-on/all`, paginating via `rel="next"` dynamically. This branch ships in the same slice as the W2c geo-filter — never before it.**
+
+*Decided 2026-06-06, Ariel. From source probe + gutcheck + pro-approach.*
+
+### Integration path
+
+1. Fetch `https://allevents.in/vaughan-on/all` (server-side rendered React — no browser needed)
+2. Extract `<script type="application/ld+json">` blocks, find items where `@type = "Event"`
+3. Fields: `name` (title), `startDate` (clean YYYY-MM-DD), `url`, `location.name`, `addressLocality`
+4. Follow `<link rel="next">` to subsequent pages until absent — currently 3 pages / 135 events, but do not hardcode; page count fluctuates seasonally
+5. Normalize to pipeline schema, connect to Merge
+
+JSON-LD completeness confirmed: 45 JSON-LD events vs 50 card divs per page — gap of 5 = embedded ad cards (confirmed via class inspection). No real events are missed.
+
+### Why coupled with W2c
+
+AllEvents labels many Toronto-area events as `addressLocality = "Vaughan"` (e.g. "Puppy Yoga IN TORONTO", "JEY ONE TORONTO CANADA"). Unlike TRCA and McMichael (venue-specific sources with known locations), AllEvents is a broad aggregator where mislabeling is structural. Building this branch without the geo-filter would actively flood the pool with non-Vaughan events — the opposite of R5's goal.
+
+TRCA and McMichael can ship before W2c because they're venue-specific and geography is implicit. AllEvents cannot.
+
+### Dedup risk (post-build check, not pre-build blocker)
+
+AllEvents aggregates from Eventbrite. Same event may appear in both branches with slightly different titles → different UniqueEventID → two records. Cannot quantify before a real run. After the first run: query Airtable for candidates on the same date with similar titles. If overlap is small, ignore. If large, add a title normalization step.
+
+### Portable asset
+
+The JSON-LD extraction + rel="next" pagination pattern is identical to TRCA's multi-page scrape and is reusable for any source that exposes Event schema on server-rendered HTML. Mississauga may have a similar AllEvents page (`allevents.in/mississauga-on/all`) — same branch structure, different URL, same code.
+
+---
+
+## 36. RSS Branch Strategy — Retire in Favour of Direct Branches
+
+**Decision: the existing Inoreader RSS branch is retired. Direct source branches (TRCA, McMichael, AllEvents, and future additions) replace it. CityPlayhouse is dropped — no viable endpoint exists.**
+
+*Decided 2026-06-06, Ariel. From RSS content inspection + source probes.*
+
+### Why RSS can't be fixed
+
+The RSS date parsing bug (#58) made fixing the RSS branch the obvious path. Live content inspection showed fixing it is not viable for the sources that matter:
+
+- **AllEvents.in** — description is completely empty in the RSS feed. No event date present at all. #58 can't be applied to data that doesn't exist.
+- **Eventbrite** — already handled by the direct Eventbrite API branch. Redundant in RSS; no additional value.
+- **Tickets Playhouse (CityPlayhouse)** — WordPress site publishes posts per show and then deletes them. Inoreader cached 13 items; the live feed returns 0. Even if the date format ("June 27, 2026" in description text) were parseable, the feed is unreliable by design.
+
+Fixing #58 would only help Tickets Playhouse (17 items, unreliable source). Not worth a fragile HTML-parsing solution.
+
+### Why direct branches are better for event pipelines specifically
+
+RSS `isoDate` is the feed publication date, not the event start date. For news articles these are the same; for events they diverge by weeks or months. Every event-focused source requires either: (a) a structured endpoint with a real `startDate` field, or (b) date extraction from HTML description text (fragile, per-source, breaks silently). Direct branches solve the problem at the source — JSON-LD, iCal, and API responses all carry real event dates.
+
+### What happens to the RSS branch
+
+Disable it after direct branches are verified over 3 runs and the pool is healthy without it. Do not delete it — the n8n nodes remain for reference. The Inoreader subscriptions can stay as a monitoring layer (Inoreader shows when a source goes stale), but the pipeline reads around it.
+
+### Portable asset
+
+The pattern — probe each source for a structured endpoint, build a direct branch per source — is the reusable asset for Mississauga and future clients. Each adapter is a pure function: `raw source → canonical Candidates record`. The RSS aggregation approach was a shortcut that assumed event dates would be in standard RSS fields; at this domain they aren't.
+
+---
+
+## 37. R5 Pool Metric — New+Approved, Not Approved Alone
+
+**Decision: the R5 pool growth metric is New+Approved (pipeline-processed candidates not rejected). Approved alone is not a valid growth metric for R5. Per-issue in-window depth is the real floor metric.**
+
+*Decided 2026-06-06, Ariel. From snapshot analysis post-W2a.*
+
+### Why Approved is the wrong metric for R5
+
+R5's job is source expansion — adding events to the pipeline. Approved is the client's editorial decision: the client manually reviews New candidates and marks them Approved when they're good enough for the newsletter. Approved lags the real pool by however long it takes the client to review, and it reflects editorial quality judgment (R7's job) not ingestion volume (R5's job). Using Approved to measure R5 success means the metric is partially controlled by when the client has time to review — outside R5's scope.
+
+**New+Approved = all pipeline-processed candidates that haven't been rejected** — this is what the pipeline actually produced and what R3 can potentially allocate from.
+
+### The per-issue depth finding
+
+After W2a (TRCA + McMichael live): 525 New+Approved total, 160 in-window across all future issues. But per-issue depth is only ~70 — 90 of the 160 in-window candidates are for future issues (a month out), not the immediate next issue. 70 is below the 3:1 floor of 75 per issue.
+
+This reframes the remaining R5 work: the goal is not just total pool growth but ensuring each individual issue has ≥75 in-window candidates. AllEvents (135 events per run, refreshed weekly) directly targets this because it carries near-term upcoming events.
+
+### What this changes
+
+- `NA/Vaughan_Metrics_Log.md` pool baseline updated to New+Approved (388 at R5 start, not 103 Approved).
+- R5 milestone snapshot table tracks New+Approved over time, not just Approved.
+- Success criterion is per-issue in-window depth ≥75 (3:1 ratio), not total pool size.
+
+### What doesn't change
+
+The roadmap's "Approved ≥ 75" success line is superseded in practice — the real criterion is per-issue in-window depth. The Approved count remains tracked as a secondary metric and as the editorial signal for R6 scoring quality.
 
 ---
 

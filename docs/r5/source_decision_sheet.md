@@ -110,3 +110,35 @@ Probed all 4 confirmed sources headlessly (curl + Node) to validate integration 
 **Markham BiblioCommons — drop rationale:** Fully client-side React SPA. No public API, no iCal export, no JSON-LD on event pages. Browser dev tools inspection confirmed only 2 network calls on page load (systemMessages + jQuery state), neither returning event data. Server-side rendered with no structured data accessible to a headless fetch. Requires browser execution — worse than scraping. Dropped per R5_Scope rule ("if any source requires HTML scraping, drop to three sources").
 
 **Net: 3 confirmed sources** (TRCA, McMichael, Meetup). W2 builds branches for these three only.
+
+---
+
+## AllEvents.in Probe (2026-06-06)
+
+| Source | Method confirmed | title | date | LocationName | url | Verdict |
+|---|---|---|---|---|---|---|
+| AllEvents Vaughan | JSON-LD in page source (`allevents.in/vaughan-on`) | ✓ | ✓ YYYY-MM-DD | ✓ location.name + addressLocality | ✓ allevents.in event URLs | **PASS** |
+
+### Notes
+
+**Integration path:**
+1. Fetch `https://allevents.in/vaughan-on/all` (server-side rendered — no browser required, returns full event list)
+2. Extract `<script type="application/ld+json">` blocks
+3. Find the block where `@type = "Event"`
+4. Fields: `name` (title), `startDate` (clean YYYY-MM-DD), `url`, `location.name`, `location.address.addressLocality`
+
+**Yield:** `/vaughan-on/all` → **135 events across 3 pages** (45 per page). `/vaughan-on` only shows 12 featured events — use `/all`. Page count fluctuates with season; do not hardcode 3.
+
+**Pagination:** Standard HTML pagination via `<link rel="next">`. Follow `rel="next"` dynamically until absent — handles 2 pages in a slow week or 6 pages in summer without code changes.
+
+**JSON-LD completeness confirmed:** 45 JSON-LD events vs 50 event-card divs per page. Gap of 5 = ad cards embedded in the grid (confirmed via class inspection: `event-card + ad` pattern). JSON-LD captures all real events.
+
+**Geography:** `addressLocality = "Vaughan"` on all events, but AllEvents mis-tags some — e.g. "Puppy Yoga IN TORONTO", "JEY ONE TORONTO CANADA" tagged as Vaughan. **Geo-filter (W2c) is non-negotiable for this source.** AllEvents branch must ship in the same slice as W2c — do not enable it before geo-filter is live.
+
+**Dedup risk:** AllEvents aggregates from Eventbrite and other sources. Same event may appear in both AllEvents and Eventbrite branches with slightly different titles → different UniqueEventID → two records. Cannot quantify pre-run. After first run: query Airtable for candidates on the same date with similar titles. If overlap is small, ignore. If large, add a title normalization step.
+
+**B2B leakage:** "Canada Automotive Summit" and similar will appear. R2 rejects these — not a pipeline concern.
+
+**RSS:** Feed URL exists (`https://allevents.in/vaughan-on/RSS`) but timed out on probe. Not used — JSON-LD from page is cleaner.
+
+**CityPlayhouse (tickets.cityplayhouse.ca) — DROP:** Full probe 2026-06-06. Stack: WordPress 6.9.4 + Red61 ticketing theme. RSS feed (`/feed/`, `/news/feed/`), WP REST API (`/wp-json/wp/v2/news`), and all post-type-specific feeds return 200 with valid structure but 0 items. The 13 Inoreader items are stale cache — site publishes WordPress news posts per show when first listed, Inoreader picks them up, then posts are deleted/unpublished. Dates were parseable from description text ("June 27, 2026") but source is unreliable by design: content appears briefly then disappears. Actual event database is in Red61's proprietary system, inaccessible without a partnership. Not viable for a weekly automated pipeline. Verdict: dropped.
