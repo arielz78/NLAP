@@ -1086,3 +1086,32 @@ No automated sync (HTTP-fetch-from-git) is built. At 2 newsletters with rarely-c
 
 The reusable contract is the config **schema shape** — the key set (`airtableBaseId`, `beehiivPubId`, `geography`, `segments`, `quotas`, `sources`, `scoringWeights`, `prompts`). Mississauga reuses the keys verbatim with different values. Invest in the keys being right and complete; the values are Vaughan-specific.
 
+---
+
+## 34. n8n Source Branch Pattern — No Loop Nodes at Small Scale
+
+**Decision: for source branches ingesting from scraped/paginated sources at newsletter scale (~2–50 pages, ~10–150 events), do not use Loop Over Items nodes. Let n8n's native item processing handle sequencing.**
+
+*Decided 2026-06-05, Ariel. Emerged from building the TRCA branch in R1-W2a.*
+
+### The problem loops caused
+
+The TRCA branch initially used two nested Loop Over Items nodes — one to process listing pages, one to process each listing page's HTML before slug extraction. This caused the downstream pipeline (Clean/Filter → Sort → Make UniqueEventID → Validity Filter → DateWindow → Upsert Candidates) to fire once per listing page (3 times) instead of once per workflow execution. All downstream item counts were inflated and the upsert ran 3 separate times unnecessarily.
+
+### Why loops weren't needed
+
+n8n processes items sequentially by default when a node receives multiple items. When Code in JavaScript1 outputs 3 page URL items, HTTP Request automatically runs 3 times — once per item — without explicit loop control. The loop nodes were adding explicit "one at a time" control on top of behavior that was already happening natively, with the side effect of re-triggering downstream nodes per iteration.
+
+### When to use loops
+
+Loop Over Items nodes are warranted when:
+- Hitting a rate-limited API with an explicit request ceiling (e.g. OpenAI, Twitter)
+- The downstream chain must not fire until all iterations are fully complete AND n8n's native batching doesn't guarantee that
+- Batch size needs to be explicitly controlled (e.g. send exactly 10 at a time)
+
+At newsletter scale with scraped sources (TRCA: 3 pages, ~30 events; McMichael: 1 iCal endpoint), none of these apply.
+
+### Portable asset
+
+All future source branches follow the same pattern: source node outputs N items → HTTP Request runs N times automatically → Code node processes all N results → Merge → existing downstream path. No loop nodes unless a rate-limit or batch-control requirement is explicitly identified.
+
