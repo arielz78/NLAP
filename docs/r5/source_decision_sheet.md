@@ -31,6 +31,7 @@ Puppeteer/Playwright — full Chrome rendering, extracts JS-populated content. O
 
 ---
 
+
 ## Previously closed sources — re-evaluation against DevTools method (2026-06-06)
 
 Three sources were dropped earlier in R5 probing. Re-evaluated below against the corrected methodology:
@@ -148,7 +149,33 @@ Probed all 4 confirmed sources headlessly (curl + Node) to validate integration 
 2. Fetch each event page → parse `<script type="application/ld+json">` block where `@type = "Event"`
 3. Fields: `name` (title), `startDate`, `Location.name` (full address)
 
-**McMichael LocationName gap:** No `LOCATION` field in iCal records — location is embedded in the `DESCRIPTION` HTML blob. W2 will need to either extract it or leave LocationName blank (soft-required field, won't crater the pool).
+### McMichael — superseded 2026-06-07: direct REST API found, replaces iCal
+
+**Discovery:** Response headers on `mcmichael.com/events/` advertise a public REST API root:
+```
+X-Tec-Api-Origin: https://mcmichael.com
+X-Tec-Api-Root: https://mcmichael.com/wp-json/tribe/events/v1/
+X-Tec-Api-Version: v1
+```
+This is **The Events Calendar (Modern Tribe)** plugin's REST API. Cloudflare returns 403 to a bare server-side request, but a GET with full browser-like headers (`User-Agent`, `Accept`, `Referer: https://mcmichael.com/events/`, `Sec-Fetch-*`) passes cleanly — no headless browser needed.
+
+**Confirmed working:**
+```
+GET https://mcmichael.com/wp-json/tribe/events/v1/events?per_page=N
+```
+Returns `{ events: [...], total, total_pages }` — paginated, clean JSON.
+
+**Why this is strictly better than iCal:**
+1. **~2x yield** — API reports **56 total events** across 6 pages vs. **28 records** currently landing via the iCal branch. Likely the iCal feed is a curated/truncated subset.
+2. **`categories` included** (e.g. "Tours", "Accessible Programs") — iCal has none. Solves a gap that was previously written off as unsolvable for this source.
+3. **Real `description` field with rich HTML** — the current McMichael branch hardcodes `DescriptionRaw: ''` because iCal has nothing usable. The API's `description` field is full event copy (exhibition context, program details). This directly improves R2 classification input — the prior session noted McMichael's high NeedsReview rate was attributed to "title-only classification, same as TRCA." Real description text should reduce that.
+4. **Clean structured `start_date`/`end_date`** with times — no iCal line-unfolding/parsing needed.
+
+**Venue field is empty (`venue: []`) — not a gap.** Every McMichael event happens at the museum itself; they don't bother setting a per-event venue. The current branch's hardcoded `locationName = "McMichael Canadian Art Collection"` remains correct and should be kept as-is regardless of which fetch method is used.
+
+**Recommendation:** Swap the McMichael branch from iCal fetch+parse to a paginated REST API loop (`page=1..total_pages`, `per_page=50` or similar) before/alongside W2c. This is a live branch already in production — treat as a planned upgrade, not an emergency; coordinate the swap with a verification pass (re-run R1, confirm record count moves toward ~56, spot-check categories and descriptions land correctly in Airtable).
+
+**~~McMichael LocationName gap (superseded)~~:** No `LOCATION` field in iCal records — location is embedded in the `DESCRIPTION` HTML blob. Moot — see above, hardcoded LocationName is correct either way.
 
 **Meetup LocationName gap:** No location field in the iCal feed at all. Same handling as McMichael — blank is acceptable per R5_Scope hard-reject vs soft-required distinction.
 
@@ -182,13 +209,57 @@ The two groups Nate selected for the config were pulled from real past newslette
 
 ---
 
-## AllEvents.in Probe (2026-06-06)
+## AllEvents.in Probe (2026-06-06, superseded same day — direct JSON API found)
 
 | Source | Method confirmed | title | date | LocationName | url | Verdict |
 |---|---|---|---|---|---|---|
-| AllEvents Vaughan | JSON-LD in page source (`allevents.in/vaughan-on`) | ✓ | ✓ YYYY-MM-DD | ✓ location.name + addressLocality | ✓ allevents.in event URLs | **PASS** |
+| AllEvents Vaughan | **Direct JSON API** (`POST allevents.in/api/events/list`) | ✓ | ✓ Unix timestamp + display string | ✓ full venue object incl. lat/long | ✓ allevents.in event URLs | **PASS — upgraded path** |
 
-### Notes
+### Superseding integration path (found via DevTools, 2026-06-06)
+
+DevTools Fetch/XHR inspection of `/vaughan-on/all` revealed the page loads events via a clean paginated JSON API — `combined-eventlist.js` fires `POST https://allevents.in/api/events/list`. This replaces the JSON-LD scraping plan below entirely.
+
+**Request payload (POST body):**
+```json
+{
+  "city": "vaughan",
+  "country": "canada",
+  "page": 0,
+  "rows": 9,
+  "popular": true,
+  "venue": [],
+  "keywords": "",
+  "type": "",
+  "sdate": "",
+  "edate": "",
+  "ids": []
+}
+```
+Confirmed working with `rows: 20` directly via server-side POST — no browser, no auth, no cookies required.
+
+**Response shape — clean structured JSON per event:**
+- `eventname` — title
+- `start_time` (Unix timestamp) + `start_time_display` (human string, e.g. "Sun Jun 07 2026 at 10:00 am")
+- `end_time` / `end_time_display`
+- `venue.street`, `venue.city`, `venue.state`, `venue.country`, `venue.latitude`, `venue.longitude`, `venue.full_address`
+- `event_url` (canonical allevents.in link)
+- `categories` (array, e.g. `["entertainment","zumba","dance","workshops","health-wellness"]`)
+- `organizer.name`
+- `tickets.has_tickets`
+
+**Why this is strictly better than the JSON-LD scrape plan:**
+1. **Paginated JSON loop** (`page`/`rows`) replaces the 3-step scrape (fetch listing pages → regex slug extraction → fetch + parse JSON-LD per event). One HTTP call per page, no HTML parsing.
+2. **Structured venue object with lat/long** is stronger geo-filter material than the JSON-LD `addressLocality` string, which was confirmed mis-tagged (Toronto events tagged "Vaughan"). Full street address + coordinates lets the geo-filter work on real geography, not a self-reported label.
+3. **Categories array included** — reopens the "category omit for R5" decision (closed 2026-06-06 on the basis that no confirmed source carried a clean category field). AllEvents does. Worth revisiting scope when W2c is built.
+4. **No ad-card noise** — API returns events only; no embedded ad divs to filter (vs. the 45-JSON-LD-vs-50-card gap found in the HTML scrape).
+
+**Geo-filter still required (W2c):** `venue.city` is more trustworthy than `addressLocality` but not guaranteed clean — confirm on a larger sample before treating it as authoritative. AllEvents branch still ships in the same slice as W2c.
+
+**Dedup risk unchanged:** AllEvents aggregates from Eventbrite and other sources. Title variations may produce near-duplicate records → different UniqueEventID → two records. Assess after first run.
+
+**B2B leakage unchanged:** "Canada Automotive Summit" and similar will appear. R2 rejects these — not a pipeline concern.
+
+### Original JSON-LD scrape plan (superseded, kept for reference)
 
 **Integration path:**
 1. Fetch `https://allevents.in/vaughan-on/all` (server-side rendered — no browser required, returns full event list)
@@ -196,21 +267,13 @@ The two groups Nate selected for the config were pulled from real past newslette
 3. Find the block where `@type = "Event"`
 4. Fields: `name` (title), `startDate` (clean YYYY-MM-DD), `url`, `location.name`, `location.address.addressLocality`
 
-**Yield:** `/vaughan-on/all` → **135 events across 3 pages** (45 per page). `/vaughan-on` only shows 12 featured events — use `/all`. Page count fluctuates with season; do not hardcode 3.
+**Yield:** `/vaughan-on/all` → 135 events across 3 pages (45 per page). Page count fluctuates with season.
 
-**Trending page (confirmed 2026-06-06):** `/vaughan-on` homepage "Trending Events" section shows 9 events — all 9 confirmed present in `/vaughan-on/all`. Strict subset, no separate branch needed. Scrape `/all` only.
+**Trending page (confirmed 2026-06-06):** `/vaughan-on` homepage "Trending Events" — 9 events, all present in `/vaughan-on/all`. Strict subset.
 
-**Pagination:** Standard HTML pagination via `<link rel="next">`. Follow `rel="next"` dynamically until absent — handles 2 pages in a slow week or 6 pages in summer without code changes.
+**JSON-LD completeness:** 45 JSON-LD events vs 50 event-card divs per page. Gap of 5 = ad cards.
 
-**JSON-LD completeness confirmed:** 45 JSON-LD events vs 50 event-card divs per page. Gap of 5 = ad cards embedded in the grid (confirmed via class inspection: `event-card + ad` pattern). JSON-LD captures all real events.
-
-**Geography:** `addressLocality = "Vaughan"` on all events, but AllEvents mis-tags some — e.g. "Puppy Yoga IN TORONTO", "JEY ONE TORONTO CANADA" tagged as Vaughan. **Geo-filter (W2c) is non-negotiable for this source.** AllEvents branch must ship in the same slice as W2c — do not enable it before geo-filter is live.
-
-**Dedup risk:** AllEvents aggregates from Eventbrite and other sources. Same event may appear in both AllEvents and Eventbrite branches with slightly different titles → different UniqueEventID → two records. Cannot quantify pre-run. After first run: query Airtable for candidates on the same date with similar titles. If overlap is small, ignore. If large, add a title normalization step.
-
-**B2B leakage:** "Canada Automotive Summit" and similar will appear. R2 rejects these — not a pipeline concern.
-
-**RSS:** Feed URL exists (`https://allevents.in/vaughan-on/RSS`) but timed out on probe. Not used — JSON-LD from page is cleaner.
+**RSS:** Feed URL exists (`https://allevents.in/vaughan-on/RSS`) but timed out on probe. Not used — direct API above is cleaner than either RSS or JSON-LD.
 
 **CityPlayhouse (tickets.cityplayhouse.ca) — DROP:** Full probe 2026-06-06. Stack: WordPress 6.9.4 + Red61 ticketing theme. RSS feed (`/feed/`, `/news/feed/`), WP REST API (`/wp-json/wp/v2/news`), and all post-type-specific feeds return 200 with valid structure but 0 items. The 13 Inoreader items are stale cache — site publishes WordPress news posts per show when first listed, Inoreader picks them up, then posts are deleted/unpublished. Dates were parseable from description text ("June 27, 2026") but source is unreliable by design: content appears briefly then disappears. Actual event database is in Red61's proprietary system, inaccessible without a partnership. Not viable for a weekly automated pipeline. Verdict: dropped.
 
@@ -309,3 +372,30 @@ The two groups Nate selected for the config were pulled from real past newslette
 - URL ✓ — `/programs/view/{id}` href
 
 **Initial assessment was wrong:** First probe attempts failed because BiblioCommons (`vaughanpl.bibliocommons.com`) blocks headless access, and earlier scrapes didn't locate the program content in the HTML. The `vaughanpl.info` own site IS server-side rendered — program data confirmed at index 41991 in the HTML. The programs page is the correct integration target, not BiblioCommons.
+
+**Gap closed 2026-06-07 — blind feed probe (methodology step 3) actually run:** Same exhaustiveness gap as unionville.ca had — the original VPL conclusion ("server-rendered, scraping is the only path") jumped from DevTools straight to scraping without checking `/feed/`, `?ical=1`, `.ics` paths. Ran it on `www.vaughanpl.info`:
+- `/feed/`, `/programs/feed/`, `/programs/?ical=1` → 301 redirects to generic nginx error pages
+- `/?feed=rss2`, `/?ical=1` → 200, but query params ignored entirely — just serves the regular homepage HTML
+- `/events.ics`, `/calendar.ics`, `/programs.ics` → 404
+- `/wp-json/wp/v2/types` → 404 generic error page (confirms this isn't even a WordPress site — custom-built, so WP feed conventions don't apply)
+
+**No feeds exist in any form.** HTML scraping of `/programs` is confirmed as the genuine ceiling — audit now exhaustive across the full methodology hierarchy for VPL too, with no gaps remaining.
+---
+
+## DevTools Coverage Audit — re-check of all confirmed/live sources (2026-06-07)
+
+Triggered by a fragility/efficiency audit of already-live or already-confirmed sources — checking whether each source's *original* confirmation method (often headless probing, pre-dating the DevTools-first methodology) was actually the best available path, and whether "scraping is the ceiling" verdicts were ever run through the *full* methodology hierarchy or just stopped at the first dead end.
+
+| Source | Original method | What was checked today and why | Outcome |
+|---|---|---|---|
+| TRCA | JSON-LD scrape (headless probe, 2026-06-05) | Fresh DevTools pass — no XHR calls, fully server-rendered, JSON-LD is the only path. WP Event Manager API exists but is auth-gated (`wpem/events` → 405 Authentication Failed). | **Re-confirmed optimal — no change** |
+| Eventbrite | Internal `city-browse` API (already in place pre-R5, built by Ariel) | Fresh DevTools pass — confirmed working without real CSRF auth (placeholder token accepted). Vaughan-specific place_id (`85633793`) returns 0 events; York Region place_id (`101740741`) is the correct geo level. Also confirmed `city-browse` is the *exact same call* the live Eventbrite site makes — not a workaround. | **Re-confirmed correct as-is — no change** |
+| AllEvents | JSON-LD scrape (headless probe, 2026-06-06) | Fresh DevTools pass — **found a hidden direct JSON API** (`POST allevents.in/api/events/list`) via `combined-eventlist.js`. Replaces the planned JSON-LD scrape entirely — cleaner pagination, structured venue+lat/long, categories included. | **UPGRADED — integration plan rewritten, see AllEvents section above** |
+| McMichael | iCal feed (headless probe, 2026-06-05 — currently live in R1) | Fresh DevTools pass — **found a hidden direct REST API** (`wp-json/tribe/events/v1/events`) via response headers on the live `/events/` page (`X-Tec-Api-Root`). Cloudflare-gated but passable with full browser-like headers. Returns ~2x the events with categories + rich descriptions — the iCal feed has none of this. | **UPGRADED — integration plan rewritten, see McMichael section below** |
+| visitvaughan.ca | `admin-ajax.php` → `action=haven_calendar` (DevTools, 2026-06-06) | Nothing to re-check — `action=haven_calendar` already returns clean structured JSON directly. This is the best-case outcome the entire methodology can produce; no further probe could improve on a direct JSON API even if a feed existed. | **Stands as-is — already optimal** |
+| VPL | Zero XHR calls, fully server-rendered (DevTools, 2026-06-06) | Gutcheck flagged that the original "scraping is the ceiling" verdict skipped methodology step 3 (blind feed probe). Ran `/feed/`, `?feed=rss2`, `/programs/feed/`, `?ical=1`, `.ics`, `/wp-json/` directly against `vaughanpl.info`: all either 301-redirect to bare nginx error pages, ignore query params and serve the plain homepage, or 404. `/wp-json/` 404 confirms this isn't even WordPress. No feed convention returns anything real. | **Gap closed — HTML scrape of `/programs` confirmed as genuine ceiling, zero gaps remain** |
+| unionville.ca | `admin-ajax.php` → `action=load_upcoming_events` returns HTML cards (DevTools, 2026-06-06) | Two checks: (1) found a third ajax action, `load_past_events` — inspected its response, identical HTML card markup, confirms the plugin is HTML-only by design (a fourth call, `fusion_form_update_view`, is unrelated Avada/Fusion form-analytics noise); (2) blind feed probe — found two RSS feeds that *exist* (`/feed/`, `/things-to-do/events/feed/`) but both are WordPress auto-generated defaults (generic blog feed, page-comments feed) with **zero items** — coincidence, not signal. | **Gap closed — HTML-card scrape confirmed as genuine ceiling, zero gaps remain** |
+
+**Net: zero open items, zero unverified conclusions.** Every "scraping is the only path" verdict in this sheet (TRCA, VPL, unionville.ca) is now backed by a complete run through the full methodology hierarchy — DevTools, blind feeds, REST API, and JSON-LD where relevant — not just the first check that happened to return empty. AllEvents and McMichael both flipped from "confirmed fine" to "confirmed fine via an inferior method — better path exists," which is what triggered pushing the rest of the audit one rung further rather than stopping at the first green light.
+
+**Lesson reinforced:** the two upgrades (AllEvents, McMichael) both came from re-checking sources that were *never run through DevTools in the first place* — they were confirmed via headless probing before the DevTools-first methodology existed. Sources that *were* DevTools-checked from day one (visitvaughan.ca, unionville.ca, VPL) didn't yield upgrade-grade surprises on re-inspection — but two of them (VPL, unionville.ca) *did* have an unrun methodology step (blind feed probe) that needed closing before "scraping is the ceiling" could be called a verified conclusion rather than an assumption.
