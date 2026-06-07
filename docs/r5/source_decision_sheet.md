@@ -149,7 +149,17 @@ Probed all 4 confirmed sources headlessly (curl + Node) to validate integration 
 2. Fetch each event page → parse `<script type="application/ld+json">` block where `@type = "Event"`
 3. Fields: `name` (title), `startDate`, `Location.name` (full address)
 
-### McMichael — superseded 2026-06-07: direct REST API found, replaces iCal
+### McMichael — UPGRADE COMPLETE 2026-06-07: live branch swapped from iCal to direct REST API
+
+**Status: shipped, cut over, verified.** See `Execution_Log.md` 2026-06-07 entry for the full build/debug record and `Decision_Log.md` §39 for a normalization issue this swap surfaced (pipeline-wide, not McMichael-specific — paused for resolution next session).
+
+**Result vs. the plan below:** 55 unique events landing per run (vs. 28 under iCal — close to the predicted ~2x), real `DescriptionRaw` content and `categories` now populated (folded into `DescriptionRaw` as classifier context, since Airtable's `Category` field is constrained to newsletter-segment options and can't take venue-side categories directly). Old iCal branch disabled — not deleted — for rollback.
+
+**Encoding lesson for future source migrations (especially W2c — visitvaughan.ca and unionville.ca are WordPress `admin-ajax.php`, same risk class):** the REST API returns titles with raw HTML entities (`&#8217;`) and Unicode smart quotes that don't byte-match the plain-text titles the old iCal feed had stored for the *same events* — silently producing duplicate `UniqueEventID`s instead of matching/upserting into existing records. Decoding entities to their typographically "correct" curly-Unicode form is *not* automatically right — it depends on what convention the existing stored data already uses (and that turned out to be inconsistent *across* sources, not just McMichael — see Decision_Log §39). Check what's already in Airtable before assuming a "correct" decode target.
+
+---
+
+**Original upgrade plan (2026-06-06, now superseded by the completed build above — kept for historical reference):**
 
 **Discovery:** Response headers on `mcmichael.com/events/` advertise a public REST API root:
 ```

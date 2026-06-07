@@ -1234,3 +1234,28 @@ Three false DROP verdicts in one session from the same root cause. The correct s
 
 All future source probes for R5 remaining sources and Mississauga onboarding. Previously dropped sources (CityPlayhouse, Markham BiblioCommons, Meetup) to be re-verified via DevTools before drops are finalized — DevTools was not applied to all of them at time of original assessment.
 
+---
+
+## 39. UniqueEventID Normalization — Centralization Planned, Blocked on Existing Data Inconsistency (2026-06-07)
+
+**Decision in progress — paused, not resolved.** While fixing a McMichael duplicate-record bug, discovered that title-text normalization for `UniqueEventID` computation should be centralized in the shared `Make UniqueEventID` node (the one chokepoint every source branch funnels through after `Merge`) rather than duplicated per-branch. But auditing the existing 634-record `Candidates` table before shipping that change revealed the dataset is *already* inconsistent: 16 records (from Eventbrite/RSS) store curly-quote `UniqueEventID`s, while McMichael's iCal-derived records use straight ASCII quotes — both computed under the current `norm()`, which has never normalized quote characters, just preserved whatever each source's raw text contained.
+
+*Surfaced 2026-06-07, Ariel + Claude. Emerged from the McMichael REST API migration (iCal → Tribe REST API) duplicate-bug investigation.*
+
+### Why this blocks a simple centralized fix
+
+Any single normalization direction for the shared node breaks *something* already live:
+- **Straighten to ASCII:** breaks the 16 existing curly-quote records — several have future dates and will likely be re-fetched by their source feeds in upcoming runs, generating real (not theoretical) duplicates.
+- **Decode to curly Unicode:** re-breaks the 4 known McMichael "Les Chefs/Racines" records that were just manually reconciled to straight quotes during this session's fix.
+
+There is no normalization rule that's consistent with 100% of what's already in the table — the inconsistency predates this investigation and was invisible until a source migration (McMichael) produced text that collided with it.
+
+### What this means going forward
+
+- `UniqueEventID` matching has an implicit precondition that was never documented: title text must be normalized to match *whatever convention already exists* for that specific data — not to some abstract "more correct" typographic form. Decoding HTML entities to their typographically "correct" curly Unicode equivalents is *not* automatically the right choice; it depends on what's already stored.
+- This is a genuine blast-radius problem for a live system: `UniqueEventID` is the matching key for `Candidates` *and* `Historical` *and* potentially `IssueItems` linkages. A centralized normalization change is exactly the kind of shared-infrastructure edit that needs a reconciliation plan first, not a quick fix — confirmed by finding 16 records that would have silently broken had the originally-drafted "straighten everything" version shipped.
+
+### Recommended path (not yet executed)
+
+Manually reconcile the 4 known McMichael records to curly-quote form (smaller, single-source, fully known cleanup) so the dataset converges toward the direction with more existing precedent (16 > 4), *then* centralize entity-decoding-to-curly-Unicode in `Make UniqueEventID`. Resume and finalize next session — see `Execution_Log.md` 2026-06-07 entry for full investigation detail.
+

@@ -68,7 +68,15 @@ All seven #53 analyses are run and posted. Four sources (or three, if any need s
 
 **Ariel signed off. W1 is closed.**
 
-Active sources locked: TRCA (JSON-LD), McMichael (iCal), AllEvents (JSON-LD, ships with W2c geo-filter). Meetup dropped — both original groups wrong geography/defunct, York Region alternatives low-yield, any Meetup events via Facebook W3. BiblioCommons dropped — React SPA, no accessible endpoint.
+Active sources locked: TRCA (JSON-LD), McMichael (Tribe REST API — upgraded from iCal 2026-06-07, see below), AllEvents (JSON-LD, ships with W2c geo-filter). Meetup dropped — both original groups wrong geography/defunct, York Region alternatives low-yield, any Meetup events via Facebook W3. BiblioCommons dropped — React SPA, no accessible endpoint.
+
+### McMichael Live-Branch Upgrade — Complete (2026-06-07)
+
+**Swapped from iCal feed to Tribe REST API (`wp-json/tribe/events/v1/events`), per the upgrade flagged in the 2026-06-06 source re-audit.** Live, cut over, and verified — see `Execution_Log.md` 2026-06-07 entry for full build/debug detail and `Decision_Log.md` §39 for the normalization issue it surfaced.
+
+- ~2x yield (55 vs. 28 events/run); real `DescriptionRaw` content and `categories` now flowing into classifier input (previously hardcoded empty under iCal)
+- Old iCal branch disabled (not deleted) as rollback safety net
+- **Surfaced a pipeline-wide `UniqueEventID` normalization gap** (not McMichael-specific) — paused, tracked in `Decision_Log.md` §39, needs resolution before/alongside W2c builds (visitvaughan.ca and unionville.ca are WordPress-based and likely to hit the same encoding-mismatch class)
 
 `vaughan.r5-w1.config.json` cleanup (remove dead sources, reflect final state) deferred to end-of-R5 as a one-time deliverable. File is a snapshot/seed — not live, not read by the pipeline.
 
