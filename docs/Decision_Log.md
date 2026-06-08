@@ -1236,9 +1236,11 @@ All future source probes for R5 remaining sources and Mississauga onboarding. Pr
 
 ---
 
-## 39. UniqueEventID Normalization — Centralization Planned, Blocked on Existing Data Inconsistency (2026-06-07)
+## 39. UniqueEventID Normalization — Centralized, Resolved and Shipped (2026-06-07)
 
-**Decision in progress — paused, not resolved.** While fixing a McMichael duplicate-record bug, discovered that title-text normalization for `UniqueEventID` computation should be centralized in the shared `Make UniqueEventID` node (the one chokepoint every source branch funnels through after `Merge`) rather than duplicated per-branch. But auditing the existing 634-record `Candidates` table before shipping that change revealed the dataset is *already* inconsistent: 16 records (from Eventbrite/RSS) store curly-quote `UniqueEventID`s, while McMichael's iCal-derived records use straight ASCII quotes — both computed under the current `norm()`, which has never normalized quote characters, just preserved whatever each source's raw text contained.
+**RESOLVED same day — see "Resolution" section below for the final decision, what shipped, and why the original recommended path was overturned by new evidence.**
+
+**Original framing (superseded — kept for context):** While fixing a McMichael duplicate-record bug, discovered that title-text normalization for `UniqueEventID` computation should be centralized in the shared `Make UniqueEventID` node (the one chokepoint every source branch funnels through after `Merge`) rather than duplicated per-branch. But auditing the existing 634-record `Candidates` table before shipping that change revealed the dataset is *already* inconsistent: 16 records (from Eventbrite/RSS) store curly-quote `UniqueEventID`s, while McMichael's iCal-derived records use straight ASCII quotes — both computed under the current `norm()`, which has never normalized quote characters, just preserved whatever each source's raw text contained.
 
 *Surfaced 2026-06-07, Ariel + Claude. Emerged from the McMichael REST API migration (iCal → Tribe REST API) duplicate-bug investigation.*
 
@@ -1258,4 +1260,34 @@ There is no normalization rule that's consistent with 100% of what's already in 
 ### Recommended path (not yet executed)
 
 Manually reconcile the 4 known McMichael records to curly-quote form (smaller, single-source, fully known cleanup) so the dataset converges toward the direction with more existing precedent (16 > 4), *then* centralize entity-decoding-to-curly-Unicode in `Make UniqueEventID`. Resume and finalize next session — see `Execution_Log.md` 2026-06-07 entry for full investigation detail.
+
+---
+
+### Resolution (same day, 2026-06-07 — overturns the recommended path above)
+
+**The "16 > 4, converge toward curly" framing was based on an incomplete signal and turned out to be wrong.** Before implementing it, ran the obvious follow-up check: is the curly-vs-straight split *correlated with source* (a real per-source convention worth preserving), or is it random noise?
+
+**Audit method:** grouped all 634 `Candidates` records' `UniqueEventID`s by source domain (via the `URL` field — `Source` itself is 0% populated, a known gap from the 2026-06-04 pool audit). Result: **both curly and straight quotes appear within the same domain** — including within McMichael itself (4 straight, 4 curly, same source, same ingestion path). Eventbrite.ca, eventbrite.com, and allevents.in show the identical mixed pattern.
+
+**Conclusion: there is no existing convention to preserve.** The variation is per-title, not per-source — it traces back to how individual event organizers typed their own titles (smart-quote-enabled editor vs. plain ASCII vs. which HTML entity their CMS happened to encode), not to any system-level choice any of our sources made. The "16 vs. 4" framing made it look like two sources disagreed; in reality the *entire dataset* has always disagreed with itself, title by title, invisibly, until McMichael's REST migration produced a text that collided with it.
+
+**Decision shipped:** Canonicalize everything to **straight ASCII** — simpler, plain-ASCII, and the form the rest of the pipeline already assumes by default. No source-aware logic needed (there's no source signal to key off).
+
+**What was built — one shared canonicalization function, applied identically in both places that compute `UniqueEventID`:**
+1. Decode HTML entities (`&#8217;`, `&amp;`, etc. → literal characters) — generalizes the fix already proven necessary for McMichael to every branch.
+2. Map curly quotes/em-dash/en-dash/minus/non-breaking-space/ellipsis → ASCII straight equivalents (an explicit, bounded equivalence table — not a general Unicode detector).
+3. Apply Unicode NFC normalization (collapses precomposed vs. combining-character variants, e.g. "Café" stored two different byte-equivalent ways — handles accented titles, e.g. French-language McMichael events, for free).
+4. Lowercase, trim, collapse whitespace (existing behavior, preserved).
+
+Tagged `NORMALIZATION_VERSION: v2 (2026-06-07)` as an inline comment in both locations, with an explicit note that any future change to this logic requires re-running the backfill script across the full table — establishing the versioning discipline for whoever (Nathan, future Ariel, Mississauga build) touches this next.
+
+**Where it lives (the contract, made explicit and centralized for the first time):**
+- `workflows/NLAP R1.json` → `Make UniqueEventID` node, `norm()` function — the live, runtime computation every branch funnels through after `Merge`.
+- `scripts/updateUniqueEventIDs.js` → `computeUniqueEventID()` — the one-time backfill tool, now required to compute *byte-identical* output to the live node (this was a real, separate bug found mid-fix: the script's old version didn't collapse internal whitespace the way the node did — a second silent-drift risk in the same family, fixed in the same pass).
+
+**Backfill executed:** ran `updateUniqueEventIDs.js` against all 634 live `Candidates` records. **82 updated, 552 already correct (no-op, as expected for ASCII-only titles), 0 errors.** Post-run audit found 19 duplicate-ID groups — verified these are **pre-existing duplicates from before the `UniqueEventID` system existed** (plain-ASCII titles, dated March–April 2026, mostly already `Status = Rejected` per the existing manual dedup protocol in §3) — confirmed unrelated to and untouched by this migration. Zero new collisions created.
+
+**Why this is the right level of engineering (method-fit note):** explicitly did *not* build a general Unicode-look-alike detector or attempt NFKC-level compatibility normalization — both would be solving for character classes that don't exist in this dataset today (the "more sophisticated than the problem warrants" trap). The bounded equivalence table covers exactly what's live now (quotes, dashes, the McMichael entity pattern); NFC is the one "free" standard-library addition that costs nothing and closes an entire adjacent bug class (combining-character variants) without inventing anything bespoke. Future variants get caught by the same forensic method that found this one — codepoint-level diffing the moment a near-duplicate's IDs don't match — not by pre-emptive enumeration.
+
+**Transferability:** the *contract* (normalize-before-compare, one shared chokepoint, explicit version tag, mandatory full-table backfill on any change) is the portable asset for Mississauga — the specific equivalence table is Vaughan-data-specific and will need its own audit pass against whatever CMS quirks Mississauga's sources carry.
 

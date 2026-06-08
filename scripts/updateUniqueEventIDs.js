@@ -41,8 +41,39 @@ async function fetchAllCandidates() {
   return records;
 }
 
+// NORMALIZATION_VERSION: v2 (2026-06-07)
+// Mirrors the `norm()` function in the "Make UniqueEventID" node (workflows/NLAP R1.json).
+// Adds: HTML entity decoding, curly-quote/dash/space/ellipsis -> ASCII mapping, NFC normalization.
+// Keep these two implementations identical — any divergence recreates the duplicate-ID bug
+// this script was written to fix. If you change one, change both, then re-run this script.
+function decodeEntities(s) {
+  return s
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&amp;/g, "&")
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+function straighten(s) {
+  return s
+    .replace(/[‘’‚‛]/g, "'")
+    .replace(/[“”„‟]/g, '"')
+    .replace(/[–—−]/g, "-")
+    .replace(/[  -  ]/g, " ")
+    .replace(/…/g, "...");
+}
+function norm(s) {
+  return straighten(decodeEntities((s || "").toString()))
+    .normalize("NFC")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
 function computeUniqueEventID(title, startDate) {
-  const titlePart = (title ?? "").toLowerCase().trim();
+  const titlePart = norm(title);
   const datePart  = startDate ?? "";
   return `${titlePart}|${datePart}`;
 }
