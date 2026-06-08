@@ -31,6 +31,24 @@ Puppeteer/Playwright — full Chrome rendering, extracts JS-populated content. O
 
 ---
 
+## Integration Tier Ranking — ease *and* transferability (added 2026-06-07)
+
+The methodology above tells you *how to find* the best path on a given source. This ranks the *outcomes* once found — not just by how easy they are to wire up today, but by how much of that work transfers to the next client (Mississauga, future newsletters). Two sources can land in the same "good outcome, no headless browser" bucket and still differ sharply on transferability — that distinction is the point of this ranking.
+
+1. **Direct JSON/REST API** (purpose-built endpoint, structured response) — *AllEvents* (`api/events/list`), *McMichael* (`wp-json/tribe/events/v1/events`), *visitvaughan.ca* (`admin-ajax.php?action=haven_calendar`), *Eventbrite* (`city-browse`). Cleanest tier: one documented call, you control pagination/filters, response is purpose-shaped for the data you need.
+
+2. **JSON-LD** (`schema.org` standard markup embedded in page HTML) — *TRCA*. One rung down in raw effort (fetch the whole page, extract a `<script type="application/ld+json">` block) but the parsing code is **standardized** — `@type: Event`, `location.address`, `organizer` mean the same thing on any site using schema.org. That standardization is what makes it transfer cleanly to a second client's sources without a rewrite.
+
+3. **Embedded app-state JSON** (framework-specific, non-standard blobs baked into the initial HTML) — *Meetup* (`__NEXT_DATA__`, Next.js page-props). Mechanically just as clean as tier 2 — single fetch, no browser, structured fields — but the shape is **bespoke per framework** (Next.js's GraphQL-style nesting won't resemble the next site's React/Vue/whatever blob). Each one needs its own one-off parser; none of that parsing logic transfers.
+
+4. **HTML-card scraping via ajax/admin endpoints** — *unionville.ca* (`load_upcoming_events` HTML cards), *VPL* (`/programs` server-rendered HTML). Functional, zero infrastructure, but fragile to redesigns and entirely bespoke per site — lowest transferability of the "working" tiers.
+
+5. **Headless browser required** — *Markham BiblioCommons* (data only materializes after JS execution, `initial_state: null` confirms nothing is server-rendered or pre-fetched). Worst tier — worse than scraping, and the reason BiblioCommons stays dropped even after a fresh DevTools re-check.
+
+**Why this matters for scoping a second client:** tiers 1–2 are where reusable integration code lives — an API client or a JSON-LD parser written for one source has a real chance of working (or needing only minor changes) on a structurally similar source elsewhere. Tiers 3–4 are where you're budgeting for one-off, source-specific build time every single time, regardless of how clean any individual integration looks in isolation.
+
+---
+
 
 ## Previously closed sources — re-evaluation against DevTools method (2026-06-06)
 
@@ -38,11 +56,13 @@ Three sources were dropped earlier in R5 probing. Re-evaluated below against the
 
 **Markham BiblioCommons** — CONFIRMED DROP. DevTools inspection was already performed at time of original probe ("only 2 network calls on page load, neither returning event data"). The site is a React SPA that makes no data calls for events server-side. DevTools confirms: no XHR with event data. Drop stands.
 
-**Meetup** — CONFIRMED DROP. Not a detection failure — the iCal feeds work and data is accessible. Dropped for yield reasons: platform caps iCal exports at ~10 events per group, York Region groups return 2–4 usable events after geo-filter. No DevTools investigation would change this.
+**Meetup** — ⚠️ **OVERTURNED 2026-06-07 — see "Meetup Re-verification" section below.** The 2026-06-06 reasoning ("iCal caps at ~10/group, no DevTools investigation would change this") never actually opened DevTools on Meetup — it argued past the check instead of running it. A fresh DevTools pass on the *search/discovery page* (`meetup.com/find/ca--on--vaughan/`, not a per-group iCal export) found a completely different integration path: 37 unique structured events embedded directly in the page's `__NEXT_DATA__`, 13 of which pass the York Region geo-filter, spanning a 3-week window. The iCal-cap argument was correct but answered the wrong question — it's not the only path in. **Verdict flips from DROP to PASS.**
 
-**CityPlayhouse** — CONFIRMED DROP. Not a detection failure — posts are ephemeral by design (published then deleted within hours; Inoreader caches stale data). Even if a DevTools probe found an API, the content wouldn't be there. Drop stands.
+**CityPlayhouse** — ⚠️ **OVERTURNED 2026-06-07 — see "CityPlayhouse Re-verification" section below.** The 2026-06-06 reasoning ("posts are ephemeral, Inoreader caches stale data, the actual event database is in Red61's proprietary system") was correct about the *WordPress news/RSS layer* — and wrong to generalize from it to "the content isn't accessible anywhere." It never actually opened the live ticketing storefront (`tickets.cityplayhouse.ca/events/`) in DevTools — it tested feeds and the news API, found them empty/ephemeral, and stopped. The storefront itself is a completely different, persistent, structured surface. **Verdict flips from DROP to PASS.**
 
-No previously dropped sources need re-evaluation.
+**Status: two previously-dropped sources (Meetup, CityPlayhouse) reopened and reversed; only BiblioCommons holds on fresh re-verification — and that one was confirmed by an actual fresh DevTools pass (not just reasoning), with `initial_state: null` as hard evidence nothing is server-rendered or embedded.**
+
+**Pattern worth naming:** of the three sources dropped before the DevTools-first methodology existed, two flipped on re-check — both times because the original probe tested the *wrong surface* (Meetup: per-group iCal export instead of the search/discovery page; CityPlayhouse: the news/RSS layer instead of the ticketing storefront) and then reasoned from "this surface is a dead end" to "this source is a dead end," skipping the step of asking whether a *different* surface on the same domain might hold the data. BiblioCommons is the one source where that generalization actually held — and notably, it's also the one where the original probe *did* open DevTools on the actual page being used. The lesson isn't "everything can be cracked" — it's "a DROP verdict is only as strong as the surface it was tested against; argument-based re-confirmations that skip re-opening DevTools on the *right* page reproduce the same blind spot the methodology was created to close."
 
 ---
 
@@ -409,3 +429,108 @@ Triggered by a fragility/efficiency audit of already-live or already-confirmed s
 **Net: zero open items, zero unverified conclusions.** Every "scraping is the only path" verdict in this sheet (TRCA, VPL, unionville.ca) is now backed by a complete run through the full methodology hierarchy — DevTools, blind feeds, REST API, and JSON-LD where relevant — not just the first check that happened to return empty. AllEvents and McMichael both flipped from "confirmed fine" to "confirmed fine via an inferior method — better path exists," which is what triggered pushing the rest of the audit one rung further rather than stopping at the first green light.
 
 **Lesson reinforced:** the two upgrades (AllEvents, McMichael) both came from re-checking sources that were *never run through DevTools in the first place* — they were confirmed via headless probing before the DevTools-first methodology existed. Sources that *were* DevTools-checked from day one (visitvaughan.ca, unionville.ca, VPL) didn't yield upgrade-grade surprises on re-inspection — but two of them (VPL, unionville.ca) *did* have an unrun methodology step (blind feed probe) that needed closing before "scraping is the ceiling" could be called a verified conclusion rather than an assumption.
+
+---
+
+## Meetup Re-verification — DROP overturned to PASS (2026-06-07)
+
+The 2026-06-06 "re-evaluation" of previously-dropped sources (see section above) closed Meetup with reasoning ("the iCal feeds work, yield is just low — no DevTools investigation would change this") rather than an actual DevTools session. That reasoning answered the *iCal-export* question correctly but never asked whether iCal was the only path in. This session opened DevTools on Meetup for the first time and found it wasn't.
+
+### What was checked
+
+Opened `https://www.meetup.com/find/ca--on--vaughan/` (the location search/discovery page — not a per-group page, which is what the original iCal-cap finding was based on) in Chrome DevTools, Fetch/XHR filter:
+
+- **`find.json?...` calls** (location/category/dateRange variants) — all returned `{}`. Dead end.
+- **`gql2` GraphQL calls** — all returned `{"data":{"self":null}}` (just an unauthenticated "current user" check). Dead end.
+- **The initial document itself** — contains a `<script id="__NEXT_DATA__" type="application/json">` blob (Next.js's standard server-render hydration payload) with `props.pageProps` populated and **not null** — the inverse of what BiblioCommons' `initial_state: null` showed. This is where the real data lives.
+
+### What's in `__NEXT_DATA__.props.pageProps`
+
+Confirmed by fetching the page directly with `curl` (plain GET, standard browser User-Agent, no auth, no headless browser) and parsing the embedded JSON in Node:
+
+- Seven separate event arrays in one page load: `eventsInLocation`, `todayEvents`, `thisWeekendEvents`, `topicalEventsMusic`, `topicalEventsSocial`, `topicalEventsOutdoor`, `topicalEventsSports`
+- Deduplicated by `id` → **37 unique events** from a single unauthenticated GET request
+- **Date spread: June 8 – June 28, 2026** (fetched on June 7) — a genuine 3-week forward window, not just "today/this weekend." Comfortably covers the IssueDate+1..+10 range.
+- **Full field coverage per event:** `id`, `title`, `eventUrl`, `eventType` (PHYSICAL/ONLINE), `dateTime`, `endTime`, `going.totalCount` (RSVP count), `feeSettings` (amount/currency), `group` (name, urlname), `venue` (**name, address, city, state, country**), plus photo objects. RSVP count and fee data are bonus fields — nothing else in the pipeline currently surfaces a popularity signal like `going.totalCount`.
+
+### Geo-filter dry run
+
+Mapped the 37 events into candidate-shaped records and ran a simple York Region city-name filter (`Vaughan`, `Richmond Hill`, `Markham`, `Thornhill`, `Regional Municipality of York`, etc.):
+
+- **13 of 37 pass** (~35% yield) — Vaughan ×3, Richmond Hill ×3, Markham ×3, Thornhill ×3, Regional Municipality of York ×1
+- Same broad-region-then-filter pattern as Eventbrite (the `ca--on--vaughan` search returns Toronto/North York/York-Region results broadly — geo-filter does real, necessary work here, not a formality)
+
+### Why this overturns the original drop
+
+The original verdict was correct about the thing it tested (Meetup's per-group iCal export caps at ~10 events, killing yield) and wrong about the thing it didn't test (whether the *search/discovery page* offered a different path entirely). It does — a direct, unauthenticated page fetch + `__NEXT_DATA__` parse yields **13 usable York Region events from one HTTP request**, no platform cap, no per-group enumeration needed.
+
+### Integration tier
+
+**Tier 3 — embedded app-state JSON** (see Integration Tier Ranking above). Mechanically as clean as TRCA's JSON-LD (one fetch, structured fields, no browser) but the `__NEXT_DATA__` shape is Next.js-specific and bespoke — the parser written for Meetup won't transfer to the next site that happens to also be a Next.js app with a different page-props shape. Budget it as a one-off build, not a reusable pattern.
+
+### Verdict
+
+**PASS — reopen for W2c build consideration.** Direct unauthenticated page-fetch of `meetup.com/find/ca--on--vaughan/`, parse `__NEXT_DATA__.props.pageProps`, dedupe across the seven embedded arrays by `id`, map to candidate fields, apply existing York Region geo-filter. No iCal, no per-group enumeration, no headless browser.
+
+**Caveat before building:** this was a single-snapshot dry run (one fetch, one point in time). Recommend spot-checking a few of the 13 passing events against the live site on a subsequent day before committing build time — confirm dates aren't stale and the `__NEXT_DATA__` shape is stable across page loads (Next.js build IDs can change the embedded structure across deploys).
+
+---
+
+## CityPlayhouse Re-verification — DROP overturned to PASS (2026-06-07)
+
+The original 2026-06-06 probe (see "CityPlayhouse (tickets.cityplayhouse.ca) — DROP" above) tested the WordPress news/RSS layer — `/feed/`, `/news/feed/`, `/wp-json/wp/v2/news` — found it returned valid-but-empty responses (posts published per show, then deleted/unpublished within hours), and concluded the *site* was unviable: "the actual event database is in Red61's proprietary system, inaccessible without a partnership." That conclusion generalized from one surface (the news layer) to the whole domain without checking whether the live ticketing storefront — the actual page real users book tickets from — held the data directly.
+
+### What was checked
+
+Opened `https://tickets.cityplayhouse.ca/events/` in DevTools. Initial Fetch/XHR pass returned only calendar-navigation scaffolding (months/days, no show data) — consistent with the original "ephemeral" framing, but that's because the real content is server-rendered into the **document**, not loaded via XHR (same shape as VPL).
+
+Confirmed by fetching directly with `curl` (plain GET, browser User-Agent, no auth):
+
+- `tickets.cityplayhouse.ca/events/` → **200**, 123 KB of server-rendered HTML containing live show listing cards: title, image, "Book Now" button, link to an individual event page (`/event/{id}`). 36 cards found on one page load (titles only — `<p class="three-line-clamp">` description and `<small>` are empty in the card markup, and **no date is rendered in the listing card** — confirming the original probe's narrower finding that "WP REST API returns titles/links but dates are in ACF, not REST-accessible" was correct as far as it went).
+- Followed one card's link to its detail page: `tickets.cityplayhouse.ca/event/655:660/` → **200** (after a 301 redirect to the trailing-slash form).
+
+### What's on the event detail page
+
+The detail page embeds a clean, fully structured **calendar JSON blob** in a `data-*` attribute (powering the booking widget's date picker) — parsed directly out of the raw HTML with Node:
+
+```json
+{
+  "dates": ["08/06/2026", "09/06/2026"],
+  "times": {
+    "09/06/2026": [{
+      "id": "655:879",
+      "presentationFormat": "PHYSICAL",
+      "performanceTime": "19:00",
+      "performanceRealTime": "2026-06-09 19:00:00",
+      "performanceDate": "9th June 2026 19:00",
+      "admissionTime": "18:00",
+      "availability": 81,
+      "reserved": true
+    }]
+  },
+  "eventId": "655:660"
+}
+```
+
+Plus a clean title/subtitle pair rendered server-side: `<h2 class="primary-color mb-0">Arts West Dance</h2>` / `<h4 class="subtitle">Flipping Through the Channels</h4>`.
+
+That's **exact, parseable, real-time-zoned datetimes** (`performanceRealTime`) — not the stale "June 27, 2026" text-parsed-from-a-deleted-post pattern the original probe found. This data lives on the persistent ticketing page, not the ephemeral news layer — it doesn't get deleted after the show is announced, because it's the actual booking calendar.
+
+### Why this overturns the original drop
+
+The original verdict was correct about the surface it tested (WordPress news posts are genuinely ephemeral — that finding stands and explains why the 13 old Inoreader items were stale) and wrong to extend that finding to "the event database is inaccessible." It is accessible — just not from the news layer. The ticketing storefront is a separate, persistent, structured surface that nobody opened in DevTools before concluding the source was a dead end.
+
+### Integration tier
+
+**Tier 3 — embedded app-state JSON, two-step crawl** (see Integration Tier Ranking above). Requires:
+1. Fetch `/events/` → extract `{title, eventUrl}` pairs from the rendered cards (HTML scrape, tier 4 in isolation)
+2. Fetch each `/event/{id}` page → parse the embedded calendar JSON for `performanceRealTime`/`performanceDate`/`availability` (tier 3, embedded JSON)
+3. Combine into candidate records: title + subtitle (description) from the detail page, datetime from the calendar blob, `LocationName` hardcoded (single venue, same pattern as McMichael)
+
+This is more crawl overhead than a single-call API (N+1 fetches — one listing page, then one per show) and the calendar-JSON shape is Red61-platform-specific (won't transfer to another client's ticketing system unless they also run Red61) — but it's a real, working, structured path. No headless browser, no partnership required.
+
+### Verdict
+
+**PASS — reopen for W2c build consideration.** Two-step crawl: scrape `/events/` for show titles + detail-page links, then fetch each detail page and parse the embedded Red61 calendar JSON for exact showtimes. Yields real, persistent, structured event data — the original "inaccessible without a partnership" conclusion does not hold once the ticketing storefront (rather than the news layer) is the surface under test.
+
+**Caveat before building:** crawl cost scales with the number of live shows (36 found in this snapshot) — each requires its own fetch. Worth a yield check (how many of the 36 are York-Region-relevant after geo-filter — this is a single Vaughan venue, so likely all of them, but confirm date-window coverage across a few before committing build time) and a confirmation that the Red61 calendar JSON shape is stable across different show pages (spot-check 3–4 detail pages, not just one).

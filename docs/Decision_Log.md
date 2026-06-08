@@ -1291,3 +1291,35 @@ Tagged `NORMALIZATION_VERSION: v2 (2026-06-07)` as an inline comment in both loc
 
 **Transferability:** the *contract* (normalize-before-compare, one shared chokepoint, explicit version tag, mandatory full-table backfill on any change) is the portable asset for Mississauga — the specific equivalence table is Vaughan-data-specific and will need its own audit pass against whatever CMS quirks Mississauga's sources carry.
 
+---
+
+## 40. Integration Tier Ranking — Ranking Source Integration Paths by Transferability, Not Just Ease (2026-06-07)
+
+**Decision: when evaluating a confirmed integration path for a source, rank it on a 5-tier scale that weighs *transferability to a second client* as a separate axis from *raw build effort* — not just "does it work."**
+
+*Decided 2026-06-07, Ariel + Claude. Emerged directly from re-running §38 (DevTools-First) properly on Meetup and CityPlayhouse — both flipped from DROP to PASS, but landed on a different tier than AllEvents/TRCA despite looking like comparably "clean" wins.*
+
+### What prompted this
+
+Re-verifying the three previously-dropped sources (per §38's "applies to" note) surfaced two real overturns: Meetup's search/discovery page embeds 37 structured events in its `__NEXT_DATA__` Next.js hydration payload, and CityPlayhouse's ticketing storefront embeds a Red61 calendar JSON blob with exact showtimes. Both are clean, single-fetch, no-headless-browser paths — mechanically in the same "good outcome" bucket as TRCA's JSON-LD or AllEvents' direct API.
+
+But describing them as "the same tier" (which is what happened in-conversation, initially) was imprecise and would have mis-set build-cost expectations. AllEvents' API and TRCA's JSON-LD produce *reusable* integration code — an API client pattern or a schema.org parser will very likely work, or need only minor changes, on a structurally similar source for the next client (Mississauga, future newsletters). Meetup's `__NEXT_DATA__` and CityPlayhouse's Red61 blob are *bespoke* — every framework/platform embeds its hydration state in its own non-standard shape, so the parser written for one won't transfer to the next, no matter how clean the individual integration looks.
+
+### The five tiers (full detail and source mapping in `docs/r5/source_decision_sheet.md` → "Integration Tier Ranking")
+
+1. **Direct JSON/REST API** — purpose-built endpoint, structured response, you control pagination/filters (AllEvents, McMichael, visitvaughan.ca, Eventbrite)
+2. **JSON-LD** — `schema.org` standard markup; parsing code is standardized and transfers across any site using it (TRCA)
+3. **Embedded app-state JSON** — framework-specific hydration blobs (`__NEXT_DATA__`, Red61 calendar JSON); mechanically clean but bespoke per framework, doesn't transfer (Meetup, CityPlayhouse)
+4. **HTML-card scraping via ajax/admin endpoints** — functional, zero infrastructure, fragile to redesigns, fully bespoke (unionville.ca, VPL)
+5. **Headless browser required** — worst tier, worse than scraping (Markham BiblioCommons — `initial_state: null`, confirmed nothing is server-rendered or pre-fetched)
+
+### Why this matters
+
+Tiers 1–2 are where reusable integration code lives — time spent there pays down scoping cost for the *next* client. Tiers 3–4 are where you're budgeting one-off, source-specific build time every single time, regardless of how clean any individual integration looks in isolation. Without this distinction, "found a working path" reads as a uniform win — which would understate the real cost of building and maintaining Meetup- and CityPlayhouse-shaped integrations relative to AllEvents- or TRCA-shaped ones, and overstate how much of that work transfers to Mississauga.
+
+### Applies to
+
+W2c source-build prioritization (weigh tier-1/2 sources' transferability payoff against tier-3 sources' real-but-bespoke yield when sequencing build order), and all future source evaluation for Mississauga onboarding and beyond — this is now the standard lens for "is this integration path actually as good as it looks," layered on top of §38's "how do you find the path" methodology.
+
+---
+
