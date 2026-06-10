@@ -212,6 +212,8 @@ Three to four new source branches are live in R1, all mapping correctly to the C
 
 **Ingestion-scaling done-when:** per-source expected-count health check active for every adapter (volume floor, flags to run log + Discord); cost-per-run logging (tokens + USD) writing to the execution log with a threshold alert.
 
+**Failure visibility done-when:** no source failure produces silent data loss. All failure modes — dead endpoints, out-of-range pagination, malformed responses, partial fetches — surface to the run log with a typed reason. A quietly smaller pool is not acceptable. This means: (a) fetch nodes never silently swallow errors via continue-on-fail without explicit downstream detection and logging; (b) dynamic pagination resolves page count from the source at runtime rather than hardcoding a static page ceiling; (c) any record or page dropped by an error is counted and logged, not ignored. The McMichael pagination 404 (2026-06-09) was the prompt for this criterion — the same failure class applies to every paginated source in the pipeline.
+
 > **Gating reminder (see Rollout Sequence above):** not all of this "Done When" gates R5 sign-off. **R5 is signed off on pool size — W2a additive branches + W3.** W2b (#4 retrofit) and the substrate guards (#8) are R6-enabling fast-follow: complete them, but they ship *after* R5 sign-off and do not block it.
 
 **Tracked in:** #34

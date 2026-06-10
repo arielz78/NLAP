@@ -449,7 +449,7 @@ Opened `https://www.meetup.com/find/ca--on--vaughan/` (the location search/disco
 Confirmed by fetching the page directly with `curl` (plain GET, standard browser User-Agent, no auth, no headless browser) and parsing the embedded JSON in Node:
 
 - Seven separate event arrays in one page load: `eventsInLocation`, `todayEvents`, `thisWeekendEvents`, `topicalEventsMusic`, `topicalEventsSocial`, `topicalEventsOutdoor`, `topicalEventsSports`
-- Deduplicated by `id` → **37 unique events** from a single unauthenticated GET request
+- Deduplicated by `id` → **37 unique events** from a single unauthenticated GET request. **Important distinction:** this is not an exhaustive pull of all Meetup events — it reflects what Meetup's city discovery page chooses to surface for Vaughan on that load. More events exist on Meetup (accessible by crawling individual group pages one by one), but that approach requires per-group enumeration and is not the integration path being used here. The 37 / 13-passing figure is "what the discovery page shows," not "all Meetup events in York Region."
 - **Date spread: June 8 – June 28, 2026** (fetched on June 7) — a genuine 3-week forward window, not just "today/this weekend." Comfortably covers the IssueDate+1..+10 range.
 - **Full field coverage per event:** `id`, `title`, `eventUrl`, `eventType` (PHYSICAL/ONLINE), `dateTime`, `endTime`, `going.totalCount` (RSVP count), `feeSettings` (amount/currency), `group` (name, urlname), `venue` (**name, address, city, state, country**), plus photo objects. RSVP count and fee data are bonus fields — nothing else in the pipeline currently surfaces a popularity signal like `going.totalCount`.
 
