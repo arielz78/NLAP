@@ -1323,3 +1323,32 @@ W2c source-build prioritization (weigh tier-1/2 sources' transferability payoff 
 
 ---
 
+## 41. Upsert Ownership Contract — R1 Never Writes Editor- or R2-Owned Fields (2026-06-10)
+
+**Decision: the R1 Upsert writes ingestion facts only. Editor-owned fields (Status, Score_Manual) and R2-owned fields (SegmentConfidence) are never in the Upsert mapping. Create-time defaults (Status = New) are set by an Airtable automation that fires on record creation — structurally incapable of touching an existing record.**
+
+*Decided 2026-06-10, Ariel + Claude. Prompted by a live bug found via gutcheck during W2c pre-build work.*
+
+### What prompted this
+
+The Upsert mapping had hardcoded `Status: "New"`, `Score_Manual: 0`, and `SegmentConfidence: 0` since the workflow was first built. n8n's Airtable upsert writes **all mapped fields on match**, not just on create — so every record a source re-fetched had the editor's Status silently reset to New on every R1 run, manual scores zeroed, and R2's computed confidence wiped. Proven live: an Approved McMichael record flipped back to New after a single R1 run.
+
+The bug was latent for months because the conditions to observe it barely existed: Eventbrite's feed rolls (old approved events stop appearing, so they were never re-matched), and the stable re-fetched branches (McMichael, TRCA) only went live the week of 2026-06-05 — with zero of their records yet Approved. The first weeks of W2c source expansion would have turned a latent bug into weekly erasure of the editorial layer — which is also the exact hard signal R6 scoring trains on (locked/featured/approved as ground truth).
+
+### The fix
+
+1. **Removed** Status, Score_Manual, SegmentConfidence from the Upsert mapping. R1 now maps only: Event Title, City, URL, Start Date, End Date, DescriptionRaw, UniqueEventID, Last Auto Update, LocationName, Source.
+2. **Airtable automation** ("when record is created in Candidates → update record → Status = New") supplies the create-time default. Built and tested in the Airtable UI, turned on.
+
+Considered and rejected: a split create/update path in n8n (IF-on-existence routing to separate Create and Update nodes). Correct semantics, but an extra table scan per run and more nodes for a junior contributor to misread — the one-action automation gets create-only semantics structurally, and lives next to the data where the editor can see it. Revisit only if Airtable automation run quotas become a problem.
+
+### The contract (the portable part)
+
+**R1 owns ingestion facts. The editor owns judgment (Status, Score_Manual). R2 owns enrichment (SegmentConfidence, SegmentSuggested, R2Status).** No pipeline write path touches another owner's fields on update. Any future field added to the Upsert mapping must answer "who owns this on update?" first — if the answer isn't "R1," it doesn't go in the mapping.
+
+### Applies to
+
+Every current and future R1 source branch, the Mississauga base clone at R8-W10 (replicate the automation per base), and any new write path Nathan builds. Residual cleanup tracked in Execution_Log: confirm the automation fires on the first new-record batch; audit Enriched records with zeroed SegmentConfidence from past clobber runs and re-run R2 on them.
+
+---
+
