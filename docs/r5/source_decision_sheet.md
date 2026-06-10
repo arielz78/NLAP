@@ -37,13 +37,13 @@ The methodology above tells you *how to find* the best path on a given source. T
 
 1. **Direct JSON/REST API** (purpose-built endpoint, structured response) — *AllEvents* (`api/events/list`), *McMichael* (`wp-json/tribe/events/v1/events`), *visitvaughan.ca* (`admin-ajax.php?action=haven_calendar`), *Eventbrite* (`city-browse`). Cleanest tier: one documented call, you control pagination/filters, response is purpose-shaped for the data you need.
 
-2. **JSON-LD** (`schema.org` standard markup embedded in page HTML) — *TRCA*. One rung down in raw effort (fetch the whole page, extract a `<script type="application/ld+json">` block) but the parsing code is **standardized** — `@type: Event`, `location.address`, `organizer` mean the same thing on any site using schema.org. That standardization is what makes it transfer cleanly to a second client's sources without a rewrite.
+2. **JSON-LD** (`schema.org` standard markup embedded in page HTML) — *TRCA (Black Creek, existing live branch)*. One rung down in raw effort (fetch the whole page, extract a `<script type="application/ld+json">` block) but the parsing code is **standardized** — `@type: Event`, `location.address`, `organizer` mean the same thing on any site using schema.org. That standardization is what makes it transfer cleanly to a second client's sources without a rewrite. Note: TRCA also has a WP Event Manager RSS feed (`?feed=event_feed`) discovered 2026-06-10 — the new Kortright branch uses this RSS feed (Tier 1) rather than JSON-LD scraping.
 
 3. **Embedded app-state JSON** (framework-specific, non-standard blobs baked into the initial HTML) — *Meetup* (`__NEXT_DATA__`, Next.js page-props). Mechanically just as clean as tier 2 — single fetch, no browser, structured fields — but the shape is **bespoke per framework** (Next.js's GraphQL-style nesting won't resemble the next site's React/Vue/whatever blob). Each one needs its own one-off parser; none of that parsing logic transfers.
 
 4. **HTML-card scraping via ajax/admin endpoints** — *unionville.ca* (`load_upcoming_events` HTML cards), *VPL* (`/programs` server-rendered HTML). Functional, zero infrastructure, but fragile to redesigns and entirely bespoke per site — lowest transferability of the "working" tiers.
 
-5. **Headless browser required** — *Markham BiblioCommons* (data only materializes after JS execution, `initial_state: null` confirms nothing is server-rendered or pre-fetched). Worst tier — worse than scraping, and the reason BiblioCommons stays dropped even after a fresh DevTools re-check.
+5. **Headless browser required** — worst tier. Originally assigned to *Markham BiblioCommons*, but **overturned 2026-06-09** — the RSS feed at `/events/rss/all` was never probed (the DevTools pass only confirmed the React SPA was dead; it never checked feed paths). The RSS is headless-fetchable, structured, no auth required. BiblioCommons is now Tier 1 (RSS). No current sources remain in this tier.
 
 **Why this matters for scoping a second client:** tiers 1–2 are where reusable integration code lives — an API client or a JSON-LD parser written for one source has a real chance of working (or needing only minor changes) on a structurally similar source elsewhere. Tiers 3–4 are where you're budgeting for one-off, source-specific build time every single time, regardless of how clean any individual integration looks in isolation.
 
@@ -54,13 +54,13 @@ The methodology above tells you *how to find* the best path on a given source. T
 
 Three sources were dropped earlier in R5 probing. Re-evaluated below against the corrected methodology:
 
-**Markham BiblioCommons** — CONFIRMED DROP. DevTools inspection was already performed at time of original probe ("only 2 network calls on page load, neither returning event data"). The site is a React SPA that makes no data calls for events server-side. DevTools confirms: no XHR with event data. Drop stands.
+**Markham BiblioCommons** — ⚠️ **OVERTURNED 2026-06-09 — DROP → PASS.** The 2026-06-06 re-verification confirmed the React SPA dead end correctly, but never probed feed paths — it stopped at DevTools/XHR and generalized "SPA has no data calls" to "source has no accessible data." The public RSS feed at `https://markham.bibliocommons.com/events/rss/all` requires no auth, is headless-fetchable via plain curl, and carries structured fields: `bc:start_date` (ISO datetime), `bc:location` with `bc:name`/`bc:city`/`bc:street`/lat-long, `category domain="Audience"` (Children, Seniors, etc.), title, link, description. Confirmed via curl 2026-06-09. This is the integration path the `R5_ScrapeBlueprint.md` explicitly documents for BiblioCommons. The SPA layer was the wrong surface — the RSS feed is the right one.
 
 **Meetup** — ⚠️ **OVERTURNED 2026-06-07 — see "Meetup Re-verification" section below.** The 2026-06-06 reasoning ("iCal caps at ~10/group, no DevTools investigation would change this") never actually opened DevTools on Meetup — it argued past the check instead of running it. A fresh DevTools pass on the *search/discovery page* (`meetup.com/find/ca--on--vaughan/`, not a per-group iCal export) found a completely different integration path: 37 unique structured events embedded directly in the page's `__NEXT_DATA__`, 13 of which pass the York Region geo-filter, spanning a 3-week window. The iCal-cap argument was correct but answered the wrong question — it's not the only path in. **Verdict flips from DROP to PASS.**
 
 **CityPlayhouse** — ⚠️ **OVERTURNED 2026-06-07 — see "CityPlayhouse Re-verification" section below.** The 2026-06-06 reasoning ("posts are ephemeral, Inoreader caches stale data, the actual event database is in Red61's proprietary system") was correct about the *WordPress news/RSS layer* — and wrong to generalize from it to "the content isn't accessible anywhere." It never actually opened the live ticketing storefront (`tickets.cityplayhouse.ca/events/`) in DevTools — it tested feeds and the news API, found them empty/ephemeral, and stopped. The storefront itself is a completely different, persistent, structured surface. **Verdict flips from DROP to PASS.**
 
-**Status: two previously-dropped sources (Meetup, CityPlayhouse) reopened and reversed; only BiblioCommons holds on fresh re-verification — and that one was confirmed by an actual fresh DevTools pass (not just reasoning), with `initial_state: null` as hard evidence nothing is server-rendered or embedded.**
+**Status: all three previously-dropped sources have now been overturned — Meetup (2026-06-07), CityPlayhouse (2026-06-07), and BiblioCommons (2026-06-09). BiblioCommons was the last hold, confirmed via a feed path that was never probed despite two prior re-verification passes that both stopped at the DevTools/XHR layer.**
 
 **Pattern worth naming:** of the three sources dropped before the DevTools-first methodology existed, two flipped on re-check — both times because the original probe tested the *wrong surface* (Meetup: per-group iCal export instead of the search/discovery page; CityPlayhouse: the news/RSS layer instead of the ticketing storefront) and then reasoned from "this surface is a dead end" to "this source is a dead end," skipping the step of asking whether a *different* surface on the same domain might hold the data. BiblioCommons is the one source where that generalization actually held — and notably, it's also the one where the original probe *did* open DevTools on the actual page being used. The lesson isn't "everything can be cracked" — it's "a DROP verdict is only as strong as the surface it was tested against; argument-based re-confirmations that skip re-opening DevTools on the *right* page reproduce the same blind spot the methodology was created to close."
 
@@ -159,7 +159,7 @@ Probed all 4 confirmed sources headlessly (curl + Node) to validate integration 
 |---|---|---|---|---|---|
 | TRCA | JSON-LD per event page (iCal dead — WordPress ignores `?ical=1`) | ✓ | ✓ | ✓ full address | **PASS** |
 | McMichael | iCal direct (`/events/?ical=1` and `/events/category/adult-programs/?ical=1`) | ✓ | ✓ | ✗ buried in description HTML | **PASS — flag for W2** |
-| Markham BiblioCommons | — | — | — | — | **DROP** |
+| Markham BiblioCommons | RSS (`/events/rss/all`) — headless, no auth | ✓ | ✓ (`bc:start_date`) | ✓ (`bc:city`, lat/long) | **PASS** (overturned 2026-06-09) |
 | Meetup | iCal direct, headless confirmed (no browser required) | ✓ | ✓ | ✗ not in feed | **PASS — flag for W2** |
 
 ### Notes
@@ -209,7 +209,7 @@ Returns `{ events: [...], total, total_pages }` — paginated, clean JSON.
 
 **Meetup LocationName gap:** No location field in the iCal feed at all. Same handling as McMichael — blank is acceptable per R5_Scope hard-reject vs soft-required distinction.
 
-**Markham BiblioCommons — drop rationale:** Fully client-side React SPA. No public API, no iCal export, no JSON-LD on event pages. Browser dev tools inspection confirmed only 2 network calls on page load (systemMessages + jQuery state), neither returning event data. Server-side rendered with no structured data accessible to a headless fetch. Requires browser execution — worse than scraping. Dropped per R5_Scope rule ("if any source requires HTML scraping, drop to three sources").
+**Markham BiblioCommons — DROP OVERTURNED 2026-06-09:** Original drop rationale (React SPA, no data calls visible in DevTools) was correct about the `/v2/events` page but wrong to stop there. The public RSS feed `https://markham.bibliocommons.com/events/rss/all` was never probed — confirmed working via curl with no auth, no browser required. Fields: `bc:start_date`, `bc:end_date`, `bc:location` (name + city + street + lat/long), `category domain="Audience"`, title, link. This is the exact pattern documented in `R5_ScrapeBlueprint.md` §3 (BiblioCommons section). Integration path: native n8n RSS Read node + normalize `bc:start_date` (not `isoDate`). Geo-filter: `bc:city` field. Audience segment signal: `category domain="Audience"` values (Children → For Families, Seniors → For Golden Age Readers).
 
 **Net: 3 confirmed sources** (TRCA, McMichael, Meetup). W2 builds branches for these three only.
 
@@ -429,6 +429,49 @@ Triggered by a fragility/efficiency audit of already-live or already-confirmed s
 **Net: zero open items, zero unverified conclusions.** Every "scraping is the only path" verdict in this sheet (TRCA, VPL, unionville.ca) is now backed by a complete run through the full methodology hierarchy — DevTools, blind feeds, REST API, and JSON-LD where relevant — not just the first check that happened to return empty. AllEvents and McMichael both flipped from "confirmed fine" to "confirmed fine via an inferior method — better path exists," which is what triggered pushing the rest of the audit one rung further rather than stopping at the first green light.
 
 **Lesson reinforced:** the two upgrades (AllEvents, McMichael) both came from re-checking sources that were *never run through DevTools in the first place* — they were confirmed via headless probing before the DevTools-first methodology existed. Sources that *were* DevTools-checked from day one (visitvaughan.ca, unionville.ca, VPL) didn't yield upgrade-grade surprises on re-inspection — but two of them (VPL, unionville.ca) *did* have an unrun methodology step (blind feed probe) that needed closing before "scraping is the ceiling" could be called a verified conclusion rather than an assumption.
+
+---
+
+## TRCA RSS Discovery + Address Audit (2026-06-10)
+
+The 2026-06-07 DevTools audit re-confirmed TRCA (Black Creek) as "JSON-LD scrape, optimal, no change." That verdict was correct for `calendar.trca.ca` — but it never probed `trca.ca/events-calendar/`, the main TRCA site, which turns out to have a completely different feed surface.
+
+### What was found
+
+Clicked the RSS link on `trca.ca/events-calendar/` in-browser → landed at `trca.ca/events-calendar/feed/` (empty WordPress comments feed — wrong surface). DevTools on the page revealed a third request: `?feed=event_feed&search_categories=trca`. This is the **WP Event Manager plugin's custom RSS feed** — a completely different endpoint from the standard WordPress `/feed/`. Returns ~188 events across all TRCA locations with structured fields:
+- `event_listing:start_date` — clean ISO datetime (e.g. `2026-09-19 13:30:00`)
+- `event_listing:end_date` — same
+- `event_listing:location` — either full street address OR venue name (inconsistent per event)
+- `event_listing:organizer`
+- title, link, description
+
+Confirmed headless-fetchable via plain curl, no auth required.
+
+### Address audit — all TRCA locations evaluated for newsletter scope
+
+Fetched the full feed and counted events per address. Evaluated each against target geography (Vaughan, Markham, Richmond Hill):
+
+| Address | Count | Location | Verdict |
+|---------|-------|----------|---------|
+| 1000 Murray Ross Pkwy, Toronto | 84 | Black Creek Pioneer Village (Toronto) | Already live via JSON-LD branch |
+| 9550 Pine Valley Dr, Woodbridge + "Kortright Centre for Conservation" | 57 | Kortright Centre — Vaughan ✅ | **BUILD** |
+| 3291 Stouffville Rd, Whitchurch-Stouffville | 11 | Bruce's Mill — Whitchurch-Stouffville | ❌ Out of scope (not Vaughan/Markham/RH) |
+| 21 Springfield Way + 330 York Hill Blvd, Thornhill | 6 | Conservation Youth Corps volunteer work | ❌ Civic/volunteer — reject per data rules |
+| 11085 Keele St, Vaughan | 1 | Community Tree Planting | ❌ Civic/volunteer — reject |
+| 501 Clark Ave West, Vaughan | 1 | Bike Bonanza (one-off) | ❌ 1 event — not a recurring source |
+| 11099 Bathurst St, Richmond Hill | 1 | Bird Friendly Walk (one-off) | ❌ 1 event — not a recurring source |
+| 999 Bethesda Side Rd, Richmond Hill | 1 | ORCCR Pollinators (one-off) | ❌ 1 event — not a recurring source |
+| Brampton / Mississauga / Pickering / Caledon / Scarborough | various | Out of region | ❌ |
+
+**Decision: Kortright only.** 57 events, recurring family/outdoor/conservation programming, dedicated TRCA venue in Woodbridge (Vaughan). All other addresses are either out of scope, civic/volunteer, or one-off events at community locations that don't constitute a reliable recurring source.
+
+### Build notes (critical)
+
+1. **Filter must catch both Kortright address formats:** `location.includes('Pine Valley') || location.includes('Kortright')` — 49 events use the street address format, 8 use the venue name format. Filtering on `Pine Valley` alone misses 8 events (14%).
+
+2. **Must map `event_listing:start_date` to `isoDate`, NOT use RSS `pubDate`.** Most Kortright events were published in March 2026 — `pubDate` is the staff post date, not the event date. Events run July–October 2026. Using `pubDate` would cause every Kortright event to be dropped by the DateWindow filter as "past," reproducing Issue #58 silently.
+
+3. **Additive branch — do NOT replace the existing Black Creek JSON-LD scraping branch.** Kortright RSS connects to the Merge node as a new input. The Black Creek branch swap (iCal scraping → RSS) is a separate deliberate upgrade, sequenced after the Kortright branch has run cleanly across 2–3 Thursday cycles.
 
 ---
 
