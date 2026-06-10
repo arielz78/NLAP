@@ -238,6 +238,8 @@ Code nodes for anything without a native integration. No Node.js rewrite.
 > a backup submission path exists (see meetings/2026-05-14.md Talking
 > Point B). Decision_Log § 18 updated.
 
+> **When R5 closes:** complete a release writeup within one week — see `NA/Release_Writeup_Guide.md`.
+
 ---
 
 ### Release 6 — Scoring
@@ -394,6 +396,8 @@ formula until that list is in hand.
 - Quality floor and date spread constraints active
 - Swap rate tracking begun (URL-match script needed to automate — §25)
 
+> **When R6 closes:** complete a release writeup within one week — see `NA/Release_Writeup_Guide.md`.
+
 ---
 
 ### Release 7 — Classification Quality
@@ -458,6 +462,8 @@ formula until that list is in hand.
 - Frozen eval set replayed — accuracy confirmed in production path
 - Retraining trigger defined
 - Measurable NeedsReview rate reduction vs pre-R7 baseline
+
+> **When R7 closes:** complete a release writeup within one week — see `NA/Release_Writeup_Guide.md`.
 
 ---
 
@@ -652,6 +658,8 @@ formula until that list is in hand.
 **Deliverables:**
 - Mississauga pipeline running end-to-end via config only
 - Client has run Mississauga pipeline independently at least once
+
+> **When R8 closes:** complete a release writeup within one week — see `NA/Release_Writeup_Guide.md`. This is also the point to compile the full project portfolio writeup across all releases — R8 is the handoff, so the complete record matters most here.
 
 ---
 
