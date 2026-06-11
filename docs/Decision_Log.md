@@ -1,5 +1,5 @@
 # NLAP Decision Log
-*Last updated: 2026-06-06*
+*Last updated: 2026-06-11*
 
 This document records the reasoning behind every significant design and editorial decision in the pipeline. It is intended to be read by anyone who needs to understand not just what the system does, but why it works the way it does — including future collaborators (Nate) and future-you after time away.
 
@@ -1349,6 +1349,32 @@ Considered and rejected: a split create/update path in n8n (IF-on-existence rout
 ### Applies to
 
 Every current and future R1 source branch, the Mississauga base clone at R8-W10 (replicate the automation per base), and any new write path Nathan builds. Residual cleanup tracked in Execution_Log: confirm the automation fires on the first new-record batch; audit Enriched records with zeroed SegmentConfidence from past clobber runs and re-run R2 on them.
+
+**2026-06-11 amendment:** Workflow inspection confirmed the original fix was partial — only `Status` had been removed; `Score_Manual: 0` and `SegmentConfidence: 0` were still actively mapped. Both removed this session. 64 in-window Enriched records with SegmentConfidence=0 identified and reset to Pending; R2 re-pass completed.
+
+---
+
+## 42. R1 City Capture — Aggregator Sources Write Real Venue City; Geo-scope Is Downstream (2026-06-11)
+
+**Decision: R1 captures whatever city the source reports for each event's venue. R1 does not filter by geography. Geo-scope policy (what counts as in-scope for a given newsletter) lives downstream — in editorial views, allocation logic, or explicit editor action — not in the ingestion layer.**
+
+*Decided 2026-06-11, Ariel + Claude. Prompted by discovering BucketMaker was hardcoding no city at all, causing Eventbrite's full York Region feed to stamp every event as Vaughan.*
+
+### What prompted this
+
+Eventbrite's feed returns events across York Region, not just Vaughan. BucketMaker was emitting no `city` field, so all events fell through to the `|| 'Vaughan'` fallback. Run 407 city distribution (when real venue cities were read): Vaughan 27, Markham 16, Richmond Hill 11, blank/online 8, out-of-scope ~22 (Toronto, Newmarket, Georgina, Stouffville, others). All out-of-scope events had been entering the pool labeled Vaughan — inflating apparent pool depth and contaminating editorial views.
+
+### The fix
+
+BucketMaker now reads `primary_venue.address.city` and emits it as `city`. The `|| 'Vaughan'` fallback in `Make UniqueEventID` handles blank/online events. No filtering applied in R1 — out-of-scope cities now enter Airtable labeled correctly rather than hidden as Vaughan. Editor decision on blank/online events (8 per run) documented in `meetings/2026-06-11.md`, parked pending client sign-off.
+
+### Why no in-branch geo-filter
+
+Baking a Vaughan/Markham/RH include-list into any aggregator branch makes the filter a hidden pipeline assumption the editor can't see or override. The VB coverage area already expanded once (to include Markham and Richmond Hill). Filtering in R1 means every future coverage change requires a code change. Filtering downstream (Airtable views, allocation) is reversible and visible without touching the pipeline.
+
+### Applies to
+
+All aggregator source branches: Eventbrite (implemented), AllEvents, Meetup, CityPlayhouse, and any future multi-city aggregator. Single-venue sources (McMichael, TRCA Kortright, Black Creek) hardcode city — this rule only applies where the source itself spans multiple cities.
 
 ---
 
