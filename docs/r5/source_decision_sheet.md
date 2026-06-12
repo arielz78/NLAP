@@ -213,6 +213,10 @@ Returns `{ events: [...], total, total_pages }` — paginated, clean JSON.
 
 **Net: 3 confirmed sources** (TRCA, McMichael, Meetup). W2 builds branches for these three only.
 
+### BiblioCommons — full verification confirmed (2026-06-12)
+
+Queried all 123 Airtable records from the R1 run that included the BiblioCommons branch. **Zero missing DescriptionRaw, zero missing City** across the full dataset. City distribution correct (Vaughan and Markham, CITY_MAP working). Branch confirmed healthy — item closed.
+
 ---
 
 ## Meetup Group Audit (2026-06-06)
@@ -304,6 +308,22 @@ Confirmed working with `rows: 20` directly via server-side POST — no browser, 
 **JSON-LD completeness:** 45 JSON-LD events vs 50 event-card divs per page. Gap of 5 = ad cards.
 
 **RSS:** Feed URL exists (`https://allevents.in/vaughan-on/RSS`) but timed out on probe. Not used — direct API above is cleaner than either RSS or JSON-LD.
+
+### Build result (2026-06-12)
+
+Branch built and verified in R1. Two nodes: `AllEvents Fetch` (HTTP POST, `rows=500`, User-Agent header) → `AllEvents Normalize` (geo-filter via CITY_MAP, locationName from `full_address` first segment, decodeEntities, categories/organizer/score folded into DescriptionRaw).
+
+**Pre-build probe confirmed — response shape corrections from original notes:**
+- Top-level key is `data`, not `events`
+- `venue.name` is always empty — locationName must be extracted from `full_address` as the segment before the first comma (e.g. `"Bellvue Manor, 8083 Jane St..."` → `"Bellvue Manor"`)
+- `categories` is an array, not a single string
+- `score` (AllEvents internal popularity score) and `organizer` available as bonus fields — both folded into DescriptionRaw with `AllEvents:` prefix for R2 classifier context and future R6 scoring
+- `rows=500` returns all 233 events in one request — no pagination needed at current volume
+- All 233 events returned with `venue.city = "Vaughan"` — geo-filter passed everything through cleanly on this run
+
+**Execution #440 results:** 233 fetched → 154 survived DateWindow (events too far in future dropped, expected) → 154 upserted. LocationName clean, Start Date correct (Unix timestamp → ISO, not publication date), DescriptionRaw populated, Status automation firing correctly.
+
+**Gap identified:** Branch only queries `city=vaughan`. Richmond Hill and Markham events that AllEvents correctly tags under their own city are not captured. Two additional Fetch nodes (`city=richmond hill`, `city=markham`) queued for next session.
 
 **CityPlayhouse (tickets.cityplayhouse.ca) — DROP:** Full probe 2026-06-06. Stack: WordPress 6.9.4 + Red61 ticketing theme. RSS feed (`/feed/`, `/news/feed/`), WP REST API (`/wp-json/wp/v2/news`), and all post-type-specific feeds return 200 with valid structure but 0 items. The 13 Inoreader items are stale cache — site publishes WordPress news posts per show when first listed, Inoreader picks them up, then posts are deleted/unpublished. Dates were parseable from description text ("June 27, 2026") but source is unreliable by design: content appears briefly then disappears. Actual event database is in Red61's proprietary system, inaccessible without a partnership. Not viable for a weekly automated pipeline. Verdict: dropped.
 
@@ -472,6 +492,12 @@ Fetched the full feed and counted events per address. Evaluated each against tar
 2. **Must map `event_listing:start_date` to `isoDate`, NOT use RSS `pubDate`.** Most Kortright events were published in March 2026 — `pubDate` is the staff post date, not the event date. Events run July–October 2026. Using `pubDate` would cause every Kortright event to be dropped by the DateWindow filter as "past," reproducing Issue #58 silently.
 
 3. **Additive branch — do NOT replace the existing Black Creek JSON-LD scraping branch.** Kortright RSS connects to the Merge node as a new input. The Black Creek branch swap (iCal scraping → RSS) is a separate deliberate upgrade, sequenced after the Kortright branch has run cleanly across 2–3 Thursday cycles.
+
+### Black Creek — RSS vs JSON-LD parity check + scrape retired (2026-06-12)
+
+Compared all 27 UniqueEventIDs from the live Black Creek JSON-LD scrape branch against the TRCA RSS branch output. **27/27 match** — RSS catches every event the scrape finds. RSS also returns 122 Black Creek events vs the scrape's 27 — scrape was silently missing ~95 events because it only crawled 3 hardcoded listing pages. Airtable confirmed: 45 Black Creek records, 0 duplicates post-run.
+
+**Decision: JSON-LD scrape branch retired.** It is a strict subset of the RSS branch and adds latency with no benefit. The 6 scrape nodes (`Black Creek Scrape URLs` → `Black Creek Scrape Pages` → `Black Creek Extract Slugs` → `Black Creek Fetch Events` → `Black Creek Extract JSON-LD` → `Black Creek Normalize`) were already disabled; they can now be deleted.
 
 ---
 
