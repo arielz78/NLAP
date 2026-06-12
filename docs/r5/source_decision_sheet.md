@@ -2,6 +2,23 @@
 
 ---
 
+## Field Audit Status — live branches (added 2026-06-12)
+
+For each live source branch: have we pulled a full sample response and inventoried every available field — not just what we needed at build time, but everything that could feed R6 scoring or R7 classification?
+
+| Source | Full field audit done? | Notes |
+|--------|----------------------|-------|
+| AllEvents | ✅ 2026-06-12 | All keys documented. `score`, `organizer`, `categories` captured in DescriptionRaw. `featured`, `tags`, `tickets.has_tickets`, `going.totalCount` (RSVP) available but not captured — low priority for now. |
+| McMichael REST API | ❌ open | Built 2026-06-07. Captured: title, start_date, end_date, url, description, categories. Full response shape not fully inventoried. |
+| TRCA RSS | ❌ open | Built 2026-06-12. Captured: title, start_date, end_date, url, description, location, organizer. Other `event_listing:*` fields not inventoried. |
+| BiblioCommons RSS | ❌ open | Built 2026-06-12. Captured: title, start_date, end_date, url, description, location (name + city), audience. Other `bc:*` fields not inventoried. |
+| Eventbrite API | ❌ open | Built pre-R5. Captured: title, start_date, url, venue, city. Full `destination_event` expand shape not inventoried. |
+| TRCA JSON-LD (Black Creek) | ➡️ retired 2026-06-12 | Superseded by TRCA RSS. Scrape branch deleted. |
+
+**Action:** Before closing R5, pull one sample response per open source and add any uncaptured fields worth keeping to this table and the relevant branch's normalize node.
+
+---
+
 ## Source Probe Methodology — Hierarchy of Methods (added 2026-06-06)
 
 When probing a new source for machine-readable event data, work top-to-bottom. Stop at the first method that returns clean, reliable data.
