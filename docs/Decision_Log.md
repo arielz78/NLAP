@@ -1378,3 +1378,21 @@ All aggregator source branches: Eventbrite (implemented), AllEvents, Meetup, Cit
 
 ---
 
+## 43. R1 Write Path — Retire Historical Table, Batch the Upsert, Dedup at `title|date` (2026-06-15)
+
+**Decision: the R1 write path is `DateWindow → dedup-by-UniqueEventID → batched HTTP upsert`. The separate `Historical` table is retired. The `title|date` dedup key is kept coarse on purpose — same-day recurring sessions of one program collapse to a single record, and that is accepted.**
+
+*Decided 2026-06-15, Ariel + Claude. Prompted by R1 runtime hitting ~14 min; root-caused to the Airtable write path, not table size.*
+
+### What changed and why
+
+- **Historical table retired.** The `Create Historical` node re-wrote every in-window `UniqueEventID` to a second table each run, but nothing read it — create-vs-update is decided by `Upsert Candidates` matching `UniqueEventID` against Candidates itself, not by a Historical lookup. Its IDs were a strict subset of Candidates, so deletion lost nothing. (Its only future use — a survivor ledger after a purge — is moot: we are **not** purging. Accumulation is free; `DateWindow` caps writes regardless of table size.)
+- **Batched upsert.** n8n's Airtable node upserts one record per API call (n8n limitation, not Airtable). Replaced with a Code node chunking 10s → HTTP Request to Airtable's `performUpsert` endpoint. ~1,320 calls → ~55; runtime 14 min → ~35 s.
+- **Intra-run dedup.** Required — the batch endpoint rejects updating the same record twice in one request, and the fetch stream contains same-key records. Dedup-by-`UniqueEventID` (last-wins) before chunking.
+
+### Why the `title|date` key stays coarse
+
+Investigated the 114 same-key collapses on a 659-record run: 38 cross-source (AllEvents↔Eventbrite, same event two platforms — correct) and 76 same-source BiblioCommons (one program — Storytime/Mini-Makers — across branches/times same day). The 76 are distinct sessions, but collapsing them is right for a curated newsletter (you'd never run six identical storytimes; one per program per day survives). **Adding venue/time to the key to preserve them would break the cross-source dedup** — the coarse key serves the more valuable goal. Dedup resolution should match the publication's resolution; a real-time events app would key finer.
+
+---
+

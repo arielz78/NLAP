@@ -14,12 +14,25 @@
 // print samples so a human can confirm they are true dupes (fuzzy matching can
 // false-positive on same-title/same-day-but-different events).
 //
-// Writes nothing. Reads Candidates via the Airtable REST API key in the env file.
+// Reads Candidates via the Airtable REST API key in the env file. Writes a compact
+// timestamped summary (metrics + suspect dupe pairs, NOT raw records — the candidates
+// snapshot already holds those) to data/tracking/overlap_audits/ for run-over-run
+// dup-health monitoring: a climbing cross-source count flags a source change or dedup
+// regression early.
 
 require("dotenv").config({ path: require("path").join(__dirname, "../NLAP_Airtable.env") });
+const fs = require("fs");
+const path = require("path");
 
 const BASE_ID = process.env.AIRTABLE_BASE_ID;
 const CANDIDATES_TABLE = "tblRsboN66ZLzyDrM";
+const OUT_DIR = path.join(__dirname, "../data/tracking/overlap_audits");
+
+function timestampForFilename() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
 
 function timedFetch(url, opts = {}, ms = 30000) {
   const ctrl = new AbortController();
@@ -148,6 +161,7 @@ async function main() {
       city: f["City"] || "",
       url,
       uid: f["UniqueEventID"] || "",
+      venue: (f["LocationName"] || "").trim(),
       day: dateOnly(f["Start Date"]),
       endDay: dateOnly(f["End Date"]),
       dn: dayNumber(f["Start Date"]),
@@ -162,6 +176,20 @@ async function main() {
   console.log("\nRecords by Source DERIVED FROM URL (ground truth):");
   for (const [s, n] of Object.entries(bySourceUrl).sort((a, b) => b[1] - a[1])) {
     console.log(`  ${String(n).padStart(5)}  ${s}`);
+  }
+
+  // LocationName (venue) fill rate per source — feasibility check for venue+time
+  // matching. Venue matching only works on sources where venue is populated.
+  console.log("\nLocationName (venue) fill rate by source:");
+  const venueStat = {};
+  for (const row of rows) {
+    (venueStat[row.source] ??= { filled: 0, total: 0 });
+    venueStat[row.source].total++;
+    if (row.venue) venueStat[row.source].filled++;
+  }
+  for (const [s, v] of Object.entries(venueStat).sort((a, b) => b[1].total - a[1].total)) {
+    const pct = ((v.filled / v.total) * 100).toFixed(0);
+    console.log(`  ${s.padEnd(14)} ${String(v.filled).padStart(4)}/${String(v.total).padStart(4)}  (${pct}%)`);
   }
 
   // Start-date distribution per source — tests whether two sources even cover
@@ -283,6 +311,36 @@ async function main() {
     console.log(`     • (${m.b.source}/${m.b.city}/${m.b.day}) "${m.b.title}"`);
     console.log("");
   }
+
+  // Persist a compact summary for run-over-run dup-health monitoring. Mirrors the
+  // snapshotCandidates pattern (timestamped file, same dir convention) but stores
+  // only metrics + the suspect pairs — never the raw pool (snapshots own that).
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+  const stamp = timestampForFilename();
+  const summary = {
+    capturedAt: new Date().toISOString(),
+    baseId: BASE_ID,
+    tableId: CANDIDATES_TABLE,
+    recordCount: records.length,
+    bySourceField,
+    bySourceUrl,
+    venueFillBySource: Object.fromEntries(
+      Object.entries(venueStat).map(([s, v]) => [s, { filled: v.filled, total: v.total }])
+    ),
+    exactDupeClusters: exactDupes.length,
+    fuzzyClusters: { total: clusters.length, crossSource: crossSource.length, sameSource: sameSource.length },
+    crossSourcePairCounts: pairCounts,
+    tokenSimilarityPairCount: matches.length,
+    tokenSimilarityPairs: matches.map((m) => ({
+      j: Number(m.j.toFixed(2)),
+      contain: Number(m.contain.toFixed(2)),
+      a: { source: m.a.source, city: m.a.city, day: m.a.day, title: m.a.title, uid: m.a.uid },
+      b: { source: m.b.source, city: m.b.city, day: m.b.day, title: m.b.title, uid: m.b.uid },
+    })),
+  };
+  const outPath = path.join(OUT_DIR, `overlap_${stamp}.json`);
+  fs.writeFileSync(outPath, JSON.stringify(summary, null, 2));
+  console.log(`\nAudit summary written: ${outPath}`);
 }
 
 main().catch((err) => {
