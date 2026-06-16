@@ -1,0 +1,8 @@
+# Changelog
+
+Short, public-facing summary of work per session. One entry per session,
+newest at the top. The candid internal journal lives in `Execution_Log.md`
+(private); this is the distilled, shareable version.
+
+## 2026-06-16
+- Re-exported the live R1 ingestion workflow to `workflows/NLAP R1.json` — now reflects the AllEvents 3-city branches (Vaughan/Richmond Hill/Markham) and the batched Airtable upsert rebuild. Brings the repo back in sync with the live n8n pipeline.
