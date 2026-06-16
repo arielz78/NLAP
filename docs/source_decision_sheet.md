@@ -148,7 +148,7 @@ PASS-but-not-built and unresolved sources. Kept so a revival is a running start,
 6. **HTML scraping** — known class names / structure (VPL, unionville).
 7. **Headless browser** — last resort; only for high-value weekly sources with all above dead.
 
-**Core lesson (2026-06-06):** a DROP is only as strong as the *surface* it was tested against. Three sources (VPL, visitvaughan, unionville) were initially written off, then automated via methods 1–2. **Always open DevTools before writing off a source; never generalize "this surface is dead" to "this source is dead."** Full standard in `R5_ScrapeBlueprint.md`.
+**Core lesson (2026-06-06):** a DROP is only as strong as the *surface* it was tested against. Three sources (VPL, visitvaughan, unionville) were initially written off, then automated via methods 1–2. **Always open DevTools before writing off a source; never generalize "this surface is dead" to "this source is dead."** Full standard in `scrape_blueprint.md`.
 
 ### Integration tier ranking — ease *and* transferability
 1. **Direct JSON/REST API** — AllEvents, McMichael, visitvaughan, Eventbrite. Cleanest; one call, you control pagination/filters.

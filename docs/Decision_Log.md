@@ -1305,7 +1305,7 @@ Re-verifying the three previously-dropped sources (per §38's "applies to" note)
 
 But describing them as "the same tier" (which is what happened in-conversation, initially) was imprecise and would have mis-set build-cost expectations. AllEvents' API and TRCA's JSON-LD produce *reusable* integration code — an API client pattern or a schema.org parser will very likely work, or need only minor changes, on a structurally similar source for the next client (Mississauga, future newsletters). Meetup's `__NEXT_DATA__` and CityPlayhouse's Red61 blob are *bespoke* — every framework/platform embeds its hydration state in its own non-standard shape, so the parser written for one won't transfer to the next, no matter how clean the individual integration looks.
 
-### The five tiers (full detail and source mapping in `docs/r5/source_decision_sheet.md` → "Integration Tier Ranking")
+### The five tiers (full detail and source mapping in `docs/source_decision_sheet.md` → "Integration Tier Ranking")
 
 1. **Direct JSON/REST API** — purpose-built endpoint, structured response, you control pagination/filters (AllEvents, McMichael, visitvaughan.ca, Eventbrite)
 2. **JSON-LD** — `schema.org` standard markup; parsing code is standardized and transfers across any site using it (TRCA)
@@ -1411,6 +1411,28 @@ The pipeline already had three useful checks (snapshot, overlap, depth) but none
 ### Why one-source-of-truth, and the rule
 
 The same fact (R5 status, success metric, source count) lived in the roadmap *and* R5_Scope *and* Decision_Log — and they had silently drifted out of agreement, because copied facts drift by default. **Rule: release-level *status* lives only in the active Scope doc's Status Snapshot; `Execution_Log.md` is the chronological per-session log and does not restate status; the roadmap is frozen intent. On conflict, the Scope snapshot wins for status, Decision_Log wins for decisions.** The roadmap got a stale-redirect banner and `/start` was repointed at the snapshot, so the entry ritual and the source of truth no longer diverge.
+
+---
+
+## 45. Doc Organization — Three-Type Model by Durability; Per-Section Roadmap Freeze; /wrap Runs the Update Checklist (2026-06-16)
+
+**Decision: organize docs by *durability*, not by release or by lifecycle-type. Every doc is one of three types — Living reference (update forever, `docs/` top level + `NA/`), Release-working (maintained during a release, frozen to `logs/` at close, `docs/r{N}/`), or Frozen record (never updated, `docs/archive/` + `logs/` + `meetings/`). Type is a header label, not a folder; placement is by durability. The roadmap freezes *per release-section* (a section freezes the moment its release gets a Scope doc), not all at once. `docs/README.md` is the canonical index of every fact's home + update-trigger. And `/wrap` runs the conditional-update checklist *for the user* — the agent scans the session and proposes which homes changed; the user only confirms.**
+
+*Decided 2026-06-16, Ariel + Claude. Direct continuation of §44 — that entry stated the one-home rule; this one fixes the structure that kept violating it and removes the human cost of following it. Reached by walking the whole repo, not just `docs/`.*
+
+### Why durability, not type, is the folder axis
+
+The recurring drift (§44) had a structural cause: durable docs (the source register, the scrape blueprint) were filed under `docs/r5/`, so they *looked* R5-scoped even though sources and scrape methodology outlive every release. Organizing by **type** instead — a `frozen/` folder, a `working/` folder — fails for a subtler reason: type is a *lifecycle stage* (working → frozen) that changes at every release close, so a type-folder just relocates the re-filing churn rather than removing it. Durability is intrinsic and permanent, so a durability layout never needs re-filing. Executed: `source_decision_sheet.md` and `scrape_blueprint.md` (was `R5_ScrapeBlueprint.md` — the prefix lied about its lifecycle) moved up to `docs/`; the dead `NLAP_Roadmap_v2.txt` archived; `roadmap_v3.md` kept in `docs/` because R6–R8 are still live plan.
+
+### Why the roadmap freezes per-section
+
+`roadmap_v3.md` is mixed-maturity: its R5 section is superseded (read R5_Scope for status) but R6–R8 are not yet started and have no Scope doc, so the roadmap *is* their source of truth. Archiving the whole file would bury a live plan; band-aiding it with a global "stale" banner (the §44 stopgap) invites the next drift. Resolution: a section is live intent until its release opens, then frozen the moment that release gets a Scope doc. The file retires to `archive/` only post-R8 once every section is consumed.
+
+### Why /wrap runs the checklist (the real cost was decision fatigue, not writes)
+
+The felt burden was never the few lines of writing — it was the per-session mental scan ("do I update this one? this one?"). The fix is to encode the checklist in the routine, not the human's head (same principle as a PR template or definition-of-done). `/wrap` now appends the journal + changelog automatically, then *proposes* updates for each conditional home (Decision_Log, source sheet, metrics log, issues); the user reacts yes/no instead of generating the list. Two write-once patterns ride along: a decision's rationale homes in Decision_Log and the journal only points at it; a metric's number homes in `Vaughan_Metrics_Log.md` and the portfolio case study renders from it — never authored twice.
+
+**Scope/altitude:** doc-organization hygiene on a solo ~25-doc project, not a knowledge-management system. The whole change is 3 file moves, 1 archive folder, 1 index, 2 rule edits, and a `/wrap` upgrade — proportionate only because the drift pain was real and the moves are cheap. The 80/20 that carries the weight is the one-home rule (§44) plus the conditional-checklist offload; the folder layout is the supporting polish.
 
 ---
 

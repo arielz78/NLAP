@@ -22,7 +22,7 @@ Single source of truth for "where are we." The roadmap's R5 header is stale; thi
 - W1 complete: #33 (source audit + config), #53 (domain tally), #57 (field-inventory gap) all closed.
 - **Live source set: 5 sources / 7 fetch branches** — Eventbrite (pre-R5), AllEvents ×3 cities (Vaughan/RHill/Markham), McMichael REST, TRCA RSS (Kortright + Black Creek; JSON-LD scrape retired), BiblioCommons.
 - Bugs closed: #58 (RSS pub-date drop), #60 (UniqueEventID normalization), upsert Status-reset bug (Decision_Log §40).
-- **Unplanned but shipped** (the bulk of the "deviation"): R1 perf overhaul ~24× (Historical table retired, batched HTTP upsert, intra-run dedup); `overlapAudit.js` cross-source dedup tool; source-probe methodology + `R5_ScrapeBlueprint.md` + DevTools coverage audit + integration-tier ranking.
+- **Unplanned but shipped** (the bulk of the "deviation"): R1 perf overhaul ~24× (Historical table retired, batched HTTP upsert, intra-run dedup); `overlapAudit.js` cross-source dedup tool; source-probe methodology + `scrape_blueprint.md` + DevTools coverage audit + integration-tier ranking.
 
 **In flight / next:**
 - **B4 visitvaughan.ca, B5 unionville.ca** — probed, not built (see W2a Frontier block below). Closes W2a source coverage.
