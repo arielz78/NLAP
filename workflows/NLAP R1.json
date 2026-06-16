@@ -6,35 +6,21 @@
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        80,
-        -192
+        -896,
+        0
       ],
       "id": "d1e3864e-8cc2-492b-9b87-464307e585eb",
       "name": "When clicking ‘Execute workflow’"
     },
     {
       "parameters": {
-        "url": "https://www.inoreader.com/stream/user/1003818288/tag/VB%3A%20Vaughan",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.rssFeedRead",
-      "typeVersion": 1.2,
-      "position": [
-        448,
-        -64
-      ],
-      "id": "cd06f35f-512d-40f6-a8a4-0a1008580f2e",
-      "name": "RSS Read"
-    },
-    {
-      "parameters": {
-        "jsCode": "const out = [];\nfunction pickDescription(j) {\n  const rss =\n    j.contentSnippet ||\n    j.content ||\n    j.summary ||\n    j.description ||\n    j[\"content:encoded\"] ||\n    \"\";\n  const eb =\n    j.summary ||\n    (j.description && (j.description.text || j.description.html)) ||\n    j.structured_content ||\n    \"\";\n  const d = (eb || rss || \"\").toString().trim();\n  return d;\n}\nfor (const item of items) {\n  const j = item.json || {};\n  const title = (j.title || j.name || \"\").toString().trim();\n  const link = (j.link || j.url || \"\").toString().trim();\n  if (!title || !link) continue;\n  const isoDate = (j.isoDate || j.start_date || j.startDate || \"\").toString().trim();\n  const guid = (j.guid || j.eventbrite_event_id || j.id || \"\").toString().trim();\n  const DescriptionRaw = pickDescription(j);\n  out.push({\n    json: {\n      title,\n      link,\n      pubDate: (j.pubDate || \"\").toString(),\n      isoDate,\n      guid,\n      DescriptionRaw,\n      _valid: true,\n    },\n  });\n}\nreturn out;"
+        "jsCode": "const out = [];\nfunction pickDescription(j) {\n  const rss =\n    j.DescriptionRaw ||        // ← added\n    j.contentSnippet ||\n    j.content ||\n    j.summary ||\n    j.description ||\n    j[\"content:encoded\"] ||\n    \"\";\n  const eb =\n    j.summary ||\n    (j.description && (j.description.text || j.description.html)) ||\n    j.structured_content ||\n    \"\";\n  const d = (eb || rss || \"\").toString().trim();\n  return d;\n}\nfor (const item of items) {\n  const j = item.json || {};\n  const title = (j.title || j.name || \"\").toString().trim();\n  const link = (j.link || j.url || \"\").toString().trim();\n  if (!title || !link) continue;\n  const isoDate = (j.isoDate || j.start_date || j.startDate || \"\").toString().trim();\n  const guid = (j.guid || j.eventbrite_event_id || j.id || \"\").toString().trim();\n  const DescriptionRaw = pickDescription(j);\n  out.push({\n    json: {\n      title,\n      link,\n      pubDate: (j.pubDate || \"\").toString(),\n      isoDate,\n      guid,\n      DescriptionRaw,\n      endDate: (j.endDate || ''),  // ← added\n      locationName: (j.locationName || \"\").toString(),\n      sourceCanonical: (j.sourceCanonical || \"\").toString(),\n      city: (j.city || ''),\n      _valid: true,\n    },\n  });\n}\nreturn out;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        976,
-        -368
+        752,
+        -64
       ],
       "id": "afa1c2eb-2646-4766-b832-ec9dcc9e7a31",
       "name": "Clean/Filter"
@@ -46,8 +32,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1184,
-        -64
+        912,
+        64
       ],
       "id": "58fb575f-549c-48cd-9313-c59ef7075ab4",
       "name": "Sort (Newest First)"
@@ -55,589 +41,16 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// NORMALIZATION_VERSION: v2 (2026-06-07)\n// Adds: HTML entity decoding, curly-quote/dash/space/ellipsis -> ASCII mapping, NFC normalization.\n// Any future change to this block requires re-running scripts/updateUniqueEventIDs.js\n// to backfill all existing Candidates records, otherwise old and new IDs will mismatch.\n\nfunction decodeEntities(s) {\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, \"&\")\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, \"<\")\n    .replace(/&gt;/g, \">\");\n}\nfunction straighten(s) {\n  return s\n    .replace(/[‘’‚‛]/g, \"'\")\n    .replace(/[“”„‟]/g, '\"')\n    .replace(/[–—−]/g, \"-\")\n    .replace(/[  -  ]/g, \" \")\n    .replace(/…/g, \"...\");\n}\nfunction norm(s) {\n  return straighten(decodeEntities((s || \"\").toString()))\n    .normalize(\"NFC\")\n    .trim()\n    .toLowerCase()\n    .replace(/\\s+/g, \" \");\n}\nfunction dateOnly(d) {\n  const dt = new Date(d);\n  if (isNaN(dt.getTime())) return \"\";\n  return dt.toISOString().slice(0, 10);\n}\nconst rawTitle = $json.title || $json.event_name || \"\";\nconst titleNorm = norm(rawTitle);\nconst link =\n  $json.link ||\n  $json.url ||\n  $json.linkUrl ||\n  $json.link_url ||\n  \"\";\nconst day = dateOnly($json.isoDate || $json.pubDate);\nconst hasUrl = !!link;\nconst hasDate = !!day;\nreturn {\n  ...$json,\n  event_name: rawTitle,\n  url: link,\n  start_date: day,\n  uniqueEventID: `${titleNorm}|${day}`,\n  city: \"Vaughan\",\n  _valid: hasUrl && hasDate,\n  _invalid_reason: !hasUrl ? \"missing_url\" : (!hasDate ? \"missing_date\" : \"\"),\n};"
+        "jsCode": "// NORMALIZATION_VERSION: v2 (2026-06-07)\n// Keep byte-identical with scripts/updateUniqueEventIDs.js norm().\n// If you change one, change both, then re-run the backfill script.\nfunction decodeEntities(s) {\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\nfunction straighten(s) {\n  return s\n    .replace(/[‘’‚‛]/g, \"'\")\n    .replace(/[“”„‟]/g, '\"')\n    .replace(/[–—−]/g, '-')\n    .replace(/[  -   　]/g, ' ')\n    .replace(/…/g, '...');\n}\nfunction norm(s) {\n  return straighten(decodeEntities((s || '').toString()))\n    .normalize('NFC')\n    .trim()\n    .toLowerCase()\n    .replace(/\\s+/g, ' ');\n}\nfunction dateOnly(d) {\n  const dt = new Date(d);\n  if (isNaN(dt.getTime())) return '';\n  return dt.toISOString().slice(0, 10);\n}\nconst rawTitle = $json.title || $json.event_name || '';\nconst titleNorm = norm(rawTitle);\nconst link = $json.link || $json.url || $json.linkUrl || $json.link_url || '';\nconst day = dateOnly($json.isoDate || $json.pubDate);\nconst hasUrl = !!link;\nconst hasDate = !!day;\nreturn {\n  ...$json,\n  event_name: rawTitle,\n  url: link,\n  start_date: day,\n  uniqueEventID: `${titleNorm}|${day}`,\n  city: $json.city || 'Vaughan',\n  _valid: hasUrl && hasDate,\n  _invalid_reason: !hasUrl ? 'missing_url' : (!hasDate ? 'missing_date' : ''),\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1376,
-        -368
+        1072,
+        -64
       ],
       "id": "2b22b3fd-cc87-43d6-af46-c62f13f42071",
       "name": "Make UniqueEventID"
-    },
-    {
-      "parameters": {
-        "operation": "upsert",
-        "base": {
-          "__rl": true,
-          "value": "appVXHOyQcgQAk1gV",
-          "mode": "list",
-          "cachedResultName": "Content Creation Automation",
-          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV"
-        },
-        "table": {
-          "__rl": true,
-          "value": "tblRsboN66ZLzyDrM",
-          "mode": "list",
-          "cachedResultName": "Candidates",
-          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV/tblRsboN66ZLzyDrM"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "Event Title": "={{$json.event_name}}",
-            "City": "Vaughan",
-            "Status": "New",
-            "Score_Manual": 0,
-            "URL": "={{$json.url}}",
-            "Start Date": "={{$json.start_date}}",
-            "SegmentConfidence": 0,
-            "DescriptionRaw": "={{$json.DescriptionRaw}}",
-            "UniqueEventID": "={{$json.uniqueEventID}}",
-            "Last Auto Update": "={{$now}}"
-          },
-          "matchingColumns": [
-            "UniqueEventID"
-          ],
-          "schema": [
-            {
-              "id": "id",
-              "displayName": "id",
-              "required": false,
-              "defaultMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": true
-            },
-            {
-              "id": "Event Title",
-              "displayName": "Event Title",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "URL",
-              "displayName": "URL",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "Category",
-              "displayName": "Category",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "options",
-              "options": [
-                {
-                  "name": "For Families",
-                  "value": "For Families"
-                },
-                {
-                  "name": "For Couples",
-                  "value": "For Couples"
-                },
-                {
-                  "name": "For Golden Age Readers",
-                  "value": "For Golden Age Readers"
-                },
-                {
-                  "name": "Local Aroma",
-                  "value": "Local Aroma"
-                },
-                {
-                  "name": "The “Trust Me” Recipe",
-                  "value": "The “Trust Me” Recipe"
-                }
-              ],
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "Added to Base Date",
-              "displayName": "Added to Base Date",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": true,
-              "removed": false
-            },
-            {
-              "id": "Publish Date",
-              "displayName": "Publish Date",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "dateTime",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "Source",
-              "displayName": "Source",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": true
-            },
-            {
-              "id": "Start Date",
-              "displayName": "Start Date",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "dateTime",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "LocationName",
-              "displayName": "LocationName",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "Status",
-              "displayName": "Status",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "options",
-              "options": [
-                {
-                  "name": "New",
-                  "value": "New"
-                },
-                {
-                  "name": "Needs Review",
-                  "value": "Needs Review"
-                },
-                {
-                  "name": "Approved",
-                  "value": "Approved"
-                },
-                {
-                  "name": "Rejected",
-                  "value": "Rejected"
-                },
-                {
-                  "name": "Featured",
-                  "value": "Featured"
-                }
-              ],
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "Score_Manual",
-              "displayName": "Score_Manual",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "number",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "Score_Final",
-              "displayName": "Score_Final",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": true,
-              "removed": true
-            },
-            {
-              "id": "Short Description",
-              "displayName": "Short Description",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "Last Auto Update",
-              "displayName": "Last Auto Update",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "dateTime",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "Reviewed by Human",
-              "displayName": "Reviewed by Human",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "boolean",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "Has Event Date",
-              "displayName": "Has Event Date",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": true,
-              "removed": false
-            },
-            {
-              "id": "Event is Expired",
-              "displayName": "Event is Expired",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": true,
-              "removed": false
-            },
-            {
-              "id": "Event in Window",
-              "displayName": "Event in Window",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": true,
-              "removed": false
-            },
-            {
-              "id": "R2Status",
-              "displayName": "R2Status",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "options",
-              "options": [
-                {
-                  "name": "Pending",
-                  "value": "Pending"
-                },
-                {
-                  "name": "Enriched",
-                  "value": "Enriched"
-                },
-                {
-                  "name": "NeedsReview",
-                  "value": "NeedsReview"
-                },
-                {
-                  "name": "Failed",
-                  "value": "Failed"
-                }
-              ],
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "DescriptionRaw",
-              "displayName": "DescriptionRaw",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "UniqueEventID",
-              "displayName": "UniqueEventID",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "City",
-              "displayName": "City",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "options",
-              "options": [
-                {
-                  "name": "Vaughan",
-                  "value": "Vaughan"
-                },
-                {
-                  "name": "Richmond Hill",
-                  "value": "Richmond Hill"
-                },
-                {
-                  "name": "Markham",
-                  "value": "Markham"
-                }
-              ],
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "Featured in NL ",
-              "displayName": "Featured in NL ",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "boolean",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "SegmentSuggested",
-              "displayName": "SegmentSuggested",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "options",
-              "options": [
-                {
-                  "name": "For Families",
-                  "value": "For Families"
-                },
-                {
-                  "name": "For Couples",
-                  "value": "For Couples"
-                },
-                {
-                  "name": "Local Aroma",
-                  "value": "Local Aroma"
-                },
-                {
-                  "name": "For Golden Age Readers",
-                  "value": "For Golden Age Readers"
-                },
-                {
-                  "name": "Trust Me Recipe",
-                  "value": "Trust Me Recipe"
-                },
-                {
-                  "name": "Pending",
-                  "value": "Pending"
-                },
-                {
-                  "name": "checked",
-                  "value": "checked"
-                }
-              ],
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "SegmentConfidence",
-              "displayName": "SegmentConfidence",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "number",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "NeedsReview",
-              "displayName": "NeedsReview",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "boolean",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "RuleSuggestions",
-              "displayName": "RuleSuggestions",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "array",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "LLM_ParseError",
-              "displayName": "LLM_ParseError",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "LLM_Rationale",
-              "displayName": "LLM_Rationale",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "IssueItems",
-              "displayName": "IssueItems",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "array",
-              "readOnly": false,
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {
-          "typecast": true
-        }
-      },
-      "type": "n8n-nodes-base.airtable",
-      "typeVersion": 2.1,
-      "position": [
-        1936,
-        -368
-      ],
-      "id": "06cbc4d3-1a00-49ca-9d2d-179ee1bc7996",
-      "name": "Upsert Candidates",
-      "alwaysOutputData": true,
-      "credentials": {
-        "airtableTokenApi": {
-          "id": "M4nWbeUFeR35flxq",
-          "name": "Airtable Personal Access Token account 3"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "operation": "upsert",
-        "base": {
-          "__rl": true,
-          "value": "appVXHOyQcgQAk1gV",
-          "mode": "list",
-          "cachedResultName": "Content Creation Automation",
-          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV"
-        },
-        "table": {
-          "__rl": true,
-          "value": "tbl7jlk9s5HG8rRd9",
-          "mode": "list",
-          "cachedResultName": "Historical",
-          "cachedResultUrl": "https://airtable.com/appVXHOyQcgQAk1gV/tbl7jlk9s5HG8rRd9"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "UniqueEventID": "={{$node[\"Make UniqueEventID\"].json.uniqueEventID}}"
-          },
-          "matchingColumns": [
-            "UniqueEventID"
-          ],
-          "schema": [
-            {
-              "id": "UniqueEventID",
-              "displayName": "UniqueEventID",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": false
-            },
-            {
-              "id": "Attachments",
-              "displayName": "Attachments",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "array",
-              "readOnly": false,
-              "removed": true
-            },
-            {
-              "id": "Attachment Summary",
-              "displayName": "Attachment Summary",
-              "required": false,
-              "defaultMatch": false,
-              "canBeUsedToMatch": true,
-              "display": true,
-              "type": "string",
-              "readOnly": false,
-              "removed": true
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.airtable",
-      "typeVersion": 2.1,
-      "position": [
-        2096,
-        -192
-      ],
-      "id": "8d891a72-aac4-4d7e-9e8b-bd9464c4b975",
-      "name": "Create Historical",
-      "credentials": {
-        "airtableTokenApi": {
-          "id": "M4nWbeUFeR35flxq",
-          "name": "Airtable Personal Access Token account 3"
-        }
-      }
     },
     {
       "parameters": {
@@ -667,11 +80,145 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1568,
-        -64
+        1232,
+        64
       ],
       "id": "4952d047-6174-4952-b30c-9139532917b6",
       "name": "Validity Filter"
+    },
+    {
+      "parameters": {
+        "numberInputs": 7
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        592,
+        0
+      ],
+      "id": "0feeaa3f-b40a-4440-b8e5-9feb06f33b8c",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const DAYS_AHEAD = 30;\n\nconst today = new Date();\nconst startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());\nconst endDate = new Date(startOfToday);\nendDate.setDate(endDate.getDate() + DAYS_AHEAD);\n\nconst startRaw = $json.start_date || $json.isoDate || '';\n\nif (!startRaw) {\n  return null; // drop if no date\n}\n\nconst eventDate = new Date(startRaw);\nif (isNaN(eventDate.getTime())) {\n  return null; // drop invalid date\n}\n\nconst eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());\n\nif (eventDateOnly < startOfToday) {\n  return null; // drop past events\n}\n\nif (eventDateOnly > endDate) {\n  return null; // drop too far in future\n}\n\nreturn $json;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        -64
+      ],
+      "id": "3d367d30-6c83-4586-a76f-93c7fbefdd3a",
+      "name": "DateWindow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\nconst allEvents = [];\n\nfor (const bucket of response.buckets || []) {\n  for (const event of bucket.events || []) {\n    const venue = event.primary_venue || {};\n    const venueName = (venue.name || '').trim();\n    const venueCity = ((venue.address && venue.address.city) || '').trim();\n    allEvents.push({\n      json: {\n        ...event,\n        sourceCanonical: 'Eventbrite',\n        locationName: venueName,\n        city: venueCity,\n      }\n    });\n  }\n}\n\nreturn allEvents;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -320
+      ],
+      "id": "8ad1172d-0e9f-46d5-97a1-b5e52efe5276",
+      "name": "Eventbrite Normalize"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1280,
+        528
+      ],
+      "id": "deb0be57-6cdc-4641-87c5-3ec1e9debdcd",
+      "name": "Black Creek Fetch Events",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  { json: { url: \"https://calendar.trca.ca/event_listing_category/the-village-at-black-creek/\" } },\n  { json: { url: \"https://calendar.trca.ca/event_listing_category/the-village-at-black-creek/page/2/\" } },\n  { json: { url: \"https://calendar.trca.ca/event_listing_category/the-village-at-black-creek/page/3/\" } }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        528
+      ],
+      "id": "8c638513-9ece-489d-a3f8-455a1e6a82ba",
+      "name": "Black Creek Scrape URLs",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Collect slugs from all input items (one per listing page)\nconst allSlugs = [];\nfor (const item of $input.all()) {\n  const html = item.json.data || '';\n  const matches = html.match(/https:\\/\\/calendar\\.trca\\.ca\\/event\\/[a-z0-9\\-]+\\//g) || [];\n  allSlugs.push(...matches);\n}\nconst unique = [...new Set(allSlugs)];\nreturn unique.map(url => ({ json: { url } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        528
+      ],
+      "id": "e79ff23e-d4b2-400b-8b23-f0ebe47baf03",
+      "name": "Black Creek Extract Slugs",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        864,
+        528
+      ],
+      "id": "7b44dbbd-99b5-41f6-9bf8-a53220655b55",
+      "name": "Black Creek Scrape Pages",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const html = $json.data || '';\n\nconst ldMatch = html.match(/<script type=\"application\\/ld\\+json\">([\\s\\S]*?)<\\/script>/);\nif (!ldMatch) return null;\n\nconst canonicalMatch = html.match(/<link rel=\"canonical\" href=\"([^\"]+)\"/);\nconst pageUrl = canonicalMatch ? canonicalMatch[1] : '';\n\n\nlet event;\ntry {\n  event = JSON.parse(ldMatch[1]);\n} catch(e) {\n  return null;\n}\n\nif (!event.name || !event.startDate) return null;\n\nreturn {\n  json: {\n    title: event.name.trim(),\n    startDate: event.startDate,\n    url: event.url || pageUrl || '',\n    locationName: 'Black Creek Pioneer Village',\n    sourceCanonical: 'TRCA Calendar',\n    city: 'Vaughan'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1488,
+        528
+      ],
+      "id": "e87d6712-a6f8-458f-a16b-4347febb0de3",
+      "name": "Black Creek Extract JSON-LD",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const title = $json.title || '';\nconst startDate = $json.startDate || '';\n\nconst titleNorm = title.trim().toLowerCase().replace(/\\s+/g, ' ');\nconst dateOnly = startDate.slice(0, 10);\n\nreturn {\n  json: {\n    title: title,\n    link: $json.url,\n    event_name: title,\n    url: $json.url,\n    isoDate: startDate,\n    start_date: dateOnly,\n    uniqueEventID: `${titleNorm}|${dateOnly}`,\n    city: 'Vaughan',\n    locationName: $json.locationName,\n    sourceCanonical: $json.sourceCanonical,\n    DescriptionRaw: '',\n    _valid: !!title && !!dateOnly\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        528
+      ],
+      "id": "2aa9a2f6-6ed3-4fe5-9568-cf0a4eda5e29",
+      "name": "Black Creek Normalize",
+      "disabled": true
     },
     {
       "parameters": {
@@ -688,49 +235,272 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        336,
-        -368
+        160,
+        -320
       ],
       "id": "67691cea-32b4-46b2-b253-95c3a850d9ec",
-      "name": "HTTP Request"
-    },
-    {
-      "parameters": {},
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.2,
-      "position": [
-        784,
-        -192
-      ],
-      "id": "0feeaa3f-b40a-4440-b8e5-9feb06f33b8c",
-      "name": "Merge"
+      "name": "Eventbrite API"
     },
     {
       "parameters": {
-        "mode": "runOnceForEachItem",
-        "jsCode": "const DAYS_AHEAD = 30;\n\nconst today = new Date();\nconst startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());\nconst endDate = new Date(startOfToday);\nendDate.setDate(endDate.getDate() + DAYS_AHEAD);\n\nconst startRaw = $json.start_date || $json.isoDate || '';\n\nif (!startRaw) {\n  return null; // drop if no date\n}\n\nconst eventDate = new Date(startRaw);\nif (isNaN(eventDate.getTime())) {\n  return null; // drop invalid date\n}\n\nconst eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());\n\nif (eventDateOnly < startOfToday) {\n  return null; // drop past events\n}\n\nif (eventDateOnly > endDate) {\n  return null; // drop too far in future\n}\n\nreturn $json;"
+        "jsCode": "const sourceCanonical = 'McMichael';\nconst locationName = 'McMichael Canadian Art Collection';\n\n// IMPORTANT: the shared 'Make UniqueEventID' node downstream RECOMPUTES\n// uniqueEventID from this branch's `title` field using its own plain\n// lowercase+whitespace normalization — it overwrites whatever ID we compute\n// here. So the only way to land on the SAME id as the existing iCal-derived\n// records is to make `title` itself match — i.e. decode HTML entities to\n// STRAIGHT ascii quotes (matching the existing dataset convention), not to\n// their typographically-correct curly Unicode equivalents. Decoding to curly\n// quotes is \"more correct\" in isolation but produces a `title` that\n// Make UniqueEventID then normalizes into a DIFFERENT id than the existing\n// record — creating a duplicate. Consistency with the existing convention\n// wins over typographic purity here.\nfunction decodeEntities(str) {\n  if (!str) return str;\n  return str\n    .replace(/&#821[678];|&#x201[89][a-fA-F]?;|&lsquo;|&rsquo;/g, \"'\")\n    .replace(/&#822[01];|&#x201[CcDd];|&ldquo;|&rdquo;/g, '\"')\n    .replace(/&#8211;|&#8212;|&#x201[34];|&ndash;|&mdash;/g, '—')\n    .replace(/&#039;|&#39;|&apos;/g, \"'\")\n    .replace(/&#(\\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))\n    .replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCharCode(parseInt(code, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&nbsp;/g, ' ');\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const inputItem of $input.all()) {\n  const response = inputItem.json;\n  const events = response.events || [];\n\n  for (const ev of events) {\n    const title = decodeEntities((ev.title || '').toString().trim());\n    const link = (ev.url || ev.website || '').toString().trim();\n    const startRaw = (ev.start_date || '').toString().trim();\n    if (!title || !startRaw) continue;\n\n    const isoDate = startRaw.replace(' ', 'T');\n    const dateOnly = startRaw.slice(0, 10);\n    const titleNorm = title.toLowerCase().replace(/\\s+/g, ' ');\n    const uniqueEventID = `${titleNorm}|${dateOnly}`;\n    if (seen.has(uniqueEventID)) continue;\n    seen.add(uniqueEventID);\n\n    const description = decodeEntities((ev.description || '').toString().trim());\n    const categories = (ev.categories || []).map(c => (c && c.name) ? c.name : '').filter(Boolean);\n    const DescriptionRaw = categories.length\n      ? `Categories: ${categories.join(', ')}\\n\\n${description}`\n      : description;\n\n    out.push({\n      json: {\n        title,\n        link,\n        event_name: title,\n        url: link,\n        isoDate,\n        start_date: dateOnly,\n        uniqueEventID,\n        city: 'Vaughan',\n        locationName,\n        sourceCanonical,\n        DescriptionRaw,\n        _valid: !!title && !!dateOnly && !!link,\n        _invalid_reason: !title ? 'missing_title' : (!dateOnly ? 'missing_date' : (!link ? 'missing_url' : ''))\n      }\n    });\n  }\n}\n\nreturn out;"
+      },
+      "id": "abfa7a11-4c3d-4558-9ae0-6449609fa698",
+      "name": "McMichael Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://mcmichael.com/wp-json/tribe/events/v1/events?page=1&per_page=50",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"application/json, text/plain, */*\",\n  \"Referer\": \"https://mcmichael.com/events/\",\n  \"Sec-Fetch-Mode\": \"cors\",\n  \"Sec-Fetch-Site\": \"same-origin\",\n  \"Sec-Fetch-Dest\": \"empty\"\n}",
+        "options": {}
+      },
+      "id": "84359157-9652-466c-9a78-59b1b24e3b6f",
+      "name": "McMichael API p.1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -256,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const PER_PAGE = 50;\nconst BASE_URL = 'https://mcmichael.com/wp-json/tribe/events/v1/events';\nconst totalPages = $input.first().json.total_pages || 1;\n\nconst urls = [];\nfor (let page = 1; page <= totalPages; page++) {\n  urls.push({ json: { url: `${BASE_URL}?page=${page}&per_page=${PER_PAGE}` } });\n}\nreturn urls;"
+      },
+      "id": "7af8118e-63df-4dc9-8918-5cc06e1bf8da",
+      "name": "McMichael Build URLs",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"application/json, text/plain, */*\",\n  \"Referer\": \"https://mcmichael.com/events/\",\n  \"Sec-Fetch-Mode\": \"cors\",\n  \"Sec-Fetch-Site\": \"same-origin\",\n  \"Sec-Fetch-Dest\": \"empty\"\n}",
+        "options": {}
+      },
+      "id": "158e86a0-f1e0-4965-8a24-0aeb1f67ea31",
+      "name": "McMichael API Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        160,
+        -160
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://calendar.trca.ca/?feed=event_feed&search_categories=trca",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        160,
+        0
+      ],
+      "id": "471f5d6e-9486-4ceb-ab15-26d21d601c50",
+      "name": "TRCA RSS Fetch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const xml = $input.first().json.data;\n\nfunction decodeEntities(s) {\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&nbsp;/g, ' ');\n}\n\nconst itemBlocks = [];\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  itemBlocks.push(match[1]);\n}\n\nconst get = (block, tag) => {\n  const m = block.match(new RegExp(`<${tag}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\\\/${tag}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst getEvent = (block, field) => {\n  const m = block.match(new RegExp(`<event_listing:${field}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\\\/event_listing:${field}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst results = [];\n\nfor (const block of itemBlocks) {\n  const location = getEvent(block, 'location');\n\n  const isKortright = location.includes('Pine Valley') || location.includes('Kortright');\n  const isBlackCreek = location.includes('Murray Ross');\n\n  if (!isKortright && !isBlackCreek) continue;\n\n  const title = decodeEntities(get(block, 'title'));  // ← decode added\n  const description = decodeEntities(get(block, 'description'));\n  const link = get(block, 'link');\n  const startRaw = getEvent(block, 'start_date');\n  const endRaw = getEvent(block, 'end_date');\n\n  const isoDate = startRaw ? new Date(startRaw.replace(' ', 'T')).toISOString() : '';\n  const endDate = endRaw ? endRaw.split(' ')[0] : '';\n\n  const locationName = isKortright\n    ? 'Kortright Centre for Conservation'\n    : 'Black Creek Pioneer Village';\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link,\n      url: link,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city: 'Vaughan',\n      sourceCanonical: 'TRCA Calendar',\n      DescriptionRaw: description,\n      _valid: !!(title && isoDate && link),\n    }\n  });\n}\n\nreturn results;\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
+      "position": [
+        384,
+        0
+      ],
+      "id": "3b65d69f-65c0-4767-bde1-6903fe9238b1",
+      "name": "TRCA RSS Normalize"
+    },
+    {
+      "parameters": {
+        "url": "https://markham.bibliocommons.com/events/rss/all",
+        "options": {}
+      },
+      "id": "9177afa1-fa43-4951-87ea-edb2beb8d8be",
+      "name": "BiblioCommons RSS Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        160,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const xml = $input.first().json.data;\n\nfunction decodeEntities(s) {\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&nbsp;/g, ' ');\n}\n\nfunction stripCdata(s) {\n  return s.replace(/^<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>$/, '$1').trim();\n}\n\nfunction stripHtml(s) {\n  return s.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n}\n\nconst CITY_MAP = {\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n  'Thornhill': 'Vaughan',\n  'Vaughan': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n};\n\nconst itemBlocks = [];\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  itemBlocks.push(match[1]);\n}\n\nconst get = (block, tag) => {\n  const m = block.match(new RegExp(`<${tag}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\\\/${tag}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst getBC = (block, field) => {\n  const m = block.match(new RegExp(`<bc:${field}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\/bc:${field}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst getAudience = (block) => {\n  const matches = [...block.matchAll(/<category[^>]*domain=\"Audience\"[^>]*>(?:<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>|([\\s\\S]*?))<\\/category>/g)];\n  return matches.map(m => (m[1] ?? m[2] ?? '').trim()).filter(Boolean).join(', ');\n};\n\n// Extract a sub-field from within bc:location XML\nconst getFromLocation = (locationXml, field) => {\n  const m = locationXml.match(new RegExp(`<bc:${field}[^>]*>([^<]*)<\\/bc:${field}>`));\n  return m ? m[1].trim() : '';\n};\n\nconst results = [];\n\nfor (const block of itemBlocks) {\n  const title = decodeEntities(get(block, 'title'));\n  const link = get(block, 'link');\n  const startRaw = getBC(block, 'start_date');\n  const endRaw = getBC(block, 'end_date');\n  const locationXml = getBC(block, 'location');\n  const descriptionRaw = stripCdata(get(block, 'description'));\n  const description = stripHtml(decodeEntities(descriptionRaw));\n  const audience = getAudience(block);\n\n  if (!title || !startRaw) continue;\n\n  const isoDate = new Date(startRaw).toISOString();\n  const endDate = endRaw ? endRaw.split('T')[0] : '';\n\n  const locationName = getFromLocation(locationXml, 'name');\n  const bcCity = getFromLocation(locationXml, 'city');\n  const city = CITY_MAP[bcCity] || null;\n\n  // Skip events from cities outside our coverage area\n  if (!city) continue;\n\n  // Skip online/virtual events (no location)\n  if (!locationName) continue;\n\n  const DescriptionRaw = audience\n    ? `Audience: ${audience}\\n\\n${description}`\n    : description;\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link,\n      url: link,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'BiblioCommons Markham',\n      DescriptionRaw,\n      _valid: !!(title && isoDate && link),\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "b495a1cd-ae20-49f3-a238-9a2da5efefdb",
+      "name": "BiblioCommons Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  const categories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const allEventsScore = ev.score != null ? ev.score : null;\n\n  const descParts = [];\n  if (categories) descParts.push(`AllEvents Categories: ${categories}`);\n  if (organizer) descParts.push(`AllEvents Organizer: ${organizer}`);\n  if (allEventsScore != null) descParts.push(`AllEvents Score: ${allEventsScore}`);\n  const DescriptionRaw = descParts.join('\\n');\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "4b50d632-b6eb-4b41-b9ef-7b940a1b73fe",
+      "name": "AllEvents Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://allevents.in/api/events/list",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Content-Type\": \"application/json\",\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"city\": \"markham\",\n  \"country\": \"canada\",\n  \"page\": 0,\n  \"rows\": 500,\n  \"popular\": true,\n  \"venue\": [],\n  \"keywords\": \"\",\n  \"type\": \"\",\n  \"sdate\": \"\",\n  \"edate\": \"\",\n  \"ids\": []\n}",
+        "options": {}
+      },
+      "id": "f7e3fea2-13cf-4dbf-ba75-049e36b39007",
+      "name": "AllEvents API Markham",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        160,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://allevents.in/api/events/list",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Content-Type\": \"application/json\",\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"city\": \"vaughan\",\n  \"country\": \"canada\",\n  \"page\": 0,\n  \"rows\": 500,\n  \"popular\": true,\n  \"venue\": [],\n  \"keywords\": \"\",\n  \"type\": \"\",\n  \"sdate\": \"\",\n  \"edate\": \"\",\n  \"ids\": []\n}",
+        "options": {}
+      },
+      "id": "d800b831-d996-4438-a6e8-056d2a2050bd",
+      "name": "AllEvents API Vaughan",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        160,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  const categories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const allEventsScore = ev.score != null ? ev.score : null;\n\n  const descParts = [];\n  if (categories) descParts.push(`AllEvents Categories: ${categories}`);\n  if (organizer) descParts.push(`AllEvents Organizer: ${organizer}`);\n  if (allEventsScore != null) descParts.push(`AllEvents Score: ${allEventsScore}`);\n  const DescriptionRaw = descParts.join('\\n');\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "f684525b-cacd-4aaf-9590-66f08370d570",
+      "name": "AllEvents Normalize2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://allevents.in/api/events/list",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Content-Type\": \"application/json\",\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"city\": \"richmond hill\",\n  \"country\": \"canada\",\n  \"page\": 0,\n  \"rows\": 500,\n  \"popular\": true,\n  \"venue\": [],\n  \"keywords\": \"\",\n  \"type\": \"\",\n  \"sdate\": \"\",\n  \"edate\": \"\",\n  \"ids\": []\n}",
+        "options": {}
+      },
+      "id": "eaf75aea-8704-4d70-a240-4f33fc8df16c",
+      "name": "AllEvents API RHill",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        160,
+        624
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  const categories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const allEventsScore = ev.score != null ? ev.score : null;\n\n  const descParts = [];\n  if (categories) descParts.push(`AllEvents Categories: ${categories}`);\n  if (organizer) descParts.push(`AllEvents Organizer: ${organizer}`);\n  if (allEventsScore != null) descParts.push(`AllEvents Score: ${allEventsScore}`);\n  const DescriptionRaw = descParts.join('\\n');\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;"
+      },
+      "id": "4f889823-0d2b-461d-9f06-0584815990c7",
+      "name": "AllEvents Normalize3",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Group DateWindow output into Airtable batch-upsert bodies (10 records/request).\n// Mirrors the old 'Upsert Candidates' field mapping exactly; matches on UniqueEventID.\n// Empty values are omitted (avoids 400 on empty date fields; never blanks an existing value).\nconst FIELD_MAP = {\n  'Event Title': 'event_name',\n  'City': 'city',\n  'URL': 'url',\n  'Start Date': 'start_date',\n  'End Date': 'endDate',\n  'DescriptionRaw': 'DescriptionRaw',\n  'UniqueEventID': 'uniqueEventID',\n  'LocationName': 'locationName',\n  'Source': 'sourceCanonical',\n};\nconst now = new Date().toISOString();\nfunction buildFields(j) {\n  const f = {};\n  for (const [col, key] of Object.entries(FIELD_MAP)) {\n    const v = j[key];\n    if (v !== undefined && v !== null && v !== '') f[col] = v;\n  }\n  f['Last Auto Update'] = now;\n  return f;\n}\n// Dedupe by UniqueEventID across the whole run (last occurrence wins, matching the\n// old per-record last-write-wins). Airtable rejects a batch that updates the same\n// record twice in one request, and re-upserting the same event in a run is pointless.\nconst seen = new Map();   // id -> last json (the survivor)\nconst groups = new Map(); // id -> [all jsons with this id]\nfor (const i of items) {\n  const id = i.json.uniqueEventID;\n  if (!id) continue;\n  if (!groups.has(id)) groups.set(id, []);\n  groups.get(id).push(i.json);\n  seen.set(id, i.json);\n}\n// --- Collision diagnostics: which keys collapsed, and is it benign? ---\n// Same UniqueEventID + SAME url  = genuinely the same event (benign collapse).\n// Same UniqueEventID + DIFFERENT urls = two different events merged on a coarse\n// title|date key (potential wrongful loss — inspect these).\nconst collisions = [...groups.entries()].filter(([, arr]) => arr.length > 1);\nconst collapsed = items.length - seen.size;\nconsole.log(`[dedup] ${items.length} items in -> ${seen.size} unique (${collapsed} collapsed across ${collisions.length} keys)`);\nlet urlDiffers = 0;\nfor (const [id, arr] of collisions) {\n  const urls = new Set(arr.map((r) => r.url));\n  const venues = new Set(arr.map((r) => (r.locationName || '').trim()).filter(Boolean));\n  const bad = urls.size > 1;\n  if (bad) urlDiffers++;\n  console.log(`  x${arr.length} urls=${urls.size} venues=${venues.size} \"${id}\"${bad ? ' [URLS DIFFER - INSPECT]' : ''}`);\n}\nconsole.log(`[dedup] ${urlDiffers} collision key(s) had DIFFERING urls (potential wrongful merge; 0 = all collapses benign)`);\n\nconst records = [...seen.values()].map((j) => ({ fields: buildFields(j) }));\nconst out = [];\nfor (let k = 0; k < records.length; k += 10) {\n  out.push({\n    json: {\n      records: records.slice(k, k + 10),\n      performUpsert: { fieldsToMergeOn: ['UniqueEventID'] },\n      typecast: true,\n    }\n  });\n}\nreturn out;"
+      },
+      "id": "517c81b8-5761-4a7f-82a6-2dd9b34e4c51",
+      "name": "Build Upsert Batches",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "https://api.airtable.com/v0/appVXHOyQcgQAk1gV/tblRsboN66ZLzyDrM",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "airtableTokenApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5
+            }
+          }
+        }
+      },
+      "id": "b72ff3ee-14d9-4790-b047-a23b2750d9c1",
+      "name": "Upsert Candidates (batched)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
       "position": [
         1776,
-        -192
+        -208
       ],
-      "id": "3d367d30-6c83-4586-a76f-93c7fbefdd3a",
-      "name": "DateWindow"
-    },
-    {
-      "parameters": {
-        "jsCode": "const response = $input.first().json;\n\nconst allEvents = [];\n\nfor (const bucket of response.buckets || []) {\n  for (const event of bucket.events || []) {\n    allEvents.push({\n      json: event\n    });\n  }\n}\n\nreturn allEvents;"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        560,
-        -368
-      ],
-      "id": "8ad1172d-0e9f-46d5-97a1-b5e52efe5276",
-      "name": "BucketMaker"
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "M4nWbeUFeR35flxq",
+          "name": "Airtable Personal Access Token account 3"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -739,25 +509,39 @@
       "main": [
         [
           {
-            "node": "HTTP Request",
+            "node": "Eventbrite API",
             "type": "main",
             "index": 0
           },
           {
-            "node": "RSS Read",
+            "node": "McMichael API p.1",
             "type": "main",
             "index": 0
-          }
-        ]
-      ]
-    },
-    "RSS Read": {
-      "main": [
-        [
+          },
           {
-            "node": "Merge",
+            "node": "TRCA RSS Fetch",
             "type": "main",
-            "index": 1
+            "index": 0
+          },
+          {
+            "node": "BiblioCommons RSS Fetch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AllEvents API Vaughan",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AllEvents API Markham",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AllEvents API RHill",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -795,33 +579,11 @@
         ]
       ]
     },
-    "Upsert Candidates": {
-      "main": [
-        [
-          {
-            "node": "Create Historical",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Validity Filter": {
       "main": [
         [
           {
             "node": "DateWindow",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTTP Request": {
-      "main": [
-        [
-          {
-            "node": "BucketMaker",
             "type": "main",
             "index": 0
           }
@@ -839,18 +601,18 @@
         ]
       ]
     },
-    "DateWindow": {
+    "Eventbrite API": {
       "main": [
         [
           {
-            "node": "Upsert Candidates",
+            "node": "Eventbrite Normalize",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "BucketMaker": {
+    "Eventbrite Normalize": {
       "main": [
         [
           {
@@ -860,15 +622,257 @@
           }
         ]
       ]
+    },
+    "McMichael API p.1": {
+      "main": [
+        [
+          {
+            "node": "McMichael Build URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "McMichael Build URLs": {
+      "main": [
+        [
+          {
+            "node": "McMichael API Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "McMichael API Fetch": {
+      "main": [
+        [
+          {
+            "node": "McMichael Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "McMichael Normalize": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "TRCA RSS Fetch": {
+      "main": [
+        [
+          {
+            "node": "TRCA RSS Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TRCA RSS Normalize": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "BiblioCommons RSS Fetch": {
+      "main": [
+        [
+          {
+            "node": "BiblioCommons Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BiblioCommons Normalize": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Black Creek Scrape URLs": {
+      "main": [
+        [
+          {
+            "node": "Black Creek Scrape Pages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Black Creek Scrape Pages": {
+      "main": [
+        [
+          {
+            "node": "Black Creek Extract Slugs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Black Creek Extract Slugs": {
+      "main": [
+        [
+          {
+            "node": "Black Creek Fetch Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Black Creek Fetch Events": {
+      "main": [
+        [
+          {
+            "node": "Black Creek Extract JSON-LD",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Black Creek Extract JSON-LD": {
+      "main": [
+        [
+          {
+            "node": "Black Creek Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Black Creek Normalize": {
+      "main": [
+        []
+      ]
+    },
+    "AllEvents Normalize": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "AllEvents API Markham": {
+      "main": [
+        [
+          {
+            "node": "AllEvents Normalize3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AllEvents API Vaughan": {
+      "main": [
+        [
+          {
+            "node": "AllEvents Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AllEvents API RHill": {
+      "main": [
+        [
+          {
+            "node": "AllEvents Normalize2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AllEvents Normalize3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "AllEvents Normalize2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    },
+    "DateWindow": {
+      "main": [
+        [
+          {
+            "node": "Build Upsert Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Upsert Batches": {
+      "main": [
+        [
+          {
+            "node": "Upsert Candidates (batched)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": true
   },
-  "versionId": "77ac3a64-fa9f-4594-9341-a80b173336e1",
+  "versionId": "df0abcc3-d433-427f-af20-c49fcfa15f7d",
   "meta": {
     "templateCredsSetupCompleted": true,
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
     "instanceId": "5229ad676c3a8d293c6db345f673ae85f2faeec97332d940e6b8ecea4c050d50"
   },
   "id": "7HsVm0pPg19CJX2k",
