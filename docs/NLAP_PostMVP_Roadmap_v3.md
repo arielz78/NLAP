@@ -238,7 +238,7 @@ Code nodes for anything without a native integration. No Node.js rewrite.
 > a backup submission path exists (see meetings/2026-05-14.md Talking
 > Point B). Decision_Log § 18 updated.
 
-> **When R5 closes:** complete a release writeup within one week — see `NA/Release_Writeup_Guide.md`.
+> **When R5 closes:** complete a release writeup within one week (see `NA/Release_Writeup_Guide.md`). Then review both metric docs — `NA/Vaughan_Metrics_Log.md` and `NA/VB_Portfolio_Case_Study.md` — and update them with this release's numbers. Finally, make the repo presentable to recruiters and potential clients: assess what's stale, missing, or unflattering (README, committed code/workflows, docs) and push whatever's needed so the public-facing artifact reflects the work. Judgment call each time, not a fixed checklist — the writeup is the source material for it.
 
 ---
 
@@ -396,7 +396,7 @@ formula until that list is in hand.
 - Quality floor and date spread constraints active
 - Swap rate tracking begun (URL-match script needed to automate — §25)
 
-> **When R6 closes:** complete a release writeup within one week — see `NA/Release_Writeup_Guide.md`.
+> **When R6 closes:** complete a release writeup within one week (see `NA/Release_Writeup_Guide.md`). Then review both metric docs — `NA/Vaughan_Metrics_Log.md` and `NA/VB_Portfolio_Case_Study.md` — and update them with this release's numbers. Finally, make the repo presentable to recruiters and potential clients: assess what's stale, missing, or unflattering (README, committed code/workflows, docs) and push whatever's needed so the public-facing artifact reflects the work. Judgment call each time, not a fixed checklist — the writeup is the source material for it.
 
 ---
 
@@ -463,7 +463,7 @@ formula until that list is in hand.
 - Retraining trigger defined
 - Measurable NeedsReview rate reduction vs pre-R7 baseline
 
-> **When R7 closes:** complete a release writeup within one week — see `NA/Release_Writeup_Guide.md`.
+> **When R7 closes:** complete a release writeup within one week (see `NA/Release_Writeup_Guide.md`). Then review both metric docs — `NA/Vaughan_Metrics_Log.md` and `NA/VB_Portfolio_Case_Study.md` — and update them with this release's numbers. Finally, make the repo presentable to recruiters and potential clients: assess what's stale, missing, or unflattering (README, committed code/workflows, docs) and push whatever's needed so the public-facing artifact reflects the work. Judgment call each time, not a fixed checklist — the writeup is the source material for it.
 
 ---
 
@@ -659,7 +659,7 @@ formula until that list is in hand.
 - Mississauga pipeline running end-to-end via config only
 - Client has run Mississauga pipeline independently at least once
 
-> **When R8 closes:** complete a release writeup within one week — see `NA/Release_Writeup_Guide.md`. This is also the point to compile the full project portfolio writeup across all releases — R8 is the handoff, so the complete record matters most here.
+> **When R8 closes:** complete a release writeup within one week (see `NA/Release_Writeup_Guide.md`). Then review both metric docs — `NA/Vaughan_Metrics_Log.md` and `NA/VB_Portfolio_Case_Study.md` — and update them with this release's numbers. Make the repo presentable to recruiters and potential clients: assess what's stale, missing, or unflattering (README, committed code/workflows, docs) and push whatever's needed so the public-facing artifact reflects the work. Judgment call each time, not a fixed checklist — the writeup is the source material for it. This is also the point to compile the full project portfolio writeup across all releases — R8 is the handoff, so the complete record matters most here.
 
 ---
 
