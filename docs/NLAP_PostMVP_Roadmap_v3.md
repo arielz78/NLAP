@@ -124,9 +124,13 @@ validated pipeline — not before it.
 ---
 
 ### Release 5 — Source Expansion + Multi-Tenant Foundation
-**Owner: Nathan | Deadline: June 4 | After R5: Nathan pivots to PI for VB, Dependant on Ariel scoping out what's needed for PI to be working / MVP**
 
-**Success =** Approved-candidate pool size ≥ 75 per cycle (3:1 ratio against 25 slots) sustained across 3 consecutive runs.
+> **⚠️ STALE — see `docs/r5/R5_Scope.md` (R5 Status Snapshot) for authoritative current state (updated 2026-06-16).**
+> Superseded below: **Owner** is Ariel (solo, took over 2026-06-04), not Nathan; the **June 4 deadline** passed and is re-baselined; the **"Approved ≥ 75" success line** is replaced by New+Approved + per-issue in-window depth (Decision_Log §37); the **"top 2–3 sources"** scope expanded to 5 sources / 7 branches live (+B4/B5 pending). Header and exit criteria below are kept for historical context only.
+
+~~**Owner: Nathan | Deadline: June 4 | After R5: Nathan pivots to PI for VB, Dependant on Ariel scoping out what's needed for PI to be working / MVP**~~
+
+**Success =** Approved-candidate pool size ≥ 75 per cycle (3:1 ratio against 25 slots) sustained across 3 consecutive runs. *(Superseded — see banner above.)*
 
 **Exit criteria:**
 - Source audit complete — all events from 5–7 past issues tallied by

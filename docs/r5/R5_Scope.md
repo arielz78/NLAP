@@ -12,6 +12,37 @@
 
 ---
 
+## R5 Status Snapshot (as of 2026-06-16)
+
+Single source of truth for "where are we." The roadmap's R5 header is stale; this supersedes it.
+
+**Phase:** W2a (additive source branches) — in progress. W1 + W1→W2 gate cleared 2026-06-06.
+
+**Done:**
+- W1 complete: #33 (source audit + config), #53 (domain tally), #57 (field-inventory gap) all closed.
+- **Live source set: 5 sources / 7 fetch branches** — Eventbrite (pre-R5), AllEvents ×3 cities (Vaughan/RHill/Markham), McMichael REST, TRCA RSS (Kortright + Black Creek; JSON-LD scrape retired), BiblioCommons.
+- Bugs closed: #58 (RSS pub-date drop), #60 (UniqueEventID normalization), upsert Status-reset bug (Decision_Log §40).
+- **Unplanned but shipped** (the bulk of the "deviation"): R1 perf overhaul ~24× (Historical table retired, batched HTTP upsert, intra-run dedup); `overlapAudit.js` cross-source dedup tool; source-probe methodology + `R5_ScrapeBlueprint.md` + DevTools coverage audit + integration-tier ranking.
+
+**In flight / next:**
+- **B4 visitvaughan.ca, B5 unionville.ca** — probed, not built (see W2a Frontier block below). Closes W2a source coverage.
+- Field-inventory exhaustive sweep at ingestion close (gate in the Frontier block).
+
+**Open / deferred:**
+- #59 geo-leakage (W2c) — OPEN.
+- W2b (Eventbrite retrofit) + W2c (guards/geo-filter/RSS) — R6-enabling fast-follow, ship after R5 sign-off, do not block it.
+- #35 W3 (Facebook manual intake + pool checks) — OPEN.
+- Backlog sources confirmed PASS but not built: Meetup (Tier 3), CityPlayhouse (Tier 3).
+
+**R5 sign-off gate:** pool floor measured as **per-issue in-window depth** (Decision_Log §37) — **not** the stale roadmap "Approved ≥ 75".
+- **Aggregate depth — CLEARED (measured 2026-06-16 via `scripts/depthCheck.js`).** Next 4 weekly windows: 282 / 196 / 147 / 91 eligible candidates vs the 125 floor. First 3 clear comfortably; the 4th (07-09, −34) is far-horizon falloff that each R1 run backfills, not a real shortage. The §37 thin-window trap is absent. Re-run `depthCheck.js` after each R1 to keep watch.
+- **Caveat:** supply is ~99% `New` — editorial throughput (Approved) is now the binding constraint, not ingestion. That's an R7/process problem, not R5's.
+- **Per-segment depth — DEFERRED to R7.** Segment-level starvation needs trustworthy classification; aggregate depth can't see it. Evaluated when R7 lands. So R5's *supply* objective is met; segment distribution is the only open part of the gate.
+
+**Deviation read:** the v3 roadmap scoped "top 2–3 sources." Actual is a much broader source set plus a methodology/perf-infrastructure layer that was never a scoped deliverable. This is **expansion + depth, not drift off-target** — but R5 is materially bigger than the roadmap describes, and the success metric was redefined mid-flight (§37).
+
+---
+
 ## W1 — Source Audit + Newsletter Config Design
 
 **Effort:** ~5h (was ~3h; +Task 3 field inventory, +Task 3.5 candidate-depth measurement) | **Blocks:** W2
@@ -131,6 +162,35 @@ W2 is ~10–15h and contains one live-table mutation mixed with safe additive wo
 1. **R5 sign-off is gated on pool size (W2a + W3), not on the R6-substrate work.** R5 is "done" when the approved pool hits ≥125 over 3 runs. W2b (#4 retrofit) and the substrate guards (#8) make the pool *better for R6* but don't make it *bigger* — they are **R6-enabling fast-follow**, shipped after R5 is signed off, and they do not block it. Capturing `LocationName` on *new* branches (W2a) is free and stays; *retrofitting the existing branch* (W2b) is the separable risk.
 
 2. **W2b ships alone.** Never bundle the live Eventbrite mutation into a cutover with other changes. One change, one cutover, one Thursday of verification — so a pool anomaly has exactly one suspect.
+
+### B4/B5 — Current W2a Frontier + Field-Inventory Gate (running start, added 2026-06-16)
+
+**Where W2a actually stands** (the table above is stale — it still names TRCA+McMichael as the W2a build): AllEvents (3-city: Vaughan/RHill/Markham), McMichael REST, TRCA RSS (Kortright), BiblioCommons are all **live**. Remaining W2a branches: **B4 = visitvaughan.ca, B5 = unionville.ca** — both fully probed in `source_decision_sheet.md`, neither built. These two close R5 source coverage.
+
+Everything below is the build-ready synthesis so the next session is a running start, not a re-read.
+
+**B4 — visitvaughan.ca | Tier 1 (direct JSON — optimal; nothing easier exists)**
+- `POST admin-ajax.php` body: `action=haven_calendar&search_date=YYYY-MM-01&dataType=json`
+- Parse `data.results` (keyed by date string) → `list_items[]`
+- Map: `product_name`→title, `product_startdate`→startDate, `product_enddate`→endDate, `product_link`→url, `product_location`→LocationName, `product_city`→city
+- **Loop 2 months** — `search_date` is monthly, so query current + next month to cover a 10-day window that crosses a month boundary
+- Geo-filter on lat/lng or address — **NOT** `product_municipality` (tags non-Vaughan events as Vaughan)
+- Dedup risk: re-lists McMichael (already a branch) → check overlapAudit after first run
+
+**B5 — unionville.ca | Tier 4 (HTML-card scrape — floor tier, but confirmed genuine ceiling: feeds return empty, WP REST dates locked in ACF)**
+- `POST admin-ajax.php` body: `action=load_upcoming_events` → HTML cards
+- Parse classes: `card-title`, `card-date`, `card-time`, `card-location`, `card-desc`, `btn-learn-more` href
+- Two loose ends to nail at build: (1) `btn-learn-more` href regex not finalized; (2) `card-date` text→ISO parser for range format ("June 6, 2026 to June 7, 2026")
+- Filter the window on startDate, not endDate (recurring events span months, e.g. "Music on The Street" Jun–Sep)
+
+**Cross-cutting (both — these are traps the pipeline already hit, not optional polish):**
+- **Step 0:** re-probe each endpoint AND dump the FULL raw response, inventory *every* key — probes are from 2026-06-06 and only captured the fields we knew we needed (the AllEvents `score` lesson).
+- **Entity-decode check against existing Airtable values** before writing — both are WordPress `admin-ajax`, the exact McMichael §39 risk class where raw HTML entities silently produce duplicate `UniqueEventID`s instead of upserting.
+- Map the real event date to startDate, never `pubDate` (Issue #58 silent-drop trap).
+- Additive Merge inputs, confirm append mode, never map `Status`.
+- After each lands → re-run `overlapAudit.js`, confirm `crossSource` ~0. Venue/city sites are the **highest** dedup risk — they re-list aggregator (Eventbrite/AllEvents) events more than aggregators re-list each other.
+
+**Field-inventory gate — exhaustive sweep at ingestion-phase close (R5; do NOT do piecemeal).** Once B4/B5 are built and the source set is frozen, do one pass inventorying *every* key each source's raw response returns — not just the consumer-driven required set — and update the **Field Audit Status** table in `source_decision_sheet.md` (currently 1 of 5 ✅: AllEvents done; McMichael / TRCA RSS / BiblioCommons / Eventbrite open; B4/B5 to be added). Capture stays **cost-split** (cheap signals folded into DescriptionRaw now, expensive/structured extraction deferred to the R6 formula-vs-LLM decision per the R6-Substrate Lens below) — this step is *inventory*, so R6 is designed on a known substrate, not a guessed one. This is the tripwire on the failure mode that triggered the R6 redesign (`LocationName` discovered 0% populated after signals were built on the assumption it existed).
 
 ### Safe Execution — Read This Before Touching Anything
 

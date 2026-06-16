@@ -1396,3 +1396,21 @@ Investigated the 114 same-key collapses on a 659-record run: 38 cross-source (Al
 
 ---
 
+## 44. Pipeline Observability — Post-R1 Health-Check Suite + Integrity Gate; One Source of Truth Per Fact (2026-06-16)
+
+**Decision: every R1 run is followed by a four-check health suite (`scripts/postRunChecks.js`: snapshot → integrity → overlap → depth). The integrity check is the load-bearing one — it diffs consecutive snapshots and fails on the two corruption signatures no legitimate flow produces (a Candidate `Approved → New`/blank, or a `Lock=true` IssueItem losing its lock or vanishing). Separately: each fact in the doc system has exactly one maintained home; everything else points to it.**
+
+*Decided 2026-06-16, Ariel + Claude. Prompted by a gutcheck of the project's own tracking practice during B4/B5 prep.*
+
+### Why a monitoring layer now
+
+The pipeline already had three useful checks (snapshot, overlap, depth) but none guarded the one failure mode that is effectively **irreversible**: silent overwrite of an editor's decision. §41 (the upsert-reset bug) proved that class is real and can sit latent for months — and the editorial signal it corrupts is also the R6/R7 training ground truth, so the damage compounds downstream. The integrity check is a targeted regression guard aimed exactly at that class, written for near-zero false positives (it ignores legitimate transitions like `New → Approved` and `Approved → Rejected`). A scheduler running it silently would be theater — the value is the alarm reaching a human, so a failure exits nonzero and (when wired) notifies; for now it runs by hand and the console is the alarm.
+
+**Scope/altitude:** this is data-reliability *hygiene* on a small production pipeline, not a platform. ~150-line scripts hitting the API and diffing JSON. The judgment (aim the guard at the irreversible asset) is the point, not the code. Trigger stays by-hand while R1 is manual/dev; auto-firing is deferred to when R1 goes scheduled (GitHub #62), and the suite living *inside* the pipeline for handoff is an R8 question (#61).
+
+### Why one-source-of-truth, and the rule
+
+The same fact (R5 status, success metric, source count) lived in the roadmap *and* R5_Scope *and* Decision_Log — and they had silently drifted out of agreement, because copied facts drift by default. **Rule: release-level *status* lives only in the active Scope doc's Status Snapshot; `Execution_Log.md` is the chronological per-session log and does not restate status; the roadmap is frozen intent. On conflict, the Scope snapshot wins for status, Decision_Log wins for decisions.** The roadmap got a stale-redirect banner and `/start` was repointed at the snapshot, so the entry ritual and the source of truth no longer diverge.
+
+---
+
