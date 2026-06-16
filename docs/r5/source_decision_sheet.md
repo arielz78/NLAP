@@ -1,622 +1,211 @@
-# Source Decision Sheet – Week 1 (Corrected to match your screenshot links)
+# Source Decision Sheet
+
+**What this doc is:** the single source of truth for **per-source integration method + field inventory + verdict**. One job. It answers "for source X, what's the confirmed method, endpoint, what fields does it carry, and is it a PASS/DROP?"
+
+**What this doc is NOT:** it does not own *decisions* (→ `Decision_Log.md`), *session narrative* (→ `Execution_Log.md`), or *release status* (→ `R5_Scope.md` snapshot). When a probe produced a decision, it's one-lined here and linked to the Decision_Log §.
+
+**Structure:**
+1. **Source Register** — the live reference table. Update rows in place; never goes stale.
+2. **Per-Source Build Reference** — stable technical detail (endpoints, payloads, field maps, traps) for live + build-ready sources.
+3. **Methodology** — the probe hierarchy + tier definitions (stable).
+4. **Probe Log** — append-only chronological record of what was probed/found/overturned.
 
 ---
 
-## Field Audit Status — live branches (added 2026-06-12)
+## 1. Source Register
 
-For each live source branch: have we pulled a full sample response and inventoried every available field — not just what we needed at build time, but everything that could feed R6 scoring or R7 classification?
+Status legend: **Live** (in R1) · **Ready** (probed, build-ready) · **Backlog** (PASS, not built) · **Dropped** · **Retired** (superseded).
 
-| Source | Full field audit done? | Notes |
-|--------|----------------------|-------|
-| AllEvents | ✅ 2026-06-12 | All keys documented. `score`, `organizer`, `categories` captured in DescriptionRaw. `featured`, `tags`, `tickets.has_tickets`, `going.totalCount` (RSVP) available but not captured — low priority for now. |
-| McMichael REST API | ❌ open | Built 2026-06-07. Captured: title, start_date, end_date, url, description, categories. Full response shape not fully inventoried. |
-| TRCA RSS | ❌ open | Built 2026-06-12. Captured: title, start_date, end_date, url, description, location, organizer. Other `event_listing:*` fields not inventoried. |
-| BiblioCommons RSS | ❌ open | Built 2026-06-12. Captured: title, start_date, end_date, url, description, location (name + city), audience. Other `bc:*` fields not inventoried. |
-| Eventbrite API | ❌ open | Built pre-R5. Captured: title, start_date, url, venue, city. Full `destination_event` expand shape not inventoried. |
-| TRCA JSON-LD (Black Creek) | ➡️ retired 2026-06-12 | Superseded by TRCA RSS. Scrape branch deleted. |
-
-**Action:** Before closing R5, pull one sample response per open source and add any uncaptured fields worth keeping to this table and the relevant branch's normalize node.
-
----
-
-## Source Probe Methodology — Hierarchy of Methods (added 2026-06-06)
-
-When probing a new source for machine-readable event data, work top-to-bottom. Stop at the first method that returns clean, reliable data.
-
-**1. DevTools first (before any code)**
-Open the site in Chrome → DevTools → Network tab → Fetch/XHR filter → reload the page. Look for any XHR/fetch call returning event data (large JSON, or a call with "ajax", "api", "events", "calendar" in the name). Click it → Payload tab to get the action/parameters → replicate as a direct POST/GET. This catches: WordPress admin-ajax plugins (HavenDestinations, custom ACF loaders), REST-ish endpoints, and any dynamic data source. Should be the *first* move on any site that looks dynamic.
-
-**2. Check the main HTML document in DevTools**
-In the Network tab (All filter), click the first Doc request → Response tab. If the page is server-rendered, the event data will be in the HTML. This catches sites that look like SPAs but are actually rendered server-side (VPL being a prime example — dismissed as SPA, actually fully server-rendered).
-
-**3. Public feed endpoints (blind probe)**
-Try common paths: `/feed`, `/?feed=rss2`, `/?ical=1`, `/events.ics`, `/calendar.ics`. Works for WordPress RSS, The Events Calendar iCal, and other standard CMS plugins.
-
-**4. WP REST API**
-`/wp-json/wp/v2/types` → lists all registered post types. Then `/wp-json/wp/v2/{type}` for each event-like type. Catches WordPress sites with custom post types (CPTs) exposed via REST.
-
-**5. JSON-LD in page source**
-Server-fetch the page, extract `<script type="application/ld+json">` blocks, look for `@type: Event`. Works for sites using Schema.org markup (TRCA pattern). No auth, no browser needed.
-
-**6. HTML scraping**
-Server-fetch the page, parse HTML using known class names or structural patterns. Works when data is server-rendered but without structured markup (VPL `/programs` pattern). Fragile to redesigns but zero infrastructure.
-
-**7. Headless browser (last resort)**
-Puppeteer/Playwright — full Chrome rendering, extracts JS-populated content. Only justified when: (a) source is high-value and weekly, (b) all methods above are confirmed dead ends, (c) the maintenance cost of a broken scraper is acceptable post-handoff.
-
-**Lesson learned (2026-06-06):** Three sources (VPL, visitvaughan.ca, unionville.ca) were initially assessed as needing a headless browser or dropped. All three turned out to be fully automatable via methods 1–2. Blind endpoint probing (methods 3–5) without DevTools inspection led to premature DROP verdicts. **Always open DevTools before writing off a source.**
-
----
-
-## Integration Tier Ranking — ease *and* transferability (added 2026-06-07)
-
-The methodology above tells you *how to find* the best path on a given source. This ranks the *outcomes* once found — not just by how easy they are to wire up today, but by how much of that work transfers to the next client (Mississauga, future newsletters). Two sources can land in the same "good outcome, no headless browser" bucket and still differ sharply on transferability — that distinction is the point of this ranking.
-
-1. **Direct JSON/REST API** (purpose-built endpoint, structured response) — *AllEvents* (`api/events/list`), *McMichael* (`wp-json/tribe/events/v1/events`), *visitvaughan.ca* (`admin-ajax.php?action=haven_calendar`), *Eventbrite* (`city-browse`). Cleanest tier: one documented call, you control pagination/filters, response is purpose-shaped for the data you need.
-
-2. **JSON-LD** (`schema.org` standard markup embedded in page HTML) — *TRCA (Black Creek, existing live branch)*. One rung down in raw effort (fetch the whole page, extract a `<script type="application/ld+json">` block) but the parsing code is **standardized** — `@type: Event`, `location.address`, `organizer` mean the same thing on any site using schema.org. That standardization is what makes it transfer cleanly to a second client's sources without a rewrite. Note: TRCA also has a WP Event Manager RSS feed (`?feed=event_feed`) discovered 2026-06-10 — the new Kortright branch uses this RSS feed (Tier 1) rather than JSON-LD scraping.
-
-3. **Embedded app-state JSON** (framework-specific, non-standard blobs baked into the initial HTML) — *Meetup* (`__NEXT_DATA__`, Next.js page-props). Mechanically just as clean as tier 2 — single fetch, no browser, structured fields — but the shape is **bespoke per framework** (Next.js's GraphQL-style nesting won't resemble the next site's React/Vue/whatever blob). Each one needs its own one-off parser; none of that parsing logic transfers.
-
-4. **HTML-card scraping via ajax/admin endpoints** — *unionville.ca* (`load_upcoming_events` HTML cards), *VPL* (`/programs` server-rendered HTML). Functional, zero infrastructure, but fragile to redesigns and entirely bespoke per site — lowest transferability of the "working" tiers.
-
-5. **Headless browser required** — worst tier. Originally assigned to *Markham BiblioCommons*, but **overturned 2026-06-09** — the RSS feed at `/events/rss/all` was never probed (the DevTools pass only confirmed the React SPA was dead; it never checked feed paths). The RSS is headless-fetchable, structured, no auth required. BiblioCommons is now Tier 1 (RSS). No current sources remain in this tier.
-
-**Why this matters for scoping a second client:** tiers 1–2 are where reusable integration code lives — an API client or a JSON-LD parser written for one source has a real chance of working (or needing only minor changes) on a structurally similar source elsewhere. Tiers 3–4 are where you're budgeting for one-off, source-specific build time every single time, regardless of how clean any individual integration looks in isolation.
-
----
-
-
-## Previously closed sources — re-evaluation against DevTools method (2026-06-06)
-
-Three sources were dropped earlier in R5 probing. Re-evaluated below against the corrected methodology:
-
-**Markham BiblioCommons** — ⚠️ **OVERTURNED 2026-06-09 — DROP → PASS.** The 2026-06-06 re-verification confirmed the React SPA dead end correctly, but never probed feed paths — it stopped at DevTools/XHR and generalized "SPA has no data calls" to "source has no accessible data." The public RSS feed at `https://markham.bibliocommons.com/events/rss/all` requires no auth, is headless-fetchable via plain curl, and carries structured fields: `bc:start_date` (ISO datetime), `bc:location` with `bc:name`/`bc:city`/`bc:street`/lat-long, `category domain="Audience"` (Children, Seniors, etc.), title, link, description. Confirmed via curl 2026-06-09. This is the integration path the `R5_ScrapeBlueprint.md` explicitly documents for BiblioCommons. The SPA layer was the wrong surface — the RSS feed is the right one.
-
-**Meetup** — ⚠️ **OVERTURNED 2026-06-07 — see "Meetup Re-verification" section below.** The 2026-06-06 reasoning ("iCal caps at ~10/group, no DevTools investigation would change this") never actually opened DevTools on Meetup — it argued past the check instead of running it. A fresh DevTools pass on the *search/discovery page* (`meetup.com/find/ca--on--vaughan/`, not a per-group iCal export) found a completely different integration path: 37 unique structured events embedded directly in the page's `__NEXT_DATA__`, 13 of which pass the York Region geo-filter, spanning a 3-week window. The iCal-cap argument was correct but answered the wrong question — it's not the only path in. **Verdict flips from DROP to PASS.**
-
-**CityPlayhouse** — ⚠️ **OVERTURNED 2026-06-07 — see "CityPlayhouse Re-verification" section below.** The 2026-06-06 reasoning ("posts are ephemeral, Inoreader caches stale data, the actual event database is in Red61's proprietary system") was correct about the *WordPress news/RSS layer* — and wrong to generalize from it to "the content isn't accessible anywhere." It never actually opened the live ticketing storefront (`tickets.cityplayhouse.ca/events/`) in DevTools — it tested feeds and the news API, found them empty/ephemeral, and stopped. The storefront itself is a completely different, persistent, structured surface. **Verdict flips from DROP to PASS.**
-
-**Status: all three previously-dropped sources have now been overturned — Meetup (2026-06-07), CityPlayhouse (2026-06-07), and BiblioCommons (2026-06-09). BiblioCommons was the last hold, confirmed via a feed path that was never probed despite two prior re-verification passes that both stopped at the DevTools/XHR layer.**
-
-**Pattern worth naming:** of the three sources dropped before the DevTools-first methodology existed, two flipped on re-check — both times because the original probe tested the *wrong surface* (Meetup: per-group iCal export instead of the search/discovery page; CityPlayhouse: the news/RSS layer instead of the ticketing storefront) and then reasoned from "this surface is a dead end" to "this source is a dead end," skipping the step of asking whether a *different* surface on the same domain might hold the data. BiblioCommons is the one source where that generalization actually held — and notably, it's also the one where the original probe *did* open DevTools on the actual page being used. The lesson isn't "everything can be cracked" — it's "a DROP verdict is only as strong as the surface it was tested against; argument-based re-confirmations that skip re-opening DevTools on the *right* page reproduce the same blind spot the methodology was created to close."
-
----
-
-This sheet is based **only** on the URLs visible in your screenshot.
-
-## 1) Source list (from the image)
-
-| Category/Tag | URL |
-|---|---|
-| Events | https://blackcreek.ca/events/ |
-| Cooking class | https://www.longos.com/cooking-classes/in-person-classes |
-| Cooking class | https://littlekitchenacademy.com/locations/vaughan/ |
-| Kids classes | https://thechefupstairs.com/pages/kids-classes |
-| Events | https://mcmichael.com/upcoming-events/ |
-| Things to do | https://www.todocanada.ca/things-to-do-in-vaughan/ |
-| Activity | https://www.puttingedge.com/locations/vaughan/ |
-| Activity | https://www.pinotspalette.com/woodbridge |
-| Cooking class | https://rookstocooks.ca/ |
-| Seniors | https://www.meetup.com/find/ca--vaughan/seniors/ |
-| Spa | https://www.santehealingspas.com/spa-deals-thornhill |
-| Spa | https://sanctuarydayspas.com/menu/specials/ |
-| Floating spa | https://www.facebook.com/elementalwellnessstudio/ |
-| Spa | https://trubliss.ca/ |
-| Kids spa salon | https://www.glamagalparty.com/ |
-| Local news/events | https://www.onrichmondhill.com/ |
-| Events | https://www.experienceyorkregion.com/event/concerts-in-richmond-hill/ |
-| Food festival | https://jazzlicious.ca/ |
-| Ticketed experiences | https://feverup.com/en/toronto/candlelight |
-| Events | https://unionville.ca/things-to-do/events/ |
-| Events | https://www.richmondhill.ca/en/things-to-do/events.aspx |
-| Library events | https://markham.bibliocommons.com/v2/events |
-
-## 2) Week 1 triage decisions (best-first, per roadmap)
-
-I prioritized sources that are most likely to provide **structured** event data (RSS/Atom/iCal/JSON) with minimal scraping:
-
-### A) The Village at Black Creek
-- Primary URL: https://blackcreek.ca/events/
-- Likely cheapest working method: **Use the TRCA events calendar listing** (structured event pages)
-- Candidate structured source discovered:
-  - https://calendar.trca.ca/event_listing_category/the-village-at-black-creek/
-- Next probe (method order #1–#3):
-  1) check for RSS/Atom on calendar.trca.ca
-  2) check for iCal “.ics” export per event/list
-  3) if none, parse HTML (server-rendered) from category pages
-
-### B) Markham Public Library (BiblioCommons)
-- URL: https://markham.bibliocommons.com/v2/events
-- Likely cheapest working method: **HTML + embedded structured data** (often includes JSON-LD) or per-event **Add to Calendar (.ics)**
-- Next probe:
-  1) open an individual event page and look for “Add to calendar / iCal”
-  2) if present, harvest .ics links
-  3) else parse list HTML + JSON-LD
-
-### C) City of Richmond Hill
-- URL: https://www.richmondhill.ca/en/things-to-do/events.aspx
-- High probability there is a separate calendar backend:
-  - https://calendar.richmondhill.ca/ (confirmed via search results)
-- Candidate structured source discovered:
-  - https://calendar.richmondhill.ca/
-- Next probe:
-  1) look for “iCal / RSS” or “download” options beyond PDF
-  2) if only PDF is offered, treat as **blocked** for automation (unless you accept PDF parsing, which is later in the decision order)
-
-### D) McMichael (upcoming events)
-- URL: https://mcmichael.com/upcoming-events/
-- Many museum sites use WordPress event plugins that have iCal exports.
-- Next probe:
-  1) find the canonical events list page and look for iCal export
-  2) if plugin is “The Events Calendar,” typical patterns are /events/ with iCal endpoints
-  3) fallback: parse HTML list pages
-
-### E) Meetup “seniors” search page (Vaughan)
-- URL: https://www.meetup.com/find/ca--vaughan/seniors/
-- This is **not** a stable feed by itself.
-- Best approach:
-  1) pick 3–5 specific senior groups you trust
-  2) use each group’s iCal feed (Meetup supports /events/ical on group pages)
-- If you keep it as a search page, it’s effectively **blocked** without scraping.
-
-## 3) Week 1 deliverable target (from roadmap)
-
-- “Source Decision Sheet” (this doc)
-- At least **1 previously blocked source** producing ingestible output:
-  - Best candidates to get working fastest: **TRCA Black Creek category** or **Markham BiblioCommons .ics links**.
-
----
-
-## Task 3 — Source Probe Results (2026-06-05)
-
-Probed all 4 confirmed sources headlessly (curl + Node) to validate integration method and field coverage before any W2 build work.
-
-| Source | Method confirmed | title | date | LocationName | Verdict |
-|---|---|---|---|---|---|
-| TRCA | JSON-LD per event page (iCal dead — WordPress ignores `?ical=1`) | ✓ | ✓ | ✓ full address | **PASS** |
-| McMichael | iCal direct (`/events/?ical=1` and `/events/category/adult-programs/?ical=1`) | ✓ | ✓ | ✗ buried in description HTML | **PASS — flag for W2** |
-| Markham BiblioCommons | RSS (`/events/rss/all`) — headless, no auth | ✓ | ✓ (`bc:start_date`) | ✓ (`bc:city`, lat/long) | **PASS** (overturned 2026-06-09) |
-| Meetup | iCal direct, headless confirmed (no browser required) | ✓ | ✓ | ✗ not in feed | **PASS — flag for W2** |
-
-### Notes
-
-**TRCA integration path:**
-1. Fetch listing page (`/event_listing_category/the-village-at-black-creek/`) → extract event slugs
-2. Fetch each event page → parse `<script type="application/ld+json">` block where `@type = "Event"`
-3. Fields: `name` (title), `startDate`, `Location.name` (full address)
-
-### McMichael — UPGRADE COMPLETE 2026-06-07: live branch swapped from iCal to direct REST API
-
-**Status: shipped, cut over, verified.** See `Execution_Log.md` 2026-06-07 entry for the full build/debug record and `Decision_Log.md` §39 for a normalization issue this swap surfaced (pipeline-wide, not McMichael-specific — paused for resolution next session).
-
-**Result vs. the plan below:** 55 unique events landing per run (vs. 28 under iCal — close to the predicted ~2x), real `DescriptionRaw` content and `categories` now populated (folded into `DescriptionRaw` as classifier context, since Airtable's `Category` field is constrained to newsletter-segment options and can't take venue-side categories directly). Old iCal branch disabled — not deleted — for rollback.
-
-**Encoding lesson for future source migrations (especially W2c — visitvaughan.ca and unionville.ca are WordPress `admin-ajax.php`, same risk class):** the REST API returns titles with raw HTML entities (`&#8217;`) and Unicode smart quotes that don't byte-match the plain-text titles the old iCal feed had stored for the *same events* — silently producing duplicate `UniqueEventID`s instead of matching/upserting into existing records. Decoding entities to their typographically "correct" curly-Unicode form is *not* automatically right — it depends on what convention the existing stored data already uses (and that turned out to be inconsistent *across* sources, not just McMichael — see Decision_Log §39). Check what's already in Airtable before assuming a "correct" decode target.
-
----
-
-**Original upgrade plan (2026-06-06, now superseded by the completed build above — kept for historical reference):**
-
-**Discovery:** Response headers on `mcmichael.com/events/` advertise a public REST API root:
-```
-X-Tec-Api-Origin: https://mcmichael.com
-X-Tec-Api-Root: https://mcmichael.com/wp-json/tribe/events/v1/
-X-Tec-Api-Version: v1
-```
-This is **The Events Calendar (Modern Tribe)** plugin's REST API. Cloudflare returns 403 to a bare server-side request, but a GET with full browser-like headers (`User-Agent`, `Accept`, `Referer: https://mcmichael.com/events/`, `Sec-Fetch-*`) passes cleanly — no headless browser needed.
-
-**Confirmed working:**
-```
-GET https://mcmichael.com/wp-json/tribe/events/v1/events?per_page=N
-```
-Returns `{ events: [...], total, total_pages }` — paginated, clean JSON.
-
-**Why this is strictly better than iCal:**
-1. **~2x yield** — API reports **56 total events** across 6 pages vs. **28 records** currently landing via the iCal branch. Likely the iCal feed is a curated/truncated subset.
-2. **`categories` included** (e.g. "Tours", "Accessible Programs") — iCal has none. Solves a gap that was previously written off as unsolvable for this source.
-3. **Real `description` field with rich HTML** — the current McMichael branch hardcodes `DescriptionRaw: ''` because iCal has nothing usable. The API's `description` field is full event copy (exhibition context, program details). This directly improves R2 classification input — the prior session noted McMichael's high NeedsReview rate was attributed to "title-only classification, same as TRCA." Real description text should reduce that.
-4. **Clean structured `start_date`/`end_date`** with times — no iCal line-unfolding/parsing needed.
-
-**Venue field is empty (`venue: []`) — not a gap.** Every McMichael event happens at the museum itself; they don't bother setting a per-event venue. The current branch's hardcoded `locationName = "McMichael Canadian Art Collection"` remains correct and should be kept as-is regardless of which fetch method is used.
-
-**Recommendation:** Swap the McMichael branch from iCal fetch+parse to a paginated REST API loop (`page=1..total_pages`, `per_page=50` or similar) before/alongside W2c. This is a live branch already in production — treat as a planned upgrade, not an emergency; coordinate the swap with a verification pass (re-run R1, confirm record count moves toward ~56, spot-check categories and descriptions land correctly in Airtable).
-
-**~~McMichael LocationName gap (superseded)~~:** No `LOCATION` field in iCal records — location is embedded in the `DESCRIPTION` HTML blob. Moot — see above, hardcoded LocationName is correct either way.
-
-**Meetup LocationName gap:** No location field in the iCal feed at all. Same handling as McMichael — blank is acceptable per R5_Scope hard-reject vs soft-required distinction.
-
-**Markham BiblioCommons — DROP OVERTURNED 2026-06-09:** Original drop rationale (React SPA, no data calls visible in DevTools) was correct about the `/v2/events` page but wrong to stop there. The public RSS feed `https://markham.bibliocommons.com/events/rss/all` was never probed — confirmed working via curl with no auth, no browser required. Fields: `bc:start_date`, `bc:end_date`, `bc:location` (name + city + street + lat/long), `category domain="Audience"`, title, link. This is the exact pattern documented in `R5_ScrapeBlueprint.md` §3 (BiblioCommons section). Integration path: native n8n RSS Read node + normalize `bc:start_date` (not `isoDate`). Geo-filter: `bc:city` field. Audience segment signal: `category domain="Audience"` values (Children → For Families, Seniors → For Golden Age Readers).
-
-**Net: 3 confirmed sources** (TRCA, McMichael, Meetup). W2 builds branches for these three only.
-
-### BiblioCommons — full verification confirmed (2026-06-12)
-
-Queried all 123 Airtable records from the R1 run that included the BiblioCommons branch. **Zero missing DescriptionRaw, zero missing City** across the full dataset. City distribution correct (Vaughan and Markham, CITY_MAP working). Branch confirmed healthy — item closed.
-
----
-
-## Meetup Group Audit (2026-06-06)
-
-The two groups Nate selected for the config were pulled from real past newsletter issue URLs — they appeared in 5 Couples placements across the last 7 issues. Likely entered via Facebook manual intake, not directly from Meetup.
-
-| Group | iCal events | York Region events | Verdict |
-|---|---|---|---|
-| `torontobikemeetup` | 10 (iCal cap) | 0 — all Toronto/Niagara cycling routes | **DROP** |
-| `women-that` | 0 — defunct | — | **DROP** |
-
-**iCal cap:** Meetup iCal feeds cap at ~10 upcoming events regardless of how many the group has scheduled. Web page showed 19 for `torontobikemeetup`; iCal returned 10. Applies to any Meetup group added to the pipeline.
-
-**Decision:** Both groups dropped. Any Meetup events will come through Facebook manual intake (W3). Meetup branch not built for R5. York Region alternatives (Forest Footprints, Dim Sum Meetup) still to be probed — if viable, add as additional groups rather than replacements.
-
-### York Region alternatives probed (2026-06-06)
-
-| Group | Members | iCal events | York Region yield | Verdict |
-|---|---|---|---|---|
-| Forest Footprints (Richmond Hill) | 811 | 10 (cap) | ~3/10 after geo-filter — no LOCATION field | **Skip** |
-| Dim Sum Meetup (Markham) | 1,186 | 1 | 1 event per cycle | **Skip** |
-
-**Final Meetup decision for R5:** Skip entirely. iCal cap of ~10 events per group + heavy geo-filtering = 2–4 usable events per run at best. AllEvents direct branch is the higher-ROI lever. Revisit after AllEvents lands if pool is still short. Any Meetup events enter via Facebook manual intake (W3).
-
----
-
-## AllEvents.in Probe (2026-06-06, superseded same day — direct JSON API found)
-
-| Source | Method confirmed | title | date | LocationName | url | Verdict |
+| Source | Status | Method (Tier) | Endpoint | Verdict | Field audit | Ref |
 |---|---|---|---|---|---|---|
-| AllEvents Vaughan | **Direct JSON API** (`POST allevents.in/api/events/list`) | ✓ | ✓ Unix timestamp + display string | ✓ full venue object incl. lat/long | ✓ allevents.in event URLs | **PASS — upgraded path** |
+| **Eventbrite** | Live (pre-R5) | `city-browse` internal API (T1) | York Region `place_id=101740741` | PASS | ❌ open | §2 |
+| **AllEvents** (Vaughan / RHill / Markham) | Live | Direct JSON API (T1) | `POST allevents.in/api/events/list` | PASS | ✅ 2026-06-12 | §2 |
+| **McMichael** | Live | Tribe REST API (T1) | `wp-json/tribe/events/v1/events` | PASS | ❌ open | §2 · DL§39 |
+| **TRCA — Kortright** | Live | WP Event Manager RSS (T1) | `?feed=event_feed&search_categories=trca` | PASS | ❌ open | §2 |
+| **TRCA — Black Creek** | Retired 2026-06-12 | JSON-LD scrape (T2) | — | superseded by Kortright RSS | — | §4 |
+| **BiblioCommons** (Markham) | Live | Public RSS (T1) | `markham.bibliocommons.com/events/rss/all` | PASS | ❌ open | §2 |
+| **B4 — visitvaughan.ca** | **Ready** | `admin-ajax` direct JSON (T1) | `POST admin-ajax.php?action=haven_calendar` | PASS | ⏳ at build | §2 |
+| **B5 — unionville.ca** | **Ready** | `admin-ajax` HTML cards (T4) | `POST admin-ajax.php?action=load_upcoming_events` | PASS | ⏳ at build | §2 |
+| **Meetup** | Backlog (deferred) | `__NEXT_DATA__` (T3) | `meetup.com/find/ca--on--vaughan/` | **PASS** — not built for R5 (low yield); revisit if pool short; events via Facebook (W3) meanwhile | n/a | §2b |
+| **CityPlayhouse** | Backlog | 2-step crawl + Red61 JSON (T3) | `tickets.cityplayhouse.ca/events/` | PASS, not built | n/a | §2b |
+| **VPL** | Backlog | server-rendered HTML scrape (T4) | `vaughanpl.info/programs` | PASS, not built | n/a | §2b |
+| **Richmond Hill** (city) | Unresolved | calendar backend, method TBD | `calendar.richmondhill.ca` | HOLD — never fully probed | n/a | §2b |
 
-### Superseding integration path (found via DevTools, 2026-06-06)
-
-DevTools Fetch/XHR inspection of `/vaughan-on/all` revealed the page loads events via a clean paginated JSON API — `combined-eventlist.js` fires `POST https://allevents.in/api/events/list`. This replaces the JSON-LD scraping plan below entirely.
-
-**Request payload (POST body):**
-```json
-{
-  "city": "vaughan",
-  "country": "canada",
-  "page": 0,
-  "rows": 9,
-  "popular": true,
-  "venue": [],
-  "keywords": "",
-  "type": "",
-  "sdate": "",
-  "edate": "",
-  "ids": []
-}
-```
-Confirmed working with `rows: 20` directly via server-side POST — no browser, no auth, no cookies required.
-
-**Response shape — clean structured JSON per event:**
-- `eventname` — title
-- `start_time` (Unix timestamp) + `start_time_display` (human string, e.g. "Sun Jun 07 2026 at 10:00 am")
-- `end_time` / `end_time_display`
-- `venue.street`, `venue.city`, `venue.state`, `venue.country`, `venue.latitude`, `venue.longitude`, `venue.full_address`
-- `event_url` (canonical allevents.in link)
-- `categories` (array, e.g. `["entertainment","zumba","dance","workshops","health-wellness"]`)
-- `organizer.name`
-- `tickets.has_tickets`
-
-**Why this is strictly better than the JSON-LD scrape plan:**
-1. **Paginated JSON loop** (`page`/`rows`) replaces the 3-step scrape (fetch listing pages → regex slug extraction → fetch + parse JSON-LD per event). One HTTP call per page, no HTML parsing.
-2. **Structured venue object with lat/long** is stronger geo-filter material than the JSON-LD `addressLocality` string, which was confirmed mis-tagged (Toronto events tagged "Vaughan"). Full street address + coordinates lets the geo-filter work on real geography, not a self-reported label.
-3. **Categories array included** — reopens the "category omit for R5" decision (closed 2026-06-06 on the basis that no confirmed source carried a clean category field). AllEvents does. Worth revisiting scope when W2c is built.
-4. **No ad-card noise** — API returns events only; no embedded ad divs to filter (vs. the 45-JSON-LD-vs-50-card gap found in the HTML scrape).
-
-**Geo-filter still required (W2c):** `venue.city` is more trustworthy than `addressLocality` but not guaranteed clean — confirm on a larger sample before treating it as authoritative. AllEvents branch still ships in the same slice as W2c.
-
-**Dedup risk unchanged:** AllEvents aggregates from Eventbrite and other sources. Title variations may produce near-duplicate records → different UniqueEventID → two records. Assess after first run.
-
-**B2B leakage unchanged:** "Canada Automotive Summit" and similar will appear. R2 rejects these — not a pipeline concern.
-
-### Original JSON-LD scrape plan (superseded, kept for reference)
-
-**Integration path:**
-1. Fetch `https://allevents.in/vaughan-on/all` (server-side rendered — no browser required, returns full event list)
-2. Extract `<script type="application/ld+json">` blocks
-3. Find the block where `@type = "Event"`
-4. Fields: `name` (title), `startDate` (clean YYYY-MM-DD), `url`, `location.name`, `location.address.addressLocality`
-
-**Yield:** `/vaughan-on/all` → 135 events across 3 pages (45 per page). Page count fluctuates with season.
-
-**Trending page (confirmed 2026-06-06):** `/vaughan-on` homepage "Trending Events" — 9 events, all present in `/vaughan-on/all`. Strict subset.
-
-**JSON-LD completeness:** 45 JSON-LD events vs 50 event-card divs per page. Gap of 5 = ad cards.
-
-**RSS:** Feed URL exists (`https://allevents.in/vaughan-on/RSS`) but timed out on probe. Not used — direct API above is cleaner than either RSS or JSON-LD.
-
-### Build result (2026-06-12)
-
-Branch built and verified in R1. Two nodes: `AllEvents Fetch` (HTTP POST, `rows=500`, User-Agent header) → `AllEvents Normalize` (geo-filter via CITY_MAP, locationName from `full_address` first segment, decodeEntities, categories/organizer/score folded into DescriptionRaw).
-
-**Pre-build probe confirmed — response shape corrections from original notes:**
-- Top-level key is `data`, not `events`
-- `venue.name` is always empty — locationName must be extracted from `full_address` as the segment before the first comma (e.g. `"Bellvue Manor, 8083 Jane St..."` → `"Bellvue Manor"`)
-- `categories` is an array, not a single string
-- `score` (AllEvents internal popularity score) and `organizer` available as bonus fields — both folded into DescriptionRaw with `AllEvents:` prefix for R2 classifier context and future R6 scoring
-- `rows=500` returns all 233 events in one request — no pagination needed at current volume
-- All 233 events returned with `venue.city = "Vaughan"` — geo-filter passed everything through cleanly on this run
-
-**Execution #440 results:** 233 fetched → 154 survived DateWindow (events too far in future dropped, expected) → 154 upserted. LocationName clean, Start Date correct (Unix timestamp → ISO, not publication date), DescriptionRaw populated, Status automation firing correctly.
-
-**Gap identified:** Branch only queries `city=vaughan`. Richmond Hill and Markham events that AllEvents correctly tags under their own city are not captured. Two additional Fetch nodes (`city=richmond hill`, `city=markham`) queued for next session.
-
-**CityPlayhouse (tickets.cityplayhouse.ca) — DROP:** Full probe 2026-06-06. Stack: WordPress 6.9.4 + Red61 ticketing theme. RSS feed (`/feed/`, `/news/feed/`), WP REST API (`/wp-json/wp/v2/news`), and all post-type-specific feeds return 200 with valid structure but 0 items. The 13 Inoreader items are stale cache — site publishes WordPress news posts per show when first listed, Inoreader picks them up, then posts are deleted/unpublished. Dates were parseable from description text ("June 27, 2026") but source is unreliable by design: content appears briefly then disappears. Actual event database is in Red61's proprietary system, inaccessible without a partnership. Not viable for a weekly automated pipeline. Verdict: dropped.
+**Field audit = ❌ open:** a full raw-response sweep (every key, not just the fields used at build) hasn't been done. Required before R5 close — see the [field-inventory gate in R5_Scope](R5_Scope.md). AllEvents is the only one swept.
 
 ---
 
-## visitvaughan.ca/calendar Probe (2026-06-06)
+## 2. Per-Source Build Reference
 
-| Source | Method confirmed | title | startDate | endDate | LocationName | city | Verdict |
-|---|---|---|---|---|---|---|---|
-| visitvaughan.ca | POST admin-ajax.php `action=haven_calendar` | ✓ | ✓ ISO datetime | ✓ ISO datetime | ✓ full address | ✓ `product_city` + `product_municipality` | **PASS — couples with W2c geo-filter** |
+Stable technical detail per live/ready source. This is build + maintenance reference, not narrative.
 
-**Integration path:**
-1. POST to `https://visitvaughan.ca/wp-admin/admin-ajax.php` with body `action=haven_calendar&search_date=YYYY-MM-01&dataType=json`
-2. Parse `data.results` — keys are date strings (`"2026-06-06"`), each has `list_items[]`
-3. Fields: `product_name` → title, `product_startdate` → startDate (YYYY-MM-DD HH:MM:SS), `product_enddate` → endDate, `product_link` → url, `product_location` → LocationName, `product_city` → city, `product_latlng` → lat/lng for geo-filter
-4. No auth required. No headless browser.
+### Eventbrite (live, pre-R5)
+- Internal `city-browse` API — same call the live Eventbrite site makes (not a workaround). Placeholder token accepted (no real CSRF auth needed).
+- **Geo level:** Vaughan-specific `place_id=85633793` returns **0 events** — must use York Region `place_id=101740741`.
+- **Substrate gap (R6):** existing branch does **not** write `LocationName`/`Source` (0% populated). Retrofit = W2b, ships alone (Decision_Log §; R5_Scope #4).
+- ~30 foreign domains (`.de`/`.fr`/`.sg`/`.com.au`) leak past geo-filter — W2c #5.
 
-**Yield:** ~20–30 events per month visible for June–July 2026. Events are curated by Tourism Vaughan — higher editorial quality than raw aggregators.
+### AllEvents (live — Vaughan / Richmond Hill / Markham branches)
+- `POST https://allevents.in/api/events/list`, body: `{"city":"vaughan","country":"canada","page":0,"rows":500,...}`. `rows=500` returns full set, no pagination at current volume. Three branches, one per city.
+- **Response: top-level key is `data`** (not `events`).
+- Field map: `eventname`→title · `start_time` (Unix)→StartDate · `end_time`→EndDate · `event_url`→Link · **`venue.name` always empty** → locationName = `full_address` segment before first comma · `venue.city`→geo-filter (CITY_MAP).
+- Folded into DescriptionRaw with `AllEvents:` prefix: `categories[]`, `organizer.name`, `score` (internal popularity).
+- Available but uncaptured (low priority): `featured`, `tags`, `tickets.has_tickets`, `going.totalCount` (RSVP).
+- Build: `AllEvents Fetch` (HTTP POST, UA header) → `AllEvents Normalize` (geo + decodeEntities). Exec #440: 233 fetched → 154 in-window.
 
-**Geo-filter required (W2c):** `product_municipality` field shows "Vaughan" even for some non-Vaughan events (e.g. "Lost & Found" at North York address tagged as Vaughan municipality). Use lat/lng or address string for geo-filter, not municipality field alone. Ships in same slice as W2c — do not enable before geo-filter is live.
+### McMichael (live — REST, upgraded from iCal 2026-06-07)
+- `GET https://mcmichael.com/wp-json/tribe/events/v1/events?per_page=50&page=N`. Cloudflare 403 on bare request — **passes with full browser headers** (`User-Agent`, `Accept`, `Referer: https://mcmichael.com/events/`, `Sec-Fetch-*`). No headless needed.
+- Returns `{events:[], total, total_pages}`. ~55 events/run (vs 28 under iCal).
+- Field map: `title`, `start_date`/`end_date` (clean, with times), `url`, `description` (rich HTML → DescriptionRaw), `categories[]`.
+- **`venue:[]` is empty by design** — every event is at the museum. Hardcode `locationName = "McMichael Canadian Art Collection"`.
+- ⚠️ **Entity-decode trap (Decision_Log §39):** REST returns raw HTML entities (`&#8217;`) + smart quotes that don't byte-match iCal-era stored titles → silent duplicate `UniqueEventID`s. Check existing Airtable values before choosing a decode target. **Same risk class applies to B4/B5 (both WordPress admin-ajax).**
+- ⚠️ Pagination 404 (2026-06-09) — resolve page count from `total_pages` at runtime, never hardcode.
 
-**Dedup risk:** McMichael events appear on visitvaughan.ca (McMichael is already a direct branch). Same event, different UniqueEventID possible. Assess after first run — if overlap is small, ignore; if large, add title-normalization dedup step.
+### TRCA — Kortright (live — RSS)
+- `GET trca.ca/events-calendar/?feed=event_feed&search_categories=trca` (WP Event Manager plugin feed — *not* standard WP `/feed/`, which is the empty comments feed). Plain curl, no auth. ~188 events all-locations.
+- Field map: `event_listing:start_date` (ISO) · `event_listing:end_date` · `event_listing:location` (street address OR venue name, inconsistent) · `event_listing:organizer` · title, link, description.
+- ⚠️ **Map `event_listing:start_date`, NOT RSS `pubDate`** — most events published March 2026, run Jul–Oct. `pubDate` would drop them all as "past" (Issue #58 silent-drop).
+- **Geo filter — Kortright only:** `location.includes('Pine Valley') || location.includes('Kortright')` (49 events use the address format, 8 use the venue name — filtering on `Pine Valley` alone misses 14%). All other TRCA addresses out of scope/civic/one-off.
 
-**Field coverage:**
-- `product_startdate`: clean `YYYY-MM-DD HH:MM:SS` ✓
-- `product_enddate`: clean `YYYY-MM-DD HH:MM:SS` ✓
-- `product_name`: event title ✓
-- `product_link`: event URL ✓
-- `product_location`: full civic address ✓
-- `product_location_condensed`: short form ✓
-- `product_city`: city name ✓
-- `product_municipality`: municipality (unreliable for geo) ✓
-- `product_latlng`: lat/lng coordinates ✓
-- `product_description`: event description ✓
-- `product_category_id`: "EVENT" or "EXHIBIT" ✓
-- `product_image_url`: image ✓
+### BiblioCommons — Markham (live — RSS)
+- `GET https://markham.bibliocommons.com/events/rss/all`. Headless-fetchable, no auth. (TOU prohibits HTML harvesting but **explicitly permits RSS** — RSS is the compliant path, not the `/v2/events` SPA.)
+- Field map: `bc:start_date` (ISO) · `bc:end_date` · `bc:location` (name + city + street + lat/long) · `category domain="Audience"` (Children→Families, Seniors→Golden Age) · title, link, description.
+- ⚠️ Map `bc:start_date`, not `isoDate`. Geo via `bc:city`. Native n8n RSS Read node.
+- Verified 2026-06-12: 123 records, 0 missing DescriptionRaw, 0 missing City, CITY_MAP correct.
 
----
+### B4 — visitvaughan.ca (READY — Tier 1, direct JSON; optimal, nothing easier exists)
+- `POST https://visitvaughan.ca/wp-admin/admin-ajax.php`, body: `action=haven_calendar&search_date=YYYY-MM-01&dataType=json`. No auth, no headless.
+- Parse `data.results` (keyed by date string `"2026-06-06"`) → each has `list_items[]`.
+- Field map: `product_name`→title · `product_startdate` (`YYYY-MM-DD HH:MM:SS`)→StartDate · `product_enddate`→EndDate · `product_link`→Link · `product_location`→LocationName · `product_city`→city · `product_latlng`→geo. Also: `product_description`, `product_category_id` ("EVENT"/"EXHIBIT"), `product_image_url`, `product_location_condensed`.
+- **Loop 2 months** — `search_date` is monthly; query current + next to cover a 10-day window crossing a month boundary.
+- ⚠️ **Geo-filter on lat/lng or address, NOT `product_municipality`** (tags non-Vaughan events as Vaughan — e.g. "Lost & Found" at a North York address).
+- ⚠️ Dedup: re-lists McMichael (already a branch) → check `overlapAudit.js` after first run.
+- ⚠️ Entity-decode check vs Airtable before writing (McMichael §39 class).
+- **Open at build:** Step 0 — re-probe + full raw-key dump (probe is 2026-06-06; capture *every* key, not just the ones above — the AllEvents `score` lesson).
+- Yield: ~20–30 events/month, Tourism-Vaughan curated.
 
-## unionville.ca/things-to-do/events Probe (2026-06-06)
+### B5 — unionville.ca (READY — Tier 4, HTML cards; floor tier but confirmed ceiling)
+- `POST https://unionville.ca/wp-admin/admin-ajax.php`, body: `action=load_upcoming_events` → HTML cards. No auth, no headless.
+- Parse classes: `card-title` · `card-date` · `card-time` · `card-location` · `card-desc` · `btn-learn-more` href. Field coverage 29/29 except `card-time` (25/29).
+- ⚠️ **Filter the window on startDate, not endDate** — recurring events span months ("Music on The Street" Jun–Sep stored as one record).
+- ⚠️ Entity-decode check vs Airtable before writing (WordPress admin-ajax, McMichael §39 class).
+- ⚠️ Geo: Markham-heavy (Varley Gallery, Markham Cycling Day) — needs geo-filter.
+- **Why Tier 4 is the ceiling (nothing easier exists — verified, not assumed):** WP REST `/wp/v2/event` returns titles/links but **dates locked in ACF** (not REST-accessible); feeds (`/feed/`, `/things-to-do/events/feed/`) return **0 items** (WP auto-defaults); `load_past_events` confirms plugin is **HTML-only by design**. Closed 2026-06-07, zero gaps.
+- **Two loose ends to nail at build:** (1) `btn-learn-more` href regex not finalized; (2) `card-date` text→ISO parser for range format (`"June 6, 2026 to June 7, 2026"`).
 
-| Source | Method confirmed | title | startDate | LocationName | url | Verdict |
-|---|---|---|---|---|---|---|
-| unionville.ca | POST admin-ajax.php `action=load_upcoming_events` — HTML response, class-based parsing | ✓ | ✓ text format "June 6, 2026" | ✓ venue name | ✓ Learn More href | **PASS — couples with W2c geo-filter** |
+### Cross-cutting build discipline (every new branch)
+- Step 0: re-probe endpoint + dump FULL raw response, inventory every key (probes are 2026-06-06).
+- Entity-decode check vs existing Airtable values before writing (admin-ajax / REST sources).
+- Map the real event date to StartDate, never `pubDate` (#58).
+- Additive Merge input, append mode, **never map `Status`** (upsert reset, Decision_Log §40/§41).
+- After each branch lands → re-run `overlapAudit.js`, confirm `crossSource` ~0. Venue/city sites (B4/B5) are the **highest** dedup risk — they re-list aggregators more than aggregators re-list each other.
 
-**Integration path:**
-1. POST to `https://unionville.ca/wp-admin/admin-ajax.php` with body `action=load_upcoming_events`
-2. Parse HTML response — clean class names: `card-date`, `card-time`, `card-title`, `card-location`, `card-desc`, `btn-learn-more` href
-3. Parse date text ("June 6, 2026 to June 7, 2026") → ISO startDate/endDate
-4. No auth required. No headless browser.
+### §2b — Backlog / Unresolved Build Reference
 
-**Yield:** 29 upcoming events (June–December 2026 window). Weekly events including Bandstand nights, markets, festivals, walking tours, Varley Gallery programs.
+PASS-but-not-built and unresolved sources. Kept so a revival is a running start, not a re-probe. These are **build specs**, not decisions — the *why not built* is in §4 / Execution_Log.
 
-**Field coverage (29/29 events):**
-- `card-title`: event title ✓ 100%
-- `card-date`: date range text ✓ 100% (needs text→ISO parsing)
-- `card-time`: time range ✓ 25/29 (4 events no time listed)
-- `card-location`: venue name ✓ 100%
-- `card-desc`: description ✓ 100%
-- `btn-learn-more` href: event URL ✓ (regex needs refinement — confirmed present in HTML)
+**CityPlayhouse — `tickets.cityplayhouse.ca` (PASS, Tier 3, 2-step crawl)**
+- Single Vaughan venue → hardcode LocationName (McMichael pattern).
+- Step 1: `GET /events/` → server-rendered, ~36 cards. Extract `{title, eventUrl=/event/{id}}` pairs. **No date in the card** (dates are in ACF, not the listing).
+- Step 2: `GET /event/{id}/` (301 → trailing slash) → embedded Red61 calendar JSON in a `data-*` attribute powering the booking widget:
+  ```json
+  {"dates":["08/06/2026","09/06/2026"],
+   "times":{"09/06/2026":[{"id":"655:879","performanceRealTime":"2026-06-09 19:00:00",
+     "performanceDate":"9th June 2026 19:00","admissionTime":"18:00","availability":81}]},
+   "eventId":"655:660"}
+  ```
+  Use `performanceRealTime` (exact zoned datetime). Title/subtitle server-rendered: `<h2 class="primary-color">` / `<h4 class="subtitle">` (subtitle = description).
+- Cost: N+1 fetches (1 listing + 1/show). Red61 JSON shape is platform-specific (won't transfer unless client #2 also runs Red61). Caveat: confirm shape stable across 3–4 detail pages before committing.
 
-**Geo-filter required (W2c):** Varley Art Gallery of Markham events, Markham Cycling Day, and similar are Markham-based, not Vaughan. Ships in same slice as W2c.
+**VPL — `vaughanpl.info/programs` (PASS, Tier 4, HTML scrape; high Golden Age + Families relevance)**
+- `GET /programs` — server-side rendered (the *own* site; not the BiblioCommons SPA which blocks headless).
+- Parse: date blocks (`class="month"` + `"day"` + `"weekday"`), program cards (`card_upcoming_programs`), titles (`h2 > a[href^=/programs/view/]`), times (`start_time`), library/location (`library`), description (`description`). Associate each program with the date block it sits under.
+- Pagination `/programs/page/N` (N=1–11), 31 programs/page, **programs overlap across pages** → dedup by `/programs/view/{id}` URL, then date-filter. Pages 1–4 ≈ IssueDate..+10. Scrape all 11 and let the date filter cut (page count shifts weekly — don't hardcode).
+- **No feeds exist** (blind probe 2026-06-07: `/feed/`, `?feed=rss2`, `?ical=1`, `.ics`, `/wp-json/` all dead — not even WordPress). HTML scrape is the genuine ceiling.
 
-**Recurring event note:** "Music on The Street" spans June 13–September 13. Date range stored as a single record — pipeline should use startDate for window filtering, not endDate.
+**Meetup — `meetup.com/find/ca--on--vaughan/` (PASS, Tier 3, deferred — not built for R5; revisit if pool short. Events via Facebook W3 meanwhile)**
+- `GET` the discovery page (not per-group — iCal exports cap at ~10/group). Parse `__NEXT_DATA__.props.pageProps`.
+- **Seven event arrays, must merge + dedup by `id`:** `eventsInLocation`, `todayEvents`, `thisWeekendEvents`, `topicalEventsMusic`, `topicalEventsSocial`, `topicalEventsOutdoor`, `topicalEventsSports` → ~37 unique.
+- Fields: `id`, `title`, `eventUrl`, `eventType` (PHYSICAL/ONLINE), `dateTime`, `endTime`, `going.totalCount` (RSVP — unique popularity signal), `feeSettings`, `group{name,urlname}`, `venue{name,address,city,state,country}`.
+- Geo dry-run: 13/37 pass York Region filter. Date spread Jun 8–28 (3-week window).
+- Parser is Next.js-specific (won't transfer). Caveat: single-snapshot — Next.js build IDs can change the embedded shape; re-verify before building.
 
-**Initial assessment was wrong:** WP REST API (`/wp/v2/event`) returns titles/links but dates are in ACF (not REST-accessible). DevTools inspection revealed a separate `admin-ajax.php` call (`action=load_upcoming_events`) that returns fully rendered HTML cards with all fields. This is the correct integration path.
-
----
-
-## VPL (Vaughan Public Library) Probe (2026-06-06)
-
-| Source | Method confirmed | title | date | time | LocationName | Verdict |
-|---|---|---|---|---|---|---|
-| VPL (vaughanpl.info) | Server-side rendered HTML scrape of `/programs` | ✓ | ✓ date block header | ✓ `start_time` div | ✓ library name | **PASS — window limited to 4 days** |
-
-**Integration path:**
-1. GET `https://www.vaughanpl.info/programs`
-2. Parse HTML: date blocks (`class="month"` + `class="day"` + `class="weekday"`), program cards (`card_upcoming_programs`), titles (`h2 > a[href^=/programs/view/]`), times (`class="start_time"`), libraries (`class="library"`), descriptions (`class="description"`)
-3. Associate each program with the date block it falls under
-4. No auth, no headless browser, fully server-side rendered
-
-**Yield:** 31 programs per page, 11 pages total. Page 1 covers Jun 6–9; page 11 reaches Jun 30 — nearly a month of programs. Programs are VPL library events — cooking classes, storytimes, exhibits, workshops, special events. High Golden Age and Families segment relevance.
-
-**Pagination:** `/programs/page/N` (N = 1–11). Each page shows 31 programs starting from today, with the date range extending further on each page. Programs overlap across pages (page 1 programs also appear on pages 2–11). Correct integration: scrape all pages, deduplicate by `/programs/view/{id}` URL, then filter by issue date window.
-
-**Window coverage for 10-day issue window:** Pages 1–4 cover roughly IssueDate through IssueDate+10 (Jun 6–16 in current window). Safest approach: scrape all 11 pages and let the date filter handle cutoff — avoids hardcoding page count which changes week to week.
-
-**~~4-day window limitation note~~ — INCORRECT (2026-06-06 correction):** Initial assessment was based on page 1 only (Jun 6–9). Page 11 goes to Jun 30. The P1/P2/P3 Inoreader paginated subscriptions were intentionally set up to reach further into the window — they covered approximately 3 pages × ~2 extra days = Jun 6–14. Full scrape of all 11 pages provides ~3.5 weeks of coverage.
-
-**Field coverage:**
-- Title ✓ — from `h2 > a` link text
-- Date ✓ — from surrounding date block (month + day + weekday)
-- Time ✓ — from `class="start_time"` (some exhibits show date range instead of time)
-- Library/location ✓ — from `class="library"` (VMC Library, Bathurst Clark, etc.)
-- Description ✓ — from `class="description"`
-- URL ✓ — `/programs/view/{id}` href
-
-**Initial assessment was wrong:** First probe attempts failed because BiblioCommons (`vaughanpl.bibliocommons.com`) blocks headless access, and earlier scrapes didn't locate the program content in the HTML. The `vaughanpl.info` own site IS server-side rendered — program data confirmed at index 41991 in the HTML. The programs page is the correct integration target, not BiblioCommons.
-
-**Gap closed 2026-06-07 — blind feed probe (methodology step 3) actually run:** Same exhaustiveness gap as unionville.ca had — the original VPL conclusion ("server-rendered, scraping is the only path") jumped from DevTools straight to scraping without checking `/feed/`, `?ical=1`, `.ics` paths. Ran it on `www.vaughanpl.info`:
-- `/feed/`, `/programs/feed/`, `/programs/?ical=1` → 301 redirects to generic nginx error pages
-- `/?feed=rss2`, `/?ical=1` → 200, but query params ignored entirely — just serves the regular homepage HTML
-- `/events.ics`, `/calendar.ics`, `/programs.ics` → 404
-- `/wp-json/wp/v2/types` → 404 generic error page (confirms this isn't even a WordPress site — custom-built, so WP feed conventions don't apply)
-
-**No feeds exist in any form.** HTML scraping of `/programs` is confirmed as the genuine ceiling — audit now exhaustive across the full methodology hierarchy for VPL too, with no gaps remaining.
----
-
-## DevTools Coverage Audit — re-check of all confirmed/live sources (2026-06-07)
-
-Triggered by a fragility/efficiency audit of already-live or already-confirmed sources — checking whether each source's *original* confirmation method (often headless probing, pre-dating the DevTools-first methodology) was actually the best available path, and whether "scraping is the ceiling" verdicts were ever run through the *full* methodology hierarchy or just stopped at the first dead end.
-
-| Source | Original method | What was checked today and why | Outcome |
-|---|---|---|---|
-| TRCA | JSON-LD scrape (headless probe, 2026-06-05) | Fresh DevTools pass — no XHR calls, fully server-rendered, JSON-LD is the only path. WP Event Manager API exists but is auth-gated (`wpem/events` → 405 Authentication Failed). | **Re-confirmed optimal — no change** |
-| Eventbrite | Internal `city-browse` API (already in place pre-R5, built by Ariel) | Fresh DevTools pass — confirmed working without real CSRF auth (placeholder token accepted). Vaughan-specific place_id (`85633793`) returns 0 events; York Region place_id (`101740741`) is the correct geo level. Also confirmed `city-browse` is the *exact same call* the live Eventbrite site makes — not a workaround. | **Re-confirmed correct as-is — no change** |
-| AllEvents | JSON-LD scrape (headless probe, 2026-06-06) | Fresh DevTools pass — **found a hidden direct JSON API** (`POST allevents.in/api/events/list`) via `combined-eventlist.js`. Replaces the planned JSON-LD scrape entirely — cleaner pagination, structured venue+lat/long, categories included. | **UPGRADED — integration plan rewritten, see AllEvents section above** |
-| McMichael | iCal feed (headless probe, 2026-06-05 — currently live in R1) | Fresh DevTools pass — **found a hidden direct REST API** (`wp-json/tribe/events/v1/events`) via response headers on the live `/events/` page (`X-Tec-Api-Root`). Cloudflare-gated but passable with full browser-like headers. Returns ~2x the events with categories + rich descriptions — the iCal feed has none of this. | **UPGRADED — integration plan rewritten, see McMichael section below** |
-| visitvaughan.ca | `admin-ajax.php` → `action=haven_calendar` (DevTools, 2026-06-06) | Nothing to re-check — `action=haven_calendar` already returns clean structured JSON directly. This is the best-case outcome the entire methodology can produce; no further probe could improve on a direct JSON API even if a feed existed. | **Stands as-is — already optimal** |
-| VPL | Zero XHR calls, fully server-rendered (DevTools, 2026-06-06) | Gutcheck flagged that the original "scraping is the ceiling" verdict skipped methodology step 3 (blind feed probe). Ran `/feed/`, `?feed=rss2`, `/programs/feed/`, `?ical=1`, `.ics`, `/wp-json/` directly against `vaughanpl.info`: all either 301-redirect to bare nginx error pages, ignore query params and serve the plain homepage, or 404. `/wp-json/` 404 confirms this isn't even WordPress. No feed convention returns anything real. | **Gap closed — HTML scrape of `/programs` confirmed as genuine ceiling, zero gaps remain** |
-| unionville.ca | `admin-ajax.php` → `action=load_upcoming_events` returns HTML cards (DevTools, 2026-06-06) | Two checks: (1) found a third ajax action, `load_past_events` — inspected its response, identical HTML card markup, confirms the plugin is HTML-only by design (a fourth call, `fusion_form_update_view`, is unrelated Avada/Fusion form-analytics noise); (2) blind feed probe — found two RSS feeds that *exist* (`/feed/`, `/things-to-do/events/feed/`) but both are WordPress auto-generated defaults (generic blog feed, page-comments feed) with **zero items** — coincidence, not signal. | **Gap closed — HTML-card scrape confirmed as genuine ceiling, zero gaps remain** |
-
-**Net: zero open items, zero unverified conclusions.** Every "scraping is the only path" verdict in this sheet (TRCA, VPL, unionville.ca) is now backed by a complete run through the full methodology hierarchy — DevTools, blind feeds, REST API, and JSON-LD where relevant — not just the first check that happened to return empty. AllEvents and McMichael both flipped from "confirmed fine" to "confirmed fine via an inferior method — better path exists," which is what triggered pushing the rest of the audit one rung further rather than stopping at the first green light.
-
-**Lesson reinforced:** the two upgrades (AllEvents, McMichael) both came from re-checking sources that were *never run through DevTools in the first place* — they were confirmed via headless probing before the DevTools-first methodology existed. Sources that *were* DevTools-checked from day one (visitvaughan.ca, unionville.ca, VPL) didn't yield upgrade-grade surprises on re-inspection — but two of them (VPL, unionville.ca) *did* have an unrun methodology step (blind feed probe) that needed closing before "scraping is the ceiling" could be called a verified conclusion rather than an assumption.
+**Richmond Hill (city) — `richmondhill.ca/en/things-to-do/events.aspx` (UNRESOLVED — never fully probed)**
+- Front door points to a separate calendar backend: `calendar.richmondhill.ca`.
+- **Not run through the methodology.** Next probe: check for iCal/RSS/JSON beyond the PDF export; if only PDF is offered, treat as blocked (PDF parsing is last-resort). Run the full §3 hierarchy before any verdict.
+- Note: Richmond Hill events *are* partly covered already via the AllEvents `city=richmond hill` branch — so this is incremental, not a coverage gap.
 
 ---
 
-## TRCA RSS Discovery + Address Audit (2026-06-10)
+## 3. Methodology
 
-The 2026-06-07 DevTools audit re-confirmed TRCA (Black Creek) as "JSON-LD scrape, optimal, no change." That verdict was correct for `calendar.trca.ca` — but it never probed `trca.ca/events-calendar/`, the main TRCA site, which turns out to have a completely different feed surface.
+### Probe hierarchy — work top-to-bottom, stop at first clean reliable data
+1. **DevTools first** (Network → Fetch/XHR → reload) — catches admin-ajax plugins, REST-ish endpoints, dynamic sources. First move on anything dynamic.
+2. **Main HTML document** (Network → Doc → Response) — catches server-rendered "SPAs" (VPL).
+3. **Blind feed probe** — `/feed`, `/?feed=rss2`, `/?ical=1`, `/events.ics`, `/calendar.ics`.
+4. **WP REST API** — `/wp-json/wp/v2/types` → registered post types → `/wp-json/wp/v2/{type}`.
+5. **JSON-LD** in page source — `<script type="application/ld+json">`, `@type: Event` (TRCA pattern).
+6. **HTML scraping** — known class names / structure (VPL, unionville).
+7. **Headless browser** — last resort; only for high-value weekly sources with all above dead.
 
-### What was found
+**Core lesson (2026-06-06):** a DROP is only as strong as the *surface* it was tested against. Three sources (VPL, visitvaughan, unionville) were initially written off, then automated via methods 1–2. **Always open DevTools before writing off a source; never generalize "this surface is dead" to "this source is dead."** Full standard in `R5_ScrapeBlueprint.md`.
 
-Clicked the RSS link on `trca.ca/events-calendar/` in-browser → landed at `trca.ca/events-calendar/feed/` (empty WordPress comments feed — wrong surface). DevTools on the page revealed a third request: `?feed=event_feed&search_categories=trca`. This is the **WP Event Manager plugin's custom RSS feed** — a completely different endpoint from the standard WordPress `/feed/`. Returns ~188 events across all TRCA locations with structured fields:
-- `event_listing:start_date` — clean ISO datetime (e.g. `2026-09-19 13:30:00`)
-- `event_listing:end_date` — same
-- `event_listing:location` — either full street address OR venue name (inconsistent per event)
-- `event_listing:organizer`
-- title, link, description
+### Integration tier ranking — ease *and* transferability
+1. **Direct JSON/REST API** — AllEvents, McMichael, visitvaughan, Eventbrite. Cleanest; one call, you control pagination/filters.
+2. **JSON-LD** (schema.org) — standardized parsing → transfers to any schema.org site. (TRCA Black Creek, retired.)
+3. **Embedded app-state JSON** (`__NEXT_DATA__` etc.) — clean to fetch but bespoke per framework; parser doesn't transfer. (Meetup, CityPlayhouse.)
+4. **HTML-card scrape** via ajax/admin endpoints — works, zero infra, fragile + bespoke. (unionville, VPL.)
+5. **Headless required** — worst tier. No current sources here.
 
-Confirmed headless-fetchable via plain curl, no auth required.
-
-### Address audit — all TRCA locations evaluated for newsletter scope
-
-Fetched the full feed and counted events per address. Evaluated each against target geography (Vaughan, Markham, Richmond Hill):
-
-| Address | Count | Location | Verdict |
-|---------|-------|----------|---------|
-| 1000 Murray Ross Pkwy, Toronto | 84 | Black Creek Pioneer Village (Toronto) | Already live via JSON-LD branch |
-| 9550 Pine Valley Dr, Woodbridge + "Kortright Centre for Conservation" | 57 | Kortright Centre — Vaughan ✅ | **BUILD** |
-| 3291 Stouffville Rd, Whitchurch-Stouffville | 11 | Bruce's Mill — Whitchurch-Stouffville | ❌ Out of scope (not Vaughan/Markham/RH) |
-| 21 Springfield Way + 330 York Hill Blvd, Thornhill | 6 | Conservation Youth Corps volunteer work | ❌ Civic/volunteer — reject per data rules |
-| 11085 Keele St, Vaughan | 1 | Community Tree Planting | ❌ Civic/volunteer — reject |
-| 501 Clark Ave West, Vaughan | 1 | Bike Bonanza (one-off) | ❌ 1 event — not a recurring source |
-| 11099 Bathurst St, Richmond Hill | 1 | Bird Friendly Walk (one-off) | ❌ 1 event — not a recurring source |
-| 999 Bethesda Side Rd, Richmond Hill | 1 | ORCCR Pollinators (one-off) | ❌ 1 event — not a recurring source |
-| Brampton / Mississauga / Pickering / Caledon / Scarborough | various | Out of region | ❌ |
-
-**Decision: Kortright only.** 57 events, recurring family/outdoor/conservation programming, dedicated TRCA venue in Woodbridge (Vaughan). All other addresses are either out of scope, civic/volunteer, or one-off events at community locations that don't constitute a reliable recurring source.
-
-### Build notes (critical)
-
-1. **Filter must catch both Kortright address formats:** `location.includes('Pine Valley') || location.includes('Kortright')` — 49 events use the street address format, 8 use the venue name format. Filtering on `Pine Valley` alone misses 8 events (14%).
-
-2. **Must map `event_listing:start_date` to `isoDate`, NOT use RSS `pubDate`.** Most Kortright events were published in March 2026 — `pubDate` is the staff post date, not the event date. Events run July–October 2026. Using `pubDate` would cause every Kortright event to be dropped by the DateWindow filter as "past," reproducing Issue #58 silently.
-
-3. **Additive branch — do NOT replace the existing Black Creek JSON-LD scraping branch.** Kortright RSS connects to the Merge node as a new input. The Black Creek branch swap (iCal scraping → RSS) is a separate deliberate upgrade, sequenced after the Kortright branch has run cleanly across 2–3 Thursday cycles.
-
-### Black Creek — RSS vs JSON-LD parity check + scrape retired (2026-06-12)
-
-Compared all 27 UniqueEventIDs from the live Black Creek JSON-LD scrape branch against the TRCA RSS branch output. **27/27 match** — RSS catches every event the scrape finds. RSS also returns 122 Black Creek events vs the scrape's 27 — scrape was silently missing ~95 events because it only crawled 3 hardcoded listing pages. Airtable confirmed: 45 Black Creek records, 0 duplicates post-run.
-
-**Decision: JSON-LD scrape branch retired.** It is a strict subset of the RSS branch and adds latency with no benefit. The 6 scrape nodes (`Black Creek Scrape URLs` → `Black Creek Scrape Pages` → `Black Creek Extract Slugs` → `Black Creek Fetch Events` → `Black Creek Extract JSON-LD` → `Black Creek Normalize`) were already disabled; they can now be deleted.
+Tiers 1–2 = reusable integration code (ports to client #2). Tiers 3–4 = one-off build every time. **The portable asset is the canonical Candidates schema + adapter contract** (each adapter = pure function `raw feed → canonical record`); hardcode Vaughan specifics (aggregator domains, geo-filter, endpoints).
 
 ---
 
-## Meetup Re-verification — DROP overturned to PASS (2026-06-07)
+## 4. Probe Log
 
-The 2026-06-06 "re-evaluation" of previously-dropped sources (see section above) closed Meetup with reasoning ("the iCal feeds work, yield is just low — no DevTools investigation would change this") rather than an actual DevTools session. That reasoning answered the *iCal-export* question correctly but never asked whether iCal was the only path in. This session opened DevTools on Meetup for the first time and found it wasn't.
+Append-only. One-to-three lines per probe/decision. Technical findings live in §2; this is the chronological trail. `DL§` = Decision_Log.
 
-### What was checked
+**2026-06-12 — TRCA Black Creek JSON-LD retired.** RSS branch catches 27/27 of the scrape's events and 122 vs 27 total (scrape only crawled 3 hardcoded pages). Strict subset → scrape retired, 6 nodes deleted.
 
-Opened `https://www.meetup.com/find/ca--on--vaughan/` (the location search/discovery page — not a per-group page, which is what the original iCal-cap finding was based on) in Chrome DevTools, Fetch/XHR filter:
+**2026-06-12 — BiblioCommons full verification.** 123 records, 0 missing DescriptionRaw/City, CITY_MAP correct. Branch healthy, closed.
 
-- **`find.json?...` calls** (location/category/dateRange variants) — all returned `{}`. Dead end.
-- **`gql2` GraphQL calls** — all returned `{"data":{"self":null}}` (just an unauthenticated "current user" check). Dead end.
-- **The initial document itself** — contains a `<script id="__NEXT_DATA__" type="application/json">` blob (Next.js's standard server-render hydration payload) with `props.pageProps` populated and **not null** — the inverse of what BiblioCommons' `initial_state: null` showed. This is where the real data lives.
+**2026-06-12 — AllEvents field audit ✅ (only source swept).** All keys documented; `score`/`organizer`/`categories` captured into DescriptionRaw; `featured`/`tags`/`tickets`/`going.totalCount` available, deferred.
 
-### What's in `__NEXT_DATA__.props.pageProps`
+**2026-06-10 — TRCA Kortright RSS discovered.** `?feed=event_feed&search_categories=trca` (WP Event Manager) found on `trca.ca/events-calendar/` — different surface from `calendar.trca.ca` (JSON-LD). Address audit → **Kortright only** (57 events, Vaughan venue); other TRCA addresses out-of-scope/civic/one-off.
 
-Confirmed by fetching the page directly with `curl` (plain GET, standard browser User-Agent, no auth, no headless browser) and parsing the embedded JSON in Node:
+**2026-06-09 — BiblioCommons DROP → PASS (overturn).** Original drop tested the `/v2/events` React SPA and stopped; never probed `/events/rss/all`. RSS is open, structured, no auth. Was the last hold of three overturns. Lesson: the original probe was the one that *did* open DevTools on the right page — generalization only held there.
 
-- Seven separate event arrays in one page load: `eventsInLocation`, `todayEvents`, `thisWeekendEvents`, `topicalEventsMusic`, `topicalEventsSocial`, `topicalEventsOutdoor`, `topicalEventsSports`
-- Deduplicated by `id` → **37 unique events** from a single unauthenticated GET request. **Important distinction:** this is not an exhaustive pull of all Meetup events — it reflects what Meetup's city discovery page chooses to surface for Vaughan on that load. More events exist on Meetup (accessible by crawling individual group pages one by one), but that approach requires per-group enumeration and is not the integration path being used here. The 37 / 13-passing figure is "what the discovery page shows," not "all Meetup events in York Region."
-- **Date spread: June 8 – June 28, 2026** (fetched on June 7) — a genuine 3-week forward window, not just "today/this weekend." Comfortably covers the IssueDate+1..+10 range.
-- **Full field coverage per event:** `id`, `title`, `eventUrl`, `eventType` (PHYSICAL/ONLINE), `dateTime`, `endTime`, `going.totalCount` (RSVP count), `feeSettings` (amount/currency), `group` (name, urlname), `venue` (**name, address, city, state, country**), plus photo objects. RSVP count and fee data are bonus fields — nothing else in the pipeline currently surfaces a popularity signal like `going.totalCount`.
+**2026-06-09 — McMichael pagination 404.** Prompted the "resolve page count at runtime" rule → failure-visibility done-when in R5_Scope.
 
-### Geo-filter dry run
+**2026-06-07 — McMichael iCal → REST upgrade shipped.** ~2x yield, real descriptions + categories. Surfaced pipeline-wide entity-decode gap → **DL§39**. Old iCal branch disabled (rollback).
 
-Mapped the 37 events into candidate-shaped records and ran a simple York Region city-name filter (`Vaughan`, `Richmond Hill`, `Markham`, `Thornhill`, `Regional Municipality of York`, etc.):
+**2026-06-07 — DevTools coverage audit (all live/confirmed sources).** Re-ran the full hierarchy on each. AllEvents + McMichael flipped "fine" → "fine via inferior method, better path exists" (both never DevTools-checked originally). VPL + unionville had an unrun blind-feed step → closed (HTML scrape confirmed as genuine ceiling). TRCA, Eventbrite, visitvaughan re-confirmed optimal.
 
-- **13 of 37 pass** (~35% yield) — Vaughan ×3, Richmond Hill ×3, Markham ×3, Thornhill ×3, Regional Municipality of York ×1
-- Same broad-region-then-filter pattern as Eventbrite (the `ca--on--vaughan` search returns Toronto/North York/York-Region results broadly — geo-filter does real, necessary work here, not a formality)
+**2026-06-07 — Meetup DROP → PASS, then dropped for R5 anyway.** Discovery page `meetup.com/find/ca--on--vaughan/` carries `__NEXT_DATA__` (37 events, 13 pass geo, 3-week window) — Tier 3, no iCal cap. But low net yield → **not built for R5; Meetup events enter via Facebook (W3)**. Original config groups (`torontobikemeetup`, `women-that`) were Toronto/defunct; York Region alternatives (Forest Footprints, Dim Sum) low-yield.
 
-### Why this overturns the original drop
+**2026-06-07 — CityPlayhouse DROP → PASS (backlog).** Original probe tested the ephemeral WP news/RSS layer; never opened the ticketing storefront. `tickets.cityplayhouse.ca/events/` is server-rendered; detail pages embed Red61 calendar JSON (`performanceRealTime`). Tier 3, 2-step crawl. PASS, not built (R5 backlog).
 
-The original verdict was correct about the thing it tested (Meetup's per-group iCal export caps at ~10 events, killing yield) and wrong about the thing it didn't test (whether the *search/discovery page* offered a different path entirely). It does — a direct, unauthenticated page fetch + `__NEXT_DATA__` parse yields **13 usable York Region events from one HTTP request**, no platform cap, no per-group enumeration needed.
+**2026-06-06 — AllEvents JSON-LD → direct API (same-day upgrade).** DevTools found `POST api/events/list` via `combined-eventlist.js`. Replaced the planned 3-step JSON-LD scrape. Top-level key `data`, `venue.name` empty (use `full_address`), `categories[]`, `score`.
 
-### Integration tier
+**2026-06-06 — B4 visitvaughan probed → PASS (Tier 1).** `admin-ajax action=haven_calendar` direct JSON, 12 fields. Optimal — no feed could improve on direct JSON. Geo: lat/lng not `product_municipality`.
 
-**Tier 3 — embedded app-state JSON** (see Integration Tier Ranking above). Mechanically as clean as TRCA's JSON-LD (one fetch, structured fields, no browser) but the `__NEXT_DATA__` shape is Next.js-specific and bespoke — the parser written for Meetup won't transfer to the next site that happens to also be a Next.js app with a different page-props shape. Budget it as a one-off build, not a reusable pattern.
+**2026-06-06 — B5 unionville probed → PASS (Tier 4).** `admin-ajax action=load_upcoming_events` HTML cards. WP REST dates locked in ACF, feeds empty → HTML is genuine ceiling. Two parsers open (href regex, date-range).
 
-### Verdict
+**2026-06-06 — VPL probed → PASS (Tier 4, backlog).** `vaughanpl.info/programs` server-rendered (not BiblioCommons SPA). 11 pages, ~3.5 weeks coverage. Blind feed probe (2026-06-07) confirmed no feeds exist → scrape is genuine ceiling. Not built.
 
-**PASS — reopen for W2c build consideration.** Direct unauthenticated page-fetch of `meetup.com/find/ca--on--vaughan/`, parse `__NEXT_DATA__.props.pageProps`, dedupe across the seven embedded arrays by `id`, map to candidate fields, apply existing York Region geo-filter. No iCal, no per-group enumeration, no headless browser.
+**2026-06-06 — CityPlayhouse first probe → DROP** (later overturned). WP news layer ephemeral (posts published per show then deleted). Correct about that surface, wrong to generalize.
 
-**Caveat before building:** this was a single-snapshot dry run (one fetch, one point in time). Recommend spot-checking a few of the 13 passing events against the live site on a subsequent day before committing build time — confirm dates aren't stale and the `__NEXT_DATA__` shape is stable across page loads (Next.js build IDs can change the embedded structure across deploys).
+**2026-06-05 — Task 3 initial probe (4 sources).** TRCA (JSON-LD), McMichael (iCal), BiblioCommons (RSS), Meetup (iCal) — all PASS at the time. Methods later upgraded per above.
 
 ---
 
-## CityPlayhouse Re-verification — DROP overturned to PASS (2026-06-07)
+## Appendix — Client-provided source list (Week 1 origin input)
 
-The original 2026-06-06 probe (see "CityPlayhouse (tickets.cityplayhouse.ca) — DROP" above) tested the WordPress news/RSS layer — `/feed/`, `/news/feed/`, `/wp-json/wp/v2/news` — found it returned valid-but-empty responses (posts published per show, then deleted/unpublished within hours), and concluded the *site* was unviable: "the actual event database is in Red61's proprietary system, inaccessible without a partnership." That conclusion generalized from one surface (the news layer) to the whole domain without checking whether the live ticketing storefront — the actual page real users book tickets from — held the data directly.
+The original screenshot list the audit started from. Kept for traceability; not maintained.
 
-### What was checked
+<details>
+<summary>Original 22-source list</summary>
 
-Opened `https://tickets.cityplayhouse.ca/events/` in DevTools. Initial Fetch/XHR pass returned only calendar-navigation scaffolding (months/days, no show data) — consistent with the original "ephemeral" framing, but that's because the real content is server-rendered into the **document**, not loaded via XHR (same shape as VPL).
+blackcreek.ca/events · longos.com/cooking-classes · littlekitchenacademy.com/locations/vaughan · thechefupstairs.com/pages/kids-classes · mcmichael.com/upcoming-events · todocanada.ca/things-to-do-in-vaughan · puttingedge.com/locations/vaughan · pinotspalette.com/woodbridge · rookstocooks.ca · meetup.com/find/ca--vaughan/seniors · santehealingspas.com · sanctuarydayspas.com · facebook.com/elementalwellnessstudio · trubliss.ca · glamagalparty.com · onrichmondhill.com · experienceyorkregion.com · jazzlicious.ca · feverup.com/toronto/candlelight · unionville.ca/things-to-do/events · richmondhill.ca/en/things-to-do/events · markham.bibliocommons.com/v2/events
 
-Confirmed by fetching directly with `curl` (plain GET, browser User-Agent, no auth):
-
-- `tickets.cityplayhouse.ca/events/` → **200**, 123 KB of server-rendered HTML containing live show listing cards: title, image, "Book Now" button, link to an individual event page (`/event/{id}`). 36 cards found on one page load (titles only — `<p class="three-line-clamp">` description and `<small>` are empty in the card markup, and **no date is rendered in the listing card** — confirming the original probe's narrower finding that "WP REST API returns titles/links but dates are in ACF, not REST-accessible" was correct as far as it went).
-- Followed one card's link to its detail page: `tickets.cityplayhouse.ca/event/655:660/` → **200** (after a 301 redirect to the trailing-slash form).
-
-### What's on the event detail page
-
-The detail page embeds a clean, fully structured **calendar JSON blob** in a `data-*` attribute (powering the booking widget's date picker) — parsed directly out of the raw HTML with Node:
-
-```json
-{
-  "dates": ["08/06/2026", "09/06/2026"],
-  "times": {
-    "09/06/2026": [{
-      "id": "655:879",
-      "presentationFormat": "PHYSICAL",
-      "performanceTime": "19:00",
-      "performanceRealTime": "2026-06-09 19:00:00",
-      "performanceDate": "9th June 2026 19:00",
-      "admissionTime": "18:00",
-      "availability": 81,
-      "reserved": true
-    }]
-  },
-  "eventId": "655:660"
-}
-```
-
-Plus a clean title/subtitle pair rendered server-side: `<h2 class="primary-color mb-0">Arts West Dance</h2>` / `<h4 class="subtitle">Flipping Through the Channels</h4>`.
-
-That's **exact, parseable, real-time-zoned datetimes** (`performanceRealTime`) — not the stale "June 27, 2026" text-parsed-from-a-deleted-post pattern the original probe found. This data lives on the persistent ticketing page, not the ephemeral news layer — it doesn't get deleted after the show is announced, because it's the actual booking calendar.
-
-### Why this overturns the original drop
-
-The original verdict was correct about the surface it tested (WordPress news posts are genuinely ephemeral — that finding stands and explains why the 13 old Inoreader items were stale) and wrong to extend that finding to "the event database is inaccessible." It is accessible — just not from the news layer. The ticketing storefront is a separate, persistent, structured surface that nobody opened in DevTools before concluding the source was a dead end.
-
-### Integration tier
-
-**Tier 3 — embedded app-state JSON, two-step crawl** (see Integration Tier Ranking above). Requires:
-1. Fetch `/events/` → extract `{title, eventUrl}` pairs from the rendered cards (HTML scrape, tier 4 in isolation)
-2. Fetch each `/event/{id}` page → parse the embedded calendar JSON for `performanceRealTime`/`performanceDate`/`availability` (tier 3, embedded JSON)
-3. Combine into candidate records: title + subtitle (description) from the detail page, datetime from the calendar blob, `LocationName` hardcoded (single venue, same pattern as McMichael)
-
-This is more crawl overhead than a single-call API (N+1 fetches — one listing page, then one per show) and the calendar-JSON shape is Red61-platform-specific (won't transfer to another client's ticketing system unless they also run Red61) — but it's a real, working, structured path. No headless browser, no partnership required.
-
-### Verdict
-
-**PASS — reopen for W2c build consideration.** Two-step crawl: scrape `/events/` for show titles + detail-page links, then fetch each detail page and parse the embedded Red61 calendar JSON for exact showtimes. Yields real, persistent, structured event data — the original "inaccessible without a partnership" conclusion does not hold once the ticketing storefront (rather than the news layer) is the surface under test.
-
-**Caveat before building:** crawl cost scales with the number of live shows (36 found in this snapshot) — each requires its own fetch. Worth a yield check (how many of the 36 are York-Region-relevant after geo-filter — this is a single Vaughan venue, so likely all of them, but confirm date-window coverage across a few before committing build time) and a confirmation that the Red61 calendar JSON shape is stable across different show pages (spot-check 3–4 detail pages, not just one).
+</details>
