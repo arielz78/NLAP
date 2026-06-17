@@ -1436,3 +1436,17 @@ The felt burden was never the few lines of writing — it was the per-session me
 
 ---
 
+## 46. Deduplication Scope — Exact-Key Only on the Write Path; Fuzzy Stays Report-Only; Featured-Dupe Is the Human Backstop (2026-06-17)
+
+**Decision: the pipeline's only deduplication is the exact `norm(title)|date` upsert key, and it stays that way. Fuzzy/similarity matching (token Jaccard, venue+date) lives only in `overlapAudit.js` as a read-only advisory report — it never gates a write, merges a record, or drops a candidate. Cross-source duplicates that slip the exact key (divergent titles, ±1-day timezone rollover) are accepted into the pool and caught downstream by the editor (human-in-loop) plus the max-1-venue-per-section rule. No fuzzy-suppression layer and no duplication metric are built now; both are deferred until the *featured*-dupe rate — dupes reaching the 25 newsletter slots, not the candidate pool — is measured post-ship and proves to matter.**
+
+*Decided 2026-06-17, Ariel + Claude. Surfaced while evaluating B4/visitvaughan, a curated aggregator that re-lists ~10 events/run already in the pool — forcing the question of whether to build cross-source dedup.*
+
+### Why fuzzy never touches the write path
+
+The exact key is the *conservative* choice: it can never falsely merge two genuinely distinct events (e.g. "LEGO Trophy at Staples #155" vs "#57") and can never silently overwrite an editor-approved row. A fuzzy key strong enough to catch divergent-title dupes would also start collapsing real distinct events — unacceptable on the upsert, where the failure mode is irreversible corruption of editorial signal (the §41 class, which is also R6/R7 ground truth). So fuzzy is demoted to an advisory report a human reviews. If active prevention is ever wanted, its safe home is **allocation (R3)** — which *chooses among* candidates rather than destroying records — not the upsert. Confirmed empirically this session: the venue+date pass runs ~50% false-positive (one "Private tour" record matched every same-day McMichael tour on the word "tour"), so it could only ever be advisory, never auto-action.
+
+### Why featured-dupe, not pool-dupe, is the metric that gates any future work
+
+A duplicate sitting in the ~1,257-candidate pool costs nothing — it's inert unless it reaches one of the 25 featured slots, the only place a dupe is a real editorial failure, and between editor review and the venue cap few would. The exact key's actual job is **idempotency** (re-running R1 doesn't double-insert), which it does perfectly — catching cross-source re-lists was never its purpose. Building fuzzy suppression or a bespoke duplication metric before the newsletter has shipped a full editorial cycle is solving a problem that may never reach the reader: over-engineering against a zero baseline. The right trigger is the editor's swap-out/override actions once live (signal auto-captured from work already happening), not new machinery now.
+

@@ -96,6 +96,8 @@ function sourceFromUrl(url) {
   if (u.includes("mcmichael.")) return "McMichael";
   if (u.includes("trca.ca")) return "TRCA";
   if (u.includes("bibliocommons.com")) return "BiblioCommons";
+  if (u.includes("visitvaughan.ca")) return "Visit Vaughan";
+  if (u.includes("unionville.ca")) return "Unionville";
   if (!u) return "(no url)";
   return "(unknown)";
 }
@@ -312,6 +314,76 @@ async function main() {
     console.log("");
   }
 
+  // ---- Venue+date supplementary pass (report-only; never auto-merges).
+  // Catches same-event dupes the title passes miss because each source titles
+  // it differently (a venue's generic program name vs an aggregator's themed
+  // instance — e.g. "Free Family Sundays at the McMichael" vs "Family Sunday:
+  // Celebrating National Indigenous Peoples Day"). Signal: cross-source, same
+  // venue (specific token, generics stripped), date ±1, and >=1 shared NON-venue
+  // title word — so different events at the same big venue don't all flag.
+  // Excludes pairs the title pass already caught.
+  const VENUE_STOP = new Set(["the", "at", "of", "and", "centre", "center", "park", "hall", "square", "village", "city", "vaughan", "markham", "richmond", "hill", "ontario", "canada", "north", "york", "conservation", "collection", "art", "museum", "library", "road", "street", "ave", "avenue", "drive"]);
+  function venueTokens(v) {
+    return new Set(fuzzyTitle(v).split(" ").filter((t) => t.length > 2 && !VENUE_STOP.has(t)));
+  }
+  for (const row of rows) {
+    row.vt = venueTokens(row.venue);
+    row.tnv = new Set([...row.tokens].filter((t) => !row.vt.has(t)));
+  }
+  const venueMatches = [];
+  // Skip only pairs the title pass CONFIRMED as matches — not every pair it
+  // merely evaluated (seenPair holds all evaluated pairs). We *want* to re-examine
+  // the evaluated-but-rejected pairs; that's where the divergent-title dupes hide.
+  const seenVenuePair = new Set(matches.map((m) => [m.a.id, m.b.id].sort().join("|")));
+  for (const row of rows) {
+    if (row.dn == null || row.vt.size === 0 || row.tnv.size === 0) continue;
+    for (let d = row.dn - DAY_TOLERANCE; d <= row.dn + DAY_TOLERANCE; d++) {
+      const bucket = byDay.get(d);
+      if (!bucket) continue;
+      for (const other of bucket) {
+        if (other.id === row.id || other.source === row.source) continue;
+        if (other.vt.size === 0 || other.tnv.size === 0) continue;
+        const pid = [row.id, other.id].sort().join("|");
+        if (seenVenuePair.has(pid)) continue;
+        let venueShare = 0;
+        for (const t of row.vt) if (other.vt.has(t)) venueShare++;
+        if (venueShare === 0) continue;
+        let titleShare = 0;
+        for (const t of row.tnv) if (other.tnv.has(t)) titleShare++;
+        if (titleShare < 1) continue;
+        seenVenuePair.add(pid);
+        venueMatches.push({ a: row, b: other, venueShare, titleShare });
+      }
+    }
+  }
+  console.log(`\n=== VENUE+DATE supplementary candidates (same venue, ±${DAY_TOLERANCE}d, >=1 shared non-venue title word; NOT already caught by the title pass) ===`);
+  console.log(`Suspected divergent-title dupe pairs: ${venueMatches.length}\n`);
+  for (const m of venueMatches) {
+    console.log(`  venueShare=${m.venueShare} titleShare=${m.titleShare}`);
+    console.log(`     • (${m.a.source}/${m.a.day}) "${m.a.title}"  @ ${m.a.venue}`);
+    console.log(`     • (${m.b.source}/${m.b.day}) "${m.b.title}"  @ ${m.b.venue}`);
+    console.log("");
+  }
+
+  // Per-source overlap tally: of each source's records, how many have a
+  // cross-source near-twin (re-listing a source we already have) vs are unique
+  // to it. Answers "is this source mostly re-listing?" at a glance — no side
+  // script. Based on the token-similarity matches, so it reflects this audit's
+  // title-based recall (divergent-title dupes it can't see count as "unique").
+  const inDupe = new Set();
+  for (const m of matches) { inDupe.add(m.a.id); inDupe.add(m.b.id); }
+  for (const m of venueMatches) { inDupe.add(m.a.id); inDupe.add(m.b.id); }
+  const srcTally = {};
+  for (const row of rows) {
+    (srcTally[row.source] ??= { total: 0, dupe: 0 });
+    srcTally[row.source].total++;
+    if (inDupe.has(row.id)) srcTally[row.source].dupe++;
+  }
+  console.log("\nPer-source cross-source overlap (total / dupe / unique):");
+  for (const [s, v] of Object.entries(srcTally).sort((a, b) => b[1].total - a[1].total)) {
+    console.log(`  ${s.padEnd(14)} ${String(v.total).padStart(4)} total / ${String(v.dupe).padStart(3)} dupe / ${String(v.total - v.dupe).padStart(4)} unique`);
+  }
+
   // Persist a compact summary for run-over-run dup-health monitoring. Mirrors the
   // snapshotCandidates pattern (timestamped file, same dir convention) but stores
   // only metrics + the suspect pairs — never the raw pool (snapshots own that).
@@ -331,6 +403,8 @@ async function main() {
     fuzzyClusters: { total: clusters.length, crossSource: crossSource.length, sameSource: sameSource.length },
     crossSourcePairCounts: pairCounts,
     tokenSimilarityPairCount: matches.length,
+    venueDatePairCount: venueMatches.length,
+    perSourceOverlap: srcTally,
     tokenSimilarityPairs: matches.map((m) => ({
       j: Number(m.j.toFixed(2)),
       contain: Number(m.contain.toFixed(2)),

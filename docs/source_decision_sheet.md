@@ -22,16 +22,16 @@ Status legend: **Live** (in R1) · **Ready** (probed, build-ready) · **Backlog*
 | **AllEvents** (Vaughan / RHill / Markham) | Live | Direct JSON API (T1) | `POST allevents.in/api/events/list` | PASS | ✅ 2026-06-12 | §2 |
 | **McMichael** | Live | Tribe REST API (T1) | `wp-json/tribe/events/v1/events` | PASS | ❌ open | §2 · DL§39 |
 | **TRCA — Kortright** | Live | WP Event Manager RSS (T1) | `?feed=event_feed&search_categories=trca` | PASS | ❌ open | §2 |
-| **TRCA — Black Creek** | Retired 2026-06-12 | JSON-LD scrape (T2) | — | superseded by Kortright RSS | — | §4 |
+| **TRCA — Black Creek** | Live (in TRCA RSS branch) | `Murray Ross` filter in Kortright RSS (T1) | (same feed as Kortright) | events ingest here; only the standalone JSON-LD scrape was retired 2026-06-12 | ❌ open | §2 |
 | **BiblioCommons** (Markham) | Live | Public RSS (T1) | `markham.bibliocommons.com/events/rss/all` | PASS | ❌ open | §2 |
-| **B4 — visitvaughan.ca** | **Ready** | `admin-ajax` direct JSON (T1) | `POST admin-ajax.php?action=haven_calendar` | PASS | ⏳ at build | §2 |
+| **B4 — visitvaughan.ca** | **Live 2026-06-17** | `admin-ajax` direct JSON (T1) | `POST admin-ajax.php?action=haven_calendar` | PASS | ✅ 2026-06-16 | §2 |
 | **B5 — unionville.ca** | **Ready** | `admin-ajax` HTML cards (T4) | `POST admin-ajax.php?action=load_upcoming_events` | PASS | ⏳ at build | §2 |
 | **Meetup** | Backlog (deferred) | `__NEXT_DATA__` (T3) | `meetup.com/find/ca--on--vaughan/` | **PASS** — not built for R5 (low yield); revisit if pool short; events via Facebook (W3) meanwhile | n/a | §2b |
 | **CityPlayhouse** | Backlog | 2-step crawl + Red61 JSON (T3) | `tickets.cityplayhouse.ca/events/` | PASS, not built | n/a | §2b |
 | **VPL** | Backlog | server-rendered HTML scrape (T4) | `vaughanpl.info/programs` | PASS, not built | n/a | §2b |
 | **Richmond Hill** (city) | Unresolved | calendar backend, method TBD | `calendar.richmondhill.ca` | HOLD — never fully probed | n/a | §2b |
 
-**Field audit = ❌ open:** a full raw-response sweep (every key, not just the fields used at build) hasn't been done. Required before R5 close — see the [field-inventory gate in R5_Scope](R5_Scope.md). AllEvents is the only one swept.
+**Field audit = ❌ open:** a full raw-response sweep (every key, not just the fields used at build) hasn't been done. Required before R5 close — see the [field-inventory gate in R5_Scope](R5_Scope.md). AllEvents and B4/visitvaughan are swept; the rest remain open.
 
 ---
 
@@ -65,7 +65,7 @@ Stable technical detail per live/ready source. This is build + maintenance refer
 - `GET trca.ca/events-calendar/?feed=event_feed&search_categories=trca` (WP Event Manager plugin feed — *not* standard WP `/feed/`, which is the empty comments feed). Plain curl, no auth. ~188 events all-locations.
 - Field map: `event_listing:start_date` (ISO) · `event_listing:end_date` · `event_listing:location` (street address OR venue name, inconsistent) · `event_listing:organizer` · title, link, description.
 - ⚠️ **Map `event_listing:start_date`, NOT RSS `pubDate`** — most events published March 2026, run Jul–Oct. `pubDate` would drop them all as "past" (Issue #58 silent-drop).
-- **Geo filter — Kortright only:** `location.includes('Pine Valley') || location.includes('Kortright')` (49 events use the address format, 8 use the venue name — filtering on `Pine Valley` alone misses 14%). All other TRCA addresses out of scope/civic/one-off.
+- **Geo filter — Kortright + Black Creek** (live code, corrected 2026-06-16): `isKortright = location.includes('Pine Valley') || location.includes('Kortright')`; `isBlackCreek = location.includes('Murray Ross')` (Black Creek Pioneer Village, North York — **deliberately in-scope**). LocationName set to `"Kortright Centre for Conservation"` or `"Black Creek Pioneer Village"` accordingly. (49 events use the address format, 8 the venue name — filtering Kortright on `Pine Valley` alone misses 14%.) All other TRCA addresses out of scope/civic/one-off. **What was "retired 2026-06-12" was the standalone Black Creek JSON-LD *scrape source*, NOT Black Creek events — those still ingest via this RSS branch.**
 
 ### BiblioCommons — Markham (live — RSS)
 - `GET https://markham.bibliocommons.com/events/rss/all`. Headless-fetchable, no auth. (TOU prohibits HTML harvesting but **explicitly permits RSS** — RSS is the compliant path, not the `/v2/events` SPA.)
@@ -73,16 +73,20 @@ Stable technical detail per live/ready source. This is build + maintenance refer
 - ⚠️ Map `bc:start_date`, not `isoDate`. Geo via `bc:city`. Native n8n RSS Read node.
 - Verified 2026-06-12: 123 records, 0 missing DescriptionRaw, 0 missing City, CITY_MAP correct.
 
-### B4 — visitvaughan.ca (READY — Tier 1, direct JSON; optimal, nothing easier exists)
-- `POST https://visitvaughan.ca/wp-admin/admin-ajax.php`, body: `action=haven_calendar&search_date=YYYY-MM-01&dataType=json`. No auth, no headless.
-- Parse `data.results` (keyed by date string `"2026-06-06"`) → each has `list_items[]`.
-- Field map: `product_name`→title · `product_startdate` (`YYYY-MM-DD HH:MM:SS`)→StartDate · `product_enddate`→EndDate · `product_link`→Link · `product_location`→LocationName · `product_city`→city · `product_latlng`→geo. Also: `product_description`, `product_category_id` ("EVENT"/"EXHIBIT"), `product_image_url`, `product_location_condensed`.
-- **Loop 2 months** — `search_date` is monthly; query current + next to cover a 10-day window crossing a month boundary.
-- ⚠️ **Geo-filter on lat/lng or address, NOT `product_municipality`** (tags non-Vaughan events as Vaughan — e.g. "Lost & Found" at a North York address).
-- ⚠️ Dedup: re-lists McMichael (already a branch) → check `overlapAudit.js` after first run.
-- ⚠️ Entity-decode check vs Airtable before writing (McMichael §39 class).
-- **Open at build:** Step 0 — re-probe + full raw-key dump (probe is 2026-06-06; capture *every* key, not just the ones above — the AllEvents `score` lesson).
+### B4 — visitvaughan.ca (LIVE 2026-06-17 — Tier 1, direct JSON; optimal, nothing easier exists)
+- `POST https://visitvaughan.ca/wp-admin/admin-ajax.php`, body: `action=haven_calendar&search_date=YYYY-MM-01&dataType=json`. No auth, no headless; plain `User-Agent` header sufficient.
+- **Response shape (corrected at Step-0, 2026-06-16):** top level = `results` / `settings` / `query` — **no `data` wrapper** (earlier spec said `data.results` — wrong). `results` is keyed by date string `"2026-06-05"`, and **each value is an object `{date, list_items[]}`** — events live in `list_items`, one level deeper than a bare array. Parse path: `results` → each value → `list_items[]`.
+- **Only one usable request param: `search_date`** (the month). `municipality` is parsed but **ignored** — hardcoded server-side to "Vaughan" (sent `Markham`/empty, still echoed Vaughan, identical 62 events). `dataType=json` sets format. The `query` key just echoes the server's parse, not knobs we control.
+- **Windowing is monthly → loop current + next month** (Jun→62 rows, Jul→24, Aug→15 — distinct sets). A 10-day issue window crossing a month boundary needs both.
+- **Per-call duplication:** multiday events repeat once per spanned date-key (June: 62 rows = 37 distinct `product_id`). Dedup by `product_id` early; the `title|date` upsert collapses them anyway.
+- **Haven API — checked 2026-06-16, NOT viable.** `settings` exposes the upstream (`havenapi.havendestinations.ca`, `haven_feed_id`), but the API is **auth-gated** (`/api/v1/events` → 401; the feed path with the id alone → error page). The real key lives server-side in VV's WordPress plugin. The admin-ajax endpoint **is** VV's own authenticated proxy to Haven — clean JSON, no key needed. Stay on admin-ajax; going direct buys nothing and adds a credential/ToS problem.
+- **Field map** (33 keys total; full dump in §4): `product_name`→Title · `product_startdate`/`product_enddate` (clean ISO `YYYY-MM-DD HH:MM:SS`, **no parser needed**)→StartDate/EndDate · `product_link`→Link · **`product_venue_name` (HTML-stripped) → LocationName**, fallback `product_location_condensed` · `product_city`→City · `product_latlng`→geo (unused, see geo note).
+- **DescriptionRaw (`visitVaughan:` prefix) — signal-bearing extras only:** `product_description`/`product_excerpt`, `product_types` (8-code taxonomy: `EVTFOOD,FESTIVAL,EXHIBIT,PERFORMANC,SPORT,EVTMARKET,EVTCLASS,EVTCOMNTY`), `product_cost`. **NOT** the full street address — zero R6/R7 signal (decided 2026-06-16); city + venue already captured as fields.
+- ⚠️ **Entity-decode trap (McMichael §39 class — WordPress admin-ajax):** `product_venue_name`, `product_datetime*`, `product_datetab`, `product_startdate_full`/`_enddate_full` are HTML `<span>`/`<time>` blobs — use the clean siblings and strip tags+entities before writing. Check existing Airtable values for the decode target.
+- **Geo: NO filter (decided 2026-06-16).** `product_municipality` is hardcoded Vaughan (useless as a filter). `product_city` shows ~19% "North York", but that's overwhelmingly **Black Creek Pioneer Village — in-scope, already ingested via the TRCA RSS branch.** A blanket North-York drop would nuke wanted events; the few non-Black-Creek North York venues (York U area) are GTA-adjacent and the editor approves manually. Revisit only if non-Black-Creek noise shows up.
+- ⚠️ **Dedup risk (highest of any source):** re-lists **McMichael** (existing branch) **and Black Creek** (TRCA RSS branch) → run `overlapAudit.js` after the first run, expect some `crossSource`; merge or accept per existing policy.
 - Yield: ~20–30 events/month, Tourism-Vaughan curated.
+- **Field audit ✅ complete (Step-0 sweep 2026-06-16).**
 
 ### B5 — unionville.ca (READY — Tier 4, HTML cards; floor tier but confirmed ceiling)
 - `POST https://unionville.ca/wp-admin/admin-ajax.php`, body: `action=load_upcoming_events` → HTML cards. No auth, no headless.
@@ -164,6 +168,10 @@ Tiers 1–2 = reusable integration code (ports to client #2). Tiers 3–4 = one-
 ## 4. Probe Log
 
 Append-only. One-to-three lines per probe/decision. Technical findings live in §2; this is the chronological trail. `DL§` = Decision_Log.
+
+**2026-06-16 — B4 visitvaughan Step-0 sweep ✅ + corrections.** Full 33-key dump (§2). Confirmed: no `data` wrapper (top = `results`/`settings`/`query`); events nested in `results[date].list_items[]`; `search_date` the only live param (`municipality` hardcoded Vaughan, ignored); monthly windowing → loop 2 months; 62 rows = 37 distinct `product_id` (multiday repeats). **Haven API auth-gated (401) — admin-ajax is its authenticated proxy, stay on it.** **Geo: no filter** — the ~19% "North York" is Black Creek Pioneer Village, in-scope (TRCA RSS already ingests it). DescriptionRaw = description/excerpt + `product_types` + `product_cost`, no street address (no R6/R7 signal).
+
+**2026-06-16 — Doc correction: TRCA is Kortright + Black Creek, not "Kortright only."** Live RSS code filters `Pine Valley`/`Kortright` OR `Murray Ross` (Black Creek). The 2026-06-10 "Kortright only" note below was an oversimplification; only the standalone Black Creek JSON-LD *scrape* was retired (2026-06-12), never the events. §2 corrected.
 
 **2026-06-12 — TRCA Black Creek JSON-LD retired.** RSS branch catches 27/27 of the scrape's events and 122 vs 27 total (scrape only crawled 3 hardcoded pages). Strict subset → scrape retired, 6 nodes deleted.
 
