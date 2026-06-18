@@ -4,6 +4,9 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-06-18
+- Internal: reviewed the visitvaughan.ca integration's request format to confirm the minimal set of parameters needed — no functional change.
+
 ## 2026-06-17
 - Added a sixth event source — the Visit Vaughan (Tourism Vaughan) calendar — to the live ingestion pipeline, contributing curated civic, festival, and major-venue events the other automated feeds don't surface.
 - Hardened the cross-source duplicate audit: a per-source overlap tally (how much each source re-lists vs. contributes net-new) and a venue+date pass that flags same-event duplicates titled differently across sources; also purged legacy duplicate rows from the candidate table.
