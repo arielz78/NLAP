@@ -1466,3 +1466,19 @@ The original audit derived source from the URL domain because the legacy `Source
 
 The `Source` field is no longer unreliable — every live normalize node sets it deterministically (`Unionville`, `Visit Vaughan`, etc.), so provenance is both accurate and exactly what the audit needs to answer: "which feed contributed this row, and does it duplicate another feed's row?" `canonicalSource()` normalizes the field string to the canonical keys `sourceFromUrl` returns and only falls back to URL-derivation when the field is blank (legacy rows), so a single source never splits across two buckets. Verified this session: Unionville resolved to 11 total / 1 dupe / 10 unique, `(unknown)` 13→3, Eventbrite 583→582 (the mislabeled link-out row moved to its true home).
 
+---
+
+## 48. Open-Work Tracking — Journal Narrates, Issues Track, Carry-Forward Enforced at /wrap; Reference Docs Hold State Not History (2026-06-20)
+
+**Decision: open work lives in GitHub Issues (the tracker with open/closed state), `Execution_Log.md` stays a chronological narrative, and `/wrap` gains a carry-forward gate (new step 3) that forces every prior "Next" item to a disposition — done, has-an-issue, or dropped-with-reason — so nothing survives as untracked prose two sessions running. Corollary: a living reference doc records *current state*, never a graveyard of considered-and-rejected options.**
+
+*Decided 2026-06-20, Ariel + Claude. Direct continuation of §44/§45 — those fixed where *facts* live; this fixes where *open work* lives. Prompted by the recurring pain of "Next" items silently falling off across chat handoffs and never getting redone.*
+
+### Why the journal kept losing work
+
+Open work was being tracked in an append-only journal, which has no closed-state — so items rotted in the "Next" blob, got re-summarized lossily at each handoff, and silently dropped. That's a structural mismatch (journal used as task tracker), not a discipline failure; a session-start hook that re-injects the blob treats the read end while the leak is at the write end (where an unresolved item gets copied forward instead of closed). The pro model resolves it: journal narrates, an issue tracker holds open/closed state, and Definition-of-Done is enforced at the boundary rather than remembered. The proportionate version for a solo 2-newsletter project is a four-line `/wrap` step plus the issues that already exist — not new infrastructure. It is an instruction, not a deterministic guarantee; escalate to a hook only if it observably still leaks.
+
+### Why reference docs don't record the rejection
+
+The client-source reconciliation this session deliberately wrote *nothing* to the Source Register. Recording 14 self-evidently out-of-scope drops (spas, cooking classes, redundant aggregators) would bloat a lean reference doc with history that belongs in the log — and the non-obvious calls (Meetup deferred, Richmond Hill on hold, aggregators redundant) are already in the Register as current state. A reference doc answers "what is true now," not "what did we consider." The reconciliation's value was the *act of checking* (nothing hidden, export stale, the "10 websites" note stale) — an event, which goes in the journal.
+

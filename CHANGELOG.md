@@ -7,6 +7,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 ## 2026-06-20
 - Added a seventh event source — the Unionville (Main Street BIA) community calendar — to the live ingestion pipeline, contributing curated neighbourhood, gallery, and festival events; closes the additive-source phase of the current release.
 - Improved the cross-source duplicate audit to identify each event by its true originating feed rather than its outbound link — fixing mis-attribution for curated "link-out" sources that point to third-party hosts.
+- Completed a full reconciliation of the client's source list against the live pipeline — every requested source now has a recorded disposition (live, deferred, or out-of-scope) and nothing is silently missing.
+- Tightened the project's own process hygiene: open work now lives in the issue tracker rather than session notes, with an end-of-session gate that prevents to-do items from quietly falling through across work sessions.
 
 ## 2026-06-18
 - Internal: reviewed the visitvaughan.ca integration's request format to confirm the minimal set of parameters needed — no functional change.
