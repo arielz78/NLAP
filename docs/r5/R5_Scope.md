@@ -37,7 +37,8 @@ Single source of truth for "where are we." The roadmap's R5 header is stale; thi
 **R5 sign-off gate:** pool floor measured as **per-issue in-window depth** (Decision_Log §37) — **not** the stale roadmap "Approved ≥ 75".
 - **Aggregate depth — CLEARED (measured 2026-06-16 via `scripts/depthCheck.js`).** Next 4 weekly windows: 282 / 196 / 147 / 91 eligible candidates vs the 125 floor. First 3 clear comfortably; the 4th (07-09, −34) is far-horizon falloff that each R1 run backfills, not a real shortage. The §37 thin-window trap is absent. Re-run `depthCheck.js` after each R1 to keep watch.
 - **Caveat:** supply is ~99% `New` — editorial throughput (Approved) is now the binding constraint, not ingestion. That's an R7/process problem, not R5's.
-- **Per-segment depth — DEFERRED to R7.** Segment-level starvation needs trustworthy classification; aggregate depth can't see it. Evaluated when R7 lands. So R5's *supply* objective is met; segment distribution is the only open part of the gate.
+- **Per-segment depth — DEFERRED to R7.** Segment-level starvation needs trustworthy classification; aggregate depth can't see it. Evaluated when R7 lands.
+- **Supply met ≠ R5 done.** The depth/supply objective above is satisfied, but sign-off is also gated on the W2 rollout rule (**W2a + W3**). **W2a closed when B5 unionville landed (2026-06-20)**, so **W3 (#35 — Facebook manual intake + pool safety checks) is the last sign-off-blocking item.** W2b (Eventbrite retrofit), W2c (geo #59 / RSS #58), and the field-inventory sweep are **R6-enabling fast-follow** — they ship after sign-off and do not block it. Per-segment depth is the only R7-deferred part of the gate.
 
 **Deviation read:** the v3 roadmap scoped "top 2–3 sources." Actual is a much broader source set plus a methodology/perf-infrastructure layer that was never a scoped deliverable. This is **expansion + depth, not drift off-target** — but R5 is materially bigger than the roadmap describes, and the success metric was redefined mid-flight (§37).
 
@@ -99,7 +100,7 @@ All seven #53 analyses are run and posted. Four sources (or three, if any need s
 
 **Ariel signed off. W1 is closed.**
 
-Active sources locked: TRCA (JSON-LD), McMichael (Tribe REST API — upgraded from iCal 2026-06-07, see below), AllEvents (JSON-LD, ships with W2c geo-filter). Meetup dropped — both original groups wrong geography/defunct, York Region alternatives low-yield, any Meetup events via Facebook W3. BiblioCommons dropped — React SPA, no accessible endpoint.
+Active sources locked: TRCA (JSON-LD), McMichael (Tribe REST API — upgraded from iCal 2026-06-07, see below), AllEvents (JSON-LD, ships with W2c geo-filter). Meetup dropped — both original groups wrong geography/defunct, York Region alternatives low-yield, any Meetup events via Facebook W3. BiblioCommons dropped — React SPA, no accessible endpoint. **[Correction — later overturned: a working RSS feed was found (`markham.bibliocommons.com/events/rss/all`); BiblioCommons was built and is live (161 records as of 2026-06-20). The "no accessible endpoint" call at W1 sign-off was wrong. See the Status Snapshot live source set.]**
 
 ### McMichael Live-Branch Upgrade — Complete (2026-06-07)
 

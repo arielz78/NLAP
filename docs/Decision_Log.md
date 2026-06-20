@@ -1450,3 +1450,19 @@ The exact key is the *conservative* choice: it can never falsely merge two genui
 
 A duplicate sitting in the ~1,257-candidate pool costs nothing — it's inert unless it reaches one of the 25 featured slots, the only place a dupe is a real editorial failure, and between editor review and the venue cap few would. The exact key's actual job is **idempotency** (re-running R1 doesn't double-insert), which it does perfectly — catching cross-source re-lists was never its purpose. Building fuzzy suppression or a bespoke duplication metric before the newsletter has shipped a full editorial cycle is solving a problem that may never reach the reader: over-engineering against a zero baseline. The right trigger is the editor's swap-out/override actions once live (signal auto-captured from work already happening), not new machinery now.
 
+---
+
+## 47. Audit Source Identity — Provenance (Stamped `Source` Field) Over URL-Derivation; Link-Out Sources Break the URL Heuristic (2026-06-20)
+
+**Decision: in `overlapAudit.js`, a record's source is its *provenance* — the `Source` field stamped by the ingesting normalize node — with URL-domain derivation kept only as the fallback for legacy rows whose `Source` is blank. This overturns the prior "URL = ground truth, the Source field is unreliable" rationale, which held only while every source's event URLs pointed back to its own domain.**
+
+*Decided 2026-06-20, Ariel + Claude. Surfaced building B5/unionville — the first link-out source.*
+
+### Why the URL heuristic broke
+
+The original audit derived source from the URL domain because the legacy `Source` field was blank on ~half the pool. That worked only because every source self-referenced: an Eventbrite event links to eventbrite.com, a Visit Vaughan event to its own product page. Unionville is a curated link-out board — its events link to the real host (Varley, PerfectMind, forms.gle, even eventbrite.ca), never unionville.ca. URL-derivation therefore (a) scattered Unionville across `(unknown)` and the linked domains, making its per-source tally meaningless, and worse (b) degraded cross-source detection: a unionville→eventbrite.ca event was mislabeled "Eventbrite", so a genuine cross-source re-list collapsed into a same-source pair and went uncounted.
+
+### Why provenance is the right ground truth now
+
+The `Source` field is no longer unreliable — every live normalize node sets it deterministically (`Unionville`, `Visit Vaughan`, etc.), so provenance is both accurate and exactly what the audit needs to answer: "which feed contributed this row, and does it duplicate another feed's row?" `canonicalSource()` normalizes the field string to the canonical keys `sourceFromUrl` returns and only falls back to URL-derivation when the field is blank (legacy rows), so a single source never splits across two buckets. Verified this session: Unionville resolved to 11 total / 1 dupe / 10 unique, `(unknown)` 13→3, Eventbrite 583→582 (the mislabeled link-out row moved to its true home).
+

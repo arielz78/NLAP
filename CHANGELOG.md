@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-06-20
+- Added a seventh event source — the Unionville (Main Street BIA) community calendar — to the live ingestion pipeline, contributing curated neighbourhood, gallery, and festival events; closes the additive-source phase of the current release.
+- Improved the cross-source duplicate audit to identify each event by its true originating feed rather than its outbound link — fixing mis-attribution for curated "link-out" sources that point to third-party hosts.
+
 ## 2026-06-18
 - Internal: reviewed the visitvaughan.ca integration's request format to confirm the minimal set of parameters needed — no functional change.
 

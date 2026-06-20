@@ -87,8 +87,10 @@ function fuzzyTitle(s) {
     .trim();
 }
 
-// Source derived from the URL domain — ground truth, unlike the Source field
-// which is blank on ~half the legacy pool. This is the canonical source key.
+// URL-domain → source. Works ONLY for sources whose events link back to their own
+// domain. Link-out sources (e.g. Unionville points to Varley / Eventbrite / forms.gle)
+// cannot be identified this way — see canonicalSource, which prefers the stamped
+// Source field and uses this only as the legacy/blank-Source fallback.
 function sourceFromUrl(url) {
   const u = (url || "").toLowerCase();
   if (u.includes("eventbrite.")) return "Eventbrite";
@@ -100,6 +102,25 @@ function sourceFromUrl(url) {
   if (u.includes("unionville.ca")) return "Unionville";
   if (!u) return "(no url)";
   return "(unknown)";
+}
+
+// Canonical source = PROVENANCE (which feed actually ingested the row). The stamped
+// Source field is now reliable — each normalize node sets it deterministically — so
+// it is primary; sourceFromUrl is the fallback only for legacy rows with a blank
+// Source. This is the fix for link-out sources: URL-derivation mislabeled Unionville's
+// rows as the linked host (eventbrite.ca → "Eventbrite") or "(unknown)"; the Source
+// field correctly says "Unionville". Field strings are normalized to the canonical
+// keys sourceFromUrl returns so a single source never splits across two buckets.
+function canonicalSource(fieldSource, url) {
+  const f = (fieldSource || "").toLowerCase();
+  if (f.includes("eventbrite")) return "Eventbrite";
+  if (f.includes("allevents")) return "AllEvents";
+  if (f.includes("mcmichael")) return "McMichael";
+  if (f.includes("trca")) return "TRCA";
+  if (f.includes("bibliocommons")) return "BiblioCommons";
+  if (f.includes("visit vaughan")) return "Visit Vaughan";
+  if (f.includes("unionville")) return "Unionville";
+  return sourceFromUrl(url); // blank/legacy Source → derive from URL domain
 }
 
 // Stopwords stripped before token comparison so generic filler doesn't inflate
@@ -142,8 +163,8 @@ async function main() {
   const records = await fetchAllRecords(CANDIDATES_TABLE);
   console.log(`Fetched ${records.length} records.\n`);
 
-  // Shape records. Source is DERIVED FROM URL (ground truth), with the stored
-  // Source field kept only for comparison/diagnostics.
+  // Shape records. Source = PROVENANCE: prefer the stamped Source field, falling
+  // back to URL-derivation only for legacy blank-Source rows (see canonicalSource).
   const rows = [];
   const bySourceField = {};
   const bySourceUrl = {};
@@ -151,7 +172,7 @@ async function main() {
     const f = r.fields;
     const url = f["URL"] || "";
     const fieldSource = f["Source"] || "(blank)";
-    const source = sourceFromUrl(url);
+    const source = canonicalSource(fieldSource, url);
     bySourceField[fieldSource] = (bySourceField[fieldSource] ?? 0) + 1;
     bySourceUrl[source] = (bySourceUrl[source] ?? 0) + 1;
     rows.push({

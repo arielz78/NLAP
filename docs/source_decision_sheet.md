@@ -25,13 +25,13 @@ Status legend: **Live** (in R1) · **Ready** (probed, build-ready) · **Backlog*
 | **TRCA — Black Creek** | Live (in TRCA RSS branch) | `Murray Ross` filter in Kortright RSS (T1) | (same feed as Kortright) | events ingest here; only the standalone JSON-LD scrape was retired 2026-06-12 | ❌ open | §2 |
 | **BiblioCommons** (Markham) | Live | Public RSS (T1) | `markham.bibliocommons.com/events/rss/all` | PASS | ❌ open | §2 |
 | **B4 — visitvaughan.ca** | **Live 2026-06-17** | `admin-ajax` direct JSON (T1) | `POST admin-ajax.php?action=haven_calendar` | PASS | ✅ 2026-06-16 | §2 |
-| **B5 — unionville.ca** | **Ready** | `admin-ajax` HTML cards (T4) | `POST admin-ajax.php?action=load_upcoming_events` | PASS | ⏳ at build | §2 |
+| **B5 — unionville.ca** | **Live 2026-06-20** | `admin-ajax` HTML cards (T4) | `POST admin-ajax.php?action=load_upcoming_events` | PASS | ✅ 2026-06-20 | §2 |
 | **Meetup** | Backlog (deferred) | `__NEXT_DATA__` (T3) | `meetup.com/find/ca--on--vaughan/` | **PASS** — not built for R5 (low yield); revisit if pool short; events via Facebook (W3) meanwhile | n/a | §2b |
 | **CityPlayhouse** | Backlog | 2-step crawl + Red61 JSON (T3) | `tickets.cityplayhouse.ca/events/` | PASS, not built | n/a | §2b |
 | **VPL** | Backlog | server-rendered HTML scrape (T4) | `vaughanpl.info/programs` | PASS, not built | n/a | §2b |
 | **Richmond Hill** (city) | Unresolved | calendar backend, method TBD | `calendar.richmondhill.ca` | HOLD — never fully probed | n/a | §2b |
 
-**Field audit = ❌ open:** a full raw-response sweep (every key, not just the fields used at build) hasn't been done. Required before R5 close — see the [field-inventory gate in R5_Scope](R5_Scope.md). AllEvents and B4/visitvaughan are swept; the rest remain open.
+**Field audit = ❌ open:** a full raw-response sweep (every key, not just the fields used at build) hasn't been done. Required before R5 close — see the [field-inventory gate in R5_Scope](R5_Scope.md). AllEvents, B4/visitvaughan, and B5/unionville are swept; the rest (Eventbrite, McMichael, TRCA RSS, BiblioCommons) remain open.
 
 ---
 
@@ -88,14 +88,15 @@ Stable technical detail per live/ready source. This is build + maintenance refer
 - Yield: ~20–30 events/month, Tourism-Vaughan curated.
 - **Field audit ✅ complete (Step-0 sweep 2026-06-16).**
 
-### B5 — unionville.ca (READY — Tier 4, HTML cards; floor tier but confirmed ceiling)
+### B5 — unionville.ca (LIVE 2026-06-20 — Tier 4, HTML cards; floor tier but confirmed ceiling)
 - `POST https://unionville.ca/wp-admin/admin-ajax.php`, body: `action=load_upcoming_events` → HTML cards. No auth, no headless.
 - Parse classes: `card-title` · `card-date` · `card-time` · `card-location` · `card-desc` · `btn-learn-more` href. Field coverage 29/29 except `card-time` (25/29).
 - ⚠️ **Filter the window on startDate, not endDate** — recurring events span months ("Music on The Street" Jun–Sep stored as one record).
 - ⚠️ Entity-decode check vs Airtable before writing (WordPress admin-ajax, McMichael §39 class).
-- ⚠️ Geo: Markham-heavy (Varley Gallery, Markham Cycling Day) — needs geo-filter.
+- Geo: Markham-heavy (Varley Gallery, Main St Unionville, Millennium Bandstand). **No geo-filter** — Unionville is a Markham neighbourhood and Markham is include-tier (W1), so its events are in-scope. `city` hardcoded `Markham` in normalize. (Build decision 2026-06-20; corrected the earlier "needs geo-filter" note.)
 - **Why Tier 4 is the ceiling (nothing easier exists — verified, not assumed):** WP REST `/wp/v2/event` returns titles/links but **dates locked in ACF** (not REST-accessible); feeds (`/feed/`, `/things-to-do/events/feed/`) return **0 items** (WP auto-defaults); `load_past_events` confirms plugin is **HTML-only by design**. Closed 2026-06-07, zero gaps.
-- **Two loose ends to nail at build:** (1) `btn-learn-more` href regex not finalized; (2) `card-date` text→ISO parser for range format (`"June 6, 2026 to June 7, 2026"`).
+- **Both loose ends resolved at build (2026-06-20):** (1) `btn-learn-more` = simple anchor (`<a href="..." class="btn-learn-more">`), optional — linkless rec events (Yoga/Zumba) drop at the Validity Filter; (2) `card-date` is consistent `"Month D, YYYY"`, split on ` to ` for ranges → manual month-map parser (avoids `new Date()` TZ off-by-one).
+- **Field inventory (live, 2026-06-20):** ~33 cards / full forward calendar in one call, no pagination. Stable `news-NNNN` id per card — **present but intentionally unused** (source-local, can't dedup cross-source; `title|date` key kept). `card-time` is unparseable free text (`"7:00pm"`, `"During gallery public hours"`) → folded into DescriptionRaw. Entity-decode trap confirmed live (`&#8211;`). Build: `HTTP Request` (POST) → `Unionville Normalize`; `sourceCanonical=Unionville`.
 
 ### Cross-cutting build discipline (every new branch)
 - Step 0: re-probe endpoint + dump FULL raw response, inventory every key (probes are 2026-06-06).
