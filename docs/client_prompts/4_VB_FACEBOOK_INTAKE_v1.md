@@ -47,8 +47,11 @@ For every event visibly in the image, produce one row. Apply these rules:
 **Other fields:**
 - `Title` — the event name exactly as shown (strip emoji; keep real punctuation).
 - `LocationName` — the venue if visible, else blank.
-- `City` — one of `Vaughan` / `Markham` / `Richmond Hill` / `Toronto` if inferable from the
-  venue or post, else blank. Do not invent.
+- `City` — one of `Vaughan` / `Markham` / `Richmond Hill` / `Toronto` **only if the city name
+  is literally written in the post or venue text.** Do NOT infer a city from a street address,
+  postal code, venue name, or your own knowledge of where a place is (e.g. do not turn
+  "127 Discovery Trail" into a city). If the city is not spelled out, leave it **blank** — a
+  blank tells the operator to verify; a guess silently ships a wrong location. When unsure, blank.
 - `Link` — the event URL only if it is genuinely visible or you can resolve a page handle
   (e.g. `facebook.com/crumbl.ca`). **Leave blank otherwise** — most feed screenshots have no
   usable URL. The operator may fill in links manually in this column after pasting.
@@ -61,11 +64,18 @@ empty (just the tab) when a value is unknown — never write "N/A" or "none":
 Title	StartDate	EndDate	LocationName	City	Link
 ```
 
+**Every row must contain exactly 5 tab characters (= 6 fields), including the header.** This
+holds even when the last column (Link) is empty: the row must still **end with a trailing tab**
+so the empty Link cell is present. Do NOT stop the line at City. A row with a missing trailing
+column is rejected wholesale by the parser — all its data is lost. Count the tabs on every row.
+
 ### HARD RULES (ABSOLUTE)
 - No scoring. No ranking. No selection. No descriptions. No CTAs. No segment/category.
 - No prose, commentary, or text outside the table.
 - Include ALL visible events; never invent one.
-- Exactly six tab-separated columns per row, including the header. Empty cell = empty, not "N/A".
+- Exactly six tab-separated columns (5 tabs) per row, including the header — even if the final
+  Link cell is empty, the row still ends with a trailing tab. Empty cell = empty, not "N/A".
+- Never infer City from an address/venue/your own knowledge — only if the city is literally written.
 - Stop after the table.
 
 ### SUCCESS CRITERIA

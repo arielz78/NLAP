@@ -90,12 +90,23 @@ function parseFacebookEvents(eventsText) {
 
   for (let i = start; i < lines.length; i++) {
     const lineNo = i + 1;
-    const cells = lines[i].split("\t").map((c) => c.trim());
+    let cells = lines[i].split("\t").map((c) => c.trim());
 
-    if (cells.length !== COLUMNS.length) {
-      errors.push(`Row ${lineNo}: expected ${COLUMNS.length} columns, got ${cells.length} — skipped.`);
+    // Tolerate trailing-tab nondeterminism from the LLM (see study 2026-06-22):
+    // a row may arrive with too FEW cells (missing trailing empty Link) or too MANY
+    // (an extra trailing tab added on top of the empty Link). Both are the same
+    // benign whitespace artifact, so we reconcile to COLUMNS.length deterministically:
+    //   - drop extra trailing cells ONLY if they are empty (a non-empty 7th cell is
+    //     real data corruption and must still fail loudly);
+    //   - pad short rows with empty trailing cells.
+    // This is the guarantee; the prompt's "trailing tab" rule is only a nudge.
+    while (cells.length > COLUMNS.length && cells[cells.length - 1] === "") cells.pop();
+    if (cells.length > COLUMNS.length) {
+      errors.push(`Row ${lineNo}: ${cells.length} columns with non-empty overflow — skipped.`);
       continue;
     }
+    while (cells.length < COLUMNS.length) cells.push("");
+
     let [title, startDate, endDate, location, city, link] = cells;
 
     if (!title) {

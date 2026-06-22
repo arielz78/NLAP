@@ -1504,3 +1504,18 @@ A feed screenshot structurally carries no event URLs, and FB event IDs (`faceboo
 ### Why the DOM-extractor is deferred (method-fit at n=1)
 
 The technically superior fix — a client-side bookmarklet that reads the live DOM and outputs title+date+venue+link in one click — is real but carries ongoing maintenance (FB breaks its markup constantly). For one client, weekly, ~4 featured FB events, babysitting a scraper to save ~4 link-copies/week is more engineering than the problem warrants. Scale is the trigger to build it (it amortizes across clients/cities), the same logic that keeps the vision step on the client's ChatGPT rather than self-hosted. Captured as spike #67.
+
+
+## 50. Facebook Extraction — Validated Offline; Parser-Tolerance Over Prompt-Strictness; ~17% Title-Misread Accepted Behind the Editor Backstop (2026-06-22)
+
+**Decision: format-level nondeterminism from the AI extraction step is handled in the parser (tolerate trailing-tab over/under-count, fail loudly only on non-empty overflow), NOT by ever-stricter prompt rules; and the LLM path ships at a measured ~17% proper-noun title-misread rate because the editor reads every featured event's title at blurb-time, so the only silent-error class is caught where it matters. The DOM-extractor (#67) stays the escalation, triggered by scale or any automated title consumer.**
+
+*Decided 2026-06-22, Ariel + Claude. Refines §49 with the offline-validation outcome (#35). Study: 3 screenshots × 2 runs, GPT-5.5 medium, graded via `scripts/gradeFacebookIntake.js`.*
+
+### Why tolerance in the parser, not strictness in the prompt
+
+A prompt rule ("end every row with a trailing tab") is a nudge an LLM obeys probabilistically — and the first version of that rule *induced* the opposite failure (an extra trailing tab → 7 columns → whole-row rejection) on 1 of 6 runs. Chasing whitespace with prompt text is whack-a-mole. The boundary the data crosses is the parser, so the guarantee belongs there: reconcile any row to exactly 6 fields by trimming *empty* overflow and padding shortfalls, while a non-empty 7th cell (real corruption) still fails loudly. The prompt rule remains as a cheap nudge; the parser is the contract.
+
+### Why ~17% title-misread is acceptable here (and where it isn't)
+
+Screenshot OCR misreads proper nouns — measured at 3/18 titles on the labeled sample (VTHCO→VTHO, Sandusk→Sandbox, Ramblin'Soul→Ramblin'Lou). These are *silent*: they parse clean and the structural grader passes them; only a hand-labeled accuracy diff catches them. They are tolerable because a wrong title on the ~1,250-event pool costs nothing and the ~4 featured FB events pass under the editor's eye at blurb-time — the human-in-loop is the real backstop. The corollary is the hard limit: the title field must NOT feed any automated consumer (cross-source dedup, auto-publish). That, or volume, is the trigger to build #67 — the DOM carries the true text the screenshot has already thrown away.
