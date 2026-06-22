@@ -8,6 +8,8 @@ Release + Week-by-Week Execution Plan
 **Ownership:** Nathan owns R5, then pivots to PI for VB. Ariel owns R6–R8.  
 **Internal deadline:** R5 done by June 4. R6 ~mid-June.
 
+> **This doc is frozen intent, not status.** For where a release actually stands — and its **exit criteria** — read that release's Scope doc (`docs/r{N}/`), not this roadmap. Every release closes on the same **milestone-completeness sign-off gate**: no orphan open issues + every issue in its GitHub milestone closed-or-deferred-with-disposition. Rule home: `docs/README.md`; the GitHub milestone view is the live checklist. *(This pointer never changes — do not add per-release checkoffs here; that re-introduces the status drift it exists to prevent.)*
+
 ---
 
 ## Context
