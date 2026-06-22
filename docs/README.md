@@ -58,6 +58,10 @@ never changes, whereas type (working → frozen) does.
 - **Decision → home in Decision_Log; journal points.** Write the rationale once in `Decision_Log.md`; the `Execution_Log.md` entry mentions the decision in one line and links it (`see Decision_Log §N`) — it does **not** re-articulate the why.
 - **Metric → home in the metrics log; narrative renders.** A number is originated only in `Vaughan_Metrics_Log.md`. The case study quotes it but never authors or revises it. If they disagree, the log wins.
 
+## Open-work lifecycle (no silent drops)
+
+Every "thing to do next" follows one path: **captured at `/wrap` → filed as a GitHub Issue → assigned a release milestone → reconciled at that release's sign-off gate** (closed, or deferred-with-disposition to a later milestone). The journal narrates; issues are the tracker. This closes the loop for *tracked* work — nothing in a milestone can vanish silently. The one human-owned step is **capture** (writing it down once); after that the loop carries it. Rationale: `Decision_Log.md` §48. Sign-off gate (per release, in the Scope doc): see "roadmap convention" above.
+
 ## Session end
 
 `/wrap` runs this index as a checklist *for you*: it appends the journal + changelog automatically, then scans the session and proposes which conditional homes (Decision_Log, source sheet, metrics log, GitHub issues) changed. You confirm — you don't scan.
