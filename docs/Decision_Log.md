@@ -1482,3 +1482,25 @@ Open work was being tracked in an append-only journal, which has no closed-state
 
 The client-source reconciliation this session deliberately wrote *nothing* to the Source Register. Recording 14 self-evidently out-of-scope drops (spas, cooking classes, redundant aggregators) would bloat a lean reference doc with history that belongs in the log — and the non-obvious calls (Meetup deferred, Richmond Hill on hold, aggregators redundant) are already in the Register as current state. A reference doc answers "what is true now," not "what did we consider." The reconciliation's value was the *act of checking* (nothing hidden, export stale, the "10 websites" note stale) — an event, which goes in the journal.
 
+
+## 49. Facebook Manual Intake — AI-Assisted Extraction at the Client's Edge, n8n as the 10th Adapter, Linkless-Through with Editor Link-at-Selection (2026-06-21)
+
+**Decision: Facebook intake is a manual, AI-assisted path that feeds the *automated* pipeline, not the client's parallel manual assembly. The client screenshots the FB events feed; a fork of the extraction prompt (`VB_FACEBOOK_INTAKE`, no scoring/blurbs) turns it into one tab-separated table; the client pastes it into an Airtable form (`FacebookIntake`); an n8n adapter branch (the 10th Merge input) parses it into the canonical intermediate shape so `Make UniqueEventID`/validity/window/dedup/upsert treat it identically to every automated source. Facebook events are allowed into the candidate pool WITHOUT a URL (a `Source=Facebook` exception to the no-link drop); the editor adds the link only for the ~4 events actually featured, at selection, backed by a pre-publish blank-link guard. The vision/extraction step — and any future link harvesting — stays on the client's edge (their ChatGPT / browser), never self-hosted.**
+
+*Decided 2026-06-21, Ariel + Claude. The last R5 sign-off item (#35). DOM-extractor alternative deferred to spike #67.*
+
+### Why manual is the legitimate path, not a fallback
+
+Automated Facebook event ingestion is genuinely closed — the public events Graph API was deprecated years ago, and scraping the logged-in feed is a TOS/fragility liability. So "manual + AI-assist" isn't settling; it's the correct path. The standard pro pattern follows: a structured intake form → validation → idempotent upsert, with multimodal extraction (screenshot → vision) pushed to the *client's own* ChatGPT so we never own the vision cost, accuracy, or an upload UI.
+
+### Why n8n adapter, not Airtable-native or a separate Node script
+
+The pipeline is a pipeline because every source emits the same canonical object and the shared back-half owns scoring/blurbs/window/dedup for all of them. Making Facebook the 10th adapter (emitting the intermediate shape, inheriting the existing `title|date` upsert) satisfies W3's acceptance criterion — "processed identically to automated sources" — literally, and inherits idempotency for free. An Airtable-automation or standalone Node parser would fork the transform logic into a second engine and give Facebook special-case behaviour — the redundancy smell. The raw `FacebookIntake` table is a quarantine zone (unvalidated client paste never writes straight to the production pool); the parser is the boundary.
+
+### Why linkless-through, and why the link is grabbed at selection
+
+A feed screenshot structurally carries no event URLs, and FB event IDs (`facebook.com/events/{opaque-id}`) are not derivable from title/date/venue — you can only read the real `href` from the page DOM, which the screenshot discards. But a link is only *used* on the ~25 featured slots, never on the ~1,250-event pool. So requiring a URL at intake is friction in the wrong place: it would force the client to click into ~13 events weekly, ~9 of which never get featured. Deferring the link to selection means the editor grabs ~4 links/week, all on events actually shipping — the minimal, in-flow version. The pre-publish guard converts "editor forgot the link" from a silent failure into a caught one.
+
+### Why the DOM-extractor is deferred (method-fit at n=1)
+
+The technically superior fix — a client-side bookmarklet that reads the live DOM and outputs title+date+venue+link in one click — is real but carries ongoing maintenance (FB breaks its markup constantly). For one client, weekly, ~4 featured FB events, babysitting a scraper to save ~4 link-copies/week is more engineering than the problem warrants. Scale is the trigger to build it (it amortizes across clients/cities), the same logic that keeps the vision step on the client's ChatGPT rather than self-hosted. Captured as spike #67.

@@ -26,6 +26,7 @@ Status legend: **Live** (in R1) · **Ready** (probed, build-ready) · **Backlog*
 | **BiblioCommons** (Markham) | Live | Public RSS (T1) | `markham.bibliocommons.com/events/rss/all` | PASS | ❌ open | §2 |
 | **B4 — visitvaughan.ca** | **Live 2026-06-17** | `admin-ajax` direct JSON (T1) | `POST admin-ajax.php?action=haven_calendar` | PASS | ✅ 2026-06-16 | §2 |
 | **B5 — unionville.ca** | **Live 2026-06-20** | `admin-ajax` HTML cards (T4) | `POST admin-ajax.php?action=load_upcoming_events` | PASS | ✅ 2026-06-20 | §2 |
+| **Facebook** | **Built 2026-06-21** (intake live; E2E test pending) | Manual: screenshot → ChatGPT extract (`VB_FACEBOOK_INTAKE`) → Airtable form (`FacebookIntake`) → n8n adapter (10th Merge input) | events feed — no public API (deprecated); manual by design | **KEEP** — 58% of clicks (§18); linkless-through (`Source=Facebook` validity exception), link added at selection; DOM-extractor deferred (#67) | manual | DL§49 · #35 |
 | **Meetup** | Backlog (deferred) | `__NEXT_DATA__` (T3) | `meetup.com/find/ca--on--vaughan/` | **PASS** — not built for R5 (low yield); revisit if pool short; events via Facebook (W3) meanwhile | n/a | §2b |
 | **CityPlayhouse** | Backlog | 2-step crawl + Red61 JSON (T3) | `tickets.cityplayhouse.ca/events/` | PASS, not built | n/a | §2b |
 | **VPL** | Backlog | server-rendered HTML scrape (T4) | `vaughanpl.info/programs` | PASS, not built | n/a | §2b |
