@@ -7,6 +7,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 ## 2026-06-22
 - Validated the Facebook intake's AI extraction step with a purpose-built test harness that grades model output two ways: structural correctness (does it parse) and content accuracy (does it match a hand-labeled answer key) — separating well-formed output from actually-correct output.
 - Hardened the intake parser to absorb run-to-run formatting nondeterminism from the AI step deterministically, and tightened the extraction prompt to never guess a location it can't read — converting a silent wrong-value failure into an honest blank for the editor to resolve.
+- Proved the Facebook intake works end-to-end on a real submission, and in doing so found and fixed a bug that was silently discarding every manually-sourced event before it reached the candidate pool.
+- Resolved how the pipeline should reconcile the same event arriving from multiple sources: keep the richest record rather than the last one in, so source attribution stays honest and the data feeding future event-scoring stays clean.
 
 ## 2026-06-21
 - Built a manual Facebook-events intake path: the editor screenshots the local Facebook events feed, an AI prompt converts it to a clean structured table, and a simple form feeds those events into the same pipeline as every automated source — capturing high-engagement events that have no public API.

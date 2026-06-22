@@ -1,5 +1,5 @@
 # NLAP Decision Log
-*Last updated: 2026-06-11*
+*Last updated: 2026-06-22*
 
 This document records the reasoning behind every significant design and editorial decision in the pipeline. It is intended to be read by anyone who needs to understand not just what the system does, but why it works the way it does — including future collaborators (Nate) and future-you after time away.
 
@@ -1519,3 +1519,26 @@ A prompt rule ("end every row with a trailing tab") is a nudge an LLM obeys prob
 ### Why ~17% title-misread is acceptable here (and where it isn't)
 
 Screenshot OCR misreads proper nouns — measured at 3/18 titles on the labeled sample (VTHCO→VTHO, Sandusk→Sandbox, Ramblin'Soul→Ramblin'Lou). These are *silent*: they parse clean and the structural grader passes them; only a hand-labeled accuracy diff catches them. They are tolerable because a wrong title on the ~1,250-event pool costs nothing and the ~4 featured FB events pass under the editor's eye at blurb-time — the human-in-loop is the real backstop. The corollary is the hard limit: the title field must NOT feed any automated consumer (cross-source dedup, auto-publish). That, or volume, is the trigger to build #67 — the DOM carries the true text the screenshot has already thrown away.
+
+
+## 51. Multi-Source Collision → Richest-Wins Golden Record; Source Is Provenance, Not (Yet) a Scoring Signal; Facebook's Marginal Value Is Unmeasured and Gated to R6-W4 (2026-06-22)
+
+**Decision: when ≥2 sources carry the same event (same `title|date`), the surviving record is the *richest* one (has a URL / more complete fields) — not the last in Merge order. `Source` becomes provenance metadata only; it is NOT used as a scoring signal until R6-W4's backtest proves it earns its place. The R6 scoring signal is event *content/intrinsic features* (venue, category, segment, title text), which are dedup-stable, not `Source`, which is dedup-dependent. §18's "Facebook = 58% of clicks" is treated as contaminated by the client's pre-pipeline sourcing and is NOT carried forward; Facebook's true marginal value under broad sourcing is measured once, in R6-W4, with an explicit keep/kill criterion (#69). Facebook intake ships as-is for R5 sign-off regardless.**
+
+*Decided 2026-06-22, Ariel + Claude. Surfaced by W3 (#35) once the Clean/Filter fix let Facebook events flow and they collided with AllEvents. Extends §49/§50.*
+
+### Why this is a pipeline-wide survivorship problem, not a Facebook bug
+
+This is textbook entity-resolution + survivorship: N records refer to one real-world event; which field values survive into the golden record. It had been resolved *by accident* — Merge input order (last-wins), so Facebook (input 9) clobbered the `Source` of any colliding AllEvents record while the linkless FB record's empty URL left the existing AllEvents URL in place (or, in a same-run first-encounter, lost the URL entirely). It applies to every aggregator, not just FB — several of our sources (notably AllEvents) themselves aggregate from Facebook and from each other, so cross-source overlap is common (observed live: ~8 of 17 FB events in the shotC test collided with AllEvents). The fix is one comparator in `Build Upsert Batches`: prefer the URL-bearing / more-complete record, never let a linkless record overwrite an existing `Source`/`URL`. Implementation tracked in #70 — it mutates the shared dedup for ALL sources and ships Thursday, so it requires a before/after per-source count diff and must never touch `Lock=true` rows.
+
+### Why Source is provenance, not a scoring signal (yet)
+
+Intrinsic features (venue, category, segment, title text) are properties of the *event* — identical no matter which source won the collision (dedup-stable). `Source` is an artifact of the survivorship rule (dedup-dependent), so using it as a scoring signal couples scoring to pipeline mechanics. The roadmap already half-knows this: the 2026-06-04 R6 amendment flags `Source` as INERT until populated/clean, and R6-W4 already plans to backtest whether scoring signals beat a trivial sort and "simplify if not." So we do NOT pre-decide Source's fate — we make it *clean* (richest-wins) so R6-W4 can test it fairly. Useful byproduct: with richest-wins, `Source = Facebook` ⟺ "Facebook-exclusive event," which is the exact attribution signal the retrospective needs, for free.
+
+### Why Facebook's value must be re-measured (and the thin-data corollary)
+
+The 58% was measured when the client pulled ~28 events/week with Facebook as his primary channel — it reflects his old sourcing mix, not Facebook's marginal value now that broad aggregator coverage exists. Under richest-wins, the only events left tagged `Source=Facebook` are the data-thin exclusives (no URL, no description), which are structurally disadvantaged for any content-based scorer — risking the R6 quality floor silently dropping click-rich-but-text-poor FB events before the editor sees them. Mitigation if the retrospective proves FB-exclusive events valuable: a floor-exemption (same shape as linkless-through) so they always reach the editor; and/or the #67 DOM-extractor, which removes the thinness at source. None of this is built now — at ~4 featured FB events/issue, editor-backfill at selection already covers it (method-fit at n=1). The triggers to escalate are scale, a second FB-heavy client, or the retrospective showing the exclusives are click-rich.
+
+### What ships for R5 vs. what's deferred
+
+R5: Facebook intake ships as-is (it's built; it's the sign-off gate). Richest-wins is a data-quality fix the live pipeline needs regardless (#70). Deferred to R6-W4: the Facebook keep/kill retrospective (#69) — metric is per-event click rate of FB-exclusive *featured* events vs aggregator-sourced featured events; directional go/no-go only (editor-championing + grassroots skew are confounds), folded into the already-scheduled clicks analysis, not a standalone project.
