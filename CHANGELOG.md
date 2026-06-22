@@ -7,6 +7,7 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 ## 2026-06-21
 - Built a manual Facebook-events intake path: the editor screenshots the local Facebook events feed, an AI prompt converts it to a clean structured table, and a simple form feeds those events into the same pipeline as every automated source — capturing high-engagement events that have no public API.
 - Wired Facebook in as a tenth source branch in the live ingestion workflow, with a tailored rule that lets these manually-sourced events through and defers link collection to the point an event is actually selected for publication.
+- Established release sign-off governance: every unit of work is a tracked issue assigned to a release milestone, and a release closes only when its milestone is fully reconciled (each issue completed or explicitly deferred with a reason) — a lightweight, audit-clean process that prevents work from silently slipping between releases.
 
 ## 2026-06-20
 - Added a seventh event source — the Unionville (Main Street BIA) community calendar — to the live ingestion pipeline, contributing curated neighbourhood, gallery, and festival events; closes the additive-source phase of the current release.
