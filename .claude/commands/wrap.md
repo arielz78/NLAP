@@ -49,7 +49,11 @@ Wrap up this session. Follow these steps in order:
      number update (this is the number's one home; narrative docs render from
      it later — never author the number elsewhere). If no → skip.
    - **GitHub issues** (`arielz78/NLAP`) — any issue to open (new debt/spike)
-     or close (resolved this session)? Propose; don't auto-file.
+     or close (resolved this session)? Propose; don't auto-file. **Every issue
+     opened gets a release milestone at creation** (the milestone, not just the
+     `r{N}` label, is the accounting unit for the release sign-off-completeness
+     gate — see R5_Scope). Scale-gated/optional spikes go to their real future
+     release or stay backlog — never the active milestone, or it can't reach 100%.
    - Whatever changed goes to its one home only — never duplicate across homes.
 
 5. Show me every drafted entry before/after writing so I can eyeball it.
