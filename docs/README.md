@@ -50,7 +50,7 @@ never changes, whereas type (working → frozen) does.
 
 - **Started releases** (R5) → that section is **frozen intent**. Read the release's Scope doc for status; read the roadmap only for the *original* plan. The plan-vs-actual gap is intentional writeup material — never sync the roadmap to reality.
 - **Not-yet-started releases** (R6–R8) → the roadmap **is** their live source of truth. There's no Scope doc yet.
-- A section freezes **the moment its release gets a Scope doc.** When you open R6, seed `docs/r6/R6_Scope.md` from the roadmap's R6 section; from then on R6 status lives in the Scope doc.
+- A section freezes **the moment its release gets a Scope doc.** When you open R6, seed `docs/r6/R6_Scope.md` from the roadmap's R6 section; from then on R6 status lives in the Scope doc. **Every Scope doc carries a milestone-completeness sign-off gate** (copy R5_Scope's): the release closes only when no open issue is unmilestoned *and* every issue in that release's GitHub milestone is closed or deferred-with-disposition. This gate is status, so it lives in the Scope doc, never the roadmap.
 - Post-R8, when every section has been consumed, the whole roadmap retires to `docs/archive/`.
 
 ## Two patterns that prevent "writing the same thing twice"
