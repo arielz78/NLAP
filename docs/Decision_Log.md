@@ -1542,3 +1542,24 @@ The 58% was measured when the client pulled ~28 events/week with Facebook as his
 ### What ships for R5 vs. what's deferred
 
 R5: Facebook intake ships as-is (it's built; it's the sign-off gate). Richest-wins is a data-quality fix the live pipeline needs regardless (#70). Deferred to R6-W4: the Facebook keep/kill retrospective (#69) — metric is per-event click rate of FB-exclusive *featured* events vs aggregator-sourced featured events; directional go/no-go only (editor-championing + grassroots skew are confounds), folded into the already-scheduled clicks analysis, not a standalone project.
+
+### Refinement (2026-06-23): the "more complete fields" comparator, made concrete (#70 build)
+
+"Richest" above is made concrete as a **source-agnostic ordered comparator** in `Build Upsert Batches`, not a URL-only rule:
+1. **URL present beats URL absent** — primary. Cleanly demotes every linkless record and preserves the featured-link path.
+2. **Tie → longer `DescriptionRaw` wins** — serves the R6 *content* scorer (which §51 commits to as the scoring signal). This tier only fires between **aggregators that both carry a URL** (Eventbrite/AllEvents/RSS/McMichael), never for Facebook.
+3. **Tie → last in Merge order** — harmless fallback, preserves prior behaviour.
+
+**Why description is a tier but never decides a Facebook collision:** the FB intake schema (`docs/client_prompts/4_VB_FACEBOOK_INTAKE_v1.md`) is six columns — `Title StartDate EndDate LocationName City Link` — with **no Description field at all**. An FB record is therefore structurally thin on *both* URL and description; it loses every collision on tier 1 alone. The "FB has a rich description the aggregator lacks" conflict cannot occur — the data model forecloses it. So FB's surviving count is always the floor, which is the intended byproduct: `Source=Facebook` ⟺ FB-exclusive (the signal #69 needs), for free.
+
+**DoD read (asymmetry to respect):** the before/after per-source count diff is the safety gate (mutates shared dedup for all sources, ships Thursday). A **drop in FB count is expected and correct** (collisions reattributed to richer aggregators); the red flags are an *aggregator* losing records, or FB collapsing to ~zero. Never overwrite `Lock=true` rows. Comparator never references `sourceCanonical` (the portability rule — transfers to client #2 unchanged).
+
+### Follow-on (2026-06-23): AllEvents `DescriptionRaw` was polluted — source cleanup self-heals the comparator + a metadata-extraction substrate (#72)
+
+Building #70 surfaced that **AllEvents was the worst record winning EB↔AllEvents collisions** — the comparator's tier-2 "longer `DescriptionRaw`" was being gamed because AllEvents Normalize *concatenated* `AllEvents Categories/Organizer/Score` into `DescriptionRaw` (the API has **no description field**). So a 144-char metadata blob beat Eventbrite's real 100-char description, surrendering the primary `eventbrite.ca` link for a secondhand `allevents.in` relisting. The blob also poisoned the R6 content-scoring signal §51 commits to.
+
+**Resolution (this is R5 substrate, not R6 — building clean data ≠ scoring it):**
+- **Extraction, not blob:** the AllEvents API already returns `categories`/`organizer.name`/`score` as discrete fields; the normalize nodes (all 3, per-city — kept byte-identical) now emit `Organizer` / `SourceScore` / `SourceCategories` and leave `DescriptionRaw` empty. New Candidates fields added (source-agnostic names, not "AllEvents…", per portability). `Clean/Filter`'s allowlist had to carry the new keys or they'd be dropped before `Build Upsert` (hidden pipeline contract).
+- **The comparator self-healed:** with `DescriptionRaw` empty, tier-2 makes Eventbrite (any real-description source) win automatically — **no source-tier coupling needed.** Verified live: EB↔AllEvents collisions flipped 0→31 Eventbrite wins. The "survivorship problem" was mostly a "we polluted the field we compare on" problem.
+- **Field-level merge (justified here, not for FB):** record-level richest-wins picks EB's record, but `Organizer`/`SourceScore`/`SourceCategories` are only set by AllEvents, which now *loses*. So those specific fields are overlaid (best-of-each by presence, source-agnostic) onto the winner — substrate completeness so R6-W4 can backtest them. This is the field-level case #70's DoD said to build "only if an aggregator fills a field others leave blank" — true for AllEvents, false for FB.
+- **Backfill required (the empty-omit trap):** the upsert omits empty values, so it can never blank the old blob on existing rows. `scripts/backfillAllEventsDescription.js` (idempotent, PATCH = partial update) blanked `DescriptionRaw` on 487 rows, recovering metadata into the new fields for the 165 not re-ingested. R6 scoring fate of `SourceScore`/`SourceCategories`/`Organizer` stays deferred to R6-W4; `Organizer` has a clear consumer in #65.

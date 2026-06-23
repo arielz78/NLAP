@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-06-23
+- Hardened the event-deduplication logic so the richest record (real description + primary link) wins when multiple sources list the same event, replacing an order-dependent rule that could keep the weaker copy.
+- Restructured AllEvents ingestion to store organizer, popularity score, and categories as discrete, queryable fields instead of one concatenated text blob — cleaning the data that feeds downstream event scoring; backfilled 487 existing records.
+
 ## 2026-06-22
 - Validated the Facebook intake's AI extraction step with a purpose-built test harness that grades model output two ways: structural correctness (does it parse) and content accuracy (does it match a hand-labeled answer key) — separating well-formed output from actually-correct output.
 - Hardened the intake parser to absorb run-to-run formatting nondeterminism from the AI step deterministically, and tightened the extraction prompt to never guess a location it can't read — converting a silent wrong-value failure into an honest blank for the editor to resolve.

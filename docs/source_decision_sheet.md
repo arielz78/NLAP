@@ -50,7 +50,7 @@ Stable technical detail per live/ready source. This is build + maintenance refer
 - `POST https://allevents.in/api/events/list`, body: `{"city":"vaughan","country":"canada","page":0,"rows":500,...}`. `rows=500` returns full set, no pagination at current volume. Three branches, one per city.
 - **Response: top-level key is `data`** (not `events`).
 - Field map: `eventname`→title · `start_time` (Unix)→StartDate · `end_time`→EndDate · `event_url`→Link · **`venue.name` always empty** → locationName = `full_address` segment before first comma · `venue.city`→geo-filter (CITY_MAP).
-- Folded into DescriptionRaw with `AllEvents:` prefix: `categories[]`, `organizer.name`, `score` (internal popularity).
+- Extracted to **discrete Candidates fields** (#72, 2026-06-23): `categories[]`→`SourceCategories` · `organizer.name`→`Organizer` · `score` (internal popularity)→`SourceScore`. **`DescriptionRaw` left empty** — the API carries no event description. Previously these were concatenated into `DescriptionRaw`, which let AllEvents win richest-wins survivorship on raw length and polluted the R6 content signal — see DL§51 follow-on.
 - Available but uncaptured (low priority): `featured`, `tags`, `tickets.has_tickets`, `going.totalCount` (RSVP).
 - Build: `AllEvents Fetch` (HTTP POST, UA header) → `AllEvents Normalize` (geo + decodeEntities). Exec #440: 233 fetched → 154 in-window.
 
@@ -176,6 +176,8 @@ Append-only. One-to-three lines per probe/decision. Technical findings live in �
 **2026-06-16 — Doc correction: TRCA is Kortright + Black Creek, not "Kortright only."** Live RSS code filters `Pine Valley`/`Kortright` OR `Murray Ross` (Black Creek). The 2026-06-10 "Kortright only" note below was an oversimplification; only the standalone Black Creek JSON-LD *scrape* was retired (2026-06-12), never the events. §2 corrected.
 
 **2026-06-12 — TRCA Black Creek JSON-LD retired.** RSS branch catches 27/27 of the scrape's events and 122 vs 27 total (scrape only crawled 3 hardcoded pages). Strict subset → scrape retired, 6 nodes deleted.
+
+**2026-06-23 — AllEvents metadata extracted out of DescriptionRaw (#72).** `score`/`organizer`/`categories` moved from the concatenated `DescriptionRaw` blob into discrete `SourceScore`/`Organizer`/`SourceCategories` fields; `DescriptionRaw` now empty for AllEvents (no API description). Fixes richest-wins survivorship (Eventbrite's primary link + real description now wins EB↔AllEvents collisions) and de-pollutes the R6 content signal; 487 existing rows backfilled. See DL§51 follow-on.
 
 **2026-06-12 — BiblioCommons full verification.** 123 records, 0 missing DescriptionRaw/City, CITY_MAP correct. Branch healthy, closed.
 
