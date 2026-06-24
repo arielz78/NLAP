@@ -5,6 +5,7 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-06-24
+- Built the Vaughan Public Libraries integration into the live ingestion pipeline — a two-step calendar-grid + per-program-detail scraper covering all 14 branches — and verified it end-to-end, adding ~200 civic/library events to the candidate pool. Restructured the pipeline's merge stage to stay within tooling limits as sources scale.
 - Vaughan Public Libraries source: completed a deep integration re-probe and revised the ingestion method to a calendar-grid scrape (all 14 branches, dated occurrences) plus a per-program description fetch — improving coverage and data completeness over the original single-page approach. Documented the full surface evaluation in the source register.
 - Completed a full source-reconciliation audit: catalogued every event source the client uses against what the pipeline already ingests, then evaluated each candidate by the supply it *uniquely* adds rather than its raw size — dropping redundant aggregators and identifying two civic/library sources worth adding.
 - Probed the shortlisted new sources hands-on (rather than by assumption), confirming clean integration paths and measuring real overlap with existing feeds, so the build-vs-skip call for each rests on evidence.
