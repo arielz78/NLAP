@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-06-24
+- Added a publish-time safeguard that blocks any featured event with a missing link from going out with a dead link, and built a monitoring check that flags when the manual Facebook intake has gone quiet — surfacing a missed submission to the operator before it can thin out an issue.
+- Closed out a backlog of older tracked items by verifying each against the live system: several were already resolved by recent design changes, one was reclassified to a later release, and a parser fix was carried into the production workflow so it no longer diverged from the tested version.
+
 ## 2026-06-23
 - Hardened the event-deduplication logic so the richest record (real description + primary link) wins when multiple sources list the same event, replacing an order-dependent rule that could keep the weaker copy.
 - Restructured AllEvents ingestion to store organizer, popularity score, and categories as discrete, queryable fields instead of one concatenated text blob — cleaning the data that feeds downstream event scoring; backfilled 487 existing records.

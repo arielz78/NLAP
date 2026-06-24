@@ -6,6 +6,7 @@
 //   2. integrityCheck.js      — silent-corruption alarm (Approved→New, lock-drop)
 //   3. overlapAudit.js        — cross-source duplicate health
 //   4. depthCheck.js          — per-issue in-window pool depth vs floor
+//   5. facebookSubmissionCheck.js — Facebook 0-submission / stale-intake alarm
 //
 // Each check runs even if an earlier one fails; a single combined exit code and
 // summary are returned at the end. If DISCORD_WEBHOOK_RUNLOGS is set in the env,
@@ -23,6 +24,7 @@ const CHECKS = [
   { name: "integrity", file: "integrityCheck.js" },
   { name: "overlap", file: "overlapAudit.js" },
   { name: "depth", file: "depthCheck.js" },
+  { name: "fbsubmission", file: "facebookSubmissionCheck.js" },
 ];
 
 function runOne(file) {
@@ -70,7 +72,7 @@ async function main() {
   const stamp = new Date().toISOString().slice(0, 16).replace("T", " ");
   let summary = `**Post-R1 checks — ${stamp}**\n`;
   summary += allOk
-    ? "✅ All four checks passed."
+    ? "✅ All five checks passed."
     : `🚨 FAILED: ${failed.join(", ")}.`;
   if (failed.includes("integrity")) {
     const integ = results.find((r) => r.name === "integrity");

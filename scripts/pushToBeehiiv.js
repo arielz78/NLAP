@@ -213,6 +213,17 @@ async function main() {
     throw new Error('Execution stopped: missing blurbs on one or more IssueItems. Run generateBlurbs.js first.');
   }
 
+  // 3.5 Pre-publish blank-link guard (§51 linkless-through pairs with this).
+  //     Linkless candidates are allowed into the pool but never out to print:
+  //     a featured item with a blank URL renders href="#" (dead link). Fail loud
+  //     at export so the editor backfills a real link before publish.
+  const linkless = items.filter(i => !i.candidateUrl || i.candidateUrl === '#');
+  if (linkless.length) {
+    console.warn(`\n⚠️  ${linkless.length} featured item(s) have no link — would publish a dead href="#":`);
+    linkless.forEach(i => console.warn(`   [${i.section} / Slot ${i.slot}] ${i.displayTitle || '(no title)'}`));
+    throw new Error('Execution stopped: featured item(s) missing a link. Backfill CandidateURL in Airtable before exporting.');
+  }
+
   // 4. Group by section and log
   const sections = {};
   for (const item of items) {
