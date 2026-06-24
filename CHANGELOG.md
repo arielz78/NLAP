@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-06-24
+- Completed a full source-reconciliation audit: catalogued every event source the client uses against what the pipeline already ingests, then evaluated each candidate by the supply it *uniquely* adds rather than its raw size — dropping redundant aggregators and identifying two civic/library sources worth adding.
+- Probed the shortlisted new sources hands-on (rather than by assumption), confirming clean integration paths and measuring real overlap with existing feeds, so the build-vs-skip call for each rests on evidence.
 - Added a publish-time safeguard that blocks any featured event with a missing link from going out with a dead link, and built a monitoring check that flags when the manual Facebook intake has gone quiet — surfacing a missed submission to the operator before it can thin out an issue.
 - Closed out a backlog of older tracked items by verifying each against the live system: several were already resolved by recent design changes, one was reclassified to a later release, and a parser fix was carried into the production workflow so it no longer diverged from the tested version.
 

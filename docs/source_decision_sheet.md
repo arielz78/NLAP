@@ -27,10 +27,16 @@ Status legend: **Live** (in R1) · **Ready** (probed, build-ready) · **Backlog*
 | **B4 — visitvaughan.ca** | **Live 2026-06-17** | `admin-ajax` direct JSON (T1) | `POST admin-ajax.php?action=haven_calendar` | PASS | ✅ 2026-06-16 | §2 |
 | **B5 — unionville.ca** | **Live 2026-06-20** | `admin-ajax` HTML cards (T4) | `POST admin-ajax.php?action=load_upcoming_events` | PASS | ✅ 2026-06-20 | §2 |
 | **Facebook** | **Built 2026-06-21** (intake live; E2E test pending) | Manual: screenshot → ChatGPT extract (`VB_FACEBOOK_INTAKE`) → Airtable form (`FacebookIntake`) → n8n adapter (10th Merge input) | events feed — no public API (deprecated); manual by design | **KEEP** — 58% of clicks (§18); linkless-through (`Source=Facebook` validity exception), link added at selection; DOM-extractor deferred (#67) | manual | DL§49 · #35 |
-| **Meetup** | Backlog (deferred) | `__NEXT_DATA__` (T3) | `meetup.com/find/ca--on--vaughan/` | **PASS** — not built for R5 (low yield); revisit if pool short; events via Facebook (W3) meanwhile | n/a | §2b |
-| **CityPlayhouse** | Backlog | 2-step crawl + Red61 JSON (T3) | `tickets.cityplayhouse.ca/events/` | PASS, not built | n/a | §2b |
-| **VPL** | Backlog | server-rendered HTML scrape (T4) | `vaughanpl.info/programs` | PASS, not built | n/a | §2b |
-| **Richmond Hill** (city) | Unresolved | calendar backend, method TBD | `calendar.richmondhill.ca` | HOLD — never fully probed | n/a | §2b |
+| **Meetup** | Backlog (deferred) | `__NEXT_DATA__` (T3) | `meetup.com/find/ca--on--vaughan/` | **PASS** — not built for R5 (low yield); revisit if pool short; events via Facebook (W3) meanwhile. **Inoreader-only, never in R1** (#73) | n/a | §2b |
+| **CityPlayhouse** | Backlog | 2-step crawl + Red61 JSON (T3) | `tickets.cityplayhouse.ca/events/` | PASS, not built. **Inoreader-only, never in R1** (#73); single venue, low yield | n/a | §2b |
+| **VPL** | **Ready (build-next)** | server-rendered HTML scrape (T4) | `vaughanpl.info/programs` | PASS — spec re-confirmed live 2026-06-24 (#73); queued for build sprint. **Inoreader-only, never in R1** | ❌ open | §2b |
+| **onrichmondhill.com** | **Ready (build-next)** | Drupal 7 RSS (T2) | `/?q=events/feed` (+ `/rss.xml`) | PASS — ~75% exclusive vs AllEvents RHill (#73), civic/community supply aggregators miss; queued for build sprint | ❌ open | PL 06-24 |
+| **Richmond Hill** (city) | Unresolved | calendar backend, method TBD | `calendar.richmondhill.ca` | HOLD — never fully probed. **Distinct from onrichmondhill.com** (#73); likely exclusive civic supply | n/a | §2b |
+| **Cooking/paint cluster** (Pinot's Palette + Little Kitchen Academy, Chef Upstairs, Rooks to Cooks, Longo's) | Backlog (category-gated) | per-venue scrape/calendar | various | PASS-exclusive (none on Eventbrite York, #73) but 5 low-yield single-venue builds → feeds For Couples / Trust Me Recipe; build only if category wanted | n/a | PL 06-24 |
+| **todocanada.ca** | **Dropped** | aggregator | `/city/toronto/vaughan-events/` | DROP (#73) — pure aggregator, re-lists Kortright/Wonderland already ingested; ~zero exclusive supply | n/a | PL 06-24 |
+| **experienceyorkregion.com** | **Dropped** | — | root | DROP (#73) — root domain "Account Suspended" + redundant aggregator | n/a | PL 06-24 |
+| **feverup candlelight** | **Dropped** | — | `feverup.com/en/toronto/candlelight` | DROP (#73) — Toronto geo, out of scope | n/a | PL 06-24 |
+| **jazzlicious.ca** | **Dropped** | — | — | DROP (#73) — no editorial fit (client-confirmed) | n/a | PL 06-24 |
 
 **Field audit = ❌ open:** a full raw-response sweep (every key, not just the fields used at build) hasn't been done. Required before R5 close — see the [field-inventory gate in R5_Scope](R5_Scope.md). AllEvents, B4/visitvaughan, and B5/unionville are swept; the rest (Eventbrite, McMichael, TRCA RSS, BiblioCommons) remain open.
 
@@ -169,7 +175,9 @@ Tiers 1–2 = reusable integration code (ports to client #2). Tiers 3–4 = one-
 
 ## 4. Probe Log
 
-Append-only. One-to-three lines per probe/decision. Technical findings live in §2; this is the chronological trail. `DL§` = Decision_Log.
+Append-only. One-to-three lines per probe/decision. Technical findings live in §2; this is the chronological trail. `DL§` = Decision_Log. `PL` = this Probe Log.
+
+**2026-06-24 — #73 source reconciliation: frontier probed, 4 dropped, 2 build-ready.** Catalogued all client-screenshot + Inoreader sources; confirmed **Inoreader ≠ R1** (CityPlayhouse/VPL/Meetup never wired in). **onrichmondhill.com** → Drupal 7, live RSS `/?q=events/feed` (Tier 2); overlap spot-check vs live AllEvents RHill API (172 ev) = **~75% exclusive**, civic/community supply → Ready. **VPL** spec re-confirmed live → Ready. **richmondhill.ca** (municipal) = unprobed candidate, distinct from onrichmondhill.com. **Cooking/paint cluster** exclusive (none on Eventbrite York, 175 ev checked) but category-gated (5 builds). **Dropped:** todocanada (redundant aggregator), experienceyorkregion (suspended + redundant), feverup (Toronto), jazzlicious (no fit). Value test applied: marginal *exclusive* supply that fits a segment, not volume. VPL+onrichmondhill queued for next-session build sprint.
 
 **2026-06-16 — B4 visitvaughan Step-0 sweep ✅ + corrections.** Full 33-key dump (§2). Confirmed: no `data` wrapper (top = `results`/`settings`/`query`); events nested in `results[date].list_items[]`; `search_date` the only live param (`municipality` hardcoded Vaughan, ignored); monthly windowing → loop 2 months; 62 rows = 37 distinct `product_id` (multiday repeats). **Haven API auth-gated (401) — admin-ajax is its authenticated proxy, stay on it.** **Geo: no filter** — the ~19% "North York" is Black Creek Pioneer Village, in-scope (TRCA RSS already ingests it). DescriptionRaw = description/excerpt + `product_types` + `product_cost`, no street address (no R6/R7 signal).
 
