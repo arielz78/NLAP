@@ -1563,3 +1563,17 @@ Building #70 surfaced that **AllEvents was the worst record winning EB↔AllEven
 - **The comparator self-healed:** with `DescriptionRaw` empty, tier-2 makes Eventbrite (any real-description source) win automatically — **no source-tier coupling needed.** Verified live: EB↔AllEvents collisions flipped 0→31 Eventbrite wins. The "survivorship problem" was mostly a "we polluted the field we compare on" problem.
 - **Field-level merge (justified here, not for FB):** record-level richest-wins picks EB's record, but `Organizer`/`SourceScore`/`SourceCategories` are only set by AllEvents, which now *loses*. So those specific fields are overlaid (best-of-each by presence, source-agnostic) onto the winner — substrate completeness so R6-W4 can backtest them. This is the field-level case #70's DoD said to build "only if an aggregator fills a field others leave blank" — true for AllEvents, false for FB.
 - **Backfill required (the empty-omit trap):** the upsert omits empty values, so it can never blank the old blob on existing rows. `scripts/backfillAllEventsDescription.js` (idempotent, PATCH = partial update) blanked `DescriptionRaw` on 487 rows, recovering metadata into the new fields for the 165 not re-ingested. R6 scoring fate of `SourceScore`/`SourceCategories`/`Organizer` stays deferred to R6-W4; `Organizer` has a clear consumer in #65.
+
+---
+
+## 52. Online / Blank-Venue Events — KEEP in the Pool (reverses the June 11 drop recommendation) (2026-06-24)
+
+The June 11 client meeting prep recommended **dropping** Eventbrite online / blank-venue events ("online events don't fit a neighbourhood newsletter"). At the June 24 meeting the client overruled that: online events — Eventbrite and in general — **can be included**. So the standing decision is now **KEEP**, not drop.
+
+**Why this is the client's call, not ours.** "Fit" here is editorial taste, not a technical property — the same class of judgment as the trusted-venue list and the big-event policy. We proposed drop on a plausible-sounding heuristic ("neighbourhood = physical"); the client, who owns the editorial voice, knows his readers will click some online events (virtual classes, livestreamed talks). When the call is taste and the client states a preference, the client wins — we don't re-litigate it on our heuristic.
+
+**Pipeline consequence:** any filter that currently drops or special-cases online / blank-venue / blank-city events (the #59 geo-leakage handling) must let them through. Blank `City` is already allowed through elsewhere (FB intake, §51 linkless-through) — this aligns the geo filter with that. Tracked as a build issue.
+
+## 53. Big-Event Editorial Policy — De-dupe by Date, Not by Event Name (2026-06-24)
+
+Client rule for big multi-listing events (festivals, ribfests): include multiple listings only if they are genuinely *different events*; **same-date duplicates → exclude; different-date listings of the same big event → OK to include.** This largely *confirms* the existing `title|date` UniqueEventID behaviour (different date ⟹ different key ⟹ kept) rather than changing it. Residual gap (manual, not automatable): the same big event listed under *different titles* on the *same date* across sources won't collide on `title|date`, so the editor remains the backstop for that case. No pipeline change required — editorial confirmation only.
