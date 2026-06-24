@@ -29,7 +29,7 @@ Status legend: **Live** (in R1) · **Ready** (probed, build-ready) · **Backlog*
 | **Facebook** | **Built 2026-06-21** (intake live; E2E test pending) | Manual: screenshot → ChatGPT extract (`VB_FACEBOOK_INTAKE`) → Airtable form (`FacebookIntake`) → n8n adapter (10th Merge input) | events feed — no public API (deprecated); manual by design | **KEEP** — 58% of clicks (§18); linkless-through (`Source=Facebook` validity exception), link added at selection; DOM-extractor deferred (#67) | manual | DL§49 · #35 |
 | **Meetup** | Backlog (deferred) | `__NEXT_DATA__` (T3) | `meetup.com/find/ca--on--vaughan/` | **PASS** — not built for R5 (low yield); revisit if pool short; events via Facebook (W3) meanwhile. **Inoreader-only, never in R1** (#73) | n/a | §2b |
 | **CityPlayhouse** | Backlog | 2-step crawl + Red61 JSON (T3) | `tickets.cityplayhouse.ca/events/` | PASS, not built. **Inoreader-only, never in R1** (#73); single venue, low yield | n/a | §2b |
-| **VPL** | **Ready (build-next)** | server-rendered HTML scrape (T4) | `vaughanpl.info/programs` | PASS — spec re-confirmed live 2026-06-24 (#73); queued for build sprint. **Inoreader-only, never in R1** | ❌ open | §2b |
+| **VPL** | **Ready (build-next)** | calendar grid scrape + per-program detail fetch (T4) | `vaughanpl.info/events_calendars/calendar` + `/programs/view/{id}` | PASS — method **revised** 2026-06-24 (#73 deep re-probe): calendar spine (all 14 branches, recurrences pre-expanded) + mandatory description fetch. Easier-path sweep exhausted negative. **Inoreader-only, never in R1** | ❌ open | §2b |
 | **onrichmondhill.com** | **Ready (build-next)** | Drupal 7 RSS (T2) | `/?q=events/feed` (+ `/rss.xml`) | PASS — ~75% exclusive vs AllEvents RHill (#73), civic/community supply aggregators miss; queued for build sprint | ❌ open | PL 06-24 |
 | **Richmond Hill** (city) | Unresolved | calendar backend, method TBD | `calendar.richmondhill.ca` | HOLD — never fully probed. **Distinct from onrichmondhill.com** (#73); likely exclusive civic supply | n/a | §2b |
 | **Cooking/paint cluster** (Pinot's Palette + Little Kitchen Academy, Chef Upstairs, Rooks to Cooks, Longo's) | Backlog (category-gated) | per-venue scrape/calendar | various | PASS-exclusive (none on Eventbrite York, #73) but 5 low-yield single-venue builds → feeds For Couples / Trust Me Recipe; build only if category wanted | n/a | PL 06-24 |
@@ -129,11 +129,25 @@ PASS-but-not-built and unresolved sources. Kept so a revival is a running start,
   Use `performanceRealTime` (exact zoned datetime). Title/subtitle server-rendered: `<h2 class="primary-color">` / `<h4 class="subtitle">` (subtitle = description).
 - Cost: N+1 fetches (1 listing + 1/show). Red61 JSON shape is platform-specific (won't transfer unless client #2 also runs Red61). Caveat: confirm shape stable across 3–4 detail pages before committing.
 
-**VPL — `vaughanpl.info/programs` (PASS, Tier 4, HTML scrape; high Golden Age + Families relevance)**
-- `GET /programs` — server-side rendered (the *own* site; not the BiblioCommons SPA which blocks headless).
-- Parse: date blocks (`class="month"` + `"day"` + `"weekday"`), program cards (`card_upcoming_programs`), titles (`h2 > a[href^=/programs/view/]`), times (`start_time`), library/location (`library`), description (`description`). Associate each program with the date block it sits under.
-- Pagination `/programs/page/N` (N=1–11), 31 programs/page, **programs overlap across pages** → dedup by `/programs/view/{id}` URL, then date-filter. Pages 1–4 ≈ IssueDate..+10. Scrape all 11 and let the date filter cut (page count shifts weekly — don't hardcode).
-- **No feeds exist** (blind probe 2026-06-07: `/feed/`, `?feed=rss2`, `?ical=1`, `.ics`, `/wp-json/` all dead — not even WordPress). HTML scrape is the genuine ceiling.
+**VPL — `vaughanpl.info` calendar grid + per-program detail fetch (PASS, Tier 4, HTML scrape; high Golden Age + Families relevance)**
+*Method revised 2026-06-24 (#73 deep re-probe). The old single-surface `/programs` scrape below the line is superseded — it had broken pagination + recurrence-range dates + incomplete coverage.*
+
+**Two-step integration:**
+1. **Spine — `GET /events_calendars/calendar/{year}/{month}`** (all-branches month grid; `/calendar` = current month). One fetch returns **all 14 branches, ~304 occurrences / ~85 unique programs per month**. Recurrences are **pre-expanded onto real dates** (a weekly program appears once in each day cell) — no recurrence-expansion logic needed. Parse: `<table class="table calendar">` → each `<td>` day cell has `class="cell-number"` (day-of-month; month/year from URL); events inside are `<a href="/programs/view/{id}" title="{time} {branch}" class="branch_{xx}">{title}</a>` → title, per-event URL, date (cell), time + branch (`title` attr / class). Cells can hold multiple events (`<span class="count">`). Pagination is clean: `/events_calendars/calendar/{year}/{month}` — fetch current month, +next if the 10-day window crosses month-end.
+2. **Description — `GET /programs/view/{id}`** for each **in-window unique** program ID (filter & dedup on the calendar data first → ~15–30 fetches, one per program, reused across its occurrences). Description is a clean plain-text `<div class="description">` (no tags to strip). **Mandatory, not optional:** `DescriptionRaw` is the R6 content-scoring signal + segment-classification input (Decision_Log §51 thin-data corollary) — calendar-only events would be silently handicapped.
+
+**Also capture `category`** (`.category` link, e.g. "Pre-school Programs") — a self-categorization signal that's *stronger than the blurb* for segment classification; civic/library sources hand you this free, aggregators don't.
+
+**Field coverage (all required Candidate fields satisfiable):** Title/URL/Date/EndDate/LocationName(branch)/City(=Vaughan, all 14 branches)/Source/UniqueEventID from the calendar; **DescriptionRaw from the detail fetch.**
+
+**Easier-path sweep — exhausted negative (2026-06-24):** BiblioCommons RSS `vaughanpl.bibliocommons.com/events/rss/all` = **0 items** (VPL uses BiblioCommons for catalogue/account only, not events — vs Markham's 1,158); no JSON API (`/api/programs`, `/jsonapi` → 404); no JSON-LD `@type:Event`; no iCal/RSS export on the calendar (`?format=ical`/`?ical=1` fake-out → `text/html`; `.ics`/`/feed`/`/rss` all 404); fully server-rendered PHP (jQuery/Bootstrap, no XHR data layer) → DevTools reveals nothing curl doesn't. `/programs` listing carries descriptions inline but has **broken pagination** (`:action` is an unsubstituted server-side template var; `/page/N` silently returns page 1) → only ~22 of 85 reachable, so it's neither a complete spine nor a complete description source. The calendar+detail two-step is the genuine ceiling.
+
+<details><summary>Superseded original entry (2026-06-06, kept for trail)</summary>
+
+- `GET /programs` — server-side rendered. Parse date blocks (`class="month"`/`"day"`/`"weekday"`), `card_upcoming_programs`, `h2 > a`, `start_time`, `library`, `description`.
+- *Claimed* pagination `/programs/page/N` (N=1–11), 31/page — **wrong**: that pagination is broken (see sweep above).
+- No feeds (re-confirmed 2026-06-24).
+</details>
 
 **Meetup — `meetup.com/find/ca--on--vaughan/` (PASS, Tier 3, deferred — not built for R5; revisit if pool short. Events via Facebook W3 meanwhile)**
 - `GET` the discovery page (not per-group — iCal exports cap at ~10/group). Parse `__NEXT_DATA__.props.pageProps`.
