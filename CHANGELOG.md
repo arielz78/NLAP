@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-06-25
+- Closed a geographic-accuracy gap in the ticketing-platform feed: added a strict allowed-city filter so events from neighbouring towns (Newmarket, Aurora, Toronto, and others) no longer slip into a newsletter scoped to three specific municipalities. Before changing anything, simulated the filter on real feed data to prove every removed event was genuinely out-of-area — and caught a case where a naive rule would have wrongly dropped events at a beloved local heritage venue.
+- Verified the fix on a live run (every kept event now in-area), cleaned 50 pre-existing out-of-area records from the pool, and confirmed the full health-check suite still passes.
 - Implemented the client's "include online events" decision as a source-aware rule rather than a blanket filter change: kept genuinely-local library virtual programs (yoga for older adults, retirement planning, virtual tutoring) while dropping global/foreign webinars that a broad ticketing platform was mislabeling as local — and purged 72 already-contaminated records.
 - Audited every ingestion branch to locate where online events were being kept, dropped, or mislabeled before changing anything; verified the fix end-to-end on a live run and confirmed the full health-check suite passes.
 
