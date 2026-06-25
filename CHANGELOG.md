@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-06-25
+- Implemented the client's "include online events" decision as a source-aware rule rather than a blanket filter change: kept genuinely-local library virtual programs (yoga for older adults, retirement planning, virtual tutoring) while dropping global/foreign webinars that a broad ticketing platform was mislabeling as local — and purged 72 already-contaminated records.
+- Audited every ingestion branch to locate where online events were being kept, dropped, or mislabeled before changing anything; verified the fix end-to-end on a live run and confirmed the full health-check suite passes.
+
 ## 2026-06-24
 - Held a client review that closed the source-expansion sign-off: confirmed the full source list, secured the client's commitment to the weekly manual-intake step, and resolved four outstanding editorial decisions (online events, big-event handling, trusted-venue list, feed cleanup).
 - Settled a "which venues to add" question with data rather than guesswork — counted how often each candidate venue had actually been featured across 72 past issues, which collapsed five possible builds down to the two the editor genuinely relies on.

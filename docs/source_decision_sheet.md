@@ -52,7 +52,7 @@ Stable technical detail per live/ready source. This is build + maintenance refer
 - Internal `city-browse` API — same call the live Eventbrite site makes (not a workaround). Placeholder token accepted (no real CSRF auth needed).
 - **Geo level:** Vaughan-specific `place_id=85633793` returns **0 events** — must use York Region `place_id=101740741`.
 - **Substrate gap (R6):** existing branch does **not** write `LocationName`/`Source` (0% populated). Retrofit = W2b, ships alone (Decision_Log §; R5_Scope #4).
-- ~30 foreign domains (`.de`/`.fr`/`.sg`/`.com.au`) leak past geo-filter — W2c #5.
+- ~30 foreign domains (`.de`/`.fr`/`.sg`/`.com.au`) leak past geo-filter — W2c #5. **Partial fix 2026-06-25 (#81):** `Eventbrite Normalize` now drops venueless events (`if(!venueCity) continue`) — kills the blank-venue → defaulted-`Vaughan` slice (the bulk of the foreign/B2B webinars); 72 contaminated rows purged. **Still open (#59):** Eventbrite has no `CITY_MAP`/out-of-range gate (named non-target cities — Newmarket/Aurora/North York — still pass) and no language filter; plus a blank-*Source* historical tail (28% LocationName fill, 513 blank-Source records).
 
 ### AllEvents (live — Vaughan / Richmond Hill / Markham branches)
 - `POST https://allevents.in/api/events/list`, body: `{"city":"vaughan","country":"canada","page":0,"rows":500,...}`. `rows=500` returns full set, no pagination at current volume. Three branches, one per city.
@@ -81,6 +81,7 @@ Stable technical detail per live/ready source. This is build + maintenance refer
 - Field map: `bc:start_date` (ISO) · `bc:end_date` · `bc:location` (name + city + street + lat/long) · `category domain="Audience"` (Children→Families, Seniors→Golden Age) · title, link, description.
 - ⚠️ Map `bc:start_date`, not `isoDate`. Geo via `bc:city`. Native n8n RSS Read node.
 - Verified 2026-06-12: 123 records, 0 missing DescriptionRaw, 0 missing City, CITY_MAP correct.
+- **Online programs kept 2026-06-25 (#81 / DL§52 refinement):** virtual MPL programs carry an empty `bc:location` (no name, no city) — previously dropped (`if(!locationName) continue`). Now kept and tagged `City='Online'`, `LocationName='Online (Markham Public Library)'`. Justified because the feed *is* the Markham library — a venueless event here is a known-local virtual program (Yoga for Older Adults, Retirement Planning). Physical events still gate on covered city. ~87 programs/feed; 35 in-window landed on the 06-25 run.
 
 ### B4 — visitvaughan.ca (LIVE 2026-06-17 — Tier 1, direct JSON; optimal, nothing easier exists)
 - `POST https://visitvaughan.ca/wp-admin/admin-ajax.php`, body: `action=haven_calendar&search_date=YYYY-MM-01&dataType=json`. No auth, no headless; plain `User-Agent` header sufficient.
@@ -197,6 +198,8 @@ Tiers 1–2 = reusable integration code (ports to client #2). Tiers 3–4 = one-
 ## 4. Probe Log
 
 Append-only. One-to-three lines per probe/decision. Technical findings live in §2; this is the chronological trail. `DL§` = Decision_Log. `PL` = this Probe Log.
+
+**2026-06-25 — #81 source-aware online handling (DL§52 refinement).** Audited all 11 live branches for online/blank-venue handling. **BiblioCommons** → keep venueless events as virtual MPL programs (`City='Online'`), since the feed is itself local. **Eventbrite** → drop venueless events (`if(!venueCity) continue`): its global city-browse served foreign/B2B online webinars that defaulted to `Vaughan` (72/224 = 32% contaminated; purged). Rule: trust a venueless event only from a locally-anchored source. Eventbrite out-of-range city gate + language filter + blank-Source tail remain open → #59.
 
 **2026-06-24 — #73 source reconciliation: frontier probed, 4 dropped, 2 build-ready.** Catalogued all client-screenshot + Inoreader sources; confirmed **Inoreader ≠ R1** (CityPlayhouse/VPL/Meetup never wired in). **onrichmondhill.com** → Drupal 7, live RSS `/?q=events/feed` (Tier 2); overlap spot-check vs live AllEvents RHill API (172 ev) = **~75% exclusive**, civic/community supply → Ready. **VPL** spec re-confirmed live → Ready. **richmondhill.ca** (municipal) = unprobed candidate, distinct from onrichmondhill.com. **Cooking/paint cluster** exclusive (none on Eventbrite York, 175 ev checked) but category-gated (5 builds). **Dropped:** todocanada (redundant aggregator), experienceyorkregion (suspended + redundant), feverup (Toronto), jazzlicious (no fit). Value test applied: marginal *exclusive* supply that fits a segment, not volume. VPL+onrichmondhill queued for next-session build sprint.
 
