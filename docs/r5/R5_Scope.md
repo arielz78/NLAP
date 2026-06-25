@@ -12,11 +12,11 @@
 
 ---
 
-## R5 Status Snapshot (as of 2026-06-16)
+## R5 Status Snapshot (as of 2026-06-25)
 
 Single source of truth for "where are we." The roadmap's R5 header is stale; this supersedes it.
 
-**Phase:** W2a (additive source branches) — in progress. W1 + W1→W2 gate cleared 2026-06-06.
+**Phase:** R5-close — supply objective + W2a + W3 all met; remaining work is (a) additive type-specific source builds (#77–#80) and (b) closure accounting (#82 / #34 / milestone sweep). W1 + W1→W2 gate cleared 2026-06-06; W2a closed 2026-06-20.
 
 **Done:**
 - W1 complete: #33 (source audit + config), #53 (domain tally), #57 (field-inventory gap) all closed.
@@ -24,21 +24,20 @@ Single source of truth for "where are we." The roadmap's R5 header is stale; thi
 - Bugs closed: #58 (RSS pub-date drop), #60 (UniqueEventID normalization), upsert Status-reset bug (Decision_Log §40).
 - **Unplanned but shipped** (the bulk of the "deviation"): R1 perf overhaul ~24× (Historical table retired, batched HTTP upsert, intra-run dedup); `overlapAudit.js` cross-source dedup tool; source-probe methodology + `scrape_blueprint.md` + DevTools coverage audit + integration-tier ranking.
 
-**In flight / next:**
-- **B4 visitvaughan.ca, B5 unionville.ca** — probed, not built (see W2a Frontier block below). Closes W2a source coverage.
-- Field-inventory exhaustive sweep at ingestion close (gate in the Frontier block).
+**In flight / next (the order to close R5):**
+- **Type-specific source builds** — #77 onrichmondhill (RSS), #78 richmondhill.ca (probe+build), #79 Pinot's Palette, #80 Chef Upstairs. Reframed from "fast-follow" to **autonomy-relevant**: these cover event types (couples / recipe / venue-specific) the editor currently injects manually because no source emits them. Necessary for autonomy, not sufficient — per-segment routing is R7. Build as a block before #66/#63.
+- **#63 field-inventory exhaustive sweep** — run at ingestion close (after the source builds land, so it covers their fields).
+- **#66 re-export live R1** — single canonical export once the live workflow is final (3 normalize changes from #81/#59 already stale + the new branches).
 
 **Open / deferred:**
-- #59 geo-leakage (W2c) — OPEN.
-- W2b (Eventbrite retrofit) + W2c (guards/geo-filter/RSS) — R6-enabling fast-follow, ship after R5 sign-off, do not block it.
-- #35 W3 (Facebook manual intake + pool checks) — OPEN.
-- Backlog sources confirmed PASS but not built: Meetup (Tier 3), CityPlayhouse (Tier 3).
+- W2b (Eventbrite retrofit) + W2c (guards/geo-filter/RSS) — shipped: #81 (source-aware online handling) + #59 (Eventbrite geo allowlist) both CLOSED 2026-06-25. Blank-Source backfill deferred to #69 (R6-W4).
+- Backlog sources confirmed PASS but not built: Meetup (Tier 3), CityPlayhouse (Tier 3) — deferrable to R6.
 
 **R5 sign-off gate:** pool floor measured as **per-issue in-window depth** (Decision_Log §37) — **not** the stale roadmap "Approved ≥ 75".
 - **Aggregate depth — CLEARED (measured 2026-06-16 via `scripts/depthCheck.js`).** Next 4 weekly windows: 282 / 196 / 147 / 91 eligible candidates vs the 125 floor. First 3 clear comfortably; the 4th (07-09, −34) is far-horizon falloff that each R1 run backfills, not a real shortage. The §37 thin-window trap is absent. Re-run `depthCheck.js` after each R1 to keep watch.
 - **Caveat:** supply is ~99% `New` — editorial throughput (Approved) is now the binding constraint, not ingestion. That's an R7/process problem, not R5's.
 - **Per-segment depth — DEFERRED to R7.** Segment-level starvation needs trustworthy classification; aggregate depth can't see it. Evaluated when R7 lands.
-- **Supply met ≠ R5 done.** The depth/supply objective above is satisfied, but sign-off is also gated on the W2 rollout rule (**W2a + W3**). **W2a closed when B5 unionville landed (2026-06-20)**, so **W3 (#35 — Facebook manual intake + pool safety checks) is the last sign-off-blocking item.** W2b (Eventbrite retrofit), W2c (geo #59 / RSS #58), and the field-inventory sweep are **R6-enabling fast-follow** — they ship after sign-off and do not block it. Per-segment depth is the only R7-deferred part of the gate.
+- **Supply met ≠ R5 done.** The depth/supply objective above is satisfied, and the W2 rollout rule (**W2a + W3**) is now met: **W2a closed 2026-06-20** (B5 unionville) and **W3 (#35 Facebook intake + pool checks) CLOSED 2026-06-25**. What remains to *declare R5 done* is closure accounting, not a supply blocker — see the milestone-completeness check below. The type-specific source builds (#77–#80) are R5-milestone issues: finish them under the R5 banner OR disposition each as deferred-to-R6 with a reason; closing the milestone requires dispositioning them, not necessarily building them. Per-segment depth is the only R7-deferred part of the gate.
 - **Milestone-completeness check (added 2026-06-21).** R5 closes only when **(a) no open issue is unmilestoned, and (b) every issue in the R5 GitHub milestone is either closed or explicitly deferred with a recorded disposition** (deferral reason + where it lands). The milestone — not the `r5` label — is the accounting unit (GitHub's % counts the milestone); clause (a) catches orphans a per-milestone check can't see. It lives here in the Scope doc, never in the roadmap (frozen intent ≠ status) — this gate is a standing convention for every release (`docs/README.md`). At sign-off run: `gh issue list --state open --json number,title,milestone` and disposition every R5 item + confirm zero orphans.
 
 **Deviation read:** the v3 roadmap scoped "top 2–3 sources." Actual is a much broader source set plus a methodology/perf-infrastructure layer that was never a scoped deliverable. This is **expansion + depth, not drift off-target** — but R5 is materially bigger than the roadmap describes, and the success metric was redefined mid-flight (§37).

@@ -100,26 +100,34 @@ function sourceFromUrl(url) {
   if (u.includes("bibliocommons.com")) return "BiblioCommons";
   if (u.includes("visitvaughan.ca")) return "Visit Vaughan";
   if (u.includes("unionville.ca")) return "Unionville";
+  if (u.includes("onrichmondhill.com")) return "OnRichmondHill";
+  if (u.includes("vaughanpl.info")) return "VPL";
   if (!u) return "(no url)";
   return "(unknown)";
 }
 
-// Canonical source = PROVENANCE (which feed actually ingested the row). The stamped
-// Source field is now reliable — each normalize node sets it deterministically — so
-// it is primary; sourceFromUrl is the fallback only for legacy rows with a blank
-// Source. This is the fix for link-out sources: URL-derivation mislabeled Unionville's
-// rows as the linked host (eventbrite.ca → "Eventbrite") or "(unknown)"; the Source
-// field correctly says "Unionville". Field strings are normalized to the canonical
-// keys sourceFromUrl returns so a single source never splits across two buckets.
+// Optional COSMETIC aliases — collapse a few verbose stamped values to short bucket
+// labels. This map is NOT required for a source to appear in the audit: any stamped
+// Source value passes through untouched if it has no alias. So adding a new source
+// needs ZERO changes here — the normalize node's stamp is the registry. Only edit
+// this if you want to shorten/merge an existing label for display.
+const SOURCE_ALIAS = {
+  "bibliocommons markham": "BiblioCommons",
+  "trca calendar": "TRCA",
+};
+
+// Canonical source = PROVENANCE (which feed ingested the row). The stamped Source
+// field is reliable — each normalize node sets it deterministically — so we TRUST it
+// directly: the bucket key IS the stamped value (optionally shortened via SOURCE_ALIAS).
+// sourceFromUrl is the fallback ONLY for legacy blank-Source rows (the #69 Eventbrite
+// tail). A new source stamps its own Source and therefore appears automatically — no
+// per-source code change, ever. (Previously this was a hardcoded if-chain that silently
+// dumped any unlisted source — VPL, OnRichmondHill — into "(unknown)".)
 function canonicalSource(fieldSource, url) {
-  const f = (fieldSource || "").toLowerCase();
-  if (f.includes("eventbrite")) return "Eventbrite";
-  if (f.includes("allevents")) return "AllEvents";
-  if (f.includes("mcmichael")) return "McMichael";
-  if (f.includes("trca")) return "TRCA";
-  if (f.includes("bibliocommons")) return "BiblioCommons";
-  if (f.includes("visit vaughan")) return "Visit Vaughan";
-  if (f.includes("unionville")) return "Unionville";
+  const f = (fieldSource || "").trim();
+  if (f && f.toLowerCase() !== "(blank)") {
+    return SOURCE_ALIAS[f.toLowerCase()] || f;
+  }
   return sourceFromUrl(url); // blank/legacy Source → derive from URL domain
 }
 
