@@ -20,12 +20,12 @@ Single source of truth for "where are we." The roadmap's R5 header is stale; thi
 
 **Done:**
 - W1 complete: #33 (source audit + config), #53 (domain tally), #57 (field-inventory gap) all closed.
-- **Live source set: 5 sources / 7 fetch branches** — Eventbrite (pre-R5), AllEvents ×3 cities (Vaughan/RHill/Markham), McMichael REST, TRCA RSS (Kortright + Black Creek; JSON-LD scrape retired), BiblioCommons.
+- **Live source set: 11 sources** — Eventbrite (pre-R5), AllEvents ×3 cities (Vaughan/RHill/Markham), McMichael REST, TRCA RSS (Kortright + Black Creek; JSON-LD scrape retired), BiblioCommons, Visit Vaughan, Unionville, Facebook intake, VPL, **OnRichmondHill (#77, HTML list-scrape)**, **RichmondHill (#78, eSolutionsGroup Atom feed)**.
 - Bugs closed: #58 (RSS pub-date drop), #60 (UniqueEventID normalization), upsert Status-reset bug (Decision_Log §40).
 - **Unplanned but shipped** (the bulk of the "deviation"): R1 perf overhaul ~24× (Historical table retired, batched HTTP upsert, intra-run dedup); `overlapAudit.js` cross-source dedup tool; source-probe methodology + `scrape_blueprint.md` + DevTools coverage audit + integration-tier ranking.
 
 **In flight / next (the order to close R5):**
-- **Type-specific source builds** — #77 onrichmondhill (RSS), #78 richmondhill.ca (probe+build), #79 Pinot's Palette, #80 Chef Upstairs. Reframed from "fast-follow" to **autonomy-relevant**: these cover event types (couples / recipe / venue-specific) the editor currently injects manually because no source emits them. Necessary for autonomy, not sufficient — per-segment routing is R7. Build as a block before #66/#63.
+- **Type-specific source builds** — ✅ **#77 onrichmondhill DONE** (2026-06-25, HTML list-scrape, 70% exclusive); ✅ **#78 richmondhill.ca DONE** (2026-06-26, eSolutionsGroup Atom feed, 90% exclusive). Remaining: **#79 Pinot's Palette**, **#80 Chef Upstairs**. Reframed from "fast-follow" to **autonomy-relevant**: these cover event types (couples / recipe / venue-specific) the editor currently injects manually because no source emits them. Necessary for autonomy, not sufficient — per-segment routing is R7. Build as a block before #66/#63.
 - **#63 field-inventory exhaustive sweep** — run at ingestion close (after the source builds land, so it covers their fields).
 - **#66 re-export live R1** — single canonical export once the live workflow is final (3 normalize changes from #81/#59 already stale + the new branches).
 
