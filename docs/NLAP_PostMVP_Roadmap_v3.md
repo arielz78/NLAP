@@ -487,6 +487,29 @@ formula until that list is in hand.
 - Runbook + failure protocol written and signed off.
 - Execution interface decision made: assess whether client should be running scripts manually (VS Code + terminal) or whether a lower-friction path (scheduled automation, webhook trigger, simple UI) is warranted before handoff. Pick and scope the approach — don't hand off a terminal workflow to a non-technical client without a deliberate decision.
 
+#### R8 Airtable human + analytics layer — design addendum (captured 2026-06-26)
+
+> Output of a design session that surveyed Airtable's feature surface (Interfaces, Omni, automations, AI fields, dashboards) against this pipeline. The survey is **done** — do not re-run it cold at R8. Two halves below: **settled priors** (architectural, won't change with R6/R7 — apply them) and **open decisions** (depend on the finished R7 pipeline — re-decide then with full information, don't pre-commit).
+>
+> **Governing rule (settled prior).** Airtable's job here is the *human layer* + *live data store*, not pipeline logic. Use Airtable/Omni for anything answerable by filter/count/group over **current** records; keep **algorithms, gates, temporal comparisons, and anything unattended in code**. The risk to avoid is forking pipeline logic into a second home.
+>
+> **Hard refusals (settled priors — these don't get re-litigated):**
+> - **No Airtable AI-fields for classification/segmentation** — forks the R2 gpt classifier into a second, un-eval'd model.
+> - **No Airtable native automations for orchestration** — n8n is the orchestrator; splitting "what fires when" across both is two places to debug a missed run. Exception: a self-contained notification with zero n8n equivalent.
+> - **Omni is never a pipeline step or a release gate** — it's non-deterministic; gates stay on the deterministic scripts (e.g. `depthCheck.js`). Omni sits *beside* the base as an analyst, not *inside* the flow.
+>
+> **Open decisions (re-evaluate against the R7-complete pipeline):**
+> 1. **Editorial review Interface — yes/no, and for whom.** A record-by-record triage surface on existing Candidate views (writes Status; computes nothing). Whether it's worth building, and whether the user is Ariel or the client, depends on what R7 routing produces and who does the editorial work. The client walkthrough (R8-W9.5) is the discovery input — observe where the client gets lost, design to *that*, not to guesses.
+> 2. **Omni as ad-hoc analyst layer** — a self-serve "ask the base" surface for the client and a data-poking tool for Ariel during builds. Distinct from PI/Looker (which is curated outward business metrics); this is ad-hoc internal querying. Usable now, free to trial.
+> 3. **Internal pipeline-health dashboard** — `postRunChecks` / the #62 monitor logs one row per run to a `HealthChecks` table (depth-per-window, dupes, staleness, pass/fail); an Airtable dashboard *renders* those rows — logic never reproduced as Airtable formulas. **Operator-facing pipeline health — not the same as the client-facing PI/Looker dashboard; cross-reference the two so they aren't conflated** (and PI's roadmap ownership names Nathan — stale, re-scope). Only earns its keep once R1 is unattended. **Cheap prep, do now:** when building the #62 monitor, log to a table, not just stdout — makes this dashboard a render job instead of a rebuild.
+>
+> **Governance (settled priors — the layer a feature survey misses):**
+> 4. **Client access model — scope it, don't default to Editor.** A non-technical client with raw base access can rename a field / delete a select option / drag a column and **silently break the n8n field mappings** → empty Thursday issue. Hand the client an **interface-only (or locked-view, field-edit-disabled) surface**, not the raw base. This reframes the review Interface (#1) from a UX nicety to the **guardrail** that makes solo handoff safe — it is the primary corruption boundary, decide it deliberately.
+> 5. **Templatability across bases.** Interfaces and dashboards do **not** clone across bases automatically. Whatever human layer is built for Vaughan must be a **replicable per-base artifact** (documented build-steps or a duplicatable base template) — otherwise R8-W10 Mississauga onboarding silently breaks the "swap config, no code changes" promise via a hand-rebuild.
+> 6. **Native backup / restore covers *client-caused* corruption.** Existing `snapshotCandidates.js` + `integrityCheck.js` + W9 rollback cover script-caused issues; confirm the restore story explicitly covers "client manually broke something" via Airtable base snapshots / revision history. Name it — no build needed.
+>
+> **Before finalizing the above:** run an outside-view pass to escape the inside-view trap — `/pro-approach` for how comparable pro teams use Airtable on editorial/content pipelines (base rates), and `/gutcheck` to red-team these priors. Don't decide from the inside view alone.
+
 #### R8-W8 (4h): Validate + harden (Vaughan)
 
 1. End-to-end dry-run: R1 → R2 → R3 → R4 → pushToBeehiiv on a real

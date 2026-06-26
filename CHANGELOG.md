@@ -9,6 +9,7 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 - Confirmed the new source adds genuinely distinct coverage: ~90% of its events are exclusive to it (City-run galleries, seniors' programming, observatory tours), with zero overlap against the other Richmond Hill source added the day before.
 - Validated parsing in isolation before any live write, then verified live — every event correctly tagged and located, full health-check suite green.
 - Investigated a small source that appeared to stop adding events: confirmed via its live data that the integration is healthy and the quiet period is genuine, not a broken feed. Turned the finding into a concrete design for lightweight per-source health monitoring once the pipeline runs unattended.
+- Scoped how the project's database platform should be used at client handoff — which features genuinely improve the workflow vs. add complexity, with a clear boundary keeping core pipeline logic in code. Documented the plan against the handoff release, including a client access model that prevents accidental breakage of the automated pipeline.
 
 ## 2026-06-25
 - Added a new community/municipal event source (OnRichmondHill). Its RSS feed was capped at ~10 items, so after probing every available access method, integrated via a paginated page-by-page scrape that captures the full forward calendar — ~4.6× more events. Validated the parsing in isolation before any live write, then verified live; ~70% of its events are exclusive to this source, directly broadening coverage of local civic events.
