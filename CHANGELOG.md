@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-06-30
+- Added The Chef Upstairs (a local cooking school and newsletter partner) as a new source, completing the planned set of venue-specific sources. The obvious data endpoint — the store's public product list — turned out to omit the one field the pipeline can't reconstruct: the class date. After probing every surface, integrated via the booking widget's own schedule feed, which is the only place the dated class occurrences live. Verified live: 100% of its events are exclusive to this source (net-new date-night/couples coverage), full health-check suite green.
+- Enriched each class with its full menu/experience description by joining a second store feed on a shared key — feeding the content signal that upcoming scoring and classification work depends on, while failing gracefully (events still flow if that lookup is unavailable).
+- Documented the endpoint-discovery methodology end to end: how to read a page's own source to find the data feed it calls (no browser automation required), when that's faster than scrolling network requests by hand, and why a clean-looking JSON endpoint is not automatically the right one — the field set decides.
+
 ## 2026-06-26
 - Added Pinot's Palette (a local paint-and-sip studio, and a newsletter partner venue) as a new source. After probing every access method — including a structured data endpoint surfaced via browser dev tools — the studio's own landing page proved the best surface: it lists every upcoming class on a single page with date and title inline, so one fetch captures the full calendar with no follow-up requests. The dev-tools endpoint turned out to be analytics tracking that omits event dates, and the dedicated calendar view only showed the current month; documented both so the choice is evidence-backed.
 - Verified live: every class correctly dated and located, 100% of its events exclusive to this source (net-new coverage for date-night and older-adult segments), full health-check suite green.
