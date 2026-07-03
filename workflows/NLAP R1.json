@@ -6,21 +6,21 @@
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
       "position": [
-        -848,
-        592
+        -1072,
+        832
       ],
       "id": "d1e3864e-8cc2-492b-9b87-464307e585eb",
       "name": "When clicking ‘Execute workflow’"
     },
     {
       "parameters": {
-        "jsCode": "const out = [];\nfunction pickDescription(j) {\n  const rss =\n    j.DescriptionRaw ||        // added\n    j.contentSnippet ||\n    j.content ||\n    j.summary ||\n    j.description ||\n    j[\"content:encoded\"] ||\n    \"\";\n  const eb =\n    j.summary ||\n    (j.description && (j.description.text || j.description.html)) ||\n    j.structured_content ||\n    \"\";\n  const d = (eb || rss || \"\").toString().trim();\n  return d;\n}\nfor (const item of items) {\n  const j = item.json || {};\n  const title = (j.title || j.name || \"\").toString().trim();\n  const link = (j.link || j.url || \"\").toString().trim();\n  // Facebook manual-intake events arrive linkless (feed screenshots carry no URLs);\n  // let them through if they have a title. All other sources still require a link.\n  // Editor adds the link at selection; a pre-publish guard blocks featuring linkless.\n  if (!title || (!link && j.sourceCanonical !== 'Facebook')) continue;\n  const isoDate = (j.isoDate || j.start_date || j.startDate || \"\").toString().trim();\n  const guid = (j.guid || j.eventbrite_event_id || j.id || \"\").toString().trim();\n  const DescriptionRaw = pickDescription(j);\n  out.push({\n    json: {\n      title,\n      link,\n      pubDate: (j.pubDate || \"\").toString(),\n      isoDate,\n      guid,\n      DescriptionRaw,\n      endDate: (j.endDate || ''),  // added\n      locationName: (j.locationName || \"\").toString(),\n      sourceCanonical: (j.sourceCanonical || \"\").toString(),\n      city: (j.city || ''),\n      // Discrete source-metadata fields (currently AllEvents only). This node rebuilds\n      // json from an allowlist, so these MUST be carried here or they're dropped before\n      // Build Upsert. Defaults keep them harmless for sources that don't set them.\n      organizer: (j.organizer || ''),\n      sourceScore: (j.sourceScore != null ? j.sourceScore : null),\n      categories: (j.categories || ''),\n      _valid: true,\n    },\n  });\n}\nreturn out;\n"
+        "jsCode": "const out = [];\nfunction pickDescription(j) {\n  const rss =\n    j.DescriptionRaw ||        // added\n    j.contentSnippet ||\n    j.content ||\n    j.summary ||\n    j.description ||\n    j[\"content:encoded\"] ||\n    \"\";\n  const eb =\n    j.summary ||\n    (j.description && (j.description.text || j.description.html)) ||\n    j.structured_content ||\n    \"\";\n  const d = (eb || rss || \"\").toString().trim();\n  return d;\n}\nfor (const item of items) {\n  const j = item.json || {};\n  const title = (j.title || j.name || \"\").toString().trim();\n  const link = (j.link || j.url || \"\").toString().trim();\n  // Facebook manual-intake events arrive linkless (feed screenshots carry no URLs);\n  // let them through if they have a title. All other sources still require a link.\n  // Editor adds the link at selection; a pre-publish guard blocks featuring linkless.\n  if (!title || (!link && j.sourceCanonical !== 'Facebook')) continue;\n  const isoDate = (j.isoDate || j.start_date || j.startDate || \"\").toString().trim();\n  const guid = (j.guid || j.eventbrite_event_id || j.id || \"\").toString().trim();\n  const DescriptionRaw = pickDescription(j);\n  out.push({\n    json: {\n      title,\n      link,\n      pubDate: (j.pubDate || \"\").toString(),\n      isoDate,\n      guid,\n      DescriptionRaw,\n      endDate: (j.endDate || ''),  // added\n      locationName: (j.locationName || \"\").toString(),\n      sourceCanonical: (j.sourceCanonical || \"\").toString(),\n      city: (j.city || ''),\n      // Discrete source-metadata fields (currently AllEvents only). This node rebuilds\n      // json from an allowlist, so these MUST be carried here or they're dropped before\n      // Build Upsert. Defaults keep them harmless for sources that don't set them.\n      organizer: (j.organizer || ''),\n      sourceScore: (j.sourceScore != null ? j.sourceScore : null),\n      categories: (j.categories || ''),\n      costRaw: (j.costRaw || ''),\n      _valid: true,\n    },\n  });\n}\nreturn out;\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        784,
-        576
+        752,
+        1696
       ],
       "id": "afa1c2eb-2646-4766-b832-ec9dcc9e7a31",
       "name": "Clean/Filter"
@@ -32,8 +32,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1008,
-        576
+        944,
+        1552
       ],
       "id": "58fb575f-549c-48cd-9313-c59ef7075ab4",
       "name": "Sort (Newest First)"
@@ -46,8 +46,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1232,
-        576
+        1120,
+        1696
       ],
       "id": "2b22b3fd-cc87-43d6-af46-c62f13f42071",
       "name": "Make UniqueEventID"
@@ -80,8 +80,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1680,
-        576
+        1408,
+        1696
       ],
       "id": "4952d047-6174-4952-b30c-9139532917b6",
       "name": "Validity Filter"
@@ -93,8 +93,8 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        272,
-        432
+        304,
+        608
       ],
       "id": "0feeaa3f-b40a-4440-b8e5-9feb06f33b8c",
       "name": "Merge"
@@ -107,21 +107,21 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1904,
-        576
+        1584,
+        1552
       ],
       "id": "3d367d30-6c83-4586-a76f-93c7fbefdd3a",
       "name": "DateWindow"
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\n\nconst allEvents = [];\n\nfor (const bucket of response.buckets || []) {\n  for (const event of bucket.events || []) {\n    const venue = event.primary_venue || {};\n    const venueName = (venue.name || '').trim();\n    const venueCity = ((venue.address && venue.address.city) || '').trim();\n    // Drop venueless events: Eventbrite's city-browse serves global online events to every\n    // city query, so a blank venue city has NO geographic anchor (mostly foreign/B2B webinars\n    // that were being silently stamped 'Vaughan' by Make UniqueEventID downstream). Unlike the\n    // local-library feed, this source gives no locality guarantee for a venueless event.\n    // (#81, R5 / Decision_Log §52)\n    if (!venueCity) continue;\n    allEvents.push({\n      json: {\n        ...event,\n        sourceCanonical: 'Eventbrite',\n        locationName: venueName,\n        city: venueCity,\n      }\n    });\n  }\n}\n\nreturn allEvents;\n"
+        "jsCode": "const response = $input.first().json;\n\nconst allEvents = [];\n\n// Geo allowlist (#59): Eventbrite's city-browse leaks neighbouring municipalities\n// (Newmarket, Aurora, Schomberg, Gormley, Whitchurch-Stouffville, Georgina, Toronto...)\n// into the target-city result set. Gate to the covered municipalities and canonicalize,\n// mirroring the AllEvents branch. Unmapped venue city = drop. (R5 / Decision_Log §52)\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan', 'Woodbridge': 'Vaughan', 'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan', 'Concord': 'Vaughan', 'Kleinburg': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill', 'Markham': 'Markham', 'Unionville': 'Markham',\n};\n\nfunction formatPrice(ta) {\n  if (!ta) return '';\n  if (ta.is_free) return 'Free';\n  const min = ta.minimum_ticket_price, max = ta.maximum_ticket_price;\n  if (!min && !max) return '';\n  if (min && max && min.display === max.display) return min.display;\n  if (min && max) return min.display + ' - ' + max.display;\n  return (min || max).display;\n}\n\nfor (const bucket of response.buckets || []) {\n  for (const event of bucket.events || []) {\n    const venue = event.primary_venue || {};\n    const venueName = (venue.name || '').trim();\n    const venueCity = ((venue.address && venue.address.city) || '').trim();\n    // Drop venueless events: Eventbrite's city-browse serves global online events to every\n    // city query, so a blank venue city has NO geographic anchor (mostly foreign/B2B webinars\n    // that were being silently stamped 'Vaughan' by Make UniqueEventID downstream). Unlike the\n    // local-library feed, this source gives no locality guarantee for a venueless event.\n    // (#81, R5 / Decision_Log §52)\n    if (!venueCity) continue;\n    // Geo allowlist gate (#59): keep only covered municipalities, canonicalize the rest.\n    const city = CITY_MAP[venueCity];\n    if (!city) continue;\n    // Sold-out gate (#84): a sold-out event has zero reader utility (can't be attended) -\n    // hard exclusion, not a data point to carry. Mirrors Chef Upstairs' existing bookedOut\n    // filter. (Decision_Log §54 addendum - capture vs filter test.)\n    const ta = event.ticket_availability;\n    if (ta && ta.is_sold_out === true) continue;\n    // Cost signal (#84) - reader-facing, kept as source-formatted text (Decision_Log §54).\n    const costRaw = formatPrice(ta);\n    // Category reshape (#84): tags[] mixes real taxonomy (EventbriteCategory/EventbriteFormat)\n    // with per-organizer marketing noise (OrganizerTag/*) - keep only the taxonomy prefixes.\n    const categories = (event.tags || [])\n      .filter(t => t.prefix === 'EventbriteCategory' || t.prefix === 'EventbriteFormat')\n      .map(t => t.display_name)\n      .filter(Boolean)\n      .join(', ');\n    allEvents.push({\n      json: {\n        ...event,\n        sourceCanonical: 'Eventbrite',\n        locationName: venueName,\n        city,\n        costRaw,\n        categories,\n      }\n    });\n  }\n}\n\nreturn allEvents;\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        48,
-        -304
+        -160,
+        0
       ],
       "id": "8ad1172d-0e9f-46d5-97a1-b5e52efe5276",
       "name": "Eventbrite Normalize"
@@ -141,8 +141,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.3,
       "position": [
-        -176,
-        -304
+        -384,
+        0
       ],
       "id": "67691cea-32b4-46b2-b253-95c3a850d9ec",
       "name": "Eventbrite API"
@@ -156,8 +156,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        48,
-        -112
+        -160,
+        160
       ]
     },
     {
@@ -173,8 +173,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -624,
-        -112
+        -848,
+        160
       ]
     },
     {
@@ -186,8 +186,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -400,
-        -112
+        -624,
+        160
       ]
     },
     {
@@ -203,8 +203,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -176,
-        -112
+        -384,
+        160
       ]
     },
     {
@@ -215,21 +215,21 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -176,
-        80
+        -384,
+        304
       ],
       "id": "471f5d6e-9486-4ceb-ab15-26d21d601c50",
       "name": "TRCA RSS Fetch"
     },
     {
       "parameters": {
-        "jsCode": "const xml = $input.first().json.data;\n\nfunction decodeEntities(s) {\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&nbsp;/g, ' ');\n}\n\nconst itemBlocks = [];\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  itemBlocks.push(match[1]);\n}\n\nconst get = (block, tag) => {\n  const m = block.match(new RegExp(`<${tag}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\\\/${tag}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst getEvent = (block, field) => {\n  const m = block.match(new RegExp(`<event_listing:${field}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\\\/event_listing:${field}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst results = [];\n\nfor (const block of itemBlocks) {\n  const location = getEvent(block, 'location');\n\n  const isKortright = location.includes('Pine Valley') || location.includes('Kortright');\n  const isBlackCreek = location.includes('Murray Ross');\n\n  if (!isKortright && !isBlackCreek) continue;\n\n  const title = decodeEntities(get(block, 'title'));  // ← decode added\n  const description = decodeEntities(get(block, 'description'));\n  const link = get(block, 'link');\n  const startRaw = getEvent(block, 'start_date');\n  const endRaw = getEvent(block, 'end_date');\n\n  const isoDate = startRaw ? new Date(startRaw.replace(' ', 'T')).toISOString() : '';\n  const endDate = endRaw ? endRaw.split(' ')[0] : '';\n\n  const locationName = isKortright\n    ? 'Kortright Centre for Conservation'\n    : 'Black Creek Pioneer Village';\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link,\n      url: link,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city: 'Vaughan',\n      sourceCanonical: 'TRCA Calendar',\n      DescriptionRaw: description,\n      _valid: !!(title && isoDate && link),\n    }\n  });\n}\n\nreturn results;\n"
+        "jsCode": "const xml = $input.first().json.data;\n\nfunction decodeEntities(s) {\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&nbsp;/g, ' ');\n}\n\nconst itemBlocks = [];\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  itemBlocks.push(match[1]);\n}\n\nconst get = (block, tag) => {\n  const m = block.match(new RegExp(`<${tag}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\\\/${tag}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst getEvent = (block, field) => {\n  const m = block.match(new RegExp(`<event_listing:${field}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\/event_listing:${field}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst results = [];\n\nfor (const block of itemBlocks) {\n  const location = getEvent(block, 'location');\n\n  const isKortright = location.includes('Pine Valley') || location.includes('Kortright');\n  const isBlackCreek = location.includes('Murray Ross');\n\n  if (!isKortright && !isBlackCreek) continue;\n\n  const title = decodeEntities(get(block, 'title'));  // ← decode added\n  const description = decodeEntities(get(block, 'description'));\n  const link = get(block, 'link');\n  const startRaw = getEvent(block, 'start_date');\n  const endRaw = getEvent(block, 'end_date');\n  // #84 - clean Free/Paid enum, reader-facing cost signal (Decision_Log §54).\n  const costRaw = getEvent(block, 'ticket_price');\n\n  const isoDate = startRaw ? new Date(startRaw.replace(' ', 'T')).toISOString() : '';\n  const endDate = endRaw ? endRaw.split(' ')[0] : '';\n\n  const locationName = isKortright\n    ? 'Kortright Centre for Conservation'\n    : 'Black Creek Pioneer Village';\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link,\n      url: link,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city: 'Vaughan',\n      sourceCanonical: 'TRCA Calendar',\n      DescriptionRaw: description,\n      costRaw,\n      _valid: !!(title && isoDate && link),\n    }\n  });\n}\n\nreturn results;\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        48,
-        80
+        -160,
+        304
       ],
       "id": "3b65d69f-65c0-4767-bde1-6903fe9238b1",
       "name": "TRCA RSS Normalize"
@@ -244,34 +244,34 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -176,
-        272
+        -384,
+        464
       ]
     },
     {
       "parameters": {
-        "jsCode": "const xml = $input.first().json.data;\n\nfunction decodeEntities(s) {\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&nbsp;/g, ' ');\n}\n\nfunction stripCdata(s) {\n  return s.replace(/^<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>$/, '$1').trim();\n}\n\nfunction stripHtml(s) {\n  return s.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n}\n\nconst CITY_MAP = {\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n  'Thornhill': 'Vaughan',\n  'Vaughan': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n};\n\nconst itemBlocks = [];\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  itemBlocks.push(match[1]);\n}\n\nconst get = (block, tag) => {\n  const m = block.match(new RegExp(`<${tag}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\\\/${tag}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst getBC = (block, field) => {\n  const m = block.match(new RegExp(`<bc:${field}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\/bc:${field}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst getAudience = (block) => {\n  const matches = [...block.matchAll(/<category[^>]*domain=\"Audience\"[^>]*>(?:<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>|([\\s\\S]*?))<\\/category>/g)];\n  return matches.map(m => (m[1] ?? m[2] ?? '').trim()).filter(Boolean).join(', ');\n};\n\n// Extract a sub-field from within bc:location XML\nconst getFromLocation = (locationXml, field) => {\n  const m = locationXml.match(new RegExp(`<bc:${field}[^>]*>([^<]*)<\\/bc:${field}>`));\n  return m ? m[1].trim() : '';\n};\n\nconst results = [];\n\nfor (const block of itemBlocks) {\n  const title = decodeEntities(get(block, 'title'));\n  const link = get(block, 'link');\n  const startRaw = getBC(block, 'start_date');\n  const endRaw = getBC(block, 'end_date');\n  const locationXml = getBC(block, 'location');\n  const descriptionRaw = stripCdata(get(block, 'description'));\n  const description = stripHtml(decodeEntities(descriptionRaw));\n  const audience = getAudience(block);\n\n  if (!title || !startRaw) continue;\n\n  const isoDate = new Date(startRaw).toISOString();\n  const endDate = endRaw ? endRaw.split('T')[0] : '';\n\n  const rawLocationName = getFromLocation(locationXml, 'name');\n  const bcCity = getFromLocation(locationXml, 'city');\n\n  // A BiblioCommons online/virtual program carries an empty <bc:location> (no name, no city).\n  // The feed IS the Markham Public Library, so a venueless event here is a known-local virtual\n  // program — keep it (#81, R5; client: seniors value online programs like Yoga for Older Adults).\n  // A physical event must still map to a covered city, else drop (geo-leakage guard, Decision_Log §52/#59).\n  let city, locationName;\n  if (!rawLocationName) {\n    city = 'Online';\n    locationName = 'Online (Markham Public Library)';\n  } else {\n    city = CITY_MAP[bcCity] || null;\n    if (!city) continue;\n    locationName = rawLocationName;\n  }\n\n  const DescriptionRaw = audience\n    ? `Audience: ${audience}\\n\\n${description}`\n    : description;\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link,\n      url: link,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'BiblioCommons Markham',\n      DescriptionRaw,\n      _valid: !!(title && isoDate && link),\n    }\n  });\n}\n\nreturn results;\n"
+        "jsCode": "const xml = $input.first().json.data;\n\nfunction decodeEntities(s) {\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&nbsp;/g, ' ');\n}\n\nfunction stripCdata(s) {\n  return s.replace(/^<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>$/, '$1').trim();\n}\n\nfunction stripHtml(s) {\n  return s.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n}\n\nconst CITY_MAP = {\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n  'Thornhill': 'Vaughan',\n  'Vaughan': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n};\n\nconst itemBlocks = [];\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  itemBlocks.push(match[1]);\n}\n\nconst get = (block, tag) => {\n  const m = block.match(new RegExp(`<${tag}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\\\/${tag}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst getBC = (block, field) => {\n  const m = block.match(new RegExp(`<bc:${field}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\/bc:${field}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst getAudience = (block) => {\n  const matches = [...block.matchAll(/<category[^>]*domain=\"Audience\"[^>]*>(?:<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>|([\\s\\S]*?))<\\/category>/g)];\n  return matches.map(m => (m[1] ?? m[2] ?? '').trim()).filter(Boolean).join(', ');\n};\n\n// #84 - Type taxonomy (e.g. \"Storytime\"), separate from Audience. Feeds shared SourceCategories.\nconst getTypeCategory = (block) => {\n  const matches = [...block.matchAll(/<category[^>]*domain=\"Type\"[^>]*>(?:<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>|([\\s\\S]*?))<\\/category>/g)];\n  return matches.map(m => (m[1] ?? m[2] ?? '').trim()).filter(Boolean).join(', ');\n};\n\n// #84 - registration_info.is_full: a hard exclusion (sold-out event has zero reader utility),\n// same capture-vs-filter call as Eventbrite/Chef Upstairs (Decision_Log §54 addendum).\nconst isRegistrationFull = (block) => {\n  const ri = getBC(block, 'registration_info');\n  return /<bc:is_full>true<\\/bc:is_full>/.test(ri);\n};\n\n// Extract a sub-field from within bc:location XML\nconst getFromLocation = (locationXml, field) => {\n  const m = locationXml.match(new RegExp(`<bc:${field}[^>]*>([^<]*)<\\/bc:${field}>`));\n  return m ? m[1].trim() : '';\n};\n\nconst results = [];\n\nfor (const block of itemBlocks) {\n  const title = decodeEntities(get(block, 'title'));\n  const link = get(block, 'link');\n  const startRaw = getBC(block, 'start_date');\n  const endRaw = getBC(block, 'end_date');\n  const locationXml = getBC(block, 'location');\n  const descriptionRaw = stripCdata(get(block, 'description'));\n  const description = stripHtml(decodeEntities(descriptionRaw));\n  const audience = getAudience(block);\n  const categories = getTypeCategory(block);\n\n  if (!title || !startRaw) continue;\n  if (isRegistrationFull(block)) continue;\n\n  const isoDate = new Date(startRaw).toISOString();\n  const endDate = endRaw ? endRaw.split('T')[0] : '';\n\n  const rawLocationName = getFromLocation(locationXml, 'name');\n  const bcCity = getFromLocation(locationXml, 'city');\n\n  // A BiblioCommons online/virtual program carries an empty <bc:location> (no name, no city).\n  // The feed IS the Markham Public Library, so a venueless event here is a known-local virtual\n  // program — keep it (#81, R5; client: seniors value online programs like Yoga for Older Adults).\n  // A physical event must still map to a covered city, else drop (geo-leakage guard, Decision_Log §52/#59).\n  let city, locationName;\n  if (!rawLocationName) {\n    city = 'Online';\n    locationName = 'Online (Markham Public Library)';\n  } else {\n    city = CITY_MAP[bcCity] || null;\n    if (!city) continue;\n    locationName = rawLocationName;\n  }\n\n  const DescriptionRaw = audience\n    ? `Audience: ${audience}\\n\\n${description}`\n    : description;\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link,\n      url: link,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'BiblioCommons Markham',\n      DescriptionRaw,\n      categories,\n      _valid: !!(title && isoDate && link),\n    }\n  });\n}\n\nreturn results;\n"
       },
       "id": "b495a1cd-ae20-49f3-a238-9a2da5efefdb",
       "name": "BiblioCommons Normalize",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        48,
-        272
+        -160,
+        464
       ]
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  // Source metadata kept as DISCRETE fields (not concatenated into DescriptionRaw).\n  // AllEvents' API has no event-description field, so DescriptionRaw is left empty:\n  // (a) the old \"AllEvents Categories/Organizer/Score\" blob made richest-wins\n  //     survivorship pick AllEvents over a real-description source on raw length;\n  // (b) it polluted the R6 content-scoring signal. See Decision_Log section 51 + #70.\n  const categories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const sourceScore = ev.score != null ? ev.score : null;\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw: '',\n      organizer,\n      sourceScore,\n      categories,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;\n"
+        "jsCode": "const response = $input.first().json;\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  // Source metadata kept as DISCRETE fields (not concatenated into DescriptionRaw).\n  // AllEvents' API has no event-description field, so DescriptionRaw is left empty:\n  // (a) the old \"AllEvents Categories/Organizer/Score\" blob made richest-wins\n  //     survivorship pick AllEvents over a real-description source on raw length;\n  // (b) it polluted the R6 content-scoring signal. See Decision_Log section 51 + #70.\n  const baseCategories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n  // #84 - merge tags[]/formats[] (secondary taxonomy, e.g. \"festival\") into the shared\n  // SourceCategories field. Additive to the existing categories[], not a replacement.\n  const extraTags = [\n    ...(Array.isArray(ev.tags) ? ev.tags : []),\n    ...(Array.isArray(ev.formats) ? ev.formats : []),\n  ].filter(Boolean);\n  const categories = [baseCategories, ...extraTags].filter(Boolean).join(', ');\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const sourceScore = ev.score != null ? ev.score : null;\n  // #84 - AllEvents pre-formats its own price string (e.g. \"CAD 30 to 49\", \"Free\");\n  // richer/more populated than the sparse tickets{} object (2/225 in sample vs 141/225).\n  const costRaw = (ev.display_price_label || '').toString().trim();\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw: '',\n      organizer,\n      sourceScore,\n      categories,\n      costRaw,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;\n"
       },
       "id": "4b50d632-b6eb-4b41-b9ef-7b940a1b73fe",
       "name": "AllEvents Normalize",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        48,
-        464
+        -160,
+        608
       ]
     },
     {
@@ -291,8 +291,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -176,
-        656
+        -384,
+        752
       ]
     },
     {
@@ -312,21 +312,21 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -176,
-        464
+        -384,
+        608
       ]
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  // Source metadata kept as DISCRETE fields (not concatenated into DescriptionRaw).\n  // AllEvents' API has no event-description field, so DescriptionRaw is left empty:\n  // (a) the old \"AllEvents Categories/Organizer/Score\" blob made richest-wins\n  //     survivorship pick AllEvents over a real-description source on raw length;\n  // (b) it polluted the R6 content-scoring signal. See Decision_Log section 51 + #70.\n  const categories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const sourceScore = ev.score != null ? ev.score : null;\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw: '',\n      organizer,\n      sourceScore,\n      categories,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;\n"
+        "jsCode": "const response = $input.first().json;\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  // Source metadata kept as DISCRETE fields (not concatenated into DescriptionRaw).\n  // AllEvents' API has no event-description field, so DescriptionRaw is left empty:\n  // (a) the old \"AllEvents Categories/Organizer/Score\" blob made richest-wins\n  //     survivorship pick AllEvents over a real-description source on raw length;\n  // (b) it polluted the R6 content-scoring signal. See Decision_Log section 51 + #70.\n  const baseCategories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n  // #84 - merge tags[]/formats[] (secondary taxonomy, e.g. \"festival\") into the shared\n  // SourceCategories field. Additive to the existing categories[], not a replacement.\n  const extraTags = [\n    ...(Array.isArray(ev.tags) ? ev.tags : []),\n    ...(Array.isArray(ev.formats) ? ev.formats : []),\n  ].filter(Boolean);\n  const categories = [baseCategories, ...extraTags].filter(Boolean).join(', ');\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const sourceScore = ev.score != null ? ev.score : null;\n  // #84 - AllEvents pre-formats its own price string (e.g. \"CAD 30 to 49\", \"Free\");\n  // richer/more populated than the sparse tickets{} object (2/225 in sample vs 141/225).\n  const costRaw = (ev.display_price_label || '').toString().trim();\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw: '',\n      organizer,\n      sourceScore,\n      categories,\n      costRaw,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;\n"
       },
       "id": "f684525b-cacd-4aaf-9590-66f08370d570",
       "name": "AllEvents Normalize2",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        48,
-        848
+        -160,
+        912
       ]
     },
     {
@@ -346,34 +346,34 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -176,
-        848
+        -384,
+        912
       ]
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  // Source metadata kept as DISCRETE fields (not concatenated into DescriptionRaw).\n  // AllEvents' API has no event-description field, so DescriptionRaw is left empty:\n  // (a) the old \"AllEvents Categories/Organizer/Score\" blob made richest-wins\n  //     survivorship pick AllEvents over a real-description source on raw length;\n  // (b) it polluted the R6 content-scoring signal. See Decision_Log section 51 + #70.\n  const categories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const sourceScore = ev.score != null ? ev.score : null;\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw: '',\n      organizer,\n      sourceScore,\n      categories,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;\n"
+        "jsCode": "const response = $input.first().json;\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  // Source metadata kept as DISCRETE fields (not concatenated into DescriptionRaw).\n  // AllEvents' API has no event-description field, so DescriptionRaw is left empty:\n  // (a) the old \"AllEvents Categories/Organizer/Score\" blob made richest-wins\n  //     survivorship pick AllEvents over a real-description source on raw length;\n  // (b) it polluted the R6 content-scoring signal. See Decision_Log section 51 + #70.\n  const baseCategories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n  // #84 - merge tags[]/formats[] (secondary taxonomy, e.g. \"festival\") into the shared\n  // SourceCategories field. Additive to the existing categories[], not a replacement.\n  const extraTags = [\n    ...(Array.isArray(ev.tags) ? ev.tags : []),\n    ...(Array.isArray(ev.formats) ? ev.formats : []),\n  ].filter(Boolean);\n  const categories = [baseCategories, ...extraTags].filter(Boolean).join(', ');\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const sourceScore = ev.score != null ? ev.score : null;\n  // #84 - AllEvents pre-formats its own price string (e.g. \"CAD 30 to 49\", \"Free\");\n  // richer/more populated than the sparse tickets{} object (2/225 in sample vs 141/225).\n  const costRaw = (ev.display_price_label || '').toString().trim();\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw: '',\n      organizer,\n      sourceScore,\n      categories,\n      costRaw,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;\n"
       },
       "id": "4f889823-0d2b-461d-9f06-0584815990c7",
       "name": "AllEvents Normalize3",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        48,
-        656
+        -160,
+        752
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Group DateWindow output into Airtable batch-upsert bodies (10 records/request).\n// Mirrors the old 'Upsert Candidates' field mapping exactly; matches on UniqueEventID.\n// Empty values are omitted (avoids 400 on empty date fields; never blanks an existing value).\nconst FIELD_MAP = {\n  'Event Title': 'event_name',\n  'City': 'city',\n  'URL': 'url',\n  'Start Date': 'start_date',\n  'End Date': 'endDate',\n  'DescriptionRaw': 'DescriptionRaw',\n  'UniqueEventID': 'uniqueEventID',\n  'LocationName': 'locationName',\n  'Source': 'sourceCanonical',\n  'Organizer': 'organizer',\n  'SourceScore': 'sourceScore',\n  'SourceCategories': 'categories',\n};\nconst now = new Date().toISOString();\nfunction buildFields(j) {\n  const f = {};\n  for (const [col, key] of Object.entries(FIELD_MAP)) {\n    const v = j[key];\n    if (v !== undefined && v !== null && v !== '') f[col] = v;\n  }\n  f['Last Auto Update'] = now;\n  return f;\n}\n// Group by UniqueEventID across the whole run. Airtable rejects a batch that updates\n// the same record twice in one request, and re-upserting the same event is pointless.\nconst groups = new Map(); // id -> [all jsons with this id]\nfor (const i of items) {\n  const id = i.json.uniqueEventID;\n  if (!id) continue;\n  if (!groups.has(id)) groups.set(id, []);\n  groups.get(id).push(i.json);\n}\n// --- Survivorship: richest-wins golden record (Decision_Log section 51, #70) ---\n// Source-agnostic ordered comparator; replaces the old last-in-Merge-order wins.\n//   1. URL present beats URL absent  (demotes linkless records; keeps the featured-link path)\n//   2. tie -> longer DescriptionRaw  (serves the R6 content scorer; fires only between\n//                                     aggregators that both carry a URL, never for Facebook,\n//                                     whose intake schema has no description column)\n//   3. tie -> last in Merge order    (harmless fallback; preserves prior behaviour)\n// Never references sourceCanonical (portability rule). Lock=true rows are untouched:\n// Lock lives on IssueItems, not Candidates; editorial Candidate fields (Status, etc.)\n// are protected by being absent from FIELD_MAP (Decision_Log section 40).\nfunction richer(a, b) {\n  const au = (a.url || '').trim() ? 1 : 0;\n  const bu = (b.url || '').trim() ? 1 : 0;\n  if (au !== bu) return au > bu ? a : b;\n  const ad = (a.DescriptionRaw || '').length;\n  const bd = (b.DescriptionRaw || '').length;\n  if (ad !== bd) return ad > bd ? a : b;\n  return b;\n}\n// Why did `win` beat `loser`? Replays the same comparator tiers for the run log,\n// so maintenance can see the decision per collision (the loser is dropped here and\n// never reaches Airtable, so this is the ONLY place the reason can be observed).\nfunction winReason(win, loser) {\n  const wu = (win.url || '').trim() ? 1 : 0;\n  const lu = (loser.url || '').trim() ? 1 : 0;\n  if (wu !== lu) return 'URL';\n  if ((win.DescriptionRaw || '').length !== (loser.DescriptionRaw || '').length) return 'longer description';\n  return 'merge-order (tie)';\n}\n// Field-level merge for SUPPLEMENTARY metadata (#70 follow-up). Record-level richest-wins\n// picks the base record (real description / primary URL); but discrete source metadata\n// (organizer / sourceScore / categories) is only ever set by an aggregator that may LOSE\n// the collision. So overlay those fields from any colliding record that has them, onto the\n// winner. Source-agnostic (by field presence, not source name) and only fills BLANKS on the\n// winner — it never overwrites a value the winner already carries.\nconst META_FIELDS = ['organizer', 'sourceScore', 'categories'];\nconst isEmpty = (v) => v === undefined || v === null || v === '';\nconst seen = new Map(); // id -> surviving json (metadata-enriched)\nfor (const [id, arr] of groups) {\n  const win = arr.reduce((w, c) => richer(w, c));\n  for (const fld of META_FIELDS) {\n    if (isEmpty(win[fld])) {\n      const donor = arr.find((r) => !isEmpty(r[fld]));\n      if (donor) win[fld] = donor[fld];\n    }\n  }\n  seen.set(id, win);\n}\n// --- Collision diagnostics: which keys collapsed, why the winner won, is it benign? ---\n// Same UniqueEventID + SAME url  = genuinely the same event (benign collapse).\n// Same UniqueEventID + DIFFERENT urls = two different events merged on a coarse\n// title|date key (potential wrongful loss — inspect these).\nconst collisions = [...groups.entries()].filter(([, arr]) => arr.length > 1);\nconst collapsed = items.length - seen.size;\nconsole.log(`[dedup] ${items.length} items in -> ${seen.size} unique (${collapsed} collapsed across ${collisions.length} keys)`);\nlet urlDiffers = 0;\nfor (const [id, arr] of collisions) {\n  const urls = new Set(arr.map((r) => r.url));\n  const venues = new Set(arr.map((r) => (r.locationName || '').trim()).filter(Boolean));\n  const bad = urls.size > 1;\n  if (bad) urlDiffers++;\n  const win = seen.get(id);\n  console.log(`  x${arr.length} urls=${urls.size} venues=${venues.size} \"${id}\"${bad ? ' [URLS DIFFER - INSPECT]' : ''}`);\n  for (const r of arr) {\n    if (r === win) continue;\n    console.log(`      won: ${win.sourceCanonical || '(none)'} over ${r.sourceCanonical || '(none)'} (${winReason(win, r)})`);\n  }\n}\nconsole.log(`[dedup] ${urlDiffers} collision key(s) had DIFFERING urls (potential wrongful merge; 0 = all collapses benign)`);\n// --- DoD safety gate (#70): per-source count diff, before vs after survivorship. ---\n// Read with the documented asymmetry: a DROP for Facebook is expected/correct (its\n// collisions reattribute to richer aggregators); an aggregator losing records, or FB\n// collapsing to ~0, is the red flag.\nconst tally = (arr) => arr.reduce((m, j) => { const s = j.sourceCanonical || '(none)'; m[s] = (m[s] || 0) + 1; return m; }, {});\nconst before = tally(items.map((i) => i.json));\nconst after = tally([...seen.values()]);\nconst allSources = [...new Set([...Object.keys(before), ...Object.keys(after)])].sort();\nconsole.log('[dedup] per-source before -> after (survivorship):');\nfor (const s of allSources) console.log(`  ${s}: ${before[s] || 0} -> ${after[s] || 0}`);\n\nconst records = [...seen.values()].map((j) => ({ fields: buildFields(j) }));\nconst out = [];\nfor (let k = 0; k < records.length; k += 10) {\n  out.push({\n    json: {\n      records: records.slice(k, k + 10),\n      performUpsert: { fieldsToMergeOn: ['UniqueEventID'] },\n      typecast: true,\n    }\n  });\n}\nreturn out;\n"
+        "jsCode": "// Group DateWindow output into Airtable batch-upsert bodies (10 records/request).\n// Mirrors the old 'Upsert Candidates' field mapping exactly; matches on UniqueEventID.\n// Empty values are omitted (avoids 400 on empty date fields; never blanks an existing value).\nconst FIELD_MAP = {\n  'Event Title': 'event_name',\n  'City': 'city',\n  'URL': 'url',\n  'Start Date': 'start_date',\n  'End Date': 'endDate',\n  'DescriptionRaw': 'DescriptionRaw',\n  'UniqueEventID': 'uniqueEventID',\n  'LocationName': 'locationName',\n  'Source': 'sourceCanonical',\n  'Organizer': 'organizer',\n  'SourceScore': 'sourceScore',\n  'SourceCategories': 'categories',\n  'CostRaw': 'costRaw',\n};\nconst now = new Date().toISOString();\nfunction buildFields(j) {\n  const f = {};\n  for (const [col, key] of Object.entries(FIELD_MAP)) {\n    const v = j[key];\n    if (v !== undefined && v !== null && v !== '') f[col] = v;\n  }\n  f['Last Auto Update'] = now;\n  return f;\n}\n// Group by UniqueEventID across the whole run. Airtable rejects a batch that updates\n// the same record twice in one request, and re-upserting the same event is pointless.\nconst groups = new Map(); // id -> [all jsons with this id]\nfor (const i of items) {\n  const id = i.json.uniqueEventID;\n  if (!id) continue;\n  if (!groups.has(id)) groups.set(id, []);\n  groups.get(id).push(i.json);\n}\n// --- Survivorship: richest-wins golden record (Decision_Log section 51, #70) ---\n// Source-agnostic ordered comparator; replaces the old last-in-Merge-order wins.\n//   1. URL present beats URL absent  (demotes linkless records; keeps the featured-link path)\n//   2. tie -> longer DescriptionRaw  (serves the R6 content scorer; fires only between\n//                                     aggregators that both carry a URL, never for Facebook,\n//                                     whose intake schema has no description column)\n//   3. tie -> last in Merge order    (harmless fallback; preserves prior behaviour)\n// Never references sourceCanonical (portability rule). Lock=true rows are untouched:\n// Lock lives on IssueItems, not Candidates; editorial Candidate fields (Status, etc.)\n// are protected by being absent from FIELD_MAP (Decision_Log section 40).\nfunction richer(a, b) {\n  const au = (a.url || '').trim() ? 1 : 0;\n  const bu = (b.url || '').trim() ? 1 : 0;\n  if (au !== bu) return au > bu ? a : b;\n  const ad = (a.DescriptionRaw || '').length;\n  const bd = (b.DescriptionRaw || '').length;\n  if (ad !== bd) return ad > bd ? a : b;\n  return b;\n}\n// Why did `win` beat `loser`? Replays the same comparator tiers for the run log,\n// so maintenance can see the decision per collision (the loser is dropped here and\n// never reaches Airtable, so this is the ONLY place the reason can be observed).\nfunction winReason(win, loser) {\n  const wu = (win.url || '').trim() ? 1 : 0;\n  const lu = (loser.url || '').trim() ? 1 : 0;\n  if (wu !== lu) return 'URL';\n  if ((win.DescriptionRaw || '').length !== (loser.DescriptionRaw || '').length) return 'longer description';\n  return 'merge-order (tie)';\n}\n// Field-level merge for SUPPLEMENTARY metadata (#70 follow-up, extended #84). Record-level\n// richest-wins picks the base record (real description / primary URL); but discrete source\n// metadata (organizer / sourceScore / categories / costRaw) is only ever set by a source that\n// may LOSE the collision. So overlay those fields from any colliding record that has them, onto\n// the winner. Source-agnostic (by field presence, not source name) and only fills BLANKS on the\n// winner — it never overwrites a value the winner already carries.\nconst META_FIELDS = ['organizer', 'sourceScore', 'categories', 'costRaw'];\nconst isEmpty = (v) => v === undefined || v === null || v === '';\nconst seen = new Map(); // id -> surviving json (metadata-enriched)\nfor (const [id, arr] of groups) {\n  const win = arr.reduce((w, c) => richer(w, c));\n  for (const fld of META_FIELDS) {\n    if (isEmpty(win[fld])) {\n      const donor = arr.find((r) => !isEmpty(r[fld]));\n      if (donor) win[fld] = donor[fld];\n    }\n  }\n  seen.set(id, win);\n}\n// --- Collision diagnostics: which keys collapsed, why the winner won, is it benign? ---\n// Same UniqueEventID + SAME url  = genuinely the same event (benign collapse).\n// Same UniqueEventID + DIFFERENT urls = two different events merged on a coarse\n// title|date key (potential wrongful loss — inspect these).\nconst collisions = [...groups.entries()].filter(([, arr]) => arr.length > 1);\nconst collapsed = items.length - seen.size;\nconsole.log(`[dedup] ${items.length} items in -> ${seen.size} unique (${collapsed} collapsed across ${collisions.length} keys)`);\nlet urlDiffers = 0;\nfor (const [id, arr] of collisions) {\n  const urls = new Set(arr.map((r) => r.url));\n  const venues = new Set(arr.map((r) => (r.locationName || '').trim()).filter(Boolean));\n  const bad = urls.size > 1;\n  if (bad) urlDiffers++;\n  const win = seen.get(id);\n  console.log(`  x${arr.length} urls=${urls.size} venues=${venues.size} \"${id}\"${bad ? ' [URLS DIFFER - INSPECT]' : ''}`);\n  for (const r of arr) {\n    if (r === win) continue;\n    console.log(`      won: ${win.sourceCanonical || '(none)'} over ${r.sourceCanonical || '(none)'} (${winReason(win, r)})`);\n  }\n}\nconsole.log(`[dedup] ${urlDiffers} collision key(s) had DIFFERING urls (potential wrongful merge; 0 = all collapses benign)`);\n// --- DoD safety gate (#70): per-source count diff, before vs after survivorship. ---\n// Read with the documented asymmetry: a DROP for Facebook is expected/correct (its\n// collisions reattribute to richer aggregators); an aggregator losing records, or FB\n// collapsing to ~0, is the red flag.\nconst tally = (arr) => arr.reduce((m, j) => { const s = j.sourceCanonical || '(none)'; m[s] = (m[s] || 0) + 1; return m; }, {});\nconst before = tally(items.map((i) => i.json));\nconst after = tally([...seen.values()]);\nconst allSources = [...new Set([...Object.keys(before), ...Object.keys(after)])].sort();\nconsole.log('[dedup] per-source before -> after (survivorship):');\nfor (const s of allSources) console.log(`  ${s}: ${before[s] || 0} -> ${after[s] || 0}`);\n\nconst records = [...seen.values()].map((j) => ({ fields: buildFields(j) }));\nconst out = [];\nfor (let k = 0; k < records.length; k += 10) {\n  out.push({\n    json: {\n      records: records.slice(k, k + 10),\n      performUpsert: { fieldsToMergeOn: ['UniqueEventID'] },\n      typecast: true,\n    }\n  });\n}\nreturn out;\n"
       },
       "id": "517c81b8-5761-4a7f-82a6-2dd9b34e4c51",
       "name": "Build Upsert Batches",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2128,
-        576
+        1744,
+        1696
       ]
     },
     {
@@ -398,8 +398,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        2352,
-        576
+        1904,
+        1552
       ],
       "credentials": {
         "airtableTokenApi": {
@@ -417,8 +417,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -400,
-        1040
+        -624,
+        1056
       ]
     },
     {
@@ -455,8 +455,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -176,
-        1040
+        -384,
+        1056
       ]
     },
     {
@@ -468,8 +468,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        48,
-        1040
+        -160,
+        1056
       ]
     },
     {
@@ -481,8 +481,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        48,
-        1232
+        -160,
+        1200
       ]
     },
     {
@@ -513,8 +513,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -176,
-        1232
+        -384,
+        1200
       ],
       "id": "a151dd38-5fe5-4dfb-aee5-dccd00a3445c",
       "name": "Unionville Fetch"
@@ -540,8 +540,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -176,
-        1424
+        -384,
+        1360
       ],
       "credentials": {
         "airtableTokenApi": {
@@ -560,8 +560,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        48,
-        1424
+        -160,
+        1360
       ],
       "notes": "Parses each submission's Events blob into per-event items (intermediate shape). Wire output -> Merge (new input index). uniqueEventID/_valid recomputed downstream."
     },
@@ -575,8 +575,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1456,
-        576
+        1264,
+        1552
       ],
       "notes": "Facebook intake exception: feed screenshots carry no event URLs, so FB events arrive linkless and Make UniqueEventID flags _valid=false (missing_url). Let them through if they have a date; the editor adds the link at selection, and a pre-publish guard blocks featuring a linkless item. All other sources still require a URL. See GH #67."
     },
@@ -589,8 +589,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -624,
-        1616
+        -848,
+        1504
       ]
     },
     {
@@ -606,8 +606,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -400,
-        1616
+        -624,
+        1504
       ]
     },
     {
@@ -619,8 +619,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -176,
-        1616
+        -384,
+        1504
       ]
     },
     {
@@ -636,8 +636,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        48,
-        1616
+        -160,
+        1504
       ]
     },
     {
@@ -649,19 +649,215 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        272,
-        1616
+        80,
+        1504
       ]
     },
     {
-      "parameters": {},
+      "parameters": {
+        "jsCode": "// onrichmondhill.com Drupal 7 events list view paginates page=0..5 (uncapped, ~46 events).\n// RSS feed is capped at 10, so we scrape the list instead (issue #77).\nconst BASE = 'https://www.onrichmondhill.com/?q=events';\nconst out = [{ json: { url: BASE, page: 0 } }];\nfor (let p = 1; p <= 5; p++) out.push({ json: { url: `${BASE}&page=${p}`, page: p } });\nreturn out;"
+      },
+      "id": "6d9e45db-e120-4114-9bff-5abebbc2fd61",
+      "name": "OnRichmondHill Build Pages",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -848,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"text/html,application/xhtml+xml\"\n}",
+        "options": {}
+      },
+      "id": "b5c5d8c8-e4ce-4005-bd6a-21b89fa7aab4",
+      "name": "OnRichmondHill List Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -624,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function decodeEntities(s){return (s||'').toString().replace(/&#(\\d+);/g,(_,n)=>String.fromCodePoint(parseInt(n,10))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&amp;/g,'&').replace(/&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');}\nconst pages = $input.all();\nconst seen = new Set();\nconst out = [];\nconst re = /<h[23][^>]*>\\s*<a href=\"\\/\\?q=([a-z0-9-]+)\"[^>]*>([\\s\\S]*?)<\\/a>/g;\nfor (const pg of pages) {\n  const html = (pg.json.data || '').toString();\n  let m;\n  while ((m = re.exec(html)) !== null) {\n    const slug = m[1];\n    if (seen.has(slug)) continue;\n    seen.add(slug);\n    const title = decodeEntities(m[2].replace(/<[^>]*>/g,'')).trim();\n    out.push({ json: { slug, title, detailUrl: `https://www.onrichmondhill.com/?q=${slug}` } });\n  }\n}\nreturn out;"
+      },
+      "id": "a4eb9e40-f58d-4b50-8c04-191ab6d6550a",
+      "name": "OnRichmondHill Parse List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.detailUrl }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"text/html,application/xhtml+xml\"\n}",
+        "options": {}
+      },
+      "id": "35c1e310-2832-4413-ab4d-ecfa2fe50695",
+      "name": "OnRichmondHill Detail Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -160,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const SOURCE='OnRichmondHill';\nconst CITY='Richmond Hill';\nfunction decodeEntities(s){return (s||'').toString().replace(/&#(\\d+);/g,(_,n)=>String.fromCodePoint(parseInt(n,10))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&amp;/g,'&').replace(/&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');}\nfunction cleanDesc(raw){let s=(raw||'').replace(/<br\\s*\\/?>/gi,'\\n').replace(/<\\/p>/gi,'\\n').replace(/<[^>]*>/g,' ');s=decodeEntities(s);return s.replace(/[ \\t]+/g,' ').replace(/\\n{3,}/g,'\\n\\n').trim();}\nconst meta=$('OnRichmondHill Parse List').all();\nconst pages=$input.all();\nconst out=[];\nfor(let i=0;i<pages.length;i++){\n  const html=(pages[i].json.data||'').toString();\n  const m=meta[i].json;\n  const sm=html.match(/date-display-start[^>]*content=\"([0-9T:+\\-]+)\"/);\n  if(!sm) continue; // no event date -> not an event node, drop\n  const dt=new Date(sm[1]);\n  if(isNaN(dt.getTime())) continue;\n  const isoDate=dt.toISOString();\n  const em=html.match(/date-display-end[^>]*content=\"([0-9T:+\\-]+)\"/);\n  const endDate=em? em[1].slice(0,10):'';\n  let loc='';\n  const lm=html.match(/field-name-field-event-location[\\s\\S]*?<div class=\"field-item[^\"]*\">\\s*(?:<a[^>]*>)?([^<]+)/);\n  if(lm) loc=decodeEntities(lm[1]).trim();\n  let desc='';\n  const bm=html.match(/field-name-body[\\s\\S]*?<div class=\"field-item even\"[^>]*>([\\s\\S]*?)<\\/div>\\s*<\\/div>\\s*<\\/div>/);\n  if(bm) desc=cleanDesc(bm[1]);\n  out.push({ json:{\n    title:m.title, event_name:m.title,\n    link:m.detailUrl, url:m.detailUrl,\n    isoDate, start_date:isoDate, endDate,\n    locationName:loc, city:CITY, sourceCanonical:SOURCE,\n    DescriptionRaw:desc,\n    _valid:!!(m.title && isoDate && m.detailUrl),\n  } });\n}\nreturn out;"
+      },
+      "id": "bd37e173-bb38-4682-b085-48b8be24e2db",
+      "name": "OnRichmondHill Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 6
+      },
       "id": "c1885588-f16d-49b4-874d-8c6f5dfa9841",
-      "name": "Merge VPL",
+      "name": "Merge 2",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        560,
-        576
+        608,
+        1696
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://calendar.richmondhill.ca/default/Rss",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"application/atom+xml,application/xml,text/html\"\n}",
+        "options": {}
+      },
+      "id": "47121bd2-5488-48c9-a0ad-c37aab0412d4",
+      "name": "RichmondHill RSS Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -624,
+        1840
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// richmondhill.ca municipal calendar (eSolutionsGroup), Atom feed /default/Rss (issue #78).\n// Feed gives title + date + detail URL (more complete than the Month-grid scrape, which\n// truncates busy days behind 'View More'). Civic governance events are dropped here at\n// ingestion (deterministic); fuzzier B2B/professional-dev is left for R2 classification.\nconst xmlData = ($input.first().json.data || '').toString();\nconst CIVIC = /Council|Committee|Advisory|Budget|Task Force|Adjustment|of the Whole|Heritage Richmond Hill|Audit Committee|Roadwatch|Public Meeting|Open House|Endowment|Precinct|Consolidation|Compliance|Master Plan/i;\nfunction decode(s){return (s||'').replace(/&amp;amp;/g,'&').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').trim();}\nconst entries=[...xmlData.matchAll(/<entry>([\\s\\S]*?)<\\/entry>/g)].map(m=>m[1]);\nconst out=[]; const seen=new Set();\nfor(const e of entries){\n  const tm=e.match(/<title type=\"text\">([^<]*?)\\s*\\((\\d+)\\/(\\d+)\\/(\\d+)\\)<\\/title>/);\n  const lm=e.match(/href=\"(https:\\/\\/calendar\\.richmondhill\\.ca\\/default\\/Detail\\/[^\"]+)\"/);\n  if(!tm||!lm) continue;                 // need title+date AND a real detail URL (drops empty-Detail entries)\n  const title=decode(tm[1]);\n  if(!title || CIVIC.test(title)) continue;\n  const date=`${tm[4]}-${tm[2].padStart(2,'0')}-${tm[3].padStart(2,'0')}`;\n  const detailUrl=lm[1];\n  const sm=detailUrl.match(/Detail\\/\\d{4}-\\d{2}-\\d{2}-(\\d{4})-/);\n  const time=sm?`${sm[1].slice(0,2)}:${sm[1].slice(2)}`:'00:00';\n  const isoDate=`${date}T${time}:00`;\n  const key=`${title}|${date}`;\n  if(seen.has(key)) continue; seen.add(key);\n  out.push({json:{title,date,isoDate,detailUrl}});\n}\nreturn out;\n"
+      },
+      "id": "08b8fd5f-11c2-427a-9837-3b18b83085fb",
+      "name": "RichmondHill Parse Feed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        1840
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.detailUrl }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"text/html,application/xhtml+xml\"\n}",
+        "options": {}
+      },
+      "id": "515a4bef-cea3-4104-850e-7387bff65724",
+      "name": "RichmondHill Detail Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -160,
+        1840
+      ],
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Correlate Parse Feed meta (by index) with the Detail Fetch HTML.\n// LocationName from the detail page's Google-Maps link; venue name only (split on ',' or '('),\n// matching the AllEvents convention. City is RH by definition (single municipality).\nconst SOURCE='RichmondHill', CITY='Richmond Hill';\nfunction decode(s){return (s||'').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/%2c/gi,',').trim();}\nconst meta=$('RichmondHill Parse Feed').all();\nconst pages=$input.all();\nconst out=[];\nfor(let i=0;i<pages.length;i++){\n  const html=(pages[i].json.data||'').toString();\n  const m=meta[i].json;\n  let loc='';\n  const mm=html.match(/maps\\.google\\.com\\/\\?q=([^\"]+)/);\n  if(mm){ try{ loc=decode(decodeURIComponent(mm[1].replace(/\\+/g,' '))); }catch(_){ loc=''; } }\n  if(loc) loc=loc.split(/[,(]/)[0].trim();\n  out.push({json:{\n    title:m.title, event_name:m.title,\n    link:m.detailUrl, url:m.detailUrl,\n    isoDate:m.isoDate, start_date:m.isoDate, endDate:'',\n    locationName:loc, city:CITY, sourceCanonical:SOURCE,\n    DescriptionRaw:'',\n    _valid:!!(m.title && m.isoDate && m.detailUrl),\n  }});\n}\nreturn out;\n"
+      },
+      "id": "41913989-b082-42ed-afd3-b842c53d1d19",
+      "name": "RichmondHill Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        1840
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.pinotspalette.com/woodbridge",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"text/html,application/xhtml+xml\"\n}",
+        "options": {}
+      },
+      "id": "67e5eef7-dc54-458a-8e71-7feda94345b4",
+      "name": "Pinot's Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -160,
+        2000
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pinot's Palette Woodbridge - single-page SSR Doc scrape (Tier 4).\n// All 73 events render on /woodbridge with title+date inline; no detail hop.\n// Cards double-render (image-card + book-now-card); dedupe by event id, first wins.\n// Single venue -> City=Vaughan by definition. UniqueEventID built downstream by Make UniqueEventID.\nconst SOURCE='PinotsPalette', CITY='Vaughan', LOCATION=\"Pinot's Palette - Vaughan-Woodbridge\";\nconst MONTHS={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};\nfunction decodeEntities(s){return (s||'').toString().replace(/&#(\\d+);/g,(_,n)=>String.fromCodePoint(parseInt(n,10))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&amp;/g,'&').replace(/&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');}\nfunction parseDate(t){const m=(t||'').match(/\\w{3}\\s+(\\w{3})\\s+(\\d{1,2}),\\s+(\\d{4})/);if(!m)return '';const mon=MONTHS[m[1]];if(mon===undefined)return '';const dt=new Date(Date.UTC(+m[3],mon,+m[2],12,0,0));if(isNaN(dt.getTime()))return '';return dt.toISOString();}\nconst html=($input.first().json.data||'').toString();\nconst blocks=html.split('<figure');\nconst byId=new Map();\nfor(const b of blocks){\n  const idm=b.match(/\\/woodbridge\\/event\\/(\\d+)/); if(!idm) continue;\n  const id=idm[1];\n  const tm=b.match(/<h4 class=\"time\">([^<]+)<\\/h4>/);\n  const hm=b.match(/<h3>([^<]+)<\\/h3>/);\n  if(!tm||!hm) continue;\n  const title=decodeEntities(hm[1]).trim();\n  const isoDate=parseDate(tm[1]);\n  if(!title||!isoDate) continue;\n  if(byId.has(id)) continue;\n  const url='https://www.pinotspalette.com/woodbridge/event/'+id;\n  // #84 - cost signal, clean consistent \"$NN per guest\" format confirmed live.\n  const pm=b.match(/<h4 class=\"price\">([^<]+)<\\/h4>/);\n  const costRaw=pm?pm[1].trim():'';\n  byId.set(id,{json:{title,event_name:title,link:url,url,isoDate,start_date:isoDate,endDate:'',locationName:LOCATION,city:CITY,sourceCanonical:SOURCE,DescriptionRaw:'',costRaw,_valid:!!(title&&isoDate&&url)}});\n}\nreturn [...byId.values()];\n"
+      },
+      "id": "937ec6cb-843c-4af1-bcc0-78cd007683cb",
+      "name": "Pinot's Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        2000
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://the-chef-upstairs.bookthatapp.com/availability/schedule.json?shop=the-chef-upstairs.myshopify.com&location=13173",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"application/json\"\n}",
+        "options": {}
+      },
+      "id": "a647933d-cb83-4c5c-b2b3-f9269a8b5a7a",
+      "name": "Chef Upstairs Fetch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -160,
+        2160
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// The Chef Upstairs (#80) - BookThatApp availability feed (Tier 1 JSON).\n// schedule.json?location=13173 returns the Vaughan studio's forward-dated class occurrences.\n// products.json has NO date; the date lives only in this booking feed (start[] array / select= ISO).\n// Each occurrence (a class on a specific date) = one event; recurring classes appear once per date.\n// Single Vaughan venue -> City=Vaughan. UniqueEventID built downstream by Make UniqueEventID.\n// DescriptionRaw is enriched from products.json body_html (joined on handle) - the schedule feed has\n// no description, and R6 scoring / R7 classification consume DescriptionRaw. Enrichment is non-critical:\n// if the products fetch fails or a handle is missing, DescriptionRaw falls back to '' and events still flow.\nconst SOURCE='ChefUpstairs', CITY='Vaughan', LOCATION='The Chef Upstairs - Vaughan', LOC_ID=13173;\n// Multi-day programs (camps / multi-week sessions / series) are a different event SHAPE than the\n// single-night classes the weekly newsletter runs. Client confirmed (2026-07-02 mtg) they want these\n// IN the pool too (will rarely pick them). One entry per program in the feed (start=first day, full\n// range in the title) -> no per-day spam; UniqueEventID=title|date keeps them distinct.\nconst DROP_MULTIDAY=false;\nconst MULTIDAY=/\\bcamp\\b|\\b\\d+\\s*week\\b|\\bweek\\s*\\d|\\b(fall|spring|winter|summer)\\s+session\\b|\\bseries\\b/i;\nfunction decodeEntities(s){return (s||'').toString().replace(/&#(\\d+);/g,(_,n)=>String.fromCodePoint(parseInt(n,10))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&amp;/g,'&').replace(/&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');}\nfunction htmlToText(h){return decodeEntities((h||'').toString().replace(/<\\s*(br|\\/p|\\/li|\\/h[1-6])\\s*>/gi,' ').replace(/<[^>]+>/g,' ')).replace(/\\s+/g,' ').trim().slice(0,1000);}\nfunction cleanTitle(t){let s=decodeEntities(t).replace(/\\s+/g,' ').trim();s=s.replace(/^Vaughan\\s*-\\s*/i,'');s=s.replace(/^(Adult|Kids|Teen|Parent and Child|Single)[^-:]*Cooking (Class|Classes|Camp)\\s*[-:]\\s*/i,'');s=s.replace(/^Food Lover[’'s]+[^-:]*Cooking Class\\s*[-:]\\s*/i,'');return s.trim();}\n// --- enrich: fetch products.json (2 pages, 250 cap) and map handle -> plaintext description ---\nconst byHandle={};\ntry{\n  for(const page of [1,2]){\n    const res=await this.helpers.httpRequest({url:'https://thechefupstairs.com/products.json?limit=250&page='+page,json:true,headers:{'User-Agent':'Mozilla/5.0','Accept':'application/json'}});\n    const ps=(res&&res.products)||[];\n    for(const p of ps){ if(!(p.handle in byHandle)) byHandle[p.handle]=htmlToText(p.body_html); }\n  }\n}catch(e){ /* non-critical: leave byHandle partial/empty, descriptions fall back to '' */ }\nconst response=$input.first().json;\nconst sched=(response.schedule)||[];\nconst out=[];\nfor(const ev of sched){\n  const locId=ev.locations&&ev.locations[0]&&ev.locations[0].id;\n  if(locId!==LOC_ID) continue;                 // Vaughan studio only (guard vs the fetch location filter)\n  if(ev.bookedOut===true) continue;            // drop sold-out (no valid CTA)\n  const rawTitle=(ev.title||'').toString();\n  if(DROP_MULTIDAY && MULTIDAY.test(rawTitle)) continue;  // drop camps/sessions (#80 toggle)\n  const a=ev.start; if(!Array.isArray(a)||a.length<5) continue;\n  const dt=new Date(Date.UTC(a[0],a[1]-1,a[2],a[3],a[4],0));  // start[] month is 1-indexed\n  if(isNaN(dt.getTime())) continue;\n  const isoDate=dt.toISOString();\n  const isMulti=MULTIDAY.test(rawTitle);\n  // cleanTitle strips the \"Kids/Teen ... Cooking Camp -\" boilerplate, which for a camp IS the subject\n  // (would leave only \"Week 5 - July 20-25\"). Multi-day: keep the descriptor, strip only the venue prefix.\n  const title=isMulti\n    ? decodeEntities(rawTitle).replace(/\\s+/g,' ').replace(/^Vaughan\\s*-\\s*/i,'').trim()\n    : cleanTitle(rawTitle);\n  const path=(ev.url||'').replace(/^https?:\\/\\/[^/]+/,'');\n  const url='https://thechefupstairs.com'+path;\n  if(!title||!isoDate||!url) continue;\n  const DescriptionRaw=byHandle[ev.handle]||'';\n  out.push({json:{title,event_name:title,link:url,url,isoDate,start_date:isoDate,endDate:'',locationName:LOCATION,city:CITY,sourceCanonical:SOURCE,DescriptionRaw,_valid:!!(title&&isoDate&&url)}});\n}\nreturn out;"
+      },
+      "id": "8b96fdbb-dbed-493d-ad0d-f53b787cbe74",
+      "name": "Chef Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        2160
       ]
     }
   ],
@@ -722,6 +918,26 @@
           },
           {
             "node": "VPL Build Months",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "OnRichmondHill Build Pages",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RichmondHill RSS Fetch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Pinot's Fetch",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Chef Upstairs Fetch",
             "type": "main",
             "index": 0
           }
@@ -1106,7 +1322,7 @@
       "main": [
         [
           {
-            "node": "Merge VPL",
+            "node": "Merge 2",
             "type": "main",
             "index": 0
           }
@@ -1117,20 +1333,163 @@
       "main": [
         [
           {
-            "node": "Merge VPL",
+            "node": "Merge 2",
             "type": "main",
             "index": 1
           }
         ]
       ]
     },
-    "Merge VPL": {
+    "OnRichmondHill Build Pages": {
+      "main": [
+        [
+          {
+            "node": "OnRichmondHill List Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OnRichmondHill List Fetch": {
+      "main": [
+        [
+          {
+            "node": "OnRichmondHill Parse List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OnRichmondHill Parse List": {
+      "main": [
+        [
+          {
+            "node": "OnRichmondHill Detail Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OnRichmondHill Detail Fetch": {
+      "main": [
+        [
+          {
+            "node": "OnRichmondHill Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge 2": {
       "main": [
         [
           {
             "node": "Clean/Filter",
             "type": "main",
             "index": 0
+          }
+        ]
+      ]
+    },
+    "OnRichmondHill Normalize": {
+      "main": [
+        [
+          {
+            "node": "Merge 2",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "RichmondHill RSS Fetch": {
+      "main": [
+        [
+          {
+            "node": "RichmondHill Parse Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RichmondHill Parse Feed": {
+      "main": [
+        [
+          {
+            "node": "RichmondHill Detail Fetch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RichmondHill Detail Fetch": {
+      "main": [
+        [
+          {
+            "node": "RichmondHill Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RichmondHill Normalize": {
+      "main": [
+        [
+          {
+            "node": "Merge 2",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Pinot's Fetch": {
+      "main": [
+        [
+          {
+            "node": "Pinot's Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinot's Normalize": {
+      "main": [
+        [
+          {
+            "node": "Merge 2",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Chef Upstairs Fetch": {
+      "main": [
+        [
+          {
+            "node": "Chef Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chef Normalize": {
+      "main": [
+        [
+          {
+            "node": "Merge 2",
+            "type": "main",
+            "index": 5
           }
         ]
       ]
@@ -1144,7 +1503,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": true
   },
-  "versionId": "db2d3b13-fb30-403e-8f1b-a1f7b2381768",
+  "versionId": "014dbdec-77a1-4258-ba3f-c80ab1641637",
   "meta": {
     "templateCredsSetupCompleted": true,
     "aiBuilderAssisted": true,
