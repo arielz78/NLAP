@@ -27,6 +27,7 @@ Single source of truth for "where are we." The roadmap's R5 header is stale; thi
 **In flight / next (the order to close R5):**
 - **Type-specific source builds — ALL DONE.** ✅ #77 onrichmondhill (2026-06-25), ✅ #78 richmondhill.ca (2026-06-26), ✅ #79 Pinot's Palette (2026-06-26), ✅ #80 Chef Upstairs (2026-06-30, multi-day included per client 2026-07-02).
 - **#63 field-inventory exhaustive sweep — DONE (2026-07-03).** All 8 remaining endpoints audited (Eventbrite, McMichael, TRCA RSS, BiblioCommons, onrichmondhill, Richmond Hill city, Pinot's Palette, Chef Upstairs); every live source now field-audited. See `docs/source_decision_sheet.md` Probe Log 2026-07-03 entry.
+- **#84 R6-substrate field capture — DONE (2026-07-03, closed).** `CostRaw` (new field) + extended `SourceCategories` shipped across Eventbrite, BiblioCommons, Pinot's Palette, TRCA RSS, AllEvents (×3); sold-out/full events now hard-dropped at ingestion (Eventbrite, BiblioCommons — Chef Upstairs already did this) instead of captured as a column. Trimmed from the original 8-field plan to 2 real fields — see Decision_Log §54 addenda. R6-enabling fast-follow, non-blocking, same category as #4–#8.
 - **#66 re-export live R1** — remaining. Now the only open build-adjacent item before pure closure accounting (#82/#34).
 
 **Open / deferred:**
