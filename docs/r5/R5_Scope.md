@@ -25,9 +25,9 @@ Single source of truth for "where are we." The roadmap's R5 header is stale; thi
 - **Unplanned but shipped** (the bulk of the "deviation"): R1 perf overhaul ~24× (Historical table retired, batched HTTP upsert, intra-run dedup); `overlapAudit.js` cross-source dedup tool; source-probe methodology + `scrape_blueprint.md` + DevTools coverage audit + integration-tier ranking.
 
 **In flight / next (the order to close R5):**
-- **Type-specific source builds** — ✅ **#77 onrichmondhill DONE** (2026-06-25, HTML list-scrape, 70% exclusive); ✅ **#78 richmondhill.ca DONE** (2026-06-26, eSolutionsGroup Atom feed, 90% exclusive). Remaining: **#79 Pinot's Palette**, **#80 Chef Upstairs**. Reframed from "fast-follow" to **autonomy-relevant**: these cover event types (couples / recipe / venue-specific) the editor currently injects manually because no source emits them. Necessary for autonomy, not sufficient — per-segment routing is R7. Build as a block before #66/#63.
-- **#63 field-inventory exhaustive sweep** — run at ingestion close (after the source builds land, so it covers their fields).
-- **#66 re-export live R1** — single canonical export once the live workflow is final (3 normalize changes from #81/#59 already stale + the new branches).
+- **Type-specific source builds — ALL DONE.** ✅ #77 onrichmondhill (2026-06-25), ✅ #78 richmondhill.ca (2026-06-26), ✅ #79 Pinot's Palette (2026-06-26), ✅ #80 Chef Upstairs (2026-06-30, multi-day included per client 2026-07-02).
+- **#63 field-inventory exhaustive sweep — DONE (2026-07-03).** All 8 remaining endpoints audited (Eventbrite, McMichael, TRCA RSS, BiblioCommons, onrichmondhill, Richmond Hill city, Pinot's Palette, Chef Upstairs); every live source now field-audited. See `docs/source_decision_sheet.md` Probe Log 2026-07-03 entry.
+- **#66 re-export live R1** — remaining. Now the only open build-adjacent item before pure closure accounting (#82/#34).
 
 **Open / deferred:**
 - W2b (Eventbrite retrofit) + W2c (guards/geo-filter/RSS) — shipped: #81 (source-aware online handling) + #59 (Eventbrite geo allowlist) both CLOSED 2026-06-25. Blank-Source backfill deferred to #69 (R6-W4).
