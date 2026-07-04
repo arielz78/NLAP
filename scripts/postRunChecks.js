@@ -7,6 +7,7 @@
 //   3. overlapAudit.js        — cross-source duplicate health
 //   4. depthCheck.js          — per-issue in-window pool depth vs floor
 //   5. facebookSubmissionCheck.js — Facebook 0-submission / stale-intake alarm
+//   6. rejectionCheck.js      — pre-Airtable drop counts + reasons (Clean/Filter, DateWindow)
 //
 // Each check runs even if an earlier one fails; a single combined exit code and
 // summary are returned at the end. If DISCORD_WEBHOOK_RUNLOGS is set in the env,
@@ -25,6 +26,7 @@ const CHECKS = [
   { name: "overlap", file: "overlapAudit.js" },
   { name: "depth", file: "depthCheck.js" },
   { name: "fbsubmission", file: "facebookSubmissionCheck.js" },
+  { name: "rejections", file: "rejectionCheck.js" },
 ];
 
 function runOne(file) {

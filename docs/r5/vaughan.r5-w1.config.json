@@ -1,4 +1,5 @@
 {
+  "_status": "SNAPSHOT ONLY — not read by the live pipeline. Config values (geography, source list) live hardcoded inline across 17 Code nodes in the live 'NLAP R1' n8n workflow, not centralized here. See R5_Scope.md Reusability line (R5 Status Snapshot section) for the full hardcode map and extraction plan (deferred to R6, bundled with scoring-config-drive work). This file was drafted at W1 (2026-06-05) as the target schema and corrected 2026-07-03 to at least match current source reality — it is not wired up.",
   "newsletter": "vaughan",
   "airtableBaseId": "appVXHOyQcgQAk1gV",
   "beehiivPubId": "pub_ff7a12c2-7452-46da-9792-771ec6ece149",
@@ -80,11 +81,13 @@
       ]
     },
     "markham_bibliocommons": {
-      "canonicalName": "Markham Public Library",
-      "active": false,
-      "dropReason": "React SPA — no public API, no iCal, no JSON-LD. Confirmed 2026-06-05 via endpoint probe + browser dev tools inspection.",
-      "method": "none",
-      "listingUrl": "https://markham.bibliocommons.com/v2/events",
+      "canonicalName": "BiblioCommons",
+      "active": true,
+      "correctionNote": "W1 sign-off wrongly dropped this as 'no accessible endpoint.' A working RSS feed was found post-sign-off: markham.bibliocommons.com/events/rss/all. Live since 2026-06-20, 161+ records.",
+      "method": "rss",
+      "endpoints": [
+        "https://markham.bibliocommons.com/events/rss/all"
+      ],
       "segments": [
         "for_families",
         "for_golden_age"
@@ -93,10 +96,10 @@
     "mcmichael": {
       "canonicalName": "McMichael",
       "active": true,
-      "method": "ical",
+      "method": "tribe_rest_api",
+      "correctionNote": "Upgraded from iCal to Tribe REST API 2026-06-07 (see Decision_Log §39).",
       "endpoints": [
-        "https://mcmichael.com/events/?ical=1",
-        "https://mcmichael.com/events/category/adult-programs/?ical=1"
+        "https://mcmichael.com/wp-json/tribe/events/v1/events"
       ],
       "segments": [
         "for_families",
@@ -104,26 +107,114 @@
         "for_golden_age"
       ]
     },
+    "trca": {
+      "canonicalName": "TRCA Calendar",
+      "active": true,
+      "method": "rss",
+      "endpoints": [
+        "https://calendar.trca.ca/... (see source_decision_sheet.md for live endpoint — corrected 2026-07-03, doc previously listed a 404ing trca.ca URL)"
+      ],
+      "segments": [
+        "for_families",
+        "for_couples",
+        "for_golden_age"
+      ]
+    },
+    "eventbrite": {
+      "canonicalName": "Eventbrite",
+      "active": true,
+      "method": "undocumented_api",
+      "segments": [
+        "for_families",
+        "for_couples",
+        "for_golden_age"
+      ]
+    },
+    "allevents": {
+      "canonicalName": "AllEvents",
+      "active": true,
+      "method": "json_api",
+      "note": "3 city branches: Vaughan, Richmond Hill, Markham",
+      "segments": [
+        "for_families",
+        "for_couples",
+        "for_golden_age"
+      ]
+    },
+    "visitvaughan": {
+      "canonicalName": "VisitVaughan",
+      "active": true,
+      "method": "admin_ajax_json",
+      "segments": [
+        "for_families",
+        "for_couples",
+        "for_golden_age"
+      ]
+    },
+    "unionville": {
+      "canonicalName": "Unionville",
+      "active": true,
+      "method": "admin_ajax_html_scrape",
+      "segments": [
+        "for_families",
+        "for_couples"
+      ]
+    },
+    "onrichmondhill": {
+      "canonicalName": "OnRichmondHill",
+      "active": true,
+      "method": "html_list_scrape",
+      "builtIssue": 77,
+      "segments": [
+        "for_families",
+        "for_couples",
+        "for_golden_age"
+      ]
+    },
+    "richmondhill_ca": {
+      "canonicalName": "RichmondHill.ca",
+      "active": true,
+      "method": "atom_feed",
+      "builtIssue": 78,
+      "segments": [
+        "for_families",
+        "for_couples",
+        "for_golden_age"
+      ]
+    },
+    "pinots_palette": {
+      "canonicalName": "Pinot's Palette",
+      "active": true,
+      "method": "html_scrape",
+      "builtIssue": 79,
+      "segments": [
+        "for_couples"
+      ]
+    },
+    "chef_upstairs": {
+      "canonicalName": "Chef Upstairs",
+      "active": true,
+      "method": "json_schedule_endpoint",
+      "builtIssue": 80,
+      "segments": [
+        "for_families",
+        "for_couples"
+      ]
+    },
     "meetup": {
       "canonicalName": "Meetup",
-      "active": true,
-      "method": "group_ical",
-      "groupIcalUrls": [
-        "https://www.meetup.com/torontobikemeetup/events/ical/",
-        "https://www.meetup.com/women-that/events/ical/"
-      ],
-      "sourceIssueHistoryUrls": [
-        "https://www.meetup.com/torontobikemeetup/events/313742806/",
-        "https://www.meetup.com/women-that/events/314684754/"
-      ],
+      "active": false,
+      "dropReason": "Both original groups wrong geography/defunct at W1 sign-off; York Region alternatives low-yield. Any Meetup events flow via Facebook manual intake instead.",
+      "method": "none",
       "segments": [
         "for_couples"
       ]
     },
     "facebook_manual": {
       "canonicalName": "Facebook",
-      "active": false,
+      "active": true,
       "method": "manual_intake",
+      "builtIssue": 35,
       "endpoint": null,
       "segments": [
         "for_families",

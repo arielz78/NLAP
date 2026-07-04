@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-04
+- Closed out the two remaining release-closure tasks from the source-expansion phase (workflow archival, adapter/integrity disposition).
+- Audited configuration portability ahead of a future second-city launch — found and corrected a stale planning snapshot, and scoped the remaining config-centralization work into the next phase rather than building it prematurely.
+- Found that invalid-record rejection during ingestion wasn't being logged anywhere retrievable, closing a real observability gap — built a durable, automatically-surfaced record of what gets dropped and why, which immediately caught one source silently failing to provide links for its events.
+
 ## 2026-07-03
 - Held a client review meeting confirming the source-expansion phase is complete, then acted on client input to extend the cooking-school source to also include its multi-week programs and camps (previously limited to single-evening classes). Inspected the live feed to confirm each program arrives as a single event — no duplication — and fixed a title-cleaning step that would otherwise have stripped a camp's name down to just its week label. Verified live with the full health-check suite green.
 - Began scoping the event-ranking phase: rather than encoding the editor's stated preferences (which are intuitive and hard to specify), the plan is to ground a baseline in 15 months of the editor's actual past selections and let a backtest decide whether a scoring formula or a language-model picker is the right tool — avoiding sophistication the problem doesn't warrant. Built a set of real head-to-head event comparisons to serve as the evaluation set.
