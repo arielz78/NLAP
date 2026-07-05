@@ -29,7 +29,7 @@ never changes, whereas type (working → frozen) does.
 | Session journal (what happened, next step) | `Execution_Log.md` (root) | Living (journal) | **Every session** |
 | Public repo changelog | `CHANGELOG.md` (root) | Derived from Execution_Log | Every session (auto — derived, not authored twice) |
 | Architectural / editorial decisions + rationale | `docs/Decision_Log.md` | Living reference | **Only** when a real decision is made |
-| Active release status ("where are we") | active Scope doc's Status Snapshot (e.g. `docs/r5/R5_Scope.md`) | Release-working | When release status changes |
+| Active release status ("where are we") | active Scope doc's Status Snapshot (e.g. `docs/r6/R6_Scope.md`) | Release-working | When release status changes |
 | Per-source method / status / field inventory / verdict | `docs/source_decision_sheet.md` | Living reference | When a source's state changes |
 | Scrape / source-probe methodology | `docs/scrape_blueprint.md` | Living reference | When the method or standard changes |
 | Release plan (original intent, **not** status) | `docs/NLAP_PostMVP_Roadmap_v3.md` | Frozen *per-section* (see below) | A section freezes when its release opens; otherwise never |
