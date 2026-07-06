@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-06
+- Built the evaluation dataset for the upcoming event-ranking phase: joined 15 months of newsletter click data to the published-issue history, labeling each past event by how well it performed against the others in its section. Grounded the design in standard information-retrieval practice (relevance judgments from implicit click feedback) and measured a clear reader position-bias effect, deliberately preserving it as a signal to account for later rather than scrubbing it prematurely.
+- Pressure-tested the plan before building: caught and fixed a record-matching flaw that would have silently mis-linked recurring events, and right-sized the claim so the offline check informs — but doesn't replace — live validation.
+
 ## 2026-07-04
 - Closed out the two remaining release-closure tasks from the source-expansion phase (workflow archival, adapter/integrity disposition).
 - Audited configuration portability ahead of a future second-city launch — found and corrected a stale planning snapshot, and scoped the remaining config-centralization work into the next phase rather than building it prematurely.
