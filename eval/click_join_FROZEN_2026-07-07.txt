@@ -1,0 +1,19 @@
+Click-join eval set — summary
+Generated: 2026-07-07T18:23:04.120Z
+Inputs: issue_history.json + link_clicks_2026-07-07T13_54_36.89852738Z.csv (export 2026-07-07)
+Label metric: Verified Unique Clicks (within-section-within-issue percentile)
+
+Labeled records: 924
+Coverage: 966/1126 scored picks matched (85.8%)
+  For Families: 336/376 (89.4%)
+  For Couples: 316/383 (82.5%)
+  For Golden Age Readers: 314/367 (85.6%)
+Sections kept: 194  |  dropped (<4 matched): 19
+Issues excluded (younger than 7d): beat-the-heat-your-5-smart-picks
+
+Slot gradient (mean within-section percentile by slot):
+  slot 1: 0.599  (n=191)
+  slot 2: 0.52  (n=183)
+  slot 3: 0.483  (n=185)
+  slot 4: 0.461  (n=184)
+  slot 5: 0.433  (n=181)

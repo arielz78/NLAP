@@ -23,7 +23,7 @@ const path = require("path");
 
 // ---- Config (hardcoded on purpose: one-shot offline analysis, not a live/multi-tenant path) ----
 const SCORED_SECTIONS = new Set(["For Families", "For Couples", "For Golden Age Readers"]);
-const MATURATION_MIN_AGE_DAYS = 14; // clicks are front-loaded; exclude issues younger than this at export date
+const MATURATION_MIN_AGE_DAYS = 7; // clicks plateau by ~7d (measured 2026-07-07: <0.5% growth after day 7); exclude issues younger than this at export date
 const MIN_SECTION_SIZE = 4;        // a percentile over 2-3 survivors is noise — drop that section-issue
 const CLICK_METRIC = "Verified Unique Clicks"; // primary label metric (bot-filtered, per-subscriber)
 
