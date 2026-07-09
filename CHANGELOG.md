@@ -10,6 +10,9 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 - Isolated the evaluation tooling in a pinned per-project Python environment for reproducibility.
 - Built an offline evaluation harness and forced-choice pair-collection tool for the event-ranking scorer: it generates matched candidate pairs for an editor to judge, then grades competing scoring methods — a heuristic baseline, a language-model comparator, and a learned ranker — head-to-head on held-out judgments with bootstrap confidence intervals.
 - Audited the editorial record to pin down the scorer's training signal, confirming the target must be the editor's directly-elicited preferences (collected via the new tool) rather than inferred from historical output, and set a data-first plan to choose the scoring method by measured agreement.
+- Independently reproduced the section-classifier feasibility result to confirm it wasn't a one-off, recovering an undocumented detail about how the original measurement was scoped and clarifying which accuracy number reflects the genuinely hard categorization task.
+- Built a reusable, documented tool that surfaces the hardest-to-categorize historical events (the ones the model is most torn between two adjacent audience sections) so the editor can re-judge them — measuring how consistent the human's own categorization is, which sets a realistic ceiling on any automated classifier.
+- Captured the editor's categorization rules from the client meeting (hard placement rules, what makes an event unsuitable, and the tie-breakers for genuinely ambiguous events) to feed the classifier design.
 
 ## 2026-07-08
 - Stress-tested the R6 event-scoring design (imitate the editor's selections vs. optimize for clicks) and confirmed the imitation approach; measured the newsletter's slot-position effect on engagement to ground the decision in data rather than assumption.

@@ -1,0 +1,20 @@
+# Generated 2026-07-09 by eval/build_ambiguous_sections.py
+# INTERNAL — DO NOT SEND TO EDITOR. Purpose: editor re-rules Couples/Golden boundary cases -> R7-W6 section-classifier signal.
+# Source: data/beehiiv/issue_history.json (1506 labeled events; Couples/Golden boundary pool: 286).
+
+n	title	true_section	model_pred	p_couples	p_golden	margin
+1	Rare Pasta Date Night	For Couples	For Golden Age Readers	0.447	0.448	0.001
+2	Pickleball Tournament	For Couples	For Couples	0.334	0.33	0.003
+3	Reboot Your Love Life Online intro session for singles over 50 seeking clarity.	For Golden Age Readers	For Couples	0.33	0.32	0.01
+4	Spectacular 2026 Closing Night	For Couples	For Golden Age Readers	0.385	0.396	0.011
+5	Simplicity Spooky Glaze Fun Workshop	For Golden Age Readers	For Couples	0.46	0.448	0.012
+6	Paint & Sip Mexican Amigos	For Couples	For Golden Age Readers	0.407	0.427	0.02
+7	High Tea, An Afternoon Tea Gathering	For Golden Age Readers	For Golden Age Readers	0.388	0.411	0.023
+8	2026 Spring Wedding Show	For Couples	For Couples	0.328	0.3	0.027
+9	Plants & Prints – An Eco-Dye Workshop for Community	For Golden Age Readers	For Couples	0.359	0.329	0.03
+10	Paint & Sip Woodbridge	For Couples	For Couples	0.464	0.434	0.03
+11	Italian New Year’s Eve Party (Woodbridge) Dinner, dancing, laughter, and Italian vibes to welcome the New Year.	For Couples	For Couples	0.316	0.282	0.034
+12	Ritmo Latin Social Latin beats; dance ’til late - high-energy moves meet - fun fitness & dancing.	For Couples	For Golden Age Readers	0.334	0.369	0.035
+13	Valentine’s Day Chocolate Workshop	For Couples	For Couples	0.37	0.331	0.039
+14	Jake Shimabukuro Concert	For Couples	For Golden Age Readers	0.287	0.327	0.04
+15	Ballet Night 2026 Enjoy an elegant two-act ballet performance at Flato Markham Theatre.	For Couples	For Golden Age Readers	0.344	0.384	0.04

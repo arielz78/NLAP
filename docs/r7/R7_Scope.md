@@ -49,6 +49,23 @@ via URL. Not yet run.
   (raw-title) number will be lower, and the fuzzy Couples/Golden boundary means
   abstention/review is load-bearing, not optional.
 
+### Reproduction (2026-07-09, `eval/build_ambiguous_sections.py` env)
+Re-ran independently to check the ad-hoc number wasn't a fluke — **it reproduces.**
+- **The N reconciles: 1,126 = full 1,506 labeled events − 380 Local Aroma.** The
+  original run was silently a **3-class** problem (Families/Couples/Golden), Local
+  Aroma dropped. This was undocumented — recovering it matters: the "80%" was
+  *never* on the full sectioning task. **Decide the class set deliberately in W6,
+  don't inherit 3-class by accident** (Local Aroma is easy — f1 0.94 in the 4-class
+  run — so including it inflates headline accuracy; excluding it is the honest hard number).
+- 3-class LinearSVC title+desc: **77.0%** acc, Families f1 **0.82** (vs doc 79.6% / 0.83).
+  ~2.6pt gap = TF-IDF/preprocessing tuning, not structural; doc number was flagged optimistic.
+- Title-only (no description): 3-class **70.0%**; 4-class **73.8%** — description
+  adds ~7pts, consistent with the description-dropout catch (§ New catches).
+- Couples↔Golden confirmed as the dominant off-diagonal (56 + 52). Motivates
+  `eval/ambiguous_cases_2026-07-09_*` — editor re-rules the tightest boundary cases
+  (self-consistency check = the real label-noise ceiling on this pair).
+- **Unchanged caveat:** both runs are on EDITED titles. Still not the raw-title go/no-go.
+
 ---
 
 ## The three views

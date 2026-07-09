@@ -1,0 +1,66 @@
+# Generated 2026-07-09 by eval/build_ambiguous_sections.py
+# Purpose: editor re-rules Couples/Golden boundary cases -> R7-W6 section-classifier signal.
+# Source: data/beehiiv/issue_history.json (1506 labeled events; Couples/Golden boundary pool: 286).
+
+# WHICH SECTION does each belong in?  (For Couples  /  For Golden Age Readers)
+# One word per line. No right answer expected on the hard ones — that's the point.
+
+1. Rare Pasta Date Night
+   Make rare Italian pasta shapes in a hands-on workshop.
+   -> your section: ______________
+
+2. Pickleball Tournament
+   Community pickleball tournament supporting guide dogs with fun matches for all levels.
+   -> your section: ______________
+
+3. Reboot Your Love Life Online intro session for singles over 50 seeking clarity.
+   Reset Dating
+   -> your section: ______________
+
+4. Spectacular 2026 Closing Night
+   A polished evening of dance from regional arts students in Vaughan.
+   -> your section: ______________
+
+5. Simplicity Spooky Glaze Fun Workshop
+   Paint, sip, and get spooky—create your own fall masterpiece!
+   -> your section: ______________
+
+6. Paint & Sip Mexican Amigos
+   Sip, paint, fiesta vibes with Mexican flair!
+   -> your section: ______________
+
+7. High Tea, An Afternoon Tea Gathering
+   Elegant tea, sweets, and stories; reserve your seat while available. More Info
+   -> your section: ______________
+
+8. 2026 Spring Wedding Show
+   Wedding showcase featuring innovative bridal trends vendors.
+   -> your section: ______________
+
+9. Plants & Prints – An Eco-Dye Workshop for Community
+   Create nature prints, craft together, grow sustainability!
+   -> your section: ______________
+
+10. Paint & Sip Woodbridge
+   Sip, paint, relax, and create your own masterpiece tonight.
+   -> your section: ______________
+
+11. Italian New Year’s Eve Party (Woodbridge) Dinner, dancing, laughter, and Italian vibes to welcome the New Year.
+   Dance together
+   -> your section: ______________
+
+12. Ritmo Latin Social Latin beats; dance ’til late - high-energy moves meet - fun fitness & dancing.
+   Feel the Rhythm
+   -> your section: ______________
+
+13. Valentine’s Day Chocolate Workshop
+   Hands-on artisan chocolate workshop.
+   -> your section: ______________
+
+14. Jake Shimabukuro Concert
+   Ukulele wizardry that'll make you question your guitar skills.
+   -> your section: ______________
+
+15. Ballet Night 2026 Enjoy an elegant two-act ballet performance at Flato Markham Theatre.
+   See The Ballet
+   -> your section: ______________
