@@ -109,6 +109,9 @@ Re-ran independently to check the ad-hoc number wasn't a fluke — **it reproduc
 - Stable scorer API: `classify({title, description?, venue?, source?, city?, date}) → {section|null, confidence, alt, flag}`.
 - Hardcode fine for Vaughan: scraper-specific title cleanup, emoji handling, the Vaughan label-extractor.
 
+### Client-interview method (transferable to client #2 onboarding)
+The obvious deterministic gates (alcohol→Couples, kids→Families) are **model-recoverable** — an LLM generates them cold, so eliciting them from the client cold wastes scarce meeting time. The interview's real value is elsewhere: (1) **pruning** the model's plausible-but-wrong gates, and (2) the **non-recoverable audience facts** an LLM can't infer (Vaughan e.g.: 75% women readers / woman decides for the couple; the run-now/re-run-in-weeks workflow). **Onboarding pattern: AI-generate the candidate gate list first → client validates/prunes; reserve live questions for the audience-specific residual.** (Source: 2026-07-09 client session.)
+
 ---
 
 ## Next steps
