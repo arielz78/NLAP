@@ -8,7 +8,7 @@ Establish current project state before we start work. Do this:
 2. Read the most recent entries of `Execution_Log.md` (the bottom of the file
    — entries are oldest-first, so the latest work is at the end).
 3. Read the **active release Scope doc's Status Snapshot** (currently
-   `docs/r5/R5_Scope.md`) — this is the authoritative current state, not the
+   `docs/r6/R6_Scope.md`) — this is the authoritative current state, not the
    roadmap. The roadmap (`docs/NLAP_PostMVP_Roadmap_v3.md`) is a frozen plan;
    read it only for original release intent, not where things stand now.
 4. Only if the recent log references unresolved historical context, check the

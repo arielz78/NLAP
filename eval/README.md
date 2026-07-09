@@ -165,6 +165,8 @@ tell how much of the gradient is "position drives clicks" vs. "good events were 
 historical data the two can't be separated, so slot is **carried as a covariate, not corrected for.** (Formal
 debiasing exists but is overkill at ~13k subscribers / 5 slots.)
 
+**Measured magnitude (2026-07-08):** slot explains **η² = 4.3%** of the variance in `percentileVuc` (n=924; within-slot SD 0.274 vs total SD 0.280 — knowing the slot shrinks click-uncertainty by ~2%). So the gradient is not just confounded but *weak*: position accounts for ~4% of click variation, the other ~96% is source/week/event/noise. This is the quantitative basis for treating clicks as a **floor, not a target** — there is little separable signal to optimize even before the confound. (η² = between-slot variance ÷ total variance, the categorical cousin of R².)
+
 ---
 
 ## 8. Maturation cutoff (why 7 days)
