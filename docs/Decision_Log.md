@@ -801,6 +801,16 @@ Every manual editor capture step is a tax that fails silently the first busy wee
 
 R3 (the script) still runs unchanged — it allocates approved candidates to IssueItems by current logic (earliest-date sort until R6 ships). Step 2 (editor curation at R3-Eligible) is an *editorial* layer on top of the candidate pool, not a replacement for the R3 allocation script. The eventual relationship between editor picks at Step 2 and R3 script output is a downstream design question — picks may inform Locks on R3-allocated IssueItems, or may bypass R3 entirely with manual IssueItems creation. Decision deferred until R6 lands and pick volume is observable.
 
+### 2026-07-09 amendment — Step-2 curation never ran; the assumed R6 label source is empty
+
+Measured on the live base (Candidates `StatusLastModified`, confirmed scoped to `Status` only): of **122** ever-`Approved` records, only **~20 are genuine editor approvals** (15 For Couples / 4 For Families / 1 Golden Age, all in a single 2026-05-28→31 window). The rest are bulk/scripted tinker-era writes (identical-second timestamps). The `Featured` status, `Featured in NL`, and `Reviewed by Human` fields are **dead/unused**.
+
+Consequences for the data-mapping above — the "eventual relationship" flagged under *What was not changed* now has data (Step-2 pick volume ≈ 0):
+
+- **The "Quality picks → IssueItems → R6 backtest" row never materialized.** Step-2 curation (R3-Eligible) was never performed, so `issue_history` / `IssueItems` order is pure earliest-date sort — it carries **no editor *ranking*** to backtest against.
+- **Any consumer of editor labels must gate on `StatusLastModified` ≥ 2026-05-28** *and* recognize the clean editorial-*selection* signal is only ~20 approvals. Step-1 approvals are segment-correctness decisions, not rankings. This applies to **R7 training** (do not trust raw `Status=Approved` — most are non-editorial bulk writes) and to any **client-#2 base clone**.
+- **R6 therefore elicits editor preference via forced-choice pairs**, not by mining history. The R6-specific architecture decision (incl. the §4.1 backtest-target drop) homes in `docs/r6/R6_Scope.md`; this amendment records only the durable, cross-release provenance fact.
+
 ---
 
 ## 28. R6 Regression Role — Weight-Input, Not Live Model
