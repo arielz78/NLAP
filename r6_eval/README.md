@@ -7,11 +7,24 @@ candidate scorers against them. Reads a Candidates snapshot JSON only —
 
 ## Setup
 
+This project uses a **per-project virtual environment** so its pinned deps
+stay isolated from the global Python (and from any course/other projects on
+the machine). One-time:
+
 ```
-py -m pip install -r r6_eval/requirements.txt
+py -m venv r6_eval/.venv
+r6_eval/.venv/Scripts/python.exe -m pip install -r r6_eval/requirements.txt
 ```
 
-Run everything from the repo root.
+Then run everything from the repo root with the venv's python. Replace the
+`py` in the commands below with `r6_eval/.venv/Scripts/python.exe`, e.g.:
+
+```
+r6_eval/.venv/Scripts/python.exe -m r6_eval.generate_pairs <snapshot.json>
+```
+
+(`.venv/` is gitignored — recreate it with the two commands above on any new
+machine.)
 
 ## 1. Generate pairs + the collector page (this weekend's step)
 

@@ -5,6 +5,9 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-07-09
+- Found the event-ranking phase depends on a reliable automatic event-categorization step (sorting events into audience sections) that wasn't dependable enough to build on; reordered the plan to build that classifier first rather than layer ranking on a shaky base, and recorded the sequencing decision.
+- De-risked the classifier before committing: ran a feasibility measurement on 15 months of historical categorizations (approach viable) plus an independent blind AI design review that converged with the existing plan while surfacing improvements; design captured in `docs/r7/`.
+- Isolated the evaluation tooling in a pinned per-project Python environment for reproducibility.
 - Built an offline evaluation harness and forced-choice pair-collection tool for the event-ranking scorer: it generates matched candidate pairs for an editor to judge, then grades competing scoring methods — a heuristic baseline, a language-model comparator, and a learned ranker — head-to-head on held-out judgments with bootstrap confidence intervals.
 - Audited the editorial record to pin down the scorer's training signal, confirming the target must be the editor's directly-elicited preferences (collected via the new tool) rather than inferred from historical output, and set a data-first plan to choose the scoring method by measured agreement.
 
