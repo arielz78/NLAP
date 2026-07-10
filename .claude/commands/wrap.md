@@ -54,6 +54,9 @@ Wrap up this session. Follow these steps in order:
      `r{N}` label, is the accounting unit for the release sign-off-completeness
      gate — see R5_Scope). Scale-gated/optional spikes go to their real future
      release or stay backlog — never the active milestone, or it can't reach 100%.
+   - **Repo folder layout** (root `README.md`) — was a top-level folder added,
+     removed, or renamed this session? If yes → propose the layout-table edit
+     (and flag any `scripts/` path literals that need fixing). If no → skip.
    - Whatever changed goes to its one home only — never duplicate across homes.
 
 5. Show me every drafted entry before/after writing so I can eyeball it.

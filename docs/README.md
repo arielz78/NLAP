@@ -39,6 +39,7 @@ never changes, whereas type (working → frozen) does.
 | Tracking / health-check output | `data/tracking/` | Generated | Per run (local; not posted) |
 | Metrics — the **numbers** | `NA/Vaughan_Metrics_Log.md` | Living reference | When a metric moves |
 | Portfolio narrative (AE / SE framings) | `NA/VB_Portfolio_Case_Study.md` | Derived from metrics log | When framing changes — numbers are **copied from** the metrics log, never authored here |
+| Repo folder layout (top-level map) | root `README.md` | Living reference | When a top-level folder is added / removed / renamed |
 | Runbook / ops | `docs/RUNBOOK.md` | Living reference | When ops change |
 | Airtable schema | `docs/airtable_schema.txt` | Living reference | When schema changes |
 | Unplanned open work (debt), experiments | GitHub Issues (`arielz78/NLAP`) | Tracker | As work surfaces |

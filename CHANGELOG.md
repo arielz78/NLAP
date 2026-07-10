@@ -4,6 +4,9 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-10
+- Overhauled the project's root README and added a top-level repository map, then wired it into the end-of-session routine so the layout doc stays current on its own rather than needing a periodic manual rewrite.
+
 ## 2026-07-09
 - Found the event-ranking phase depends on a reliable automatic event-categorization step (sorting events into audience sections) that wasn't dependable enough to build on; reordered the plan to build that classifier first rather than layer ranking on a shaky base, and recorded the sequencing decision.
 - De-risked the classifier before committing: ran a feasibility measurement on 15 months of historical categorizations (approach viable) plus an independent blind AI design review that converged with the existing plan while surfacing improvements; design captured in `docs/r7/`.
