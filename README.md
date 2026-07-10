@@ -32,6 +32,7 @@ Top-level folders (the durable map — update this table when a top-level folder
 | `logs/` | Frozen per-release build history + Website_Log |
 | `meetings/` | Dated client meeting notes (gitignored / private) |
 | `NA/` | Business / portfolio docs — not pipeline code |
+| `summer/` | Summer 2026 personal layer — plan + learning positions (gitignored / private) |
 | `bwna-web/` | Website build — separate sub-project |
 
 **Trap to know:** `r6_eval/` = R6 *tooling* (a Python package); `eval/` = *datasets + one-off analysis*. They are not the same thing.
