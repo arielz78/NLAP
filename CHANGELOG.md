@@ -6,6 +6,9 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 
 ## 2026-07-10
 - Overhauled the project's root README and added a top-level repository map, then wired it into the end-of-session routine so the layout doc stays current on its own rather than needing a periodic manual rewrite.
+- Closed out the summer planning cycle: two-week sprint redrawn against the R7-before-R6 reordering; the release-writeup obligation now rides each release's close (timeboxed) instead of batching at project end; retired the temporary planning-handoff doc.
+- Built a personal operations layer around the project: a gitignored `summer/` workspace (plan, learning positions, daily journal) plus two session tools — a morning brief that renders the day from current state, and an evening checkout that records non-project work — with the project-vs-personal logging boundary documented for future sessions.
+- Filed #89 (debt, milestoned R7): rename the release-named Python tooling package (`r6_eval/`) to a durable, function-named home at W6 start, with the folder-move safety checklist attached to the issue.
 
 ## 2026-07-09
 - Found the event-ranking phase depends on a reliable automatic event-categorization step (sorting events into audience sections) that wasn't dependable enough to build on; reordered the plan to build that classifier first rather than layer ranking on a shaky base, and recorded the sequencing decision.
