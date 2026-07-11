@@ -8,11 +8,16 @@ Establish current project state before we start work. Do this:
 2. Read the most recent entries of `Execution_Log.md` (the bottom of the file
    — entries are oldest-first, so the latest work is at the end).
 3. Read the **active release Scope doc's Status Snapshot** (currently
-   `docs/r6/R6_Scope.md`) — this is the authoritative current state, not the
-   roadmap. The roadmap (`docs/NLAP_PostMVP_Roadmap_v3.md`) is a frozen plan;
-   read it only for original release intent, not where things stand now.
+   `docs/r7/R7_Scope.md` — R7 is active per Decision_Log §61; R6 deferred behind
+   it) — this is the authoritative current state, not the roadmap. The roadmap
+   (`docs/NLAP_PostMVP_Roadmap_v3.md`) is a frozen plan; read it only for
+   original release intent, not where things stand now.
 4. Only if the recent log references unresolved historical context, check the
    relevant archived log in `logs/`.
+5. **Surface the session's hands-on focus (learning heads-up).** From the
+   "Learning Mode" section of `CLAUDE.md`, print the current release's hands-on
+   reminder up top. This fires every build session so it is never silently
+   skipped.
 
 Then give me a tight briefing — no preamble:
 
@@ -20,6 +25,7 @@ Then give me a tight briefing — no preamble:
 - **Open items / next steps:** what was queued, ranked by what's most likely next.
 - **Anything mid-flight:** work that was started but not finished, or decisions left pending.
 - **Current release focus:** which release (R5/R6/etc.) is active and what it needs.
+- **Your hands-on focus this session:** render the current release's reminder from the CLAUDE.md Learning Mode section.
 
 Keep it short. This is orientation, not a full report. Flag anything that looks stale or contradictory between the log and the roadmap.
 

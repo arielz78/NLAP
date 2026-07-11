@@ -57,6 +57,10 @@ Wrap up this session. Follow these steps in order:
    - **Repo folder layout** (root `README.md`) — was a top-level folder added,
      removed, or renamed this session? If yes → propose the layout-table edit
      (and flag any `scripts/` path literals that need fixing). If no → skip.
+   - **Learning Mode handoff** (`CLAUDE.md`) — did a release with a learnable
+     core CLOSE this session (e.g. R7→R6 handoff)? If yes → propose updating the
+     "current release" block in CLAUDE.md's Learning Mode section to the next
+     release. If no → skip.
    - Whatever changed goes to its one home only — never duplicate across homes.
 
 5. Show me every drafted entry before/after writing so I can eyeball it.
