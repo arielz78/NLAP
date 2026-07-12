@@ -10,6 +10,33 @@
 
 ---
 
+## Review update — 2026-07-12 (supersedes conflicting body text below)
+
+Slow review opened (pre-sprint). Resolved so far; the body sections below are the
+2026-07-09 capture and are **superseded by this block where they conflict**:
+
+- **Class set = 3-class (Families/Couples/Golden), train on 1,126.** Scope fact, not
+  tuning: **Local Aroma enters via a separate intake absent from the scraped candidate
+  pool**, so the classifier never sees it in production and must never output it. (1,126 =
+  376+383+367; the 380 Local Aroma published events are dropped.)
+- **KILLED: the URL-join raw-title training rebuild.** Wrong premise — the client does not
+  use the pipeline for selection yet (only at R8), so `issue_history` (published) and
+  Candidates (scraped) are **two independent samples**, not the same events twice. Exact-URL
+  join yields only 69 pairs / 45 distinct titles (temporal hole + venue-vs-deep-link form
+  mismatch). Kept only as a tiny, civic-skewed transfer *test* set — useless for training.
+- **Go/no-go reframed into a 3-probe transfer-validation sequence** (replaces the dead join):
+  1. **Probe B** (pre-build): raw↔published **vocabulary overlap** — do the discriminative
+     tokens TF-IDF relies on appear in the raw candidate pool? Decides open-decision #1
+     (TF-IDF vs embeddings); can kill early. Corpora staged: `eval/probe_b/`.
+  2. **Probe A** (post-build): 69-pair raw kill-check (directional only — biased easy).
+  3. **Editor-150** (post-build): hand-labeled stratified raw candidates → the real gate-#3
+     number (≥80% agreement).
+  Test target is the **raw candidate distribution** — that's what's actually segmented.
+- **Still open:** #2 model head, #3 LLM-in-v1 (both paper, no data needed); #1 waits on Probe B.
+  Consolidated Decision_Log entry deferred to finalization (Next steps §3).
+
+---
+
 ## Why R7 now (the discovery that reordered the roadmap)
 
 R6 (within-section scorer) was being built when its pair-collection harness hit a

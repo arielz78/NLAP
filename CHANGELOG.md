@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-12
+- Opened the section-classifier scope review and caught a flawed data plan before building on it: the intended way to rebuild a realistic training set (matching published events back to raw scraped listings) rests on the two being the same events, which they aren't yet — so it was retired in favour of a cleaner three-stage validation sequence that measures the real question directly (does a model trained on polished titles transfer to raw production titles).
+- Settled the classifier's category set on a structural basis rather than a tuning one (one audience section arrives through a separate intake the classifier never sees, so it's correctly out of scope), and staged the clean input corpora for the first, cheapest feasibility check.
+
 ## 2026-07-10
 - Overhauled the project's root README and added a top-level repository map, then wired it into the end-of-session routine so the layout doc stays current on its own rather than needing a periodic manual rewrite.
 - Closed out the summer planning cycle: two-week sprint redrawn against the R7-before-R6 reordering; the release-writeup obligation now rides each release's close (timeboxed) instead of batching at project end; retired the temporary planning-handoff doc.
