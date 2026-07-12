@@ -5,6 +5,7 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-07-12
+- Corrected a documentation error caught during a review of past decisions: the published-issue history had been mischaracterised as a mechanical date-ordering, when it actually reflects editorial selection and arrangement — a distinction that materially increases how useful that history is for later ranking work. Also recovered a small, genuine editor keep-vs-reject signal from a single curation session (usable as a directional sanity check for the future scoring release) and logged a data-hygiene fix for a mislabelled field.
 - Opened the section-classifier scope review and caught a flawed data plan before building on it: the intended way to rebuild a realistic training set (matching published events back to raw scraped listings) rests on the two being the same events, which they aren't yet — so it was retired in favour of a cleaner three-stage validation sequence that measures the real question directly (does a model trained on polished titles transfer to raw production titles).
 - Settled the classifier's category set on a structural basis rather than a tuning one (one audience section arrives through a separate intake the classifier never sees, so it's correctly out of scope), and staged the clean input corpora for the first, cheapest feasibility check.
 
