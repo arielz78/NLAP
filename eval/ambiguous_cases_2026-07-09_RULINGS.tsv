@@ -1,0 +1,35 @@
+# Editor's blind re-rulings of the 15 tightest Couples/Golden boundary cases.
+# Received 2026-07-12. Joins editor_now onto eval/ambiguous_cases_2026-07-09_KEY.tsv.
+# Editor was sent the blind client file (no true_section / model_pred) -> valid self-consistency test.
+# C = For Couples, G = For Golden Age Readers.
+#
+# RESULT (self-consistency = editor_now vs true/past-published): 12/15 agree (~80%).
+#   Held LOOSELY: n=15, wide CI (~55-93%). The "directional Couples->Golden drift" read on the
+#   3 disagreements (#4/#10/#15) was DROPPED -- n=3 is noise, not signal.
+#   Durable takeaway: the C/G boundary is genuinely fuzzy -> abstention on this pair is load-bearing.
+#   The ambiguity is QUANTIFIED by the model's probability margin (|p_couples - p_golden|); small
+#   margin = hard = flex candidate. Threshold on margin = the easy/medium/hard split.
+#
+# FLEX-FLAG design (parked, spans R7->R6): low-margin C/G events get a "flex" flag emitted by R7;
+#   R6/allocator resolves them by dropping the card into whichever section is short that week
+#   (scarcity resolves the ambiguity for free). R7 EMITS the flag, R6 CONSUMES it -- keep layers clean.
+#   Two separate dials: margin tunes flex VOLUME; editor-150 checks flex QUALITY (true dual-fit vs
+#   model-just-confused). Extends the existing flex-segment idea (Decision_Log -- verify entry).
+#   Margin calibration is a BUILD-TIME check (scope's calibration tripwire), not a design-now item.
+
+n	title	true_section	model_pred	editor_now	margin
+1	Rare Pasta Date Night	For Couples	For Golden Age Readers	For Couples	0.001
+2	Pickleball Tournament	For Couples	For Couples	For Couples	0.003
+3	Reboot Your Love Life Online intro session for singles over 50 seeking clarity.	For Golden Age Readers	For Couples	For Golden Age Readers	0.01
+4	Spectacular 2026 Closing Night	For Couples	For Golden Age Readers	For Golden Age Readers	0.011
+5	Simplicity Spooky Glaze Fun Workshop	For Golden Age Readers	For Couples	For Golden Age Readers	0.012
+6	Paint & Sip Mexican Amigos	For Couples	For Golden Age Readers	For Couples	0.02
+7	High Tea, An Afternoon Tea Gathering	For Golden Age Readers	For Golden Age Readers	For Golden Age Readers	0.023
+8	2026 Spring Wedding Show	For Couples	For Couples	For Couples	0.027
+9	Plants & Prints – An Eco-Dye Workshop for Community	For Golden Age Readers	For Couples	For Golden Age Readers	0.03
+10	Paint & Sip Woodbridge	For Couples	For Couples	For Golden Age Readers	0.03
+11	Italian New Year’s Eve Party (Woodbridge) Dinner, dancing, laughter, and Italian vibes to welcome the New Year.	For Couples	For Couples	For Couples	0.034
+12	Ritmo Latin Social Latin beats; dance ’til late - high-energy moves meet - fun fitness & dancing.	For Couples	For Golden Age Readers	For Couples	0.035
+13	Valentine’s Day Chocolate Workshop	For Couples	For Couples	For Couples	0.039
+14	Jake Shimabukuro Concert	For Couples	For Golden Age Readers	For Couples	0.04
+15	Ballet Night 2026 Enjoy an elegant two-act ballet performance at Flato Markham Theatre.	For Couples	For Golden Age Readers	For Golden Age Readers	0.04

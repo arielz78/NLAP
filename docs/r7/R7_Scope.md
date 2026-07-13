@@ -28,10 +28,32 @@ Slow review opened (pre-sprint). Resolved so far; the body sections below are th
   1. **Probe B** (pre-build): raw↔published **vocabulary overlap** — do the discriminative
      tokens TF-IDF relies on appear in the raw candidate pool? Decides open-decision #1
      (TF-IDF vs embeddings); can kill early. Corpora staged: `eval/probe_b/`.
+     - **Refinement — stratify the overlap by source (cheap, do it).** Compute the raw↔edited
+       vocab gap *per source*, not just in aggregate. Rationale: each source has its own title
+       style (clean vs emoji-soup), so an aggregate "fine" can hide bimodality where a few messy
+       sources transfer badly and get silently misclassified. Stratifying turns the pass/fail
+       number into a *diagnosis* — if the gap is concentrated, handle those sources specifically
+       instead of abandoning TF-IDF. This is a diagnostic on the existing corpora, **not** a model
+       change. **Deferred (do NOT build now):** source as a *classifier feature* / per-source
+       prior — adds source-tag reliability, unseen-source, and drift complexity for uncertain gain,
+       and **breaks for aggregators** (source ≠ style: an aggregator blurs many organizers' styles).
+       Revisit only if the data shows it's needed and TF-IDF transfer is already validated.
   2. **Probe A** (post-build): 69-pair raw kill-check (directional only — biased easy).
   3. **Editor-150** (post-build): hand-labeled stratified raw candidates → the real gate-#3
      number (≥80% agreement).
   Test target is the **raw candidate distribution** — that's what's actually segmented.
+- **C/G self-consistency in (2026-07-12):** editor blind re-ruled the 15 tightest Couples/Golden
+  boundary cases → **12/15 (~80%) agree with his own past published placement** (`eval/ambiguous_cases_2026-07-09_RULINGS.tsv`).
+  Held **loosely** (n=15, CI ~55–93%); the "directional C→G drift" read on the 3 disagreements was
+  **dropped as n=3 noise**. Durable read: the C/G boundary is genuinely fuzzy → **abstention on this
+  pair is load-bearing**, and the ambiguity is **quantified by the model's probability margin**
+  (small margin = hard). This is a soft design assumption, not a measured ceiling.
+- **Flex-flag design (parked, spans R7→R6):** low-margin C/G events get a **"flex" flag emitted by
+  R7**; the **R6/allocator resolves them** by filling whichever section is short that week (scarcity
+  resolves ambiguity for free). Clean split: **R7 emits, R6 consumes** — no flex logic in the classifier.
+  Two dials: **margin tunes flex *volume*; editor-150 checks flex *quality*** (true dual-fit vs
+  model-just-confused — different failure). Extends the existing **flex-segment idea (Decision_Log — verify
+  entry)**. Margin **calibration is a build-time check** (the calibration tripwire), not design-now.
 - **Still open:** #2 model head, #3 LLM-in-v1 (both paper, no data needed); #1 waits on Probe B.
   Consolidated Decision_Log entry deferred to finalization (Next steps §3).
 
