@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-13
+- Locked the section-classifier's v1 feature set after measuring real data-availability across the live candidate pool: event descriptions are missing on ~47% of the freshest events, but the picture is source-specific — the largest source supplies structured category tags instead, so the true "no usable signal" rate is only ~15%, concentrated in a few small single-venue sources.
+- Turned that measurement into a design decision: events from fixed-audience venues (always the same section) will be routed by a simple rule rather than the model, keeping the classifier focused on genuinely ambiguous events — with the list of such sources sent to the editor for confirmation at the next meeting.
+- Built a reusable tutoring skill for working through technical concepts hands-on, and used it to work through the classifier's core mechanics (feature representation, linear models, and honest train/validation/test evaluation).
+
 ## 2026-07-12
 - Corrected a documentation error caught during a review of past decisions: the published-issue history had been mischaracterised as a mechanical date-ordering, when it actually reflects editorial selection and arrangement — a distinction that materially increases how useful that history is for later ranking work. Also recovered a small, genuine editor keep-vs-reject signal from a single curation session (usable as a directional sanity check for the future scoring release) and logged a data-hygiene fix for a mislabelled field.
 - Opened the section-classifier scope review and caught a flawed data plan before building on it: the intended way to rebuild a realistic training set (matching published events back to raw scraped listings) rests on the two being the same events, which they aren't yet — so it was retired in favour of a cleaner three-stage validation sequence that measures the real question directly (does a model trained on polished titles transfer to raw production titles).

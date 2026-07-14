@@ -59,6 +59,24 @@ Slow review opened (pre-sprint). Resolved so far; the body sections below are th
 
 ---
 
+## Feature design — v1 locked (2026-07-13, measured on candidates_2026-07-12 snapshot, n=2,533)
+
+Came out of a primer session that turned into feature-design work. **Main feature decisions are made for now; deliberately stopping here rather than adding more before the baseline says what's needed** (method-fit: don't engineer features speculatively).
+
+- **v1 feature set = title + description + SourceCategories + source-prior (targeted).**
+  - **Description dropout ~47%**, not the doc's stale 42%. Provenance: 42% understated because "all candidates" (32.6% missing) is diluted by ~2,300 older enriched records (1.4% missing). The **production-relevant pool = post-R5 (added ≥ Jul 4), which runs ~47.5% missing** (n=217, small — mostly the Jul 9 batch; re-measure as post-R5 data grows). Calibrate dropout to the post-R5 rate, not the all-candidates average. Description adds ~7pts (title-only 70% → title+desc 77%, 3-class), so include it but with dropout so the model survives the ~half of production candidates that lack it.
+  - **SourceCategories** (e.g. `Storytime`, `food-drinks`, `fitness, Sports`) — real discriminative signal, present where description is absent. **Treat as bag-of-tokens** (per-source tag-soup, inconsistent taxonomies) → TF-IDF handles natively. Mild point **for TF-IDF over embeddings** (clean keyword tags are TF-IDF's wheelhouse).
+  - **Missingness is per-source and BIMODAL** (confirms the doc's per-source-stratification warning): **true signal-dead (no description AND no categories) is only ~15% post-R5 / ~9% all** — NOT the 47% description-only number. AllEvents (largest, 685) has ~3% desc but ~91% cat → not signal-dead. Death concentrates in **title-only single-venue sources: PinotsPalette (100% dead), RichmondHill (95%), Facebook (81%).**
+  - **Source-prior as a TARGETED rescue** (not a blanket feature): the deferred "source-as-feature" idea is **safe and useful specifically for title-only single-venue sources** (PinotsPalette = paint-and-sip = Couples), because the doc's "breaks for aggregators" objection doesn't apply to single-venue sources — and the aggregator (AllEvents) already has categories so doesn't need it.
+- **Deterministic-source routing (rule > ML):** fixed-audience single-*activity* venues get a hardcoded `source→segment` lookup (100% accurate, free, interpretable) instead of the classifier; classifier only handles genuinely multi-segment sources. Caveat: **single-venue ≠ single-segment** — VPL (library, 443) spans Families/Golden and needs the classifier; determinism is about the venue's *activity range*, not venue count. Rule-routed events get **dropped from train/eval** (like Local Aroma) so the accuracy number reflects only the hard events. **Validation blocked by data** (source↔published-segment link is the same disconnect that killed the URL join) → **routed to the editor** (agenda item parked in `meetings/2026-07-16.md`): editor rules each source "fixed→[section]" or "varies."
+
+### Parked (explore only if the baseline underperforms — do NOT build speculatively)
+- **Feature inventory sweep not yet done.** v1 was assembled by following the thread, not by sweeping every field. Unassessed candidate features on the record: **`LocationName` (venue), `City`, `CostRaw`, `Organizer`, `Start Date` (→ day-of-week / weekend), `Source`.** Some plausibly carry signal (weekend↔family/couple; cost↔date-night vs free-family; venue strong). Assess at finalization or if v1 falls short.
+- **"Usable" vs merely-present description** — today's 47% is a *structural* blank check; a semantic "is the text contentful vs fluff" check would push the true-missing rate somewhat higher. Deferred.
+- **Fable "what other features?" question** — at the blind-critique step (Next steps §2), ask Fable which features to add given the field inventory, and which are traps. **BUT first research how to prompt Fable** — anecdotally Fable does better with *general* prompts than sharp/loaded ones, so test general ("what features would you use for this?") vs specific (handing it the field list) rather than assuming the loaded prompt wins. Don't research now; revisit before running the Fable review.
+
+---
+
 ## Why R7 now (the discovery that reordered the roadmap)
 
 R6 (within-section scorer) was being built when its pair-collection harness hit a
