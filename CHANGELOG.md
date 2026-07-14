@@ -4,6 +4,9 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-14
+- Completed the foundational ML primer underpinning the R7 section-classifier work — cross-validation, confusion-matrix diagnostics, and the overfitting/bias-variance tradeoff — establishing the evaluation methodology for the classifier build.
+
 ## 2026-07-13
 - Locked the section-classifier's v1 feature set after measuring real data-availability across the live candidate pool: event descriptions are missing on ~47% of the freshest events, but the picture is source-specific — the largest source supplies structured category tags instead, so the true "no usable signal" rate is only ~15%, concentrated in a few small single-venue sources.
 - Turned that measurement into a design decision: events from fixed-audience venues (always the same section) will be routed by a simple rule rather than the model, keeping the classifier focused on genuinely ambiguous events — with the list of such sources sent to the editor for confirmation at the next meeting.
