@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-15
+- Scoped the classifier's pre-build validation down to a single decisive measurement after a method-fit review — per-source diagnostics were deferred as a fallback, since they wouldn't change the go/no-go decision and most sources lack the sample size to support a read.
+- Ran the post-ingestion health-check suite against a refreshed candidate pool (~2,700 events): data integrity, per-issue depth, and duplicate detection all clean. Found that the pipeline's stored source field is display-only and blank on ~19% of records — source must be derived from the event URL, or a fifth of the pool (concentrated in one major source) would be silently dropped from downstream features.
+- Retracted an unfounded assumption that the classifier's measured accuracy was near the task's natural ceiling — the supporting evidence came from a deliberately hardest-case sample and couldn't carry the claim. Restructured the release plan around cheap measurements resolving each open decision in turn, rather than a front-loaded design reviewed up front.
+
 ## 2026-07-14
 - Completed the foundational ML primer underpinning the R7 section-classifier work — cross-validation, confusion-matrix diagnostics, and the overfitting/bias-variance tradeoff — establishing the evaluation methodology for the classifier build.
 

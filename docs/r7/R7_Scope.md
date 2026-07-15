@@ -77,6 +77,90 @@ Came out of a primer session that turned into feature-design work. **Main featur
 
 ---
 
+## Parked from the 2026-07-15 Probe B staging session
+
+> **⚠️ EVERY NUMBER IN THIS BLOCK IS UNVERIFIED.** All figures below came from
+> throwaway inline `node -e` scripts run against the `candidates_2026-07-15_0943`
+> snapshot and `issue_history.json` during a working session. **Nothing was saved as
+> a re-runnable script.** Treat each number as a *lead*, not a measurement:
+> **re-derive it before acting on it**, and only then write it down as fact. The one
+> exception is the field-vs-URL source gap, which `scripts/overlapAudit.js` produces
+> reproducibly on every run.
+
+Session context: Probe B was **descoped to a single aggregate vocabulary-overlap gate**
+(see below). These items surfaced while staging it and are parked so the probe can proceed.
+
+- **PinotsPalette is NOT deterministic — the v1 source-prior for it is suspect.**
+  v1 (2026-07-13, above) routes PinotsPalette deterministically as `paint-and-sip = Couples`.
+  The published record appears to contradict this: the title `Pinot's Palette 🔥10% off…`
+  looks to be published **~19× split across BOTH For Couples and For Golden Age Readers**.
+  If so, the source sits on the fuzziest boundary in the class set, and hardcoding one
+  answer would encode a question the editor himself answers two ways.
+  **Working hypothesis (Ariel, 2026-07-15): PinotsPalette is a *constant flex* — always
+  low-margin C/G, resolved by the R6 allocator into whichever section is short.**
+  **→ ACTION: confirm with the client before building either the source-prior or the
+  constant-flex rule.** Neither is decided. Do not implement on the strength of this note.
+  Agenda item for the next client meeting; re-verify the 19× split first.
+
+- **Label conflicts in the training corpus — a hard accuracy ceiling.** Apparently **8 titles
+  are published under 2+ sections** (identical string, contradictory label): e.g.
+  `Woodbridge Village Farmers Market` (all three), `Wine and Paint Night`, `Pottery Workshop`,
+  `Make Your Own Perfume`. If real, this is **irreducible noise** — same input vector, two
+  targets; no tuning removes it. Skew is **overwhelmingly Couples↔Golden**, which would be
+  independent corroboration of the editor's 12/15 self-consistency read (Review update,
+  2026-07-12) from a different direction, and strengthens the flex-flag design.
+  **→ Re-derive the count and the C/G skew; then it informs a realistic accuracy target for gate #3.**
+
+- **Dedup the PUBLISHED corpus — revisit at classifier build, not now.** `published_titles.json`
+  is ~**1,126 rows / ~1,042 unique titles (~84 surplus, ~41 repeated)**; `stage_corpora.js`
+  dedupes the raw side but **not** the published side. Irrelevant to Probe B (a presence-based
+  vocab gate self-dedupes — a vocabulary *is* a set), but it **does** matter once the vectorizer
+  is fit: **IDF is document-frequency based**, so 19 copies count as 19 documents.
+  **→ Rule on it when fitting TF-IDF; ignore it for the probe.**
+
+- **The `Source` field is display-only — read the URL instead.** `Source` was added for UI
+  visibility (Ariel) and is **blank on ~513/2,706 (~19%)** of Candidates; `overlapAudit.js` already
+  derives source from the URL and labels it `(ground truth)`. Field vs URL: **Eventbrite ~164 vs
+  ~582 (~418 gap)**, AllEvents ~728 vs ~808. Gaps reconcile to the blank count. Mechanism: `Source`-present
+  and `LocationName`-present appear to be the *same* records — one pre-R5 enrichment step wrote both,
+  and legacy records predate it. **→ Any source-prior must derive source from the URL, never the field**
+  (reading the field would silently drop 418 Eventbrite events). URL-derived coverage ≈ 99.9%.
+  This one is reproducible via `overlapAudit.js`.
+
+- **Description transfer is untested — likely a second probe.** Description is in v1 (adds ~7pts,
+  70%→77%) but Probe B's staged corpora are **titles only**. Published descriptions are
+  **editor-written prose**; raw `DescriptionRaw` is scraped copy — plausibly a **worse** raw↔edited
+  gap than titles, since descriptions are rewritten more heavily. Title-only is the right *first*
+  gate (title is 100% present; if title vocab doesn't transfer, nothing downstream will), but the
+  77% can't be trusted until description gets the same check. **→ Sequence as Probe B2, not a
+  blocker for B.**
+
+- **Per-source vocab stratification → DEMOTED to fallback.** The 2026-07-12 refinement (above)
+  is **cut from Probe B's critical path**. Rationale (method-fit): Probe B is a **binary go/no-go**,
+  which is an aggregate question; per-source turns one number into ~13, most on n<100 (tail runs
+  13–24 titles — the same small-n trap already rejected for the C/G drift read); and it **doesn't
+  change the decision** — pass → build, ragged tail → still build, since v1 already handles
+  title-only sources. **Counter-consideration, kept:** TF-IDF matches *exact tokens*
+  (`Storytime` ≠ `Story Time`, zero overlap; embeddings absorb this), so per-source drift is
+  precisely TF-IDF's failure mode — and the aggregate is **volume-weighted**, so AllEvents (~40%
+  of the pool) could carry a passing number while thin sources fail silently.
+  **→ Run the aggregate gate. If it returns marginal, stratify — top 4 sources only
+  (AllEvents / Eventbrite / VPL / BiblioCommons), where n supports a read.**
+
+- **Raw corpus must NOT be rebalanced.** Excluding AllEvents (or a fresh run's events) to
+  "balance" the raw pool was **considered and rejected**: the raw corpus is a **test set**, and a
+  test set's only job is to resemble production. AllEvents *is* ~40% of production. Balancing is a
+  *training*-set instinct; applied here it buys a cleaner number that predicts nothing.
+
+- **Unionville normalize logic** — post-R1 checks (2026-07-15) flagged **10/10 `MISSING_LINK`
+  rejections from Unionville alone**. Reported-only, no alarm threshold. Not R7 work; file if it recurs.
+
+**Corpus frozen for Probe B (2026-07-15, post-R1):** `published_titles.json` 1,126 rows
+(Families 376 / Couples 383 / Golden 367) · `raw_candidate_titles.json` **1,805** unique raw titles
+(1,730 pre-R1-rerun + 75). Do not re-stage mid-analysis — a shifting test set is unreproducible.
+
+---
+
 ## Why R7 now (the discovery that reordered the roadmap)
 
 R6 (within-section scorer) was being built when its pair-collection harness hit a
@@ -181,11 +265,72 @@ The obvious deterministic gates (alcohol→Couples, kids→Families) are **model
 
 ---
 
-## Next steps
-1. Review this doc slowly (Ariel) → self-critique.
-2. Blind Fable critique of the *written doc* + GPT-5.5 second opinion (Ariel's own account).
-3. Finalize → Decision_Log entry (records the R6↔R7 reorder + the architecture pick) → open `r7` issues.
-4. Build R7-W6: rebuild training set from **raw** titles (URL join) → train → measure the real go/no-go number → decide representation.
-5. Then resume R6: section the fresh pool (high-confidence only) → generate pairs → editor labels → horse-race the scorers.
+## Next steps — REWRITTEN 2026-07-15 (supersedes the 2026-07-09 sequence)
+
+> **Why rewritten.** The old §4 said *"rebuild training set from raw titles (URL join)"* — **killed
+> 2026-07-12**, and it sat stale in the authoritative doc for three days. The old order
+> (review → critique → finalize → build) also assumed the design needed a once-over. It didn't:
+> every front-loaded decision has been overturned by the first data that touched it (URL join died,
+> class-set changed, per-source cut, PinotsPalette's prior cracked). **Design-ahead has a bad track
+> record on R7; the checks are cheap enough that guessing costs more than looking.**
+> New order: **cheap checks resolve the open decisions → then finalize → then critique.**
+
+**Discipline (the guard against wandering):** every check below is tied to an open decision it
+resolves. **If a check doesn't move #1, #2, or #3, it is not on the path.** 2026-07-15 is the
+cautionary example — a session that went from "write Probe B" to health-checks to `Source` fields
+to a ceiling argument and wrote no probe.
+
+### Step 1 — Open `coef_` on the EXISTING fit (~10 min, resolves nothing alone; feeds Step 2)
+`eval/build_ambiguous_sections.py` **already trains the exact stack** (`TfidfVectorizer(ngram_range=(1,2),
+min_df=2, sublinear_tf=True, stop_words="english")` + `LogisticRegression(max_iter=2000, C=4.0,
+class_weight="balanced")`) that produced the 77%. **Its coefficients have been on disk since 2026-07-09
+and have never been opened.** Read the top-weighted words per class off `coef_`. Reuse this config —
+inventing a second one measures a different model than the 77% being validated.
+*Note:* `published_titles.json` (staged 07-11) **duplicates** what this script builds internally from
+`issue_history.json`. `raw_candidate_titles.json` does not — nothing else touches the raw pool.
+
+### Step 2 — Probe B (~10 lines, resolves #1) — *does TF-IDF survive production?*
+Take Step 1's top-N words → check presence in `raw_candidate_titles.json` (1,805, frozen post-R1).
+Aggregate gate, one number. **A fail kills TF-IDF outright and moots Step 3.**
+Open sub-decisions (Ariel): **N** (single value vs a curve across 10/50/200/500), and
+**weighted vs unweighted coverage** (95% of tokens present is a *pass* unless the missing 5% are the
+highest-weighted). **Config gotcha:** `ngram_range=(1,2)` means bigrams are features — `wine tasting`
+is one token, so the presence check must match bigrams, not just unigrams. `min_df=2` has already
+pruned the vocabulary.
+
+### Step 3 — Horse-race (most setup, resolves #1) — *whose ceiling is 77%?*
+Embeddings vs TF-IDF on the same 1,126 published titles, same CV. **Never been run — no representation
+other than TF-IDF has ever been tried.**
+- Embeddings ≫ 77% → the ceiling was **TF-IDF's**; task is learnable, tool was the limit.
+- Embeddings ≈ 77% → two representations hit the same wall → the task-ceiling hypothesis gets its
+  first real support.
+
+> **⚠️ The "~80% is the task ceiling" claim is NOT established** (corrected 2026-07-15, Ariel's
+> pushback — the doc's own hedge was being argued past). Its evidence is weak: the **12/15
+> self-consistency was measured on the 15 *deliberately hardest* boundary cases**, so it cannot be
+> extrapolated to the corpus; and the **8 label conflicts are ~3-4% of rows — they cannot explain a
+> 23% error rate**. Both are *leads*. Until Step 3 runs, **whose ceiling 77% is remains fully open**,
+> and "77% is near human parity" is a hypothesis, not a finding.
+
+### Step 4 — Resolve #2 (model head) and #3 (LLM in v1) on paper, against Step 1–3's answers
+**#2 gains a non-accuracy argument (2026-07-15):** a TF-IDF + linear model **is not a program** — it's
+a vocabulary dict + an IDF vector + a coefficient matrix, all JSON-serializable, and inference is
+`w·x+b` ≈ 30 lines of JS. It ships as **a JSON file into the existing Node/n8n pipeline, with no infra**.
+Embeddings or any heavier head forces a **permanent Python service** (host, monitor, latency). So the
+model-head choice silently decides whether R7 ships as a file or as infrastructure — that is not an
+accuracy question.
+
+### Step 5 — Finalize → Decision_Log entry (records the R6↔R7 reorder + the architecture picks)
+
+### Step 6 — Blind Fable critique + GPT-5.5 second opinion
+**Deferred and narrowed (2026-07-15).** Not a whole-doc pass — that critiques a snapshot which is stale
+in two days, and this doc changes every session. Run it against the **three resolved decisions with their
+evidence**, once they've survived contact with data.
+
+### Step 7 — Resume R6: section the fresh pool (high-confidence only) → generate pairs → editor labels → horse-race the scorers
+
+**External, in parallel:** the editor's ~2hr editor-150 labeling slot is a **post-build gate** — book it
+once predictions exist. Rough target was 07-18–21 (see 07-12 planning); Probe B has not started as of
+07-15, so re-confirm at the 07-16 meeting.
 
 **Deferred:** R7-W7 (deploy to live n8n) until after R6's pairs validate what the sectioner needs.
