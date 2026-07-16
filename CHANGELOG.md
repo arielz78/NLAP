@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-16
+- Locked the classifier validation's decision thresholds **before** running any measurement (pre-registration): pass/kill lines for vocabulary coverage, a workload-blindness ceiling derived from the automation budget, and the margin an alternative representation must clear to justify switching — each gate tied to the decision it resolves, so a marginal result can't be rationalized after the fact.
+- Caught a probe-invalidating mismatch before it ran: the baseline model trains on titles *plus* descriptions, but the transfer check was staged against titles only. Inspected the production fields' real content and re-staged the test corpus as full serve-time text (title + description + category tags per event).
+- Restructured the release scope doc current-truth-first — settled design, open decisions, live plan, parked leads, frozen history — resolving the accumulated "supersedes" layers and stale cross-references in one pass.
+
 ## 2026-07-15
 - Scoped the classifier's pre-build validation down to a single decisive measurement after a method-fit review — per-source diagnostics were deferred as a fallback, since they wouldn't change the go/no-go decision and most sources lack the sample size to support a read.
 - Ran the post-ingestion health-check suite against a refreshed candidate pool (~2,700 events): data integrity, per-issue depth, and duplicate detection all clean. Found that the pipeline's stored source field is display-only and blank on ~19% of records — source must be derived from the event URL, or a fifth of the pool (concentrated in one major source) would be silently dropped from downstream features.
