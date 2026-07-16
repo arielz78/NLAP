@@ -70,15 +70,32 @@ stopping here rather than adding more before the baseline says what's needed)*
   only **~15% post-R5 / ~9% all** — not the 47% description-only number. AllEvents (largest, 685)
   is ~3% desc but ~91% cats → not signal-dead. Death concentrates in **title-only single-venue
   sources: PinotsPalette (100%), RichmondHill (95%), Facebook (81%).**
-- **Source-prior as a TARGETED rescue** (not a blanket feature): safe specifically for title-only
-  single-venue sources (the "breaks for aggregators" objection doesn't apply; the aggregator
-  already has cats). ⚠️ **PinotsPalette's prior is suspect — see §4; do not implement without the
-  client's answer.** Any source derivation must read the **URL, never the `Source` field** (§4).
-- **Deterministic-source routing (rule > ML):** fixed-*activity* single venues get a hardcoded
-  `source→segment` lookup instead of the classifier; rule-routed events get **dropped from
-  train/eval** (like Local Aroma) so the accuracy number reflects only the hard events. Caveat:
-  single-venue ≠ single-segment (VPL spans Families/Golden — needs the classifier). **Validation
-  routed to the editor** (07-16 meeting agenda): rule each source "fixed→[section]" or "varies."
+- ~~**Source-prior as a TARGETED rescue**~~ — **KILLED 2026-07-16 by the editor's rulings.** The prior
+  was scoped to the three title-only sources above (PinotsPalette, RichmondHill, Facebook); **all three
+  were ruled "varies."** A prior must output one section with certainty; he gave rates. Zero valid
+  instances — the lookup table has no rows. *(Any source derivation must still read the **URL, never
+  the `Source` field** — §4.)*
+- ~~**Deterministic-source routing (rule > ML)**~~ — **KILLED 2026-07-16.** Every source ruled
+  "varies"; none is a fixed-*activity* venue. Consequences: nothing is hardcoded, and **nothing is
+  dropped from train/eval** — the full 1,126 goes to the model, and the accuracy number needs no
+  adjustment. Simplification, not a loss. (Rulings verbatim: `meetings/2026-07-16.md`.)
+- **OPEN (Ariel's call) — does `source` become a FEATURE now the prior is dead?** *(07-16)* He handed
+  over real per-source signal that only a feature can hold: **VPL/BiblioCommons ~90% not-Couples**,
+  **ChefUpstairs not-Golden** (price), **PinotsPalette 0/33 Families** (alcohol → not Families — his own
+  07-09 Q3 rule). A rule can't express a rate; a feature can, and it captures the hard and the soft
+  cases without adjudicating which is which. Implementation is near-free: **append the source slug to
+  the text** (`"Wine and Paint Night pinotspalette"`) — TF-IDF tokenizes it, no new machinery. Risk:
+  source becomes a **shortcut** (model leans on `vaughanpl`, stops reading the title). **Decide by CV,
+  not by argument** — run with and without the token, read the number; watch the shortcut in the
+  per-class confusion.
+- **PinotsPalette = flex, confirmed** *(07-16 — editor: "it's for both"; data: 16 C / 17 G / **0
+  Families**, identical title in both sections, visible C→G→C→G rotation).* **The flex-flag design
+  absorbs it for free** — identical text with conflicting labels → model learns ~50/50 → low margin →
+  abstains → allocator resolves. No special-casing needed. ⚠️ Hold loosely: ~30 of the 33 are
+  **sponsor-era contract rotation, not judgment** (§4); post-sponsor is n=3. **0/33 Families is the one
+  hard fact.** **OPEN (Ariel's call):** keep or drop the ~30 sponsor rows from training. *Leaning keep*
+  — those events arrive at serve time and abstention is what you want, and at 3% of rows it can't move
+  77% either way (the same arithmetic that retracted the ceiling claim, §3 Step 3). Testable in CV.
 
 **Settled foundation from the 07-09 capture (validated by cold re-derivation):**
 - Trained supervised classifier on the editor's revealed placements (reject rules/R2; reject
@@ -246,13 +263,55 @@ once predictions exist. Rough target was 07-18–21 (see 07-12 planning); Probe 
 > **not saved as re-runnable code**. Treat each as a *lead*: **re-derive before acting**, then write
 > it down as fact.
 
-- **PinotsPalette is NOT deterministic — the v1 source-prior for it is suspect.** v1 routes it
-  `paint-and-sip = Couples`, but the title `Pinot's Palette 🔥10% off…` looks to be published
-  **~19× split across BOTH Couples and Golden**. If so, the source sits on the fuzziest boundary
-  and hardcoding one answer encodes a question the editor himself answers two ways.
-  **Working hypothesis (Ariel, 07-15): constant flex** — always low-margin C/G, resolved by the R6
-  allocator. **→ Confirm with the client before building either the prior or the flex rule; neither
-  is decided. Re-verify the 19× split first.** Agenda item: 07-16 meeting.
+- ~~**PinotsPalette is NOT deterministic**~~ — **RESOLVED 2026-07-16, moved to §1.** Client confirmed
+  "it's for both"; data confirmed 16 C / 17 G / 0 Families with the identical title in both sections.
+  Flex hypothesis (Ariel, 07-15) was right. The prior is dead; the flex-flag absorbs it.
+
+### New leads — 2026-07-16 (post-meeting analysis; verified where marked)
+
+- **⚠️ The Pinot's flex read is contaminated by a dead sponsorship. (VERIFIED — `issue_history.json`.)**
+  ~30 of the 33 Pinot's events carry `10% off exclusively for Vaughan Brief readers` and run
+  **2025-03 → 2025-09**. That era's clean C→G→C→G alternation is **contract rotation, not editorial
+  judgment** — the design thesis is imitate *revealed preference*, and a rotation schedule isn't
+  preference. Client (07-16): **no longer a sponsor, but the editor still includes it.** Post-sponsor:
+  **3 events in 6 months** (2 G, 1 C) — n=3, unreadable, and ~10× less frequent than the training data
+  implies (2.9% of rows vs ~0.5% going forward). *Also unresolved:* it ran in **both sections of the
+  same issue** on 2025-02-20 and 2025-03-20 — contradicting his 07-09 Q4 rule (*"never the same
+  issue"*). URLs not checked; could be two distinct sessions sharing a title.
+- **The Golden Age section did not exist in January 2025. (VERIFIED.)** 2025-01: Families 14 / Couples
+  14 / **Golden 0**; it launches 2025-02. So ~28 January rows were labeled when **Golden wasn't an
+  option** — an event filed Couples then might be Golden today. Small (~2.5% of 1,126) but pointed
+  straight at the C/G boundary, which is the hardest pair. Consider dropping pre-2025-02 rows; test in
+  CV rather than assuming.
+- **The 5/5/5 per-issue balance is a QUOTA, not editorial preference. (VERIFIED.)** Every month is
+  exactly balanced across the three sections — that's `CLAUDE.md`'s segment quota, not the editor
+  liking three audiences equally. **Do not read 376/383/367 as signal about the incoming pool's real
+  mix**, which remains unmeasured (and matters for the 400-label draw — see `meetings/2026-07-16.md`
+  Item 1's sampling caveat).
+- **CORRECTED: Facebook did not "drift away" — it is PAUSED pending go-live.** Facebook was the top
+  published source 2025-09 → 2026-05, then stops. This is **not** a train/serve distribution shift:
+  `Execution_Log` says the client stopped uploading *because the pipeline isn't live*, and FB is manual
+  paste intake (Decision_Log §49). It resumes at R8. Training weight is predictive, not stale.
+- **Facebook is structurally title-only, by design — and R7 can never fix it.** Intake schema is six
+  columns (`Title | StartDate | EndDate | LocationName | City | Link`) and the prompt forbids
+  descriptions/categories (`docs/client_prompts/4_VB_FACEBOOK_INTAKE_v1.md`). §50 also accepts a
+  **~17% title-misread rate** behind the editor backstop. The link-at-selection enrichment (§49) is
+  **downstream of R7** — R7 sorts candidates; the link arrives when the editor picks. And FB event IDs
+  are **not derivable** from title/date/venue (§49), so no reverse-lookup exists. Saving grace: FB is
+  ~13 events/week (<1% of candidates), so it cannot move Gate 2's blindness rate. It just means the
+  model abstains on most FB events. **Only fix that could reach R7: add a `Description` column to the
+  intake prompt — viable only if the feed screenshot actually shows post text (§49 notes it lacks URLs;
+  descriptions unverified).**
+- **⚠️ Facebook's "58% of clicks" is probably an attribution error. (UNVERIFIED — Ariel, 07-16.)** R5
+  measured FB at 17–22% of placements but 58% of clicks. That says *the editor found those events via
+  Facebook* — **not** that they exist only on Facebook. FB was his discovery channel when the pipeline
+  pulled ≈only Eventbrite (R5_Log:190); coverage is now 10+ sources and the same community events
+  plausibly appear in AllEvents/VPL/Eventbrite **with descriptions and categories attached**. If true,
+  FB's title-only problem largely evaporates — you'd classify the AllEvents copy. Counter-evidence
+  (weak): 07-16's `overlapAudit.js` found only **19 fuzzy clusters / 12 cross-source out of 2,706**
+  (~0.4%) — but fuzzy *title* matching is the wrong instrument for "same event, different phrasing per
+  source," the same failure that made the URL join return 69 pairs. **Check this before spending
+  anything on a Description column or spike #67.**
 - **Label conflicts in the training corpus — irreducible noise if real.** Apparently **8 titles
   published under 2+ sections** (identical string, contradictory label): `Woodbridge Village
   Farmers Market` (all three), `Wine and Paint Night`, `Pottery Workshop`, `Make Your Own Perfume`.

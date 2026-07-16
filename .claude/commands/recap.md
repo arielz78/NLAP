@@ -8,10 +8,21 @@ not just a summary. Follow the three rounds **in order**, do not collapse or
 skip any of them — the whole point is to keep Ariel actively retrieving for as
 long as possible before switching to passive review.
 
-1. **Identify the target.** If Ariel named a topic, use that. Otherwise default
-   to the most substantial piece of reasoning/work from this session (the thing
-   with the most decision points or the most "we changed direction here" moments
-   — not just the most recent message).
+1. **Identify the target.** If Ariel named a topic, use that. Otherwise, because
+   this is a *learning* tool, default to the highest **learning-value** target —
+   the durable, conceptual/transferable knowledge Ariel most needs to *own*
+   (e.g. a mechanism he was learning, a method he'll reuse), **not** the piece
+   with the most decision-points or "we changed direction here" moments. Pivot
+   density ≠ learning value: project decisions that are already captured in a
+   doc (Scope, Decision_Log, Execution_Log) are lower-value recall targets than
+   conceptual material that only lives in his head. Prefer the concept over the
+   captured decision when both are present.
+   - **One bounded target per recap — do NOT widen scope to "cover everything."**
+     Retrieval works because it's focused; cold-recalling a whole session at once
+     causes overload and shallow encoding. If the session had several substantial
+     pieces, pick the highest learning-value one now and tell Ariel the others are
+     better done as *separate* `/recap` runs (interleaving/spacing beats one
+     blended pass). Length of material is not a reason to merge targets.
 
 2. **Round 1 — open quiz. Then STOP.** Ask Ariel to attempt the recall cold,
    with no scaffolding:
@@ -67,3 +78,34 @@ long as possible before switching to passive review.
    through the conversation to cross-reference it. The full narrative,
    reasoning, comparisons, and principle all belong in one place, delivered
    once, in depth.
+
+6. **Stamp the retrieval queue.** After the recap, seed any new *concepts* from
+   this session into **Box 1** of `summer/learning/retrieval_queue.md` (Concept ·
+   Where · Learned) so they enter the spaced-retrieval schedule. Two rules on
+   *what* to add:
+   - **Same bar as the step-1 target:** only durable, conceptual, transferable
+     knowledge Ariel needs to *own cold* (a mechanism, a method). **Not** project
+     decisions or facts already captured in Scope/Decision_Log/Execution_Log —
+     those have a home and change over time; the queue is for head-knowledge only.
+   - **Capture wider than the recall:** a recap deep-drills *one* target, but a
+     session often teaches several concepts. Add the target **plus any other new
+     concepts** from the session, not just the one you drilled.
+   Skip any concept already in the queue; skip the whole step on pure-execution
+   sessions that taught nothing new. Confirm the additions with Ariel. (`/checkout`
+   carries a backstop for learning days where `/recap` didn't run — this is the
+   primary stamp.)
+
+7. **Blurb protocol — a Box-1 seed isn't complete until its notebook blurb exists.**
+   The queue is an index into the physical notebook (its answer key); transcripts
+   die, so a seeded row with no notebook entry has nothing to check retrieval
+   against. For **each new row** added in step 6:
+   - Name the concept and give a **recall checklist** — the 3–5 things a cold
+     recall should hit (spec, not prose; never draft the blurb itself — writing
+     it is Ariel's encoding rep, and self-writing is what surfaces misconceptions).
+   - Ariel writes it in the notebook, **chat closed, own words, ≤6 lines**.
+   - He pastes it back; check it for misconceptions only (don't restyle it).
+   Rules: **one row, one blurb** — a later session that deepens a concept extends
+   the existing notebook entry (and the row's parenthetical), never a second
+   entry. Nothing else earns ink: no session narrative, no project facts, no
+   transcription. Unsure whether something merits a row → don't write it; if
+   it's real, a retrieval miss will earn it ink later.

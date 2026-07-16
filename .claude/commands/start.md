@@ -18,6 +18,12 @@ Establish current project state before we start work. Do this:
    "Learning Mode" section of `CLAUDE.md`, print the current release's hands-on
    reminder up top. This fires every build session so it is never silently
    skipped.
+6. **Print the session-flow reminder** (verbatim, one block — the protocol's home
+   is the skill files, this is only the pointer):
+   > **Session flow:** work (no notes — click-blurbs only) → `/recap` when learning
+   > ends (quiz ×2 → full recap → queue seeds → you write blurbs) → `/wrap` if repo/
+   > NLAP state changed → `/checkout` at day end if an artifact moved. Each step
+   > skips when its trigger doesn't fire.
 
 Then give me a tight briefing — no preamble:
 
