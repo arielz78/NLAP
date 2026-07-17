@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-17
+- Wrote and validated the first end-to-end section classifier: raw published history → cleaned training set → TF-IDF features → fitted model → inspected what it learned. Cross-validated accuracy held flat across every hyperparameter tried — evidence the current ceiling is the task's, not the model's, which sharpens the case for the planned representation comparison.
+- Inspected the model's learned vocabulary per section and confirmed it keys on genuinely meaningful words rather than incidental artifacts, with two adjacent categories separating more cleanly than the design had assumed — a finding to be checked against the confusion matrix.
+
 ## 2026-07-16
 - Locked the classifier validation's decision thresholds **before** running any measurement (pre-registration): pass/kill lines for vocabulary coverage, a workload-blindness ceiling derived from the automation budget, and the margin an alternative representation must clear to justify switching — each gate tied to the decision it resolves, so a marginal result can't be rationalized after the fact.
 - Caught a probe-invalidating mismatch before it ran: the baseline model trains on titles *plus* descriptions, but the transfer check was staged against titles only. Inspected the production fields' real content and re-staged the test corpus as full serve-time text (title + description + category tags per event).

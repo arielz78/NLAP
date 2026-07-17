@@ -254,6 +254,37 @@ once predictions exist. Rough target was 07-18–21 (see 07-12 planning); Probe 
 
 **Deferred:** R7-W7 (deploy to live n8n) until after R6's pairs validate what the sectioner needs.
 
+### Results log (append-only — never edit prior results)
+
+**2026-07-17 — Step 1 DONE: the fit exists (`eval/fit_section_classifier.py`) and `coef_` is read.**
+- **CV = 78.68% (cv=5, 3-class, title+desc, locked config C=4.0).** Reproduces the 07-09 3-class
+  baseline (77.0%) within tuning noise. Training accuracy 98.57% (the overfitting gap, on 2692
+  features / 1126 rows).
+- **FLAT across hyperparameters.** C (0.5–6; best 0.79 @ C=2), min_df, and cv (cv=10 → 80.5%, a
+  looser estimator not a better model) all leave the score at **78–80%**. → **Not
+  overfitting-limited; the ceiling reads as the TASK's, not the representation's.** Direct support
+  for running Gate 3 (horse-race) — and a prior that embeddings will *also* stall near 78% unless the
+  wall is raw↔edited drift (which the race can't see; only Probe B / editor-150 can).
+- **`coef_` top-10/class = REAL SIGNAL, not artifacts** (the session's core question):
+  Couples → wine/dinner/date/couples/live; Families → family/kids/ages/activities/explore;
+  Golden → seniors/yoga/social/connect/club. The 78% keys on section-meaningful words → robust to
+  reworded production text.
+- **NEW — C/G vocab looks BETTER-SEPARATED than §1/§5 assumed.** Couples (romantic-evening) vs Golden
+  (gentle-community) barely overlap in the top tokens. **Mildly challenges the fuzzy-boundary premise
+  behind abstention** — the 22% error may concentrate in title-only/blind events rather than C/G
+  bleed. **Hold loosely** (top-10 eyeball, not a measurement); the **confusion matrix is the arbiter**,
+  and it must land before the abstention volume is tuned. Note the tension with §5's 07-09 read
+  (Couples↔Golden = dominant off-diagonal, 56+52) — reconcile at the confusion-matrix step.
+- **Artifact/shortcut smell (watch):** `check`/`tickets`/`book tickets` rank high in Couples —
+  ticketed-source booking language, not couple-semantics. First wild sighting of the
+  **source-as-shortcut** risk (§1's `source`-as-feature caveat). Watch the per-class confusion when
+  the `source` token is tested.
+- **Probe B N = a CURVE, not a scalar** (resolves the open Step 2 sub-decision's framing): because
+  Gate 1 coverage is |coef_|-weighted, near-zero-weight tail tokens add ~nothing, so weighted coverage
+  **flattens past some N**. Run 10/50/200/500 and stop at the flattening point — that N captures the
+  tokens the model actually leans on. The question is "do the *weighted* words survive," not "do all
+  ~2,700."
+
 ---
 
 ## §4 Parked leads (from the 2026-07-15 staging session — UNVERIFIED unless noted)
