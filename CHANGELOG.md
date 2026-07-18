@@ -4,6 +4,12 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-18
+- Built and shipped the editor's 400-event hand-labelling deck, delivered as a filtered Airtable workspace with batched views so the work can be done in sittings. Re-scoped the exercise mid-build: with the model measurably short of its own release gate, the sample was re-weighted from pure evaluation toward training value — while retaining a smaller representative slice, since a deliberately-hard sample can measure neither real accuracy nor the confident-but-wrong failures that confidence thresholds structurally cannot catch.
+- Designed the sampling around three failure modes found by inspecting the data: hardest-to-classify events are often the ones a human can least judge (so label quality would be worst exactly where it matters most), single-activity venues flood an uncertainty-weighted draw with near-identical low-signal listings, and repeated quality-control items placed too close together would tip off the reviewer and silently void the entire consistency measurement.
+- Derived the content filters from measured editorial behaviour rather than assumption — including a language policy read off 1,500 published events, scoped by venue locality rather than by language itself, so local multilingual community programming survives while genuinely foreign listings are removed.
+- Audited the upstream workflow and found no content-based rejection stage exists: the intended business filter is computed but never applied, and a geography field records the search location rather than the venue's, making it unusable for filtering. Both logged as defects.
+
 ## 2026-07-17
 - Wrote and validated the first end-to-end section classifier: raw published history → cleaned training set → TF-IDF features → fitted model → inspected what it learned. Cross-validated accuracy held flat across every hyperparameter tried — evidence the current ceiling is the task's, not the model's, which sharpens the case for the planned representation comparison.
 - Inspected the model's learned vocabulary per section and confirmed it keys on genuinely meaningful words rather than incidental artifacts, with two adjacent categories separating more cleanly than the design had assumed — a finding to be checked against the confusion matrix.

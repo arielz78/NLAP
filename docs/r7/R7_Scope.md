@@ -457,3 +457,38 @@ interview's real value: (1) **pruning** the model's plausible-but-wrong gates, a
 run-now/re-run-in-weeks workflow). **Onboarding pattern: AI-generate the candidate gate list →
 client validates/prunes; reserve live questions for the audience-specific residual.** (Source:
 07-09 client session.)
+
+**2026-07-18 — the 400 re-scoped: gate + train, not gate-only (resolves the 07-16 open split).**
+- **Draw = 150 representative (gate) + 215 low-margin (train) + 35 repeats.** **Score the two slices
+  SEPARATELY** — the train slice is deliberately hard, so a pooled number is biased low and estimates
+  nothing. Slice membership is recorded in `eval/deck/answer_key_2026-07-18.csv`.
+- **Why tilt to training** (Ariel's call): at **78.68% vs an 85% gate**, certification fails today even
+  in the optimistic case — raw ≥ published is not plausible, and *equal* still fails. So the editor's
+  weekend buys training data instead of measuring a known failure. **Why keep 150 anyway:** an all-hard
+  draw can measure neither production accuracy nor the **confident-but-wrong** rate — the failure mode
+  margin filtering can never catch (live example: a realtor seminar predicted Golden at 0.694). 150 is
+  a sanity read (CI ~±8), explicitly not certification.
+- **Uncertainty sampling needed two corrections, both measured rather than assumed:**
+  1. **Blind ≠ ambiguous.** The lowest-margin events skew to *thin text*: train-slice median **5** known-
+     vocabulary hits vs **8** pool-wide, and it captured **all 44** zero-vocab events. Those are events the
+     **editor** also cannot judge — so uncertainty sampling selects where label quality will be *worst*, and
+     noisy labels on hard cases move the boundary randomly. Fix: prefer low-margin events *with* a
+     description; cap blind at 35 (16%).
+  2. **Single-activity venues flood the draw.** Pinot's titles are painting names (`Beach Bug`, `Boba
+     Besties`) carrying no section signal → near-zero margin → **28 rows (7%)** of the deck. Capped to 2 in
+     *both* slices — not just train — because **a flex venue has no single correct label**, so scoring a
+     designed abstention as a miss *depresses* the accuracy number rather than making it representative.
+- **NEW: all 44 vocabulary-blind events predict Golden.** With no matching terms the model emits the same
+  near-uniform triple (`0.339 / 0.303 / 0.358`), and Golden wins it every time. A blind event's predicted
+  class is therefore **noise, not signal** — relevant when reading Gate 2, and it is why the train slice's
+  raw predicted mix looked Golden-skewed (84/67/64) before balancing on meaningful predictions only.
+- **Language policy, derived from behaviour:** the editor has published **1 non-Latin title in 1,506**, and
+  it was a restaurant *name* in a Local Aroma highlight — **zero non-English events have ever run.** Filter
+  by **ratio, with a local-venue exemption**: the discriminator is *geography, not language* (VPL's
+  `Hebrew Storytime` is local programming; a France-based webinar is not). See `source_decision_sheet.md`
+  — the standing "allowlist subsumes #41" claim holds only for foreign events, not local non-English ones.
+- **Editor captures `Section` + `Flag` (Either / Unsure), not per-row rationale.** Free text costs 3–5× the
+  labelling time **and changes the behaviour being measured** — forced justification yields considered
+  reasoning, while the pipeline must replicate fast editorial instinct. `Either` is the flex-flag design's
+  only ground truth; `Unsure` is the distinct "listing too thin to judge" case. Rationale is deferred to a
+  post-hoc pass over the `Either` rows, after all labelling is done so it cannot contaminate.
