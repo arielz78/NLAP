@@ -15,3 +15,4 @@ bwna-web/
 test_runs/
 .claude/skills/brief/
 .claude/skills/checkout/
+__pycache__/

@@ -492,3 +492,41 @@ client validates/prunes; reserve live questions for the audience-specific residu
   reasoning, while the pipeline must replicate fast editorial instinct. `Either` is the flex-flag design's
   only ground truth; `Unsure` is the distinct "listing too thin to judge" case. Rationale is deferred to a
   post-hoc pass over the `Either` rows, after all labelling is done so it cannot contaminate.
+
+**2026-07-19 — SCOPE DECISION (Ariel): R7 is two stages — include/reject filter + section
+classifier — and the gate is redefined over includable events.**
+- **Why:** the criteria walkthrough (meetings/2026-07-19.md) closed the editor-error question —
+  None replicated at 50% on 26 never-seen events. "None" is ~6 distinct mechanisms, 12/13
+  event-based (text, not listing) — so the reject stage is real work, it is the stage the editor
+  actually finds hard, and nothing anywhere in R1/R2 implements it (isBusinessy is dead code, #94).
+- **Gate redefinition:** §1's ≥85% top-1 gate is scored against labels that conflate *fails
+  criteria* with *outranked this week* — a target that is not a function of the event text. The
+  classifier's gate becomes **section accuracy over events the editor would include** (None rows
+  excluded from the denominator). Pre-call read of that number: 59% overall, but **86% at margin
+  >0.5 (n=14), 100% at >0.7 (n=7)** — junk entering the confident band, not section confusion, is
+  the dominant failure. The filter's own gate: TBD after the mechanism decomposition (below).
+- **The filter is a named scope ADDITION, not a drift** — recorded here per the meeting doc's
+  "not a call to make by drift." Design input owed first (Ariel):
+  **mechanism → tool decomposition** — for each of the six None mechanisms, rule-over-fields /
+  trained model / editor-maintained list / not-a-property-of-the-event. The ~200 labeled Nones
+  (~400 after batch 3) are the filter's training/eval data — the reason batch 3 shipped
+  unfiltered and unretilted.
+- **Batch 3 shipped as drawn (07-19), decision recorded:** retilting toward high-margin
+  (confirm the confident band) or low-margin (study None) was considered and rejected — the
+  draw already carries 23 gate rows at margin >0.5 / 9 at >0.7 (doubling the confident-band n
+  for free), low-margin oversampling re-commits the blind≠ambiguous error (thin text ≠ junk;
+  the junk that matters is high-margin junk), and any retilt destroys the 35 pairs, the gate
+  slice's representativeness, and the seam test. New questions get new draws.
+- **Pre-registered before batch 3 returns:** batches 1–2 (pre-call) and batch 3 (post-call) are
+  different instruments — **score separately, seam test first**: if batch 3's gate None-rate ≈
+  38.6% (batches 1–2), the call didn't move his standard and the halves may pool; if it
+  diverges, they stay separate and the 35 pairs partly measure the call, not his stability.
+  All 35 pair-halves sit in batch 3 (verified 07-19: min gap 115, zero walkthrough leakage).
+- **Probe B addendum (pre-registered 07-19, before the probe has run):** the probe itself is
+  UNCHANGED — build and thresholds exactly as locked 07-16. But Gate 2's blindness is measured
+  over the full 1,805 pre-filter pool, and the two-stage scope means the classifier's serve-time
+  population is post-filter survivors. Blind events skew junk (thin-text→None), so all-pool
+  blindness OVERSTATES classifier blindness. Therefore **a Gate 2 fail is provisional** — re-read
+  blindness over includable events (editor labels on the 44 zero-vocab rows now; the post-filter
+  pool once the filter exists) before killing on it. Gate 1 unaffected (junk only adds tokens to
+  the raw vocab; if anything it mildly flatters coverage — relevant only on a razor-thin pass).
