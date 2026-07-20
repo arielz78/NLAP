@@ -46,6 +46,7 @@ import json
 from pathlib import Path # imports Path from the library that is pathlib.
 
 import matplotlib.pyplot as plt
+import numpy as np
 
 # importing a script-style module (no functions, no __main__ guard) RUNS it top
 # to bottom — so this line executes the whole fit (~seconds) and then hands us
@@ -134,15 +135,87 @@ plt.show()
 
 # ============================================================================
 # BLOCK 4 — GATE 1: per-class weighted coverage (pinned spec #1-#4)
-# TODO(ariel): for each class, for N in (10, 50, 200, 500): top-N tokens by
-#   |coef_| -> weighted coverage = sum(|w| of top-N present in raw_vocab) /
-#   sum(|w| of top-N). Print N-curve per class + the min; signed coefs in lists.
+# Written by Claude 2026-07-20 under explicit override (B — Ariel drives-later
+# review, time crunch) — see Execution_Log for the authorship-split decision.
+feature_names = vec.get_feature_names_out()
+classes = clf.classes_
+VOCAB_SIZE = len(feature_names)  # the model's whole learned vocabulary — the hard
+                                  # ceiling for N; nothing exists past this point
+Ns = (10, 50, 200, 500, VOCAB_SIZE)
 
+# 07-20 addition (Ariel's question: "a lot of these can be junk no?"): coverage
+# alone can't tell you whether a given N is measuring the model's real behavior
+# or an arbitrary truncation. weight_capture = what fraction of this class's
+# TOTAL |coef_| mass the top-N accounts for. If coverage is high but weight
+# capture is low, the read is optimistic — most of the model's actual decision
+# weight lives outside the N you checked.
+print("\n=== GATE 1: per-class weighted token coverage ===")
+per_class_curve = {}  # class -> {N: coverage}
+per_class_weight_capture = {}  # class -> {N: fraction of total |coef_| mass}
+for ci, cls in enumerate(classes):
+    coefs = clf.coef_[ci]                      # this class's 2,692 signed weights
+    order = np.argsort(-np.abs(coefs))          # rank by |coef_|, descending — sum-to-zero
+                                                 # means signed argsort would miss rule-out levers
+    total_class_weight = np.abs(coefs).sum()
+    print(f"\nClass: {cls}")
+    per_class_curve[cls] = {}
+    per_class_weight_capture[cls] = {}
+    for n in Ns:
+        top_idx = order[:n]
+        top_weights = np.abs(coefs[top_idx])
+        present = np.array([feature_names[i] in raw_vocab for i in top_idx])
+        covered = top_weights[present].sum()
+        total_topn = top_weights.sum()
+        coverage = covered / total_topn if total_topn > 0 else 0.0
+        weight_capture = total_topn / total_class_weight
+        per_class_curve[cls][n] = coverage
+        per_class_weight_capture[cls][n] = weight_capture
+        print(f"  N={n:>5}: weighted coverage = {coverage*100:5.1f}%   "
+              f"(top-N holds {weight_capture*100:5.1f}% of this class's total weight)")
+    top20 = order[:20]
+    signed = ", ".join(f"{feature_names[i]} {coefs[i]:+.2f}" for i in top20)
+    print(f"  top-20 tokens (signed): {signed}")
 
+print("\n--- cross-class MINIMUM per N (this is what reads against 85/70) ---")
+gate1_min_curve = {}
+for n in Ns:
+    m = min(per_class_curve[cls][n] for cls in classes)
+    gate1_min_curve[n] = m
+    print(f"  N={n:>5}: min-class coverage = {m*100:5.1f}%")
 # ============================================================================
 
 # ============================================================================
 # BLOCK 5 — VERDICTS
-# TODO(ariel): print verdict lines, verbatim thresholds: Gate 1 min-class
-#   coverage vs 85/70; Gate 2 vs 20% (provisional on fail — see addendum above).
+# Written by Claude 2026-07-20 under explicit override (B) — verbatim
+# pre-registered thresholds, no rationalization of a marginal number.
+print("\n=== VERDICTS ===")
+
+
+def gate1_call(coverage):
+    if coverage >= 0.85:
+        return "PASS"
+    elif coverage < 0.70:
+        return "KILL TF-IDF"
+    return "MARGINAL -> run per-source fallback (top-4 sources)"
+
+
+# N=500 read: practical-sized top-N, but only holds ~44-45% of any class's
+# total |coef_| weight (07-20 finding) -- optimistic, not the real answer.
+gate1_500 = gate1_min_curve[500]
+print(f"Gate 1 @ N=500 (min-class coverage = {gate1_500*100:.1f}%, "
+      f"~45% of model weight): {gate1_call(gate1_500)} -- PARTIAL READ, see ceiling below")
+
+# N=VOCAB_SIZE: the only N with no truncation -- holds 100% of every class's
+# weight by construction. This is the number Gate 1's threshold was written
+# against, not the N=500 approximation.
+gate1_ceiling = gate1_min_curve[VOCAB_SIZE]
+print(f"Gate 1 @ N={VOCAB_SIZE} (full vocab, min-class coverage = {gate1_ceiling*100:.1f}%, "
+      f"100% of model weight): {gate1_call(gate1_ceiling)}")
+
+blind_pct = zerohits / len(raw_events) * 100
+if blind_pct > 20:
+    gate2_verdict = "KILL (provisional -- re-read over includable events before acting, 07-19 addendum)"
+else:
+    gate2_verdict = "PASS"
+print(f"Gate 2 (event blindness = {blind_pct:.2f}%, {zerohits}/{len(raw_events)}): {gate2_verdict}")
 # ============================================================================

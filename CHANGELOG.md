@@ -4,6 +4,12 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-20
+- Finished and ran the vocabulary-transfer probe for the section classifier, including a diagnostic that catches when a metric is computed on an unrepresentative subset of a model rather than the whole thing — the initial reading looked marginal, but the full-model measurement showed the model's raw-text vocabulary coverage falls below the pre-set viability threshold.
+- Decided to drop the current text-vectorization approach and pursue a semantic-embedding representation instead, targeting the specific failure mode the probe identified rather than a general accuracy tuning pass.
+- Verified the final labeling batch and ran a before/after comparison across the two halves of the label set to confirm they can't be statistically pooled, given a large shift in editor rejection rate between them — both halves are now scored separately rather than combined.
+- Completed a structured recall/review pass on this session's methodology, extending the ongoing personal knowledge base with the new concepts (a vocabulary-transfer weighting technique, a pre/post-intervention comparison method, and a survey of text-representation options and their tradeoffs).
+
 ## 2026-07-19
 - Locked the release's revised scope: a two-stage design (an include/reject filter ahead of the section classifier), with the evaluation gate redefined so each stage is scored on its own question — resolving the label-conflation issue surfaced by the morning's criteria session.
 - Shipped the final 200-event labelling batch after a full integrity audit (repeat-pair placement, contamination checks against the criteria session, formatting), and recorded in advance how the pre- and post-session halves of the labels will be scored separately.

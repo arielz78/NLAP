@@ -1685,3 +1685,69 @@ The R5 reusability audit (standing gate, `R5_Scope.md`) found the newsletter con
 **Why W7 (deploy) is deferred.** Deploying mutates production sectioning and isn't needed to unblock R6 — R6 only needs the classifier offline to section a pool it reads. Deferring avoids wiring production around assumptions R6's pair data may overturn.
 
 **Supersedes:** the roadmap's R6→R7 ordering (roadmap stays frozen; this is the authoritative override per the source-of-truth rule).
+
+---
+
+## 62. R7-W6 Scope & Validation Strategy — 3-Class Set, URL-Join Rebuild Killed, 3-Probe Transfer Sequence (2026-07-12–07-15)
+
+**Decision:** R7's classifier trains on a 3-class set (Families/Couples/Golden, n=1,126) with Local Aroma permanently excluded — a scope fact, not a tuning choice, since Local Aroma arrives via a separate intake the classifier never sees in production. Validation drops the originally-planned URL-join raw-title training rebuild and replaces it with a 3-probe transfer sequence (Probe B vocabulary overlap → Probe A 69-pair raw kill-check → editor-150 hand-labeled agreement), because published (`issue_history`) and scraped (`Candidates`) are two independent samples, not the same events twice.
+
+**Why the URL-join rebuild died.** The premise was that published events and their raw candidate-pool source records could be joined by URL to build a raw-text training set. That assumes the client already uses the pipeline for selection — they don't yet (that's R8). Exact-URL join yields only 69 pairs / 45 distinct titles against a temporal hole and venue-vs-deep-link form mismatches — not enough to train on, and biased toward whatever happens to be easy to match. Kept only as a small, civic-skewed transfer test, not a training source.
+
+**Why the 3-probe sequence instead.** If the two corpora can't be joined, the only way to validate that a classifier trained on published (edited) titles will work on raw (unedited) candidates is to test transfer directly: does the trained model's vocabulary survive contact with raw text (Probe B, pre-build, can kill early); does it agree with the tiny raw-title kill-check (Probe A, directional only); does the editor agree with its raw-text predictions on a real hand-labeled sample (editor-150, the actual post-build gate). Corpus frozen at `published_titles.json` (1,126) / `raw_candidate_titles.json` (1,805 unique) to keep provenance stable across the whole sequence.
+
+---
+
+## 63. R7-W6 Feature Set v1 — Title+Description+SourceCategories; Source-Prior and Deterministic Routing Both Killed by the Editor's Rulings (2026-07-13–07-16)
+
+**Decision:** R7 v1's feature set is title + description (with dropout, ~47% missing on the production-relevant post-R5 pool) + SourceCategories (treated as a bag-of-tokens, TF-IDF-native). Two originally-planned rescue mechanisms for signal-dead, title-only sources — a targeted source-prior lookup table and deterministic source-based routing — were both killed on 2026-07-16 by the editor's own rulings, not by data volume.
+
+**Why description stays despite ~47% missingness.** Including description adds ~7 points (70%→77% 3-class CV), and the model needs to survive the roughly half of production candidates that lack it regardless — dropping description to dodge the missingness would throw away real signal for the half of candidates that do have it.
+
+**Why the source-prior and routing killed.** Both were scoped narrowly to three signal-dead, title-only single-venue sources (PinotsPalette, RichmondHill, Facebook) on the theory that a fixed source almost always maps to one section. Asking the editor directly killed the premise: he ruled all three "varies" — a prior or a routing rule can only output one section with certainty, and he gave rates, not certainties. Zero valid instances survive; the lookup table has no rows to populate. Consequence: nothing is hardcoded, nothing is dropped from train/eval — the full 1,126 rows go to the model unmodified, no accuracy adjustment needed.
+
+**Open, not decided:** whether `source` becomes a classifier *feature* (append the slug to the text; TF-IDF tokenizes it for free) — the editor separately handed over real per-source rates a feature could hold (VPL/BiblioCommons ~90% not-Couples, PinotsPalette 0/33 Families) that a prior/rule couldn't express. Explicitly deferred to a CV comparison (with vs. without the token, watching for source-as-shortcut in the confusion matrix), not decided by argument — still open as of 2026-07-20.
+
+---
+
+## 64. R7-W6 Abstention Design — C/G Boundary Confirmed Genuinely Fuzzy; Flex-Flag Spans R7→R6 (2026-07-12–07-16)
+
+**Decision:** Abstention on the Couples/Golden boundary is load-bearing, not a fallback bolted on later — confirmed by a blind editor re-ruling of the 15 tightest C/G boundary cases, agreeing with his own original placements 12/15 (~80%, held loosely, n=15, wide CI). Low-margin C/G predictions get a "flex" flag emitted by R7 and resolved downstream by R6/the allocator (whichever section is short that week) — R7 never resolves the ambiguity itself, R6 consumes the flag.
+
+**Why the split (R7 emits, R6 consumes).** Scarcity resolves ambiguity for free at the allocator stage — a flex-flagged event just fills whichever section needs it that week — so building resolution logic into the classifier would duplicate work R6 already does and couples two releases that don't need to be coupled. Two independent dials keep the design honest: margin threshold tunes flex *volume*, editor-150 checks flex *quality* (true dual-fit events vs. the model just being confused) — different failure modes, one number can't stand in for both.
+
+**Why PinotsPalette confirmed the design rather than needing a special case.** 33 PinotsPalette events split 16 Couples / 17 Golden / 0 Families with the *identical* title rotating between sections — the editor confirmed directly ("it's for both"). The flex-flag design absorbs this for free: identical text with conflicting labels teaches the model ~50/50, produces low margin, triggers abstention, the allocator resolves it — no PinotsPalette-specific logic needed. Held loosely: ~30 of the 33 rows are sponsor-era contract rotation rather than genuine editorial judgment (post-sponsor n=3); whether to keep those sponsor rows in training is still open — leaning keep, since abstention is the correct behavior for events shaped this way at serve time regardless of *why* they rotated, and at 3% of rows the CV number can't move meaningfully either way.
+
+---
+
+## 65. R7-W6 Evaluation Methodology — Gates Pre-Registered Before Data; Labeling Deck Uses Two Un-Poolable Draws (2026-07-16–07-18)
+
+**Decision:** R7's transfer-probe pass/kill thresholds (Gate 1 weighted coverage ≥85% pass / <70% kill / 70–85% marginal; Gate 2 event blindness >20% kill; Gate 3 horse-race ≥5pt embeddings margin to justify a representation switch) were locked on 2026-07-16, before Probe B was run — specifically so a marginal number couldn't be argued past the line after the fact. Separately, the 400-row editor-labeling deck was built from two structurally different draws — a representative sample (mirrors production, used as the accuracy gate) and an uncertainty-weighted sample (deliberately the model's lowest-margin cases, used for training) — that are never pooled.
+
+**Why pre-register.** Thresholds set after seeing the data get rationalized — "74% is basically fine." Locking the numbers first, against a derived rationale (Gate 2's 20% traces to a specific auto-coverage target and an estimated margin-abstention budget, not a round number), removes that degree of freedom before it can be used.
+
+**Why two draws, never one.** A gate has to estimate real production behavior, so it must mirror production's actual distribution. Training wants maximum information per label, so it wants the boundary — the hardest, most ambiguous cases, which are by construction *not* representative. One sample can't simultaneously mirror a distribution and concentrate in its tail; that's structural, not a budgeting problem. If a project needs both a fair accuracy read and efficient training data, it has to draw twice and keep the two separate for scoring — the same principle later required the 2026-07-20 seam test to score the deck's two labeling batches separately.
+
+---
+
+## 66. R7 Two-Stage Scope — Include/Reject Filter Added Ahead of the Section Classifier; Gate Redefined Over Includable Events Only (2026-07-19)
+
+**Decision:** R7 is no longer a single-stage section classifier. A structured criteria-elicitation call with the editor (26 fresh proxy events, never seen by him before) established that his rejection rate replicates almost exactly outside the labeled 400 (13/26 = 50% vs. 48.5% on the 400) and resolves to at least six distinct mechanisms (narrow appeal, cultural-tie-in-nightlife, age/vibe mismatch, audience-feedback history, B2B, tone/positivity, insufficient info) — not editor error, not label noise, not reverse-engineerable from topic alone. R7 gains a named include/reject filter stage ahead of the section classifier, and the classifier's own accuracy gate is redefined to score only over events the editor would actually include (None rows drop out of the denominator).
+
+**Why this isn't scope drift.** The original R7 design assumed "None" was either noise or a simple topic filter that fell out of the section classifier's own confidence. The elicitation call closed that question directly, using fresh proxy events specifically so the editor couldn't defend or reverse a past call — he ruled cold, then was challenged, and the same rule ("cultural ties in nightlife = reject, generic party = fine") surfaced unprompted on a genuine split pair (Russian Party → None, Secret Saturdays → Couples, same venue and night). That's a real, stable editorial criterion the pipeline has never implemented — R2's `isBusinessy` is the only prior attempt and is dead code.
+
+**Why the gate had to be redefined.** Scoring section accuracy against the full label set (including None rows the classifier structurally can't predict) conflates two different failures: getting the section wrong, and correctly recognizing an event the editor would never run at all. Restricting the denominator to includable events isolates the question the classifier is actually built to answer.
+
+---
+
+## 67. R7 Vectorizer — Drop TF-IDF, Pursue Embeddings; LLM Fallback Deliberately Left Undecided (2026-07-20)
+
+**Decision:** TF-IDF is dropped as R7's vectorizer. The embeddings track (previously scoped as a comparative horse-race, `R7_Scope.md` §3 Step 3) becomes the primary path, not a comparison. Separately: whether the low-confidence tail falls back to an LLM, stays fully manual, or something else is deliberately left undecided.
+
+**Why TF-IDF is out.** Gate 1 read at N=500 first (81.9%, marginal) — but that N only held ~44–45% of any class's total `|coef_|` weight, an optimistic partial sample. Read at the only unbiased N (full 2,692-word vocabulary): 68.2% minimum-class coverage, below the kill line for all three classes. A generosity check (75% cumulative weight) made the case stronger, not weaker — reaching it needs ~45–47% of the entire vocabulary, still only 73.9–75.6% coverage there. Weight is genuinely diffuse, consistent with the already-known overfitting signature (98.57% train vs 78.68% CV, Decision_Log §63's feature-set context).
+
+**Why embeddings specifically.** TF-IDF's failure is exact-token matching against a fixed vocabulary. Embeddings work off semantic similarity — the direct fix for that failure, not a general accuracy play. (Count/Hashing vectorizers share TF-IDF's problem; char n-grams only fix typos.)
+
+**Why LLM fallback stays open.** R2's LLM classification wasn't good in production, but that's evidence about one implementation, not the method — never examined for why. Ruling it out now would over-read a single data point.
+
+**Also found, not yet acted on:** the confident band (margin>0.5) covers only ~18–24% of a representative sample, well short of the ≥70% auto-coverage the original hybrid design assumed — a real input to how big an embeddings win needs to be before it's worth shipping.

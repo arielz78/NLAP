@@ -285,6 +285,90 @@ once predictions exist. Rough target was 07-18–21 (see 07-12 planning); Probe 
   tokens the model actually leans on. The question is "do the *weighted* words survive," not "do all
   ~2,700."
 
+**2026-07-20 — Probe B finished (Gate 1 + verdicts) + seam test + pre/post-call results-append.**
+*Written by Claude under an explicit authorship-split override (B — Ariel driving-later review,
+time crunch); flagged for Ariel's review, not a substitute for it.*
+
+- **Seam test run first, as pre-registered: batches diverge, do NOT pool.** Batch 3 gate-slice
+  None-rate = **55/96 = 57.3%**, vs the pre-call baseline of 38.6% — an 18.7-point gap, far outside
+  "≈38.6%." Per the pre-registered rule, batches 1–2 and batch 3 stay scored **separately**; the 35
+  self-consistency pairs partly measure the criteria-walkthrough call, not just editor stability.
+- **Gate 1 (per-class weighted `coef_` coverage, `eval/probe_b_coverage.py` Block 4) — MARGINAL.**
+  Cross-class minimum coverage by N: N=10 → 100% · N=50 → 95.5% · N=200 → 87.8% · **N=500 → 81.9%**.
+  Read at N=500 (curve's stable end): **81.9%, inside the 70–85% marginal band → per-source
+  fallback (top-4 sources) is the next check before a kill/pass call.** Per-class curves and signed
+  top-20 tokens are in the script's stdout, not reproduced here — rerun `eval/probe_b_coverage.py`
+  for the full listing.
+- **Gate 2 (event blindness) — PASS, confirmed.** 44/1,805 = 2.44% vs the 20% kill line (unchanged
+  from 07-19; Block 5 verdict now prints this alongside Gate 1 instead of standing alone).
+- **Margin-band accuracy on real-section (non-None) gate-slice events, pre- vs post-call:**
+
+  | Slice | n gate | n includable | margin >0.5 | margin >0.7 |
+  |---|---|---|---|---|
+  | Pre-call (batch 1–2) | 89 | 54 (None 39.3%) | **90.5%** (n=21) | **100%** (n=7) |
+  | Post-call (batch 3) | 96 | 41 (None 57.3%) | **82.4%** (n=17) | **85.7%** (n=7) |
+
+  ⚠️ **Discrepancy flagged, not silently overwritten:** an earlier carry-forward note cited pre-call
+  as ">0.5 → 86%, n=14" — this run gets n=21 / 90.5% off the same fixed batch-1–2 data (`margin`
+  column never changes; only labels could, and pre-call was fully labeled before the walkthrough
+  call). n=7/100% at >0.7 matches exactly. Possible causes: a hand-count on a subset, or a stricter
+  filter than "gate-slice ∩ non-None." **Ariel: reconcile against whatever produced the 86%/n=14
+  figure before quoting either number in the go/no-go readout.**
+- **Confusion matrices (rows = true section, cols = predicted; gate-slice, non-None):**
+
+  Pre-call — Families 19/5/4 · Couples 3/7/5 · Golden 3/2/6 (diagonal-heavy but real bleed both
+  directions, not one dominant C/G off-diagonal as §5's 07-09 read assumed).
+  Post-call — Families 12/3/3 · Couples 2/7/4 · Golden 2/3/5 (same diffuse shape, smaller n).
+  Both pre- and post-call resolve the 07-17 open tension in the same direction: **error is spread
+  across all three class-pairs, not concentrated on a Couples/Golden boundary.**
+- **Thin-text-predicts-junk confirmed in both slices, sharper post-call:** None-rate falls as
+  `vocab_hits` rises — pre-call 53.8%→41.4%→22.2% (buckets 0–5/5–15/15+ hits); post-call
+  88.2%→55.4%→39.1%. Post-call's low-vocab bucket alone is 88% None — thin listings got *more*
+  likely to be rejected after the walkthrough call sharpened the editor's standard, not less.
+- **Per-source None rates, gate-slice, pre- vs post-call:** allevents.in 38.1%→60.5% (n=42/43),
+  eventbrite.ca 43.3%→53.1% (n=30/32), eventbrite.com 60.0%→66.7% (n=5/6), markham.bibliocommons.com
+  28.6%→37.5% (n=7/8), vaughanpl.info 25.0%→80.0% (n=4/5, small-n swing). Every source's None rate
+  rose post-call — consistent with the walkthrough tightening the standard generally, not one source
+  getting cleaned up.
+- **Net read (Claude's plumbing-level summary, not the go/no-go call):** the classifier is
+  strong-not-certified on real-section events (82–90% at margin>0.5, both slices), Gate 2 is a clean
+  pass, Gate 1 is marginal pending the per-source fallback, and the seam-test divergence means the
+  ~48–59% None rate is real and worsened, not noise — the reject-stage's scope and size just got
+  more urgent, not less. The go/no-go readout itself (CLAUDE.md: authored-core) is still Ariel's.
+
+**2026-07-20 (addendum, same session) — Gate 1's N=500 read was optimistic; the full-vocab ceiling
+FAILS.** Prompted by Ariel's question ("a lot of these can be junk no?") — added a weight-capture
+diagnostic (`eval/probe_b_coverage.py` Block 4) alongside coverage: what % of a class's *total*
+`|coef_|` mass does the top-N actually represent, not just what fraction of that subset is covered.
+- **N=500 only holds ~44–45% of any class's total coefficient weight.** The 81.9% coverage read at
+  N=500 was measuring less than half the model. Weight is spread thin, not concentrated — 3% of
+  total weight in the top 10 tokens, 9.7% by top 50, 24–25% by top 200, ~45% by top 500. This is a
+  long tail, not a short one with noise past it.
+- **At N=2,692 (the full learned vocabulary — the only N with no truncation, 100% of model weight
+  by construction): min-class weighted coverage = 68.2%.** Below the 70% kill line, for all three
+  classes (68.2 / 68.4 / 68.5%). **Gate 1, read honestly, is KILL TF-IDF, not marginal.**
+- **This is independent evidence for the overfitting diagnosis already on record** (07-17: 98.57%
+  train vs 78.68% CV, 2,692 features > 1,126 rows). A model that leaned on a small set of
+  generalizable words would show weight concentrated near the top of the curve (high weight-capture
+  at low N); this one doesn't — it's spreading real decision weight across thousands of
+  rarely-occurring tokens, exactly the shape you'd expect from memorizing the 1,126-row training set
+  rather than learning transferable section-signal.
+- **Still Ariel's call, not Claude's:** whether "the honest ceiling fails the pre-registered
+  threshold" means TF-IDF is dead for R7, or whether the per-source fallback (already queued for the
+  marginal band) is worth running anyway before accepting the kill — the threshold application is
+  mechanical, what it means for the build isn't.
+- **Follow-up (Ariel's pushback: "does the weak tail even matter"):** found the N where each class
+  hits 75% cumulative weight, to test whether coverage is being dragged down by a genuinely thin,
+  ignorable tail. It isn't — **capturing 75% of weight requires ~1,200–1,260 of 2,692 words (45–47%
+  of the whole vocabulary), and coverage at that point is only 73.9% (Couples) / 74.7% (Families) /
+  75.6% (Golden) — marginal band, not passing, min-class barely clears the 70% kill line.** Weight
+  is genuinely diffuse, not front-loaded; there is no "top slice" that both captures most of the
+  model's reliance and clears the 85% pass bar.
+- **Decision (Ariel, 2026-07-20): drop TF-IDF as the vectorizer, run the embeddings track next**
+  (Step 3, `R7_Scope.md` §3 — previously scoped as a comparative horse-race, now the primary path
+  given Gate 1's kill). Embeddings still need their own validation, not an assumed win — see Next
+  session notes.
+
 ---
 
 ## §4 Parked leads (from the 2026-07-15 staging session — UNVERIFIED unless noted)
