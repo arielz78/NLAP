@@ -7,6 +7,15 @@
 > background** (the 07-09 capture — historical, superseded where §1 disagrees).
 > The architecture call is Ariel's, informed by critique — not delegated to a model.
 > **Results append; they never edit history.**
+>
+> **Why so few GitHub issues so far (2026-07-20):** R7-W6 has been a sequential investigation —
+> each step's result decides the next (TF-IDF fails Gate 1 → try embeddings) — not a checklist of
+> independent, schedulable tasks. Issues are for real deferred work with nowhere else to live (the
+> carry-forward gate: untracked in `Next` two sessions running); almost nothing here sits idle that
+> long, it gets resolved the same or next session. **Expect this to flip once the architecture
+> settles and R7 moves from investigating to building** — that phase (implement the reject filter,
+> wire the chosen representation into serve-time) is a real backlog of separable tasks, the same
+> shape R5's source-integration phase was, and it should generate issues at R5's rate, not R7-W6's.
 
 ---
 
@@ -239,7 +248,13 @@ a vocabulary dict + an IDF vector + a coefficient matrix, all JSON-serializable,
 > choice is a **closer call** than file-vs-infrastructure framing suggested — decide it on Step 1–3's
 > evidence plus the coupling cost, not on infra fear.
 
-### Step 5 — Finalize → Decision_Log entry (records the R6↔R7 reorder + the architecture picks)
+### Step 5 — Finalize the architecture pick in this doc
+**Corrected 2026-07-20:** this step does NOT gate when Decision_Log entries get written — that
+reading is what produced ten sessions of real decisions (§1/§2 calls from 07-12 through 07-19)
+sitting undocumented, backfilled all at once as Decision_Log §62–67. `docs/README.md`'s rule is
+already right and overrides this doc where they'd differ: log a decision **when it's made**, not
+batched to a doc-close event. Step 5 is just "declare the architecture settled here" — a status
+change in this doc, nothing more.
 
 ### Step 6 — Blind Fable critique + GPT-5.5 second opinion
 **Deferred and narrowed (2026-07-15).** Not a whole-doc pass — that critiques a snapshot which is stale
