@@ -27,8 +27,8 @@ CAVEAT
     NOT the R7 go/no-go accuracy measurement (that requires the raw-title rebuild).
 
 RUN
-    ./r6_eval/.venv/Scripts/python.exe eval/build_ambiguous_sections.py \
-        --n 15 --out-prefix eval/ambiguous_cases_YYYY-MM-DD
+    ./models/.venv/Scripts/python.exe models/sectioning/build_ambiguous_sections.py \
+        --n 15 --out-prefix models/sectioning/rulings/ambiguous_cases_YYYY-MM-DD
 
 OUTPUTS
     <prefix>_for_client.txt  — stripped list (no section/date) to send the editor
@@ -42,7 +42,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import cross_val_predict
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 COUPLES, GOLDEN = "For Couples", "For Golden Age Readers"
 
 def clean(s: str) -> str:
@@ -54,7 +54,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     ap.add_argument("--n", type=int, default=15, help="number of boundary cases to emit")
     ap.add_argument("--source", default="data/beehiiv/issue_history.json")
-    ap.add_argument("--out-prefix", default=f"eval/ambiguous_cases_{date.today()}")
+    ap.add_argument("--out-prefix", default=f"models/sectioning/rulings/ambiguous_cases_{date.today()}")
     args = ap.parse_args()
 
     data = json.loads((ROOT / args.source).read_text(encoding="utf-8"))
@@ -94,7 +94,7 @@ def main():
     pick = cand[: args.n]
 
     stamp = date.today().isoformat()
-    prov = (f"# Generated {stamp} by eval/build_ambiguous_sections.py\n"
+    prov = (f"# Generated {stamp} by models/sectioning/build_ambiguous_sections.py\n"
             f"# Purpose: editor re-rules Couples/Golden boundary cases -> R7-W6 section-classifier signal.\n"
             f"# Source: {args.source} ({len(rows)} labeled events; Couples/Golden boundary pool: {len(cand)}).\n")
 

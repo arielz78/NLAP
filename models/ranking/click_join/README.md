@@ -11,7 +11,7 @@ exports bearing `_bhlid` subscriber tokens. This join output is **PII-free** (on
 aggregate click counts + percentiles — verified 0 `_bhlid`, 0 emails), so it is safe to commit — and it
 *should* be, because it's a load-bearing R6 dependency that must not survive as a single unbacked copy.
 
-Built by [`scripts/joinClicksData.js`](../scripts/joinClicksData.js). That script writes **ephemeral,
+Built by [`scripts/joinClicksData.js`](../../../scripts/joinClicksData.js). That script writes **ephemeral,
 gitignored** runs to `data/tracking/click_analysis/` (recreated on each run); the canonical run is
 promoted here and committed.
 
@@ -153,7 +153,7 @@ section-issue groups with fewer than 4 matched events dropped.
 
 **Selection is validated a different way — forward, via swap-rate** (how often the editor overrides the
 formula's picks on live runs). This file is a *directional floor check*, not the final word — a green backtest
-here is necessary, not sufficient. See [`clicks_analysis_2026-05-13.md`](../data/beehiiv/clicks_analysis_2026-05-13.md).
+here is necessary, not sufficient. See [`clicks_analysis_2026-05-13.md`](../../../data/beehiiv/clicks_analysis_2026-05-13.md).
 
 ---
 

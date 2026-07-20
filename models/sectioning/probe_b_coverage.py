@@ -43,9 +43,12 @@
 # by construction, see the 07-16 correction).
 
 import json
+import sys
 from pathlib import Path # imports Path from the library that is pathlib.
 
-import matplotlib.pyplot as plt
+# matplotlib is optional: the histogram below is exploratory, and plt.show()
+# blocks until the window is closed. Run with --plot to see it.
+PLOT = "--plot" in sys.argv
 import numpy as np
 
 # importing a script-style module (no functions, no __main__ guard) RUNS it top
@@ -57,9 +60,10 @@ from fit_section_classifier import vec, clf
 # relative paths resolve from wherever Python was LAUNCHED (the working dir),
 # not from where this .py file lives — so we anchor to __file__ (this script's
 # own location, fixed forever). .resolve() = make absolute; .parent = go up one
-# folder (an attribute, not a function — no parens). Two parents: eval/ -> NLAP/.
-ROOT = Path(__file__).resolve().parent.parent
-with open(ROOT / "eval/probe_b/raw_candidate_events.json", encoding="utf-8") as f:
+# folder (an attribute, not a function — no parens). Three parents:
+# models/sectioning/ -> models/ -> NLAP/.
+ROOT = Path(__file__).resolve().parent.parent.parent
+with open(ROOT / "models/sectioning/corpora/raw_candidate_events.json", encoding="utf-8") as f:
     raw_events = [e["text"] for e in json.load(f)]  # 1,805 strings of serve-time text (title+desc+cats)
 
 # build_analyzer() hands us the vectorizer's OWN text-chopping function — same
@@ -128,9 +132,11 @@ for h in hits:
         zerohits += 1
 print(zerohits, zerohits/ 1805 * 100)
 
-plt.hist(hits, bins=50)
-plt.xlabel("known-token hits per event")
-plt.show()
+if PLOT:
+    import matplotlib.pyplot as plt  # not in requirements.txt — pip install matplotlib
+    plt.hist(hits, bins=50)
+    plt.xlabel("known-token hits per event")
+    plt.show()
 # ============================================================================
 
 # ============================================================================

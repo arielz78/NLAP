@@ -8,6 +8,12 @@
 > The architecture call is Ariel's, informed by critique — not delegated to a model.
 > **Results append; they never edit history.**
 >
+> **Path note (2026-07-20):** `eval/` and `r6_eval/` were reorganized into `models/`
+> (`models/sectioning/` = this release's code, `models/ranking/` = R6's harness) — issue #89.
+> File paths throughout this doc were rewritten to the new locations; **no threshold, decision,
+> finding, or number was altered.** Probe B was re-run post-move and reproduces exactly
+> (68.2% min-class coverage, 2.44% blindness).
+>
 > **Why so few GitHub issues so far (2026-07-20):** R7-W6 has been a sequential investigation —
 > each step's result decides the next (TF-IDF fails Gate 1 → try embeddings) — not a checklist of
 > independent, schedulable tasks. Issues are for real deferred work with nowhere else to live (the
@@ -46,7 +52,7 @@ candidate distribution** — that's what's actually segmented):
 
 **C/G boundary is genuinely fuzzy → abstention on this pair is load-bearing.** *(07-12)* Editor
 blind re-ruled the 15 tightest Couples/Golden boundary cases → **12/15 (~80%) agree with his own
-past placement** (`eval/ambiguous_cases_2026-07-09_RULINGS.tsv`). Held **loosely** (n=15, CI
+past placement** (`models/sectioning/rulings/ambiguous_cases_2026-07-09_RULINGS.tsv`). Held **loosely** (n=15, CI
 ~55–93%); the "directional C→G drift" read on the 3 disagreements was **dropped as n=3 noise**.
 Ambiguity is quantified by the model's probability **margin** (small = hard). Soft design
 assumption, not a measured ceiling — see the task-ceiling warning in §3 Step 3.
@@ -203,7 +209,7 @@ to a ceiling argument and wrote no probe.
   exact-token-friendly ground. Transfer is measured by Probe B and editor-150, not here.
 
 ### Step 1 — Open `coef_` on the EXISTING fit (~10 min, resolves nothing alone; feeds Step 2)
-`eval/build_ambiguous_sections.py` **already trains the exact stack** (`TfidfVectorizer(ngram_range=(1,2),
+`models/sectioning/build_ambiguous_sections.py` **already trains the exact stack** (`TfidfVectorizer(ngram_range=(1,2),
 min_df=2, sublinear_tf=True, stop_words="english")` + `LogisticRegression(max_iter=2000, C=4.0,
 class_weight="balanced")`) that produced the 77%. **Its coefficients have been on disk since 2026-07-09
 and have never been opened.** Read the top-weighted words per class off `coef_`. Reuse this config —
@@ -271,7 +277,7 @@ once predictions exist. Rough target was 07-18–21 (see 07-12 planning); Probe 
 
 ### Results log (append-only — never edit prior results)
 
-**2026-07-17 — Step 1 DONE: the fit exists (`eval/fit_section_classifier.py`) and `coef_` is read.**
+**2026-07-17 — Step 1 DONE: the fit exists (`models/sectioning/fit_section_classifier.py`) and `coef_` is read.**
 - **CV = 78.68% (cv=5, 3-class, title+desc, locked config C=4.0).** Reproduces the 07-09 3-class
   baseline (77.0%) within tuning noise. Training accuracy 98.57% (the overfitting gap, on 2692
   features / 1126 rows).
@@ -308,11 +314,11 @@ time crunch); flagged for Ariel's review, not a substitute for it.*
   None-rate = **55/96 = 57.3%**, vs the pre-call baseline of 38.6% — an 18.7-point gap, far outside
   "≈38.6%." Per the pre-registered rule, batches 1–2 and batch 3 stay scored **separately**; the 35
   self-consistency pairs partly measure the criteria-walkthrough call, not just editor stability.
-- **Gate 1 (per-class weighted `coef_` coverage, `eval/probe_b_coverage.py` Block 4) — MARGINAL.**
+- **Gate 1 (per-class weighted `coef_` coverage, `models/sectioning/probe_b_coverage.py` Block 4) — MARGINAL.**
   Cross-class minimum coverage by N: N=10 → 100% · N=50 → 95.5% · N=200 → 87.8% · **N=500 → 81.9%**.
   Read at N=500 (curve's stable end): **81.9%, inside the 70–85% marginal band → per-source
   fallback (top-4 sources) is the next check before a kill/pass call.** Per-class curves and signed
-  top-20 tokens are in the script's stdout, not reproduced here — rerun `eval/probe_b_coverage.py`
+  top-20 tokens are in the script's stdout, not reproduced here — rerun `models/sectioning/probe_b_coverage.py`
   for the full listing.
 - **Gate 2 (event blindness) — PASS, confirmed.** 44/1,805 = 2.44% vs the 20% kill line (unchanged
   from 07-19; Block 5 verdict now prints this alongside Gate 1 instead of standing alone).
@@ -353,7 +359,7 @@ time crunch); flagged for Ariel's review, not a substitute for it.*
 
 **2026-07-20 (addendum, same session) — Gate 1's N=500 read was optimistic; the full-vocab ceiling
 FAILS.** Prompted by Ariel's question ("a lot of these can be junk no?") — added a weight-capture
-diagnostic (`eval/probe_b_coverage.py` Block 4) alongside coverage: what % of a class's *total*
+diagnostic (`models/sectioning/probe_b_coverage.py` Block 4) alongside coverage: what % of a class's *total*
 `|coef_|` mass does the top-N actually represent, not just what fraction of that subset is covered.
 - **N=500 only holds ~44–45% of any class's total coefficient weight.** The 81.9% coverage read at
   N=500 was measuring less than half the model. Weight is spread thin, not concentrated — 3% of
@@ -516,7 +522,7 @@ mitigation is the 3-probe sequence, §1.)*
 - Read: sectioning is **learnable** — but this is a ceiling measured on edited text; the raw number
   will be lower, and the fuzzy C/G boundary makes abstention load-bearing.
 
-### Reproduction (07-09 evening, `eval/build_ambiguous_sections.py` env)
+### Reproduction (07-09 evening, `models/sectioning/build_ambiguous_sections.py` env)
 Re-ran independently — **it reproduces.**
 - **The N reconciles: 1,126 = 1,506 labeled − 380 Local Aroma.** The original run was silently
   **3-class**; undocumented until recovered. The "80%" was *never* on the full sectioning task
@@ -560,7 +566,7 @@ client validates/prunes; reserve live questions for the audience-specific residu
 **2026-07-18 — the 400 re-scoped: gate + train, not gate-only (resolves the 07-16 open split).**
 - **Draw = 150 representative (gate) + 215 low-margin (train) + 35 repeats.** **Score the two slices
   SEPARATELY** — the train slice is deliberately hard, so a pooled number is biased low and estimates
-  nothing. Slice membership is recorded in `eval/deck/answer_key_2026-07-18.csv`.
+  nothing. Slice membership is recorded in `models/sectioning/deck/answer_key_2026-07-18.csv`.
 - **Why tilt to training** (Ariel's call): at **78.68% vs an 85% gate**, certification fails today even
   in the optimistic case — raw ≥ published is not plausible, and *equal* still fails. So the editor's
   weekend buys training data instead of measuring a known failure. **Why keep 150 anyway:** an all-hard

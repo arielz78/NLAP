@@ -15,9 +15,9 @@ from pathlib import Path
 from collections import defaultdict, Counter
 from urllib.parse import urlparse
 
-ROOT = Path(__file__).resolve().parent.parent
-DECK_JSON = ROOT / "eval/deck/r7_label_deck_raw_pull_2026-07-20.json"
-ANSWER_CSV = ROOT / "eval/deck/answer_key_2026-07-18.csv"
+ROOT = Path(__file__).resolve().parent.parent.parent
+DECK_JSON = ROOT / "models/sectioning/deck/r7_label_deck_raw_pull_2026-07-20.json"
+ANSWER_CSV = ROOT / "models/sectioning/deck/answer_key_2026-07-18.csv"
 
 FIELD_ROW = "fldwjfVY5pN1qajFj"
 FIELD_BATCH = "fldDymraKt7oQxdBv"

@@ -1,26 +1,26 @@
-# r6_eval — scorer eval harness + forced-choice pair collector
+# models/ranking — scorer eval harness + forced-choice pair collector
 
 Offline tooling for R6: collect ~150–200 editor pair judgments, then grade
 candidate scorers against them. Reads a Candidates snapshot JSON only —
 **never touches Airtable, n8n, or any pipeline file.** All outputs land in
-`r6_eval/output/` (gitignored).
+`models/ranking/output/` (gitignored).
 
 ## Setup
 
-This project uses a **per-project virtual environment** so its pinned deps
-stay isolated from the global Python (and from any course/other projects on
-the machine). One-time:
+One venv serves **all** of `models/` (both `ranking/` and `sectioning/`) so its
+pinned deps stay isolated from the global Python and from any course/other
+projects on the machine. One-time:
 
 ```
-py -m venv r6_eval/.venv
-r6_eval/.venv/Scripts/python.exe -m pip install -r r6_eval/requirements.txt
+py -m venv models/.venv
+models/.venv/Scripts/python.exe -m pip install -r models/requirements.txt
 ```
 
 Then run everything from the repo root with the venv's python. Replace the
-`py` in the commands below with `r6_eval/.venv/Scripts/python.exe`, e.g.:
+`py` in the commands below with `models/.venv/Scripts/python.exe`, e.g.:
 
 ```
-r6_eval/.venv/Scripts/python.exe -m r6_eval.generate_pairs <snapshot.json>
+models/.venv/Scripts/python.exe -m models.ranking.generate_pairs <snapshot.json>
 ```
 
 (`.venv/` is gitignored — recreate it with the two commands above on any new
@@ -29,17 +29,17 @@ machine.)
 ## 1. Generate pairs + the collector page (this weekend's step)
 
 ```
-py -m r6_eval.generate_pairs <snapshot.json>
+py -m models.ranking.generate_pairs <snapshot.json>
 ```
 
 Use a **fresh** snapshot (run `scripts/snapshotCandidates.js` first) — eligibility
 requires `Start Date >= today`, so a stale snapshot yields a thin pool.
-The fixture works too: `py -m r6_eval.generate_pairs r6_eval/fixtures/fixture_snapshot.json`.
+The fixture works too: `py -m models.ranking.generate_pairs models/ranking/fixtures/fixture_snapshot.json`.
 
 Flags: `--per-section 55` `--seed 7` `--holdout-frac 0.2` `--duplicates 10`
 `--out DIR` `--today YYYY-MM-DD` (pin for reproducibility with old snapshots).
 
-Writes to `r6_eval/output/`:
+Writes to `models/ranking/output/`:
 - `collector.html` — send this single file to the editor. Opens from disk, no
   internet needed. Click a card to pick the winner, optional one-word "why",
   Enter/Next to advance. Progress + Download CSV in the header. Answers
@@ -66,9 +66,9 @@ ride along invisibly from the manifest.
 ## 3. Grade a scorer
 
 ```
-py -m r6_eval.grade <answers.csv> <snapshot.json> --scorer baseline_date_sort
-py -m r6_eval.grade <answers.csv> <snapshot.json> --scorer llm_comparator
-py -m r6_eval.grade <answers.csv> <snapshot.json> --scorer pairwise_lr
+py -m models.ranking.grade <answers.csv> <snapshot.json> --scorer baseline_date_sort
+py -m models.ranking.grade <answers.csv> <snapshot.json> --scorer llm_comparator
+py -m models.ranking.grade <answers.csv> <snapshot.json> --scorer pairwise_lr
 ```
 
 Flags: `--today` `--seed` `--bootstrap N` `--json results.json`.
@@ -98,8 +98,8 @@ history later), `content_fit` (**stub → 0**, plug any
 ## Test helpers
 
 ```
-py -m r6_eval.make_fixture           # regenerate the fixture (dates relative to today)
-py -m r6_eval.simulate_answers r6_eval/output/pairs_manifest.json
+py -m models.ranking.make_fixture           # regenerate the fixture (dates relative to today)
+py -m models.ranking.simulate_answers models/ranking/output/pairs_manifest.json
 ```
 
 `simulate_answers` fakes an editor who prefers earlier events 80% of the time

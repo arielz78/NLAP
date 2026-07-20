@@ -5,6 +5,9 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-07-20
+- Reorganized the project's Python tooling around the problem each part solves rather than the release that produced it, consolidating two overlapping folders into one home with a single shared environment. Every affected script was re-run afterwards and reproduced its prior results exactly, confirming the move changed no behaviour.
+- Two latent defects surfaced during the work: an undeclared dependency that had been silently blocking an analysis script mid-run on every execution, and an ignore-rule pattern that would have quietly stopped tracking committed data files. Both fixed, with the second documented as a trap for future folder additions.
+- Hardened the internal working protocol so its guidance can no longer name a technique the project has already abandoned, and converted three deferred follow-ups into tracked issues rather than carrying them as prose a third session.
 - Finished and ran the vocabulary-transfer probe for the section classifier, including a diagnostic that catches when a metric is computed on an unrepresentative subset of a model rather than the whole thing — the initial reading looked marginal, but the full-model measurement showed the model's raw-text vocabulary coverage falls below the pre-set viability threshold.
 - Decided to drop the current text-vectorization approach and pursue a semantic-embedding representation instead, targeting the specific failure mode the probe identified rather than a general accuracy tuning pass.
 - Verified the final labeling batch and ran a before/after comparison across the two halves of the label set to confirm they can't be statistically pooled, given a large shift in editor rejection rate between them — both halves are now scored separately rather than combined.

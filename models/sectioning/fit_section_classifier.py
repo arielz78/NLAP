@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 history = json.loads((ROOT / "data/beehiiv/issue_history.json").read_text(encoding="utf-8"))
 
 row = []

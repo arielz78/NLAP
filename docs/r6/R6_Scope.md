@@ -3,7 +3,7 @@
 **Owner:** Ariel
 **Status:** DRAFT v1 (2026-07-07) — pending single critique pass (Decision_Log §58); issues open only after finalization.
 **Roadmap:** `docs/NLAP_PostMVP_Roadmap_v3.md` § Release 6 (+ 2026-06-04 Amendment, 2026-06-30 PRE-R6 Addendum) — frozen intent. This doc supersedes it for status and approach; read the roadmap only for original intent.
-**Read order:** this doc → `eval/README.md` (label legend) → Decision_Log §59/§60 → roadmap R6 (intent only).
+**Read order:** this doc → `models/ranking/click_join/README.md` (label legend) → Decision_Log §59/§60 → roadmap R6 (intent only).
 
 This doc is the single home of the R6 approach. It absorbs the findings deliberately batched from the 2026-07-04→07 planning sessions (the §28 zero-signal verdict superseded; venue signal forward-only) — they live here now, not piecemeal in the Decision_Log, per the batch-at-draft call (§58). The formula-vs-LLM decision (§3 below) gets its own Decision_Log entry at finalization; this doc will point to it.
 
@@ -18,7 +18,7 @@ Single source of truth for "where are we."
 **Phase:** scope drafted. Prerequisite data work complete; awaiting critique pass → finalize → open `r6` issues (§58: issues come from the finalized doc, not before).
 
 **Done (prereqs):**
-- Eval set frozen & committed: `eval/click_join_FROZEN_2026-07-07.{json,csv,txt}` — 924 records, 85.8% coverage, 7-day maturation cutoff (§59, §60). Legend: `eval/README.md`.
+- Eval set frozen & committed: `models/ranking/click_join/click_join_FROZEN_2026-07-07.{json,csv,txt}` — 924 records, 85.8% coverage, 7-day maturation cutoff (§59, §60). Legend: `models/ranking/click_join/README.md`.
 - `fetchBeehiivHistory.js` extension (roadmap W4 step 0a) — was already done; `issue_history.json` carries editor-final DisplayTitle/Description/CTA + slot across 77 issues.
 - Signal-inventory sweep complete, including the three previously-open checks (venue normalization, City variance, `Score_*` history) — §2 below.
 - Within-issue A/B statistical power quantified (2026-07-07 session) — §4. Resolves the "check power before betting on it" open item: at ~13k subs only large selection effects are ever provable; swap-rate is the only fully-powered instrument we own.
@@ -52,7 +52,7 @@ Single source of truth for "where are we."
 
 **R6 = imitation.** It replaces "sort by earliest date" with a scorer that replicates the **editor's picks and order**. A *perfect* R6 leaves clicks roughly **flat** — the payoff is automation (no manual triage of a ~1,900-candidate pool), consistency (same judgment every week, no fatigue), and a **scored substrate** that everything later (R7, #87, client #2) builds on. It is a pool sorter, not an auto-decision maker: both R3 auto-allocation and the editor's curation view consume the same `Score_Final` ranking, and the editor keeps override (§29).
 
-**R6 imitates the editor's order, not the click order.** The frozen click set is a **floor/sanity check** — does R6's output positively correlate with real clicks? — not the target. The two orders are measurably different: the editor's own slot gradient is only 0.60→0.43 across slots 1–5 (`eval/README.md` §7), i.e. the editor loosely tracks clicks, so a faithful imitation reproduces that *imperfect* gradient. A scorer that matched clicks perfectly would already be beating the editor — which is **#87**, explicitly out of R6. Do not collapse "match the editor" and "match clicks" anywhere downstream of this doc.
+**R6 imitates the editor's order, not the click order.** The frozen click set is a **floor/sanity check** — does R6's output positively correlate with real clicks? — not the target. The two orders are measurably different: the editor's own slot gradient is only 0.60→0.43 across slots 1–5 (`models/ranking/click_join/README.md` §7), i.e. the editor loosely tracks clicks, so a faithful imitation reproduces that *imperfect* gradient. A scorer that matched clicks perfectly would already be beating the editor — which is **#87**, explicitly out of R6. Do not collapse "match the editor" and "match clicks" anywhere downstream of this doc.
 
 Two sharpenings from the 2026-07-07 planning session, because the collapse is seductive:
 - **An imitator and an optimizer read the same variables; they differ in the target.** Same features (title words, venue, source), different label (editor's choice vs clicks) — the same feature can carry opposite weights under the two targets. "Similar inputs" does not make them the same build.

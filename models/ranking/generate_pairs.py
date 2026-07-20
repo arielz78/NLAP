@@ -2,11 +2,11 @@
 HTML collector + a pairs manifest.
 
 Usage:
-  python -m r6_eval.generate_pairs <snapshot.json> [--out DIR]
+  python -m models.ranking.generate_pairs <snapshot.json> [--out DIR]
       [--per-section 55] [--seed 7] [--holdout-frac 0.2] [--duplicates 10]
       [--today YYYY-MM-DD]
 
-Outputs (in --out, default r6_eval/output/):
+Outputs (in --out, default models/ranking/output/):
   pairs_manifest.json  full pair definitions + generation provenance
   collector.html       self-contained collector page for the editor
 """
@@ -141,7 +141,7 @@ def order_and_duplicate(base_pairs, config, rng):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("snapshot", help="Candidates snapshot JSON")
-    ap.add_argument("--out", default=os.path.join("r6_eval", "output"))
+    ap.add_argument("--out", default=os.path.join("models", "ranking", "output"))
     ap.add_argument("--per-section", type=int, default=None)
     ap.add_argument("--seed", type=int, default=None)
     ap.add_argument("--holdout-frac", type=float, default=None)

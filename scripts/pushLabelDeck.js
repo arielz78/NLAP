@@ -1,7 +1,7 @@
 /**
  * One-off: push the R7 editor labelling deck into Airtable.
  *
- * Source : eval/deck/editor_deck_2026-07-18.json  (written by eval/classifier2give2editor.py)
+ * Source : models/sectioning/deck/editor_deck_2026-07-18.json  (written by models/sectioning/classifier2give2editor.py)
  * Target : "R7 Label Deck (2026-07-18)" — a STANDALONE table. It is NOT pipeline data.
  *          Nothing reads from it automatically; never join it to Candidates/IssueItems.
  *
@@ -21,7 +21,7 @@ async function main() {
   if (!process.env.AIRTABLE_API_KEY) throw new Error("AIRTABLE_API_KEY is not set");
   if (!BASE_ID) throw new Error("AIRTABLE_BASE_ID is not set");
 
-  const src = path.join(__dirname, "../eval/deck/editor_deck_2026-07-18.json");
+  const src = path.join(__dirname, "../models/sectioning/deck/editor_deck_2026-07-18.json");
   const rows = JSON.parse(fs.readFileSync(src, "utf8"));
   console.log(`loaded ${rows.length} rows from ${path.basename(src)}`);
 

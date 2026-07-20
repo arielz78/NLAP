@@ -18,7 +18,7 @@ const OUT = __dirname;
 const KEEP = new Set(["For Families", "For Couples", "For Golden Age Readers"]); // 3-class; Local Aroma excluded (separate intake)
 
 // ---- published (labeled) titles from beehiiv issue history ----
-const hist = JSON.parse(fs.readFileSync(path.join(__dirname, "../../data/beehiiv/issue_history.json"), "utf8"));
+const hist = JSON.parse(fs.readFileSync(path.join(__dirname, "../../../data/beehiiv/issue_history.json"), "utf8"));
 const published = [];
 for (const iss of hist) {
   for (const e of (iss.events || [])) {
@@ -29,7 +29,7 @@ for (const iss of hist) {
 }
 
 // ---- raw candidate events (union across all snapshots, deduped by title) ----
-const snapDir = path.join(__dirname, "../../data/tracking/snapshots");
+const snapDir = path.join(__dirname, "../../../data/tracking/snapshots");
 const files = fs.readdirSync(snapDir).filter(f => f.startsWith("candidates_")).sort(); // chronological
 const catsToStr = c => (Array.isArray(c) ? c.join(", ") : (c || "").toString()).trim();
 const events = new Map(); // title -> {desc, cats, url}; later snapshots refresh non-empty fields

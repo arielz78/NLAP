@@ -7,7 +7,7 @@ baseline_date_sort should land visibly above 50%), answers duplicates
 consistently with the original 90% of the time.
 
 Usage:
-  python -m r6_eval.simulate_answers <pairs_manifest.json> [--out CSV] [--seed 7]
+  python -m models.ranking.simulate_answers <pairs_manifest.json> [--out CSV] [--seed 7]
 """
 
 import argparse
@@ -52,7 +52,7 @@ def simulate(manifest, seed):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("manifest")
-    ap.add_argument("--out", default=os.path.join("r6_eval", "output",
+    ap.add_argument("--out", default=os.path.join("models", "ranking", "output",
                                                   "answers_simulated.csv"))
     ap.add_argument("--seed", type=int, default=7)
     args = ap.parse_args(argv)

@@ -1,7 +1,7 @@
 """Grade a candidate scorer against the editor's answered pairs CSV.
 
 Usage:
-  python -m r6_eval.grade <pairs.csv> <snapshot.json> --scorer baseline_date_sort
+  python -m models.ranking.grade <pairs.csv> <snapshot.json> --scorer baseline_date_sort
       [--today YYYY-MM-DD] [--seed 7] [--bootstrap 2000] [--json results.json]
 
 Reports, per section and overall:

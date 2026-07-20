@@ -8,7 +8,7 @@ number, since the train slice is deliberately hard and biased low.
   GATE slice  (representative)      -> honest accuracy estimate on raw events
   TRAIN slice (uncertainty-sampled) -> maximum learning per label
 
-Run:  r6_eval/.venv/Scripts/python.exe eval/classifier2give2editor.py
+Run:  models/.venv/Scripts/python.exe models/sectioning/classifier2give2editor.py
 """
 import sys
 sys.stdout.reconfigure(encoding="utf-8")   # Windows console is cp1252 -> chokes on em-dashes
@@ -35,7 +35,7 @@ N_BLIND = 35         # CAP on vocabulary-blind events inside the train slice
 N_DUPES = 35         # unannounced repeats -> editor self-consistency
 DAY = 200            # rows per sitting; pair members are split across sittings
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 
 # ============================================================
 # PART 1 — TRAIN on issue_history.json, the ONLY labelled source.
@@ -61,7 +61,7 @@ print("mean CV accuracy:", round(float(np.mean(cross_val_score(clf, X, labels, c
 # ============================================================
 # PART 2 — FILTER junk, then PREDICT on the raw pool.
 # ============================================================
-events = json.loads((ROOT / "eval/probe_b/raw_candidate_events.json").read_text(encoding="utf-8"))
+events = json.loads((ROOT / "models/sectioning/corpora/raw_candidate_events.json").read_text(encoding="utf-8"))
 
 # Criteria come from R2's LLM prompt (B2B / professional development / career fair /
 # real-estate seminar), NOT R2's keyword list -- that was dead code (`isBusinessy`
@@ -258,7 +258,7 @@ print("dupe gap   : min", min(gaps), "rows | pairs in same sitting:",
 # ============================================================
 # PART 5 — EXPORT.
 # ============================================================
-out = ROOT / "eval" / "deck"; out.mkdir(exist_ok=True)
+out = ROOT / "models" / "sectioning" / "deck"; out.mkdir(exist_ok=True)
 
 # Batches are sized so the editor commits in increasing increments: a 50-row pilot
 # he can sanity-check and return, then the two real sittings. Verified: no duplicate
