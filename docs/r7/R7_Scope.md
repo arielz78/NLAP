@@ -125,6 +125,13 @@ stopping here rather than adding more before the baseline says what's needed)*
 - Offline train in Python/sklearn → versioned artifact → score in Node, no model server.
 - Abstain on low confidence is load-bearing.
 - Portability = per-client config + retrain per client.
+  - **Strengthened by the embeddings switch (2026-07-21) — and this argument is invisible to the CV
+    number.** The stack is a **frozen generic embedder + a small per-client trained head**, so client #2
+    (Mississauga) needs *their own labels and nothing else*. TF-IDF would have required a newly fitted
+    vectorizer per client — a client-specific vocabulary, IDF vector, and feature space, i.e. a
+    re-engineered feature pipeline rather than a retrain. Worth recording because it is a reason to
+    prefer embeddings that has nothing to do with accuracy, and it therefore survives even a tie at
+    §3 W6 step 1.
 
 **Blind-pass catches (07-09 — in scope regardless of architecture):**
 - **⚠️ Self-reinforcing `NoSection` drift (the real silent/live risk).** A wrong *section* is
@@ -138,6 +145,16 @@ stopping here rather than adding more before the baseline says what's needed)*
   to suggest-only until retrained.
 
 **Post-build go/no-go gate (proposed 07-09 — confirm at Step 5):**
+
+> **⚠️ Metric shape flagged 2026-07-21 — resolve when the thresholds are written.** This gate is
+> accuracy-shaped ("≥85% top-1"), but the roadmap mandates the opposite emphasis: *"headline metric:
+> per-segment recall, not overall accuracy... report a confusion matrix + per-segment
+> precision/recall/F1"* (R7-W6 step 5). Overall accuracy hides a silently-ignored class; per-class
+> recall is what exposes it. The "no class < 75%" clause is already half of this — the fix is making
+> the per-class number the headline rather than a side condition. Three independent sources converged
+> on this (the roadmap, a 07-21 cross-model check, and the diffuse-confusion finding). **Also note the
+> gate below predates the 07-19 two-stage redefinition** and now applies over *includable* events only.
+
 - ≥ 85% top-1 on the **unseen-title, raw-text** temporal test set, **no class < 75%**.
 - ≥ 92% accuracy inside the auto-accept band at ≥ 80% coverage.
 - Live-shaped check: one real cycle's candidates, hand-label ~150 stratified predictions
@@ -218,7 +235,15 @@ That is the whole handoff — §61: *"R6 only needs the classifier offline to se
    ⚠️ Do **not** implement `max_prob < threshold → None`: margin measures *section ambiguity*, not
    *includability*, and the 07-19 two-stage decision exists precisely because one threshold cannot do
    both jobs.
-3. **Pick the representation.**
+3. **Pick the representation.** Sweep **`C`** here, not before — a small grid inside *each* arm,
+   reporting best-of-each. Holding `C=4.0` fixed compares TF-IDF at its setting against embeddings at
+   TF-IDF's setting, which stacks the deck: `C` penalises coefficient size, and the same number lands
+   differently on 2,692 sparse features than on 1,536 dense ones. Worth knowing before trusting it —
+   **`C=4.0` may never have been tuned for this task at all**; it arrived via
+   `build_ambiguous_sections.py`, written for the client boundary probe and adopted as the reference
+   config. If it was never swept, 77% is not TF-IDF's best either, and the whole comparison has been
+   anchored to an arbitrary number. (Deferred to this step deliberately on 07-21 — it is a two-second
+   switch and does not block the ceiling read at step 1.)
 4. **Calibration check on the winner, then set the abstention threshold — in that order.**
    `predict_proba` returning numbers that sum to 1 is arithmetic, not honesty; calibration asks whether
    0.80 means right-80%-of-the-time. Specific reason to suspect ours: **`class_weight="balanced"`
