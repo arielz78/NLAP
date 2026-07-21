@@ -1,0 +1,10 @@
+{
+  "model": "text-embedding-3-large",
+  "n_rows": 1126,
+  "n_dims": 3072,
+  "corpus_sha256": "23dc6cb9e6bfae1fe63840d61f965c43638f0257392f41fdc9c1b21fccfe5dfe",
+  "total_tokens": 26414,
+  "cost_usd": 0.003434,
+  "embedded_at": "2026-07-21T10:26:36",
+  "text_recipe": "displayTitle + ' ' + (description or '')"
+}

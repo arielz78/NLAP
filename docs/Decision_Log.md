@@ -1751,3 +1751,35 @@ The R5 reusability audit (standing gate, `R5_Scope.md`) found the newsletter con
 **Why LLM fallback stays open.** R2's LLM classification wasn't good in production, but that's evidence about one implementation, not the method — never examined for why. Ruling it out now would over-read a single data point.
 
 **Also found, not yet acted on:** the confident band (margin>0.5) covers only ~18–24% of a representative sample, well short of the ≥70% auto-coverage the original hybrid design assumed — a real input to how big an embeddings win needs to be before it's worth shipping.
+
+---
+
+## 68. R7 Embedding Provider — OpenAI API (`text-embedding-3-small` primary, `-large` as agreement check); Chosen on Serve-Time Compatibility, Not Cost (2026-07-21)
+
+**Decision:** R7's embeddings come from OpenAI's API — `text-embedding-3-small` (1,536-dim) as the primary representation, `text-embedding-3-large` (3,072-dim) embedded alongside it as an agreement check rather than a competitor. Local open-weight embeddings (sentence-transformers) were considered and rejected for v1. Both corpora are cached to disk with a SHA-256 of the input text; `models/sectioning/embed_corpus.py` is the one entry point.
+
+**Why the API and not local.** §1 settles the serve path as *"offline train in Python → versioned artifact → score in Node, no model server."* A TF-IDF vectorizer survives that trivially — it is a vocabulary list and a weight per word, reimplementable in ~30 lines of JS. An embedding model cannot be: producing a vector requires running the network, so a local model forces either a long-running Python service Node calls over HTTP, or reopening a settled architecture decision. The API is the same architecture with someone else operating it. This sharpens §3 Step 4's 07-16 softening, which correctly noted API embeddings *"add no new dependency kind"* — the build path already calls an LLM API every issue.
+
+**Why cost decided nothing.** Measured, not assumed: 26,414 billing tokens for the full 1,126-row corpus — **$0.000528** on `-small`, $0.003434 on `-large`, $0.00396 for both. Projected forward, an LLM-only classification path costs ~$2.49/yr against ~$1.95/yr for the hybrid — a **$0.54/yr** difference requiring ~180× current volume to reach $100/yr. Where two options are both effectively free, the dollar column must not decide; the visible cost is negligible and the invisible ones (operational surface, a component that can be *down* rather than merely broken) are not. This pipeline currently has zero always-on components.
+
+**The residual cost, accepted knowingly.** The fit is now coupled to a third-party model's lifetime — provider deprecation means re-embed and retrain — and raw event text leaves the machine (acceptable: the events are public listings). Mitigated by caching, so a live dependency becomes a one-time cost, and by the manifest, so any re-embed is verifiable against the original corpus hash.
+
+**Why `-large` is an agreement check, not a contender.** The interesting result is not which wins. Two representations of very different width landing inside fold noise (~±2–3 pts at n=1,126) is the strongest available evidence that **77% was the task's ceiling rather than TF-IDF's** — the question §3 Step 3's voided horse-race was actually asking. A win for `-large` would instead say the representation still had room.
+
+**Unexpected second use.** The same 1,126 cached vectors are a retrieval index: nearest-neighbour lookup against them is cosine similarity in numpy, no API call and no new infrastructure. That makes dynamic few-shot example selection ("RAG") nearly free if the LLM fallback ever needs it, and makes k-NN available as a zero-cost baseline. Noted, not built.
+
+---
+
+## 69. R7 Transfer Measurement — Train on Edited, Score the Raw Deck; Replaces Probe B's Vocabulary Instrument, Which Embeddings Make Unrunnable (2026-07-21)
+
+**Decision:** R7's transfer question — does a classifier trained on edited published text work on raw scraped candidates — is answered by training on the 1,126 published events and scoring the 400 editor-labeled raw deck rows directly. This replaces the Probe B vocabulary-overlap instrument. Read as **per-class recall plus confusion plus margin bands**, scored pre/post-call separately, never a single pooled accuracy number.
+
+**Why the old instrument is gone, not merely superseded.** Gates 1 and 2 are both token-presence tests: Gate 1 asks whether the model's top-weighted *words* appear in the raw pool, Gate 2 counts events containing zero *learned tokens*. Embeddings have no vocabulary and no tokens to look up — every event yields a vector whether or not its words were ever seen. The gates are not merely uninformative here, they are undefined. Killing TF-IDF therefore also destroyed the only transfer instrument R7 had, and until this decision the embeddings track had **no way to detect train/serve degradation at all** — a worse position than TF-IDF was in, since TF-IDF at least had a gate that could kill it.
+
+**Why the replacement is better than what it replaces.** Probe B measured transfer *by proxy* — do the words survive? The deck test measures it *directly* — does accuracy survive? Same question, one fewer inferential step, and it works for any representation rather than only sparse ones. It also runs on data already collected: 400 raw candidates labeled by the editor, with an answer key.
+
+**Why the measurement is needed at all — the gap, quantified.** Published events average **105 characters**, raw candidates **340**. The published `description` is the editor's finished newsletter blurb; the raw `desc` is scraped venue prose. These are different genres, and only one exists at serve time. CV is published-vs-published and is structurally blind to the difference, so a strong CV number is not evidence of production performance.
+
+**Two constraints on how it is run.** (1) **No `max_prob < threshold → None` rule.** Margin measures *section ambiguity*, not *includability* — measured 07-19/07-20: thin text predicts junk rather than difficulty, and what breaks the confident band is junk entering it, not section confusion. A confidently-classified B2B conference is still not includable. §66's two-stage design exists precisely because one threshold cannot do both jobs; rebuilding it here would re-adopt the rejected design. (2) **The seam holds.** Batches 1–2 and batch 3 diverge 39.3% vs 57.3% on gate-slice None-rate; any train/test or threshold-tuning split must respect the batch boundary or it tunes on one instrument and tests on another.
+
+**Origin note:** proposed by ChatGPT during a 07-21 cross-model check, adopted after correcting the two points above. Recorded because the idea's source is not the point — it filled a hole opened by §67 that neither Ariel nor Claude had noticed for a full session.

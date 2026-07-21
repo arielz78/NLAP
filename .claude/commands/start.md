@@ -14,6 +14,16 @@ Establish current project state before we start work. Do this:
    original release intent, not where things stand now.
 4. Only if the recent log references unresolved historical context, check the
    relevant archived log in `logs/`.
+4b. **Scan `NA/Vaughan_Metrics_Log.md` for pending ⏳ captures.** Grep for `⏳` and
+   surface any whose trigger release is the active one or the next one — these are
+   "capture before X starts / before X cutover" baselines, and several are
+   **one-way doors**: the before-number stops existing once the release they gate
+   ships. Report them under **Windowed captures** in the briefing, with the trigger
+   and whether the window is still open.
+   *Why this exists:* the NeedsReview baseline was marked "capture before R7-W6
+   starts" and slipped the entire work package, because nothing in the workflow ever
+   opened the metrics log at a release boundary. Found 2026-07-21, weeks late.
+   Same trap is already loaded for R6 (3-issue rolling CTOR avg, "before R6 starts").
 5. **Surface the session's hands-on focus (learning heads-up).** From the
    "Learning Mode" section of `CLAUDE.md`, print the current release's hands-on
    reminder up top. This fires every build session so it is never silently
@@ -30,6 +40,7 @@ Then give me a tight briefing — no preamble:
 - **Where we left off:** what was done in the last session.
 - **Open items / next steps:** what was queued, ranked by what's most likely next.
 - **Anything mid-flight:** work that was started but not finished, or decisions left pending.
+- **Windowed captures:** pending ⏳ items from the metrics log (step 4b) whose window closes at the active or next release. Omit the section entirely if there are none.
 - **Current release focus:** which release (R5/R6/etc.) is active and what it needs.
 - **Your hands-on focus this session:** render the current release's reminder from the CLAUDE.md Learning Mode section.
 

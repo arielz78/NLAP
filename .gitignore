@@ -16,3 +16,10 @@ test_runs/
 .claude/skills/brief/
 .claude/skills/checkout/
 __pycache__/
+
+# Embedding matrices: ~21 MB of binary, regenerable in ~2 min for ~$0.004 via
+# models/sectioning/embed_corpus.py. The committed manifests carry the corpus
+# SHA-256, so reproducibility is verifiable without the blobs.
+# Path-anchored deliberately — a bare *.npy would match at any depth (same trap
+# as `data/` on line 6; see root README).
+/models/sectioning/corpora/*.npy

@@ -1,6 +1,13 @@
 # R7 Scope — Section Classifier (WORKING DRAFT — finalize at Next steps Step 5)
 
-> **Status (2026-07-16): pre-build checks phase.** Design capture (07-09) has been through four
+> **Status (2026-07-21): representation selection — pre-build checks COMPLETE.** TF-IDF killed by
+> Gate 1 (Decision_Log §67); embeddings are the primary path and both matrices are embedded. §3 now
+> carries the **W6 close sequence** (8 items) and the scope boundary: W6 delivers an offline classifier
+> to R6; **W7 deploy and the reject filter (#96) are deferred** per Decision_Log §61.
+> **Blocking everything: the accuracy bar and #98's coverage bar are unwritten** — Gate 3 is void and
+> has no replacement, so there is currently no pre-registered rule for "good enough."
+>
+> *(Superseded status, 2026-07-16: pre-build checks phase.)* Design capture (07-09) has been through four
 > working sessions; the doc is now ordered **current-truth-first**:
 > **§1 Settled** (don't re-litigate) → **§2 Open decisions** (#1–3) → **§3 Next steps + pre-registered
 > gates** (the live plan) → **§4 Parked leads** (unverified, re-derive before acting) → **§5 Frozen
@@ -159,9 +166,89 @@ raw file is unique.
 
 ---
 
-## §3 Next steps + pre-registered gates — REWRITTEN 2026-07-15 (supersedes the 2026-07-09 sequence)
+## §3 W6 close plan + pre-registered gates — REWRITTEN 2026-07-21 (supersedes the 2026-07-15 sequence)
 
-> **Why rewritten.** The old §4 said *"rebuild training set from raw titles (URL join)"* — **killed
+> **Why rewritten again (2026-07-21).** The 07-15 sequence has been overtaken by its own results:
+> Steps 1–2 are **done**, Gate 1 **fired and killed TF-IDF** (68.2% min-class coverage at the true
+> ceiling, below the 70% kill line — Decision_Log §67), and **Step 3's horse-race is therefore void** —
+> it was a rule for choosing between TF-IDF and embeddings, and one of the two is dead. Gate 3's
+> "+5 pts over 77% to switch representation" answers a question no longer being asked.
+> Leaving that in place is the **fourth instance this week** of prose naming something the code had
+> already abandoned (URL join 07-12, `coef_`-on-disk 07-16, the authorship block 07-20).
+> Old steps are marked **DONE / VOID** below rather than deleted — they are the record of how the
+> decision was reached. The live plan is the **W6 close sequence**.
+
+### Scope boundary — what W6 owes, and what it does not (Decision_Log §61)
+
+**W6 delivers an offline classifier good enough to section the fresh pool at high confidence.**
+That is the whole handoff — §61: *"R6 only needs the classifier offline to section a pool it reads."*
+
+**Deferred, deliberately, and not part of W6's close:**
+- **R7-W7** (deploy into live n8n/R2) — §61: deferring *"avoids wiring production around assumptions
+  R6's pair data may overturn."* Reinforced 07-21: the confident band measured **18–24%** (#98) against
+  the ≥70% the hybrid design assumed, so it is not yet known whether this classifier is worth deploying.
+  W7 also has **no consumer today** — R1 is manual, the editor is not yet using the Airtable views, and
+  the cost saving is ~$2/yr.
+- **The reject filter (#96)** — rides with W7. Step 7 sections the pool *high-confidence only*, so
+  abstention handles junk implicitly and R6 is not blocked by its absence. Folding a second model with
+  its own eval into W6 is how a package that should close this week becomes two.
+- **Frozen eval set + model versioning** — W7 items (roadmap R7-W7). The frozen set must exist
+  *before* the retraining trigger is armed, not before R6.
+
+### The W6 close sequence (live plan — 2026-07-21)
+
+> **BLOCKING step 1 — the two thresholds are still unwritten.** The accuracy bar and **#98's
+> confident-band coverage bar** must be recorded *before* any number is read. Gate 3 is void, so
+> there is currently **no pre-registered rule** for what makes embeddings good enough. This is the
+> same blocker that opened 07-21 and it survived the session. Ariel's call, ten minutes.
+> Note that accuracy and coverage are **different numbers**: a run can clear an accuracy bar at 83%
+> while the confident band stays at 20% — passing the model gate and failing the design.
+
+1. **CV on `-small` and `-large`** — the ceiling read. Both matrices are embedded and cached
+   (`corpora/embeddings_text-embedding-3-{small,large}.npy`, $0.004 total, 07-21). Read agreement, not
+   a winner: two representations of very different width (1,536 vs 3,072) landing within fold noise
+   (~±2–3 pts) is the strongest available evidence that **77% was the task's ceiling, not TF-IDF's**.
+2. **Transfer test — train on the 1,126 edited, score the 400 raw deck.** Three arms: TF-IDF /
+   small / large. This **replaces the dead transfer instrument**: Gates 1 and 2 are structurally
+   impossible on embeddings (no vocabulary, no tokens to look up), so transfer must be measured on
+   *outcomes* rather than by vocabulary proxy — which is a strictly better instrument than Probe B was.
+   Read **per-class recall + confusion + margin bands**, never a single accuracy number (roadmap:
+   *"headline metric: per-segment recall, not overall accuracy"*). **Score pre/post-call separately** —
+   the seam diverges 39.3% vs 57.3% and must not be pooled.
+   ⚠️ Do **not** implement `max_prob < threshold → None`: margin measures *section ambiguity*, not
+   *includability*, and the 07-19 two-stage decision exists precisely because one threshold cannot do
+   both jobs.
+3. **Pick the representation.**
+4. **Calibration check on the winner, then set the abstention threshold — in that order.**
+   `predict_proba` returning numbers that sum to 1 is arithmetic, not honesty; calibration asks whether
+   0.80 means right-80%-of-the-time. Specific reason to suspect ours: **`class_weight="balanced"`
+   deliberately reweights classes away from their true frequencies**, which helps minority recall and
+   harms probability calibration. The abstention threshold is meaningless until this is checked.
+   (Supersedes the roadmap's `CalibratedClassifierCV` instruction, which was scoped to LinearSVC
+   margins — but the *concern* survives the model-head change.)
+5. **`gpt-5.4-nano` few-shot on the same 400** — settles open decision #3. **Not scope creep:** the
+   roadmap already made this a deliverable with a pre-registered rule (line 457) — *"ship classifier if
+   it materially beats mini on per-segment recall, otherwise stay with mini."* Model names are stale
+   (written May, pre-5.4); the rule is not. Few-shot, not zero-shot — the classifier has seen 1,126
+   examples of the editor's taste and a zero-shot LLM has seen none, so zero-shot is not a fair
+   comparison in either direction. Run last: informational if embeddings clear the bar, decisive if not.
+6. **Section the fresh pool at high confidence** — the actual artifact R6 consumes. This is the
+   handoff, and W6 is not closed without it.
+7. **Windowed captures — do them at W6 close, not at W7.** Both have a hard deadline at W7 cutover,
+   which is now *after* R6: (a) **NeedsReview baseline** (metrics log ⏳, overdue since W6 *start*;
+   machine-set by R2, needs no editor participation, ~5 min); (b) **#83 gpt-4o cost baseline**
+   (instrument the node + run the ~1,100-record backlog). Doing them now precisely *because* the
+   deadline moved further away — a distant deadline plus nothing reading the metrics log is exactly
+   what caused the NeedsReview slip in the first place, and #83's backlog sample depletes as events
+   go stale.
+8. **Step 5 (declare the architecture settled) + the Decision_Log entry.** Logged when made, not
+   batched — see Step 5's 07-20 correction below.
+
+Then **R6** (old Step 7).
+
+---
+
+> **Why the 07-15 rewrite happened** (retained for the record). The old §4 said *"rebuild training set from raw titles (URL join)"* — **killed
 > 2026-07-12**, and it sat stale in the authoritative doc for three days. The old order
 > (review → critique → finalize → build) also assumed the design needed a once-over. It didn't:
 > every front-loaded decision has been overturned by the first data that touched it (URL join died,
@@ -179,6 +266,18 @@ to a ceiling argument and wrote no probe.
 > **Why pre-registered:** thresholds set after seeing the data get rationalized ("74% is basically
 > fine"). These are locked now so a marginal number can't argue its way past the gate. Results get
 > appended below as they land — never edited in.
+
+> **OUTCOMES (annotated 2026-07-21 — the gates themselves are unedited above/below):**
+> **Gate 1 — FIRED, kill.** 68.2% min-class weighted coverage read at the only unbiased N (full
+> 2,692-word vocabulary). Below the 70% kill line, for all three classes. **TF-IDF dropped**
+> (Decision_Log §67). The pre-registration did its job: an N=500 read gave a comfortable 81.9% and
+> would have been argued past, but N=500 holds only ~44–45% of any class's coefficient weight.
+> **Gate 2 — PASS**, 2.44% blindness vs the 20% kill line, 10× margin. Reproduced post-`models/` move.
+> **Gate 3 — VOID.** It was a rule for *choosing between* TF-IDF and embeddings; TF-IDF is dead, so
+> there is no race. **A replacement rule does not yet exist** — see the BLOCKING note in the W6
+> sequence below. Do not silently reuse ≥82%: it was calibrated against a live alternative.
+> **Gates 1 and 2 are also structurally unrunnable on embeddings** — both are token-presence
+> instruments and embeddings have no vocabulary. Transfer moves to the outcome test (W6 step 2).
 
 - **Probe corpora (corrects the 07-12/07-15 spec):** the existing fit trains on
   `displayTitle + " " + description` (`build_ambiguous_sections.py` — **descriptions are already in
@@ -208,7 +307,11 @@ to a ceiling argument and wrote no probe.
   (paraphrase-robustness under raw↔edited drift) is invisible to this race — it's published-vs-published,
   exact-token-friendly ground. Transfer is measured by Probe B and editor-150, not here.
 
-### Step 1 — Open `coef_` on the EXISTING fit (~10 min, resolves nothing alone; feeds Step 2)
+> **The 07-15 step sequence below is superseded by the W6 close plan above.** Steps 1–2 are **DONE**,
+> Step 3 is **VOID**, Steps 4–7 are folded into the new sequence. Retained unedited as the record of
+> how the representation decision was reached.
+
+### Step 1 — DONE (07-17) — Open `coef_` on the EXISTING fit (~10 min, resolves nothing alone; feeds Step 2)
 `models/sectioning/build_ambiguous_sections.py` **already trains the exact stack** (`TfidfVectorizer(ngram_range=(1,2),
 min_df=2, sublinear_tf=True, stop_words="english")` + `LogisticRegression(max_iter=2000, C=4.0,
 class_weight="balanced")`) that produced the 77%. **Its coefficients have been on disk since 2026-07-09
@@ -218,7 +321,7 @@ inventing a second one measures a different model than the 77% being validated.
 locked 3-class set — decide whether to re-fit 3-class before reading `coef_`, since Local Aroma
 vocabulary shapes the shared vectorizer.
 
-### Step 2 — Probe B (~10 lines, resolves #1) — *does TF-IDF survive production?*
+### Step 2 — DONE (07-19/07-20) — Probe B (~10 lines, resolves #1) — *does TF-IDF survive production?*
 Take Step 1's top-N words → check presence in the **serve-time corpora** (pre-registered gates
 above). Gates 1 (weighted coverage 85/70) and 2 (blindness >20% kill) are locked.
 **A fail kills TF-IDF outright and moots Step 3.**
@@ -227,7 +330,14 @@ Weighted-vs-unweighted is decided: weighted (Gate 1). **Config gotchas:** `ngram
 bigrams are features — `wine tasting` is one token, so the presence check must match bigrams, not
 just unigrams; `min_df=2` has already pruned the vocabulary.
 
-### Step 3 — Horse-race (most setup, resolves #1) — *whose ceiling is 77%?*
+### Step 3 — VOID (07-20) — Horse-race (most setup, resolves #1) — *whose ceiling is 77%?*
+**Voided by Gate 1's kill:** a horse-race needs two live horses. TF-IDF failed the pre-registered
+coverage gate, so embeddings became the *primary path*, not a challenger, and Gate 3's "+5 pts to
+switch representation" no longer describes a decision anyone is making. The **ceiling question it was
+really asking survives** and is now W6 step 1 — read `-small` against `-large` for agreement, since
+two representations of very different width hitting the same wall is the ceiling evidence the
+original race was after.
+
 Embeddings vs TF-IDF on the same 1,126 published titles, same CV. **Never been run — no representation
 other than TF-IDF has ever been tried.** Decision rule = Gate 3 above.
 
