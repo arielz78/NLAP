@@ -122,6 +122,28 @@ stopping here rather than adding more before the baseline says what's needed)*
 **Settled foundation from the 07-09 capture (validated by cold re-derivation):**
 - Trained supervised classifier on the editor's revealed placements (reject rules/R2; reject
   pure-LLM-primary).
+  > **⚠️ Basis corrected 2026-07-21 — only half of this was ever tested.** "Reject rules/R2" and
+  > "reject pure-LLM-primary" have been carried since 07-09 as one settled rejection. They are not
+  > equally supported. Reading `logs/R2_Debug_Log.md`: R2's documented failure was **Airtable's
+  > Update-record node wrapping output in `.fields`, so the LLM received `{id}` and no event data** —
+  > it was classifying events it could not see, and defaulted to the largest class at confidence 0.2.
+  > Post-fix: *"confidence values varied (0.5–1.0), segment distribution across all 5 categories,
+  > R2 functionally complete."* Compounding it, R2 was **rules-first** — keyword logic resolved
+  > records with no LLM call at all (an empty `LLM_Rationale` means keyword-matched), so a large share
+  > of "R2's sections" never touched a model. **R2's accuracy was never measured** (tracking was a
+  > carry-forward, never done). So R2 justifies rejecting *keyword rules*; it is uninformative about
+  > LLMs, having tested one with the data disconnected.
+  >
+  > **What does support the rejection — outside evidence, checked 07-21:** fine-tuned models beat
+  > zero-shot LLMs on tasks with predefined label sets and specific guidelines (*Text Classification
+  > in the LLM Era*, arXiv 2502.11830); penalised logistic regression **on embeddings** matches or
+  > exceeds GPT-4 and widens with sample size (arXiv 2408.03414, also a Bank of England working
+  > paper); and **fine-tuning performance saturates around ~200 labels** — this corpus is 1,126, so it
+  > sits well past the crossover, not near it. Zero-shot wins on sentiment; it loses on domain-specific
+  > taxonomies. The conclusion holds; the reasoning behind it was wrong and is now replaced.
+  > The remaining live question is **not** classifier-vs-LLM but how much the classifier handles
+  > before the fallback takes over — open decision #3, settled by §3 W6 step 5 against the roadmap's
+  > pre-registered rule.
 - Offline train in Python/sklearn → versioned artifact → score in Node, no model server.
 - Abstain on low confidence is load-bearing.
 - Portability = per-client config + retrain per client.
@@ -235,6 +257,12 @@ That is the whole handoff — §61: *"R6 only needs the classifier offline to se
    ⚠️ Do **not** implement `max_prob < threshold → None`: margin measures *section ambiguity*, not
    *includability*, and the 07-19 two-stage decision exists precisely because one threshold cannot do
    both jobs.
+   **If transfer degrades here, read the raw text before reaching for another representation.**
+   Published events average 105 chars, raw candidates 340 — if the extra ~235 are venue boilerplate,
+   URLs and formatting noise rather than real event context, *cleaning* buys more than any
+   representation change, and swapping models again would be optimising the wrong layer. Known junk
+   already observed (07-16): raw HTML from mcmichael, non-English rows, AllEvents `fitness` as an
+   apparent default tag. Ad-hoc diagnostic, ~30 stratified rows, only if the number says to.
 3. **Pick the representation.** Sweep **`C`** here, not before — a small grid inside *each* arm,
    reporting best-of-each. Holding `C=4.0` fixed compares TF-IDF at its setting against embeddings at
    TF-IDF's setting, which stacks the deck: `C` penalises coefficient size, and the same number lands
@@ -298,6 +326,12 @@ to a ceiling argument and wrote no probe.
 > (Decision_Log §67). The pre-registration did its job: an N=500 read gave a comfortable 81.9% and
 > would have been argued past, but N=500 holds only ~44–45% of any class's coefficient weight.
 > **Gate 2 — PASS**, 2.44% blindness vs the 20% kill line, 10× margin. Reproduced post-`models/` move.
+> **The one-line statement of why TF-IDF died** (from `probe_b_coverage.py`, surfaced 07-21): the raw
+> candidate pool contains **45,652** distinct tokens; the model has slots for **2,692**. It can
+> perceive **5.9% of production vocabulary.** Gate 2 still passed because the 6% it knows are the
+> *common* words and nearly every event contains a few — a head/tail distribution where TF-IDF
+> captures the head and the entire tail is invisible. That is the gap embeddings close: there is no
+> such thing as an out-of-vocabulary event when every string produces a vector.
 > **Gate 3 — VOID.** It was a rule for *choosing between* TF-IDF and embeddings; TF-IDF is dead, so
 > there is no race. **A replacement rule does not yet exist** — see the BLOCKING note in the W6
 > sequence below. Do not silently reuse ≥82%: it was calibrated against a live alternative.
