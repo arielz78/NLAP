@@ -231,8 +231,14 @@ That is the whole handoff — §61: *"R6 only needs the classifier offline to se
 - **The reject filter (#96)** — rides with W7. Step 7 sections the pool *high-confidence only*, so
   abstention handles junk implicitly and R6 is not blocked by its absence. Folding a second model with
   its own eval into W6 is how a package that should close this week becomes two.
-- **Frozen eval set + model versioning** — W7 items (roadmap R7-W7). The frozen set must exist
-  *before* the retraining trigger is armed, not before R6.
+- **Frozen eval set + model versioning** — W7 items (roadmap R7-W7), tracked as **#101**. The frozen
+  set must exist *before* the retraining trigger is armed, not before R6.
+- **The roadmap's "open a GitHub issue for each W6/W7 work item before any build work"** — knowingly
+  deviated from during W6, justified at the top of this doc: W6 has been a sequential investigation
+  where each result decides the next, not a checklist of independent tasks. **That justification
+  expires at W7.** W7 is the build phase — deploy the classifier, wire the reject filter, stand up
+  versioning — which is a real backlog of separable tasks, the same shape R5's source-integration
+  phase was. **Open the per-item issues at W7 open, not partway through it.**
 
 ### The W6 close sequence (live plan — 2026-07-21)
 
