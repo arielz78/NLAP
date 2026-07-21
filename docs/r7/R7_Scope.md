@@ -4,8 +4,10 @@
 > Gate 1 (Decision_Log §67); embeddings are the primary path and both matrices are embedded. §3 now
 > carries the **W6 close sequence** (8 items) and the scope boundary: W6 delivers an offline classifier
 > to R6; **W7 deploy and the reject filter (#96) are deferred** per Decision_Log §61.
-> **Blocking everything: the accuracy bar and #98's coverage bar are unwritten** — Gate 3 is void and
-> has no replacement, so there is currently no pre-registered rule for "good enough."
+> ~~**Blocking everything: the accuracy bar and #98's coverage bar are unwritten**~~ **RESOLVED
+> (2026-07-21 session 2): W6 bars pre-registered before any fit ran** — recall ≥75% min-class
+> (gate slice, includable only), coverage ≥60% (#98), cats-ablation switch rule, and the exit
+> table. See §3 results log. **The fit and CV are now unblocked — Ariel's keyboard.**
 >
 > *(Superseded status, 2026-07-16: pre-build checks phase.)* Design capture (07-09) has been through four
 > working sessions; the doc is now ordered **current-truth-first**:
@@ -565,6 +567,59 @@ diagnostic (`models/sectioning/probe_b_coverage.py` Block 4) alongside coverage:
   given Gate 1's kill). Embeddings still need their own validation, not an assumed win — see Next
   session notes.
 
+**2026-07-21 (session 2) — Deck fully labeled; editor self-consistency measured; deck-text ≠ serve-text seam found; SourceCategories coverage read.**
+- **Deck labeling complete: 396/400** (4 pilot blanks). Table also gained a 26-row batch 4
+  "Criteria Walkthrough" (rows 401–426, 25 labeled) — excluded from gate/train scoring by design
+  (`score_deck_pre_post_call.py` skips rows > 400). Full-deck labels (incl. b4): None 227 /
+  Families 80 / Couples 58 / Golden 56. Gate slice (185): None 89 / F 46 / C 28 / G 21.
+  Flags barely used (4 Either, 8 Unsure).
+- **Editor self-consistency (35 unannounced repeat pairs): 27/35 = 77% overall.** Decomposition is
+  the finding: **6 of 8 disagreements are section↔None flips; only 2 are section↔section.**
+  Conditional on both-included: **16/18 = 89%**. → The unstable boundary is include/exclude, not
+  section placement — direct evidence for the 07-19 gate redefinition (section-only over includable
+  events), and the measurement ceiling for the recall gate: **X must sit below ~89%** (n=18, CI
+  ~67–97%). Supersedes the n=15 ~80% boundary-re-ruling as the ceiling anchor.
+- **Seam found: deck `Details` ≠ serve-time text.** Deck text = `clean(DescriptionRaw)` (HTML-strip,
+  boilerplate-drop, 300-char cap; `classifier2give2editor.py`); SourceCategories never shown to the
+  editor. Labels survive (they're event-level ground truth), but **the transfer test must embed the
+  serve-time recipe, not the deck text** — invariant: score-time recipe == serve-time recipe.
+  Consequence: §1's feature-set-v1 line (07-13) partially rotted — it predates the URL-join kill;
+  needs a date-stamped amendment.
+- **Label→raw-text join verified: 400/400 deck rows match
+  `models/sectioning/corpora/raw_candidate_events.json` by URL**, which holds the pre-`clean()`
+  description + cats — so the transfer test can embed any candidate recipe from local data alone.
+- **SourceCategories coverage (measured, not assumed): 43% of raw pool (775/1,805), 48% of deck
+  rows; not AllEvents-only** (AllEvents 85%, markham.bibliocommons 62%, eventbrite.ca 21%, long
+  tail ~0%). Junk is a minority; values are semantically class-relevant (`kids`, `Summer Camp`,
+  `Party or Social Gathering`, `Newcomer`). → **cats ablation approved as part of the transfer
+  test** (with vs without appended cats, same labels, ~$0.001), switch rule to be pre-registered
+  with the thresholds.
+- **Still unwritten, blocking everything: X (min per-class recall, gate slice, includable only),
+  #98's coverage bar, and the ablation switch rule.** Ariel's calls.
+  *(→ Resolved same session — see the pre-registered W6 bars entry below.)*
+
+**2026-07-21 (session 2, later) — PRE-REGISTERED W6 BARS (set before any embeddings fit, CV, or
+transfer number was seen; Ariel's sign-off; derivation walked in-session, recorded in
+Execution_Log 07-21 session 2). These unblock the entire W6 sequence.**
+- **Recall bar X: min per-class recall ≥ 75% on the gate slice, includable events only.** Report
+  raw fractions, not just percentages (Golden n=21 → 16/21; 1 event ≈ 5 pts of recall). Anchors:
+  ceiling = editor self-consistency ~89% on both-included repeats (n=18, CI ~67–97); floor = 70%
+  is already the Gate 1 kill-line convention; precedent = old (void) Gate 3's 75% floor.
+- **Coverage bar (#98): ≥ 60% of includable gate events committed** (margin ≥ τ). Denominator is
+  **includable events only** — abstaining on None-labeled events is correct behavior and excluded.
+  Reference points: TF-IDF's 18–24% confident band = known-too-thin; 50% was the derivation's
+  midpoint, raised to 60 on Ariel's editorial anchor (the system's purpose is killing the sorting
+  work, not assisting with half of it; a floor below "clear majority handled" isn't worth wiring
+  into R6). Bar is a floor, not a forecast — the model ships at whatever coverage it achieves ≥ 60.
+- **Cats ablation switch rule: with-cats replaces without-cats only if min per-class recall
+  improves by ≥ 10 points (≥ 2 events) with no class degrading.** Forced by resolution arithmetic
+  (per-class n = 20–46 → noise ≈ ±2 events); anything finer reads static.
+- **Exit table (the bars' meaning):** both pass → ship to R6 (Step 7). One fails → one iteration
+  cycle (recipe/τ), re-run once. Both fail, or a second miss → embeddings don't transfer; reopen
+  the LLM-primary path (§2 #3, under the roadmap's May decision rule).
+- **CV on the 1,126 = sanity check only.** No bar attaches to it; it cannot pass or fail the
+  release. It picks small-vs-large and confirms the representation isn't broken, nothing more.
+
 ---
 
 ## §4 Parked leads (from the 2026-07-15 staging session — UNVERIFIED unless noted)
@@ -599,6 +654,26 @@ diagnostic (`models/sectioning/probe_b_coverage.py` Block 4) alongside coverage:
   liking three audiences equally. **Do not read 376/383/367 as signal about the incoming pool's real
   mix**, which remains unmeasured (and matters for the 400-label draw — see `meetings/2026-07-16.md`
   Item 1's sampling caveat).
+### New leads — 2026-07-21 (session 2; reject-stage design, spans #96/#94 — W7, not W6)
+
+- **The None bucket is three populations, and the reject architecture should layer to match.**
+  (Design reasoning, not measured — but the stratum-3 instability IS measured: 6 of 8 editor
+  self-disagreements on the repeat pairs were section↔None flips; §3 results log 07-21.)
+  **(1) Rule-violating junk** (B2B/non-GTA/out-of-window/civic) → deterministic filters, partly
+  already built (window/expiry formulas, R2 reject rules). **(2) Semantic misfits** (real events,
+  no section fit) → the only stratum where a *learned* None makes sense. **(3) Includable-but-
+  outranked** → not learnable from text (label depends on that week's pool); R6's scarcity/flex
+  problem. Layered: filters → classifier (3-class + abstention, or 4th class for stratum 2 only) →
+  R6 allocator. Stratum 3 is why the editor's None labels flicker — a trained 4-class None absorbs
+  that noise into the weights; a threshold keeps it out.
+- **"Version A" (ext. suggestion, ChatGPT 07-21): train a real None class on the deck's raw None
+  labels.** Newly feasible — 227 raw None labels exist, 125 in the deck's *train* slice, which was
+  designed for training use. Counter-evidence from the same session: include/exclude is the editor's
+  unstable boundary (~23% flip rate on repeats), so a 4th class trains on flickering ground truth.
+  If ever tried: None training examples must be **post-filter** None (train on the full bucket and
+  the model learns junk the filters would catch + stratum-3 noise). W7 candidate for #96; blocked
+  on #94's scope call. Same external review's headline recommendation (match the 1,126 edited
+  events to raw originals, transfer labels) is the §1 URL-join kill — already dead, stays dead.
 - **CORRECTED: Facebook did not "drift away" — it is PAUSED pending go-live.** Facebook was the top
   published source 2025-09 → 2026-05, then stops. This is **not** a train/serve distribution shift:
   `Execution_Log` says the client stopped uploading *because the pipeline isn't live*, and FB is manual

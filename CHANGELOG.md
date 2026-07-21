@@ -5,6 +5,9 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-07-21
+- Audited the completed 400-event editor labeling deck and measured editor self-consistency on unannounced repeat pairs — isolating include/exclude as the unstable boundary rather than section placement.
+- Pre-registered the classifier's evaluation gates (minimum per-class recall, abstention coverage, and an ablation switch rule) before any model results existed, locking the evaluation against post-hoc threshold tuning.
+- Caught and closed a train/serve text mismatch: the evaluation now scores the exact text recipe production will feed the model, with source-category inclusion settled by a pre-registered ablation rather than assumption.
 - Built and cached semantic-embedding representations of the full labelled training corpus using two model sizes, with per-model caching keyed to a content hash so re-runs are free and reproducibility is verifiable without storing the large binary matrices in the repository.
 - Checked the project's chosen approach against the published research rather than relying on internal assumption, and reversed an earlier claim in the process: the literature supports training a classifier on the collected labels over prompting a general-purpose model, and the corpus is well past the point where that advantage takes hold.
 - Audited the frozen roadmap and metrics documents against the active release plan for the first time since the release opened — surfacing a decision rule written months ago that nobody was applying, a measurement baseline that had quietly gone uncaptured, a missing regression benchmark, and a tracked task scheduled to occur after its own deadline (now corrected).
