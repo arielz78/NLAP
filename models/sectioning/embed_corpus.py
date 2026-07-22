@@ -8,7 +8,7 @@ Why cache: embeddings cost money and network time. This script embeds once, writ
 matrix to disk, and short-circuits on every later run unless the input text actually
 changed (detected by hash, not by timestamp). Re-running it is free and instant.
 
-Text construction is COPIED from fit_section_classifier.py deliberately, not imported:
+Text construction is COPIED from fit_tfidf.py deliberately, not imported:
 the two must stay identical or the comparison is measuring different corpora. If you
 change the text recipe in one, change it in both.
 
@@ -59,7 +59,7 @@ def paths_for(model):
 
 
 def build_corpus():
-    """Rebuild texts/labels exactly as fit_section_classifier.py does.
+    """Rebuild texts/labels exactly as fit_tfidf.py does.
 
     Two lists appended together in one pass, so texts[i] is always described by
     labels[i]. That alignment contract is what the whole fit rests on.

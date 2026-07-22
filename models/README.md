@@ -39,13 +39,23 @@ machine.
 
 ## sectioning/ — R7 section classifier
 
-| File | What it does |
-|---|---|
-| `fit_section_classifier.py` | The 3-class fit (Families/Couples/Golden) on published history. The reference model. |
-| `probe_b_coverage.py` | Probe B — Gate 1 weighted token coverage + Gate 2 event blindness. |
-| `score_deck_pre_post_call.py` | Scores the editor's 400-row label deck, pre- vs post-walkthrough-call slices. |
-| `classifier2give2editor.py` | Built the 400-row deck: filter → predict → stratify → export. |
-| `build_ambiguous_sections.py` | Pulls the tightest Couples/Golden boundary cases for editor re-ruling. |
+**How the pieces connect:** every script is a **producer** (writes a file to disk)
+or a **consumer** (reads one). They never call each other live — they hand off
+through files, so you can run one, inspect its output, then run the next. The
+JS/Python split follows the same seam: **JS stages data** (pipeline-shaped, must
+match production's serve-time recipe), **Python does the modeling**; the JSON files
+in `corpora/` are the language-neutral handoff between them.
+
+| File | What it does | Reads → Writes |
+|---|---|---|
+| `embed_corpus.py` | Embeds the 3-class corpus with OpenAI (run once, cached). | `issue_history.json` → `corpora/*.npy` + `embeddings_labels.json` |
+| `cv_embeddings.py` | The 3-class embeddings CV + fit (the live representation path). | `corpora/*.npy` → prints |
+| `fit_tfidf.py` | The 3-class TF-IDF fit on published history. Killed by Gate 1 (Decision_Log §67); kept as the frozen baseline. | `issue_history.json` → in-memory `vec`, `clf` (+ prints) |
+| `probe_b_coverage.py` | Probe B — Gate 1 weighted token coverage + Gate 2 event blindness. | imports `fit_tfidf` + `corpora/raw_candidate_events.json` → prints |
+| `classifier2give2editor.py` | Built the 400-row deck: filter → predict → stratify → export. | candidates + `fit_tfidf` → `deck/editor_deck_*` |
+| `build_ambiguous_sections.py` | Pulls the tightest Couples/Golden boundary cases for editor re-ruling. | `issue_history.json` → `rulings/*` |
+| `score_deck_pre_post_call.py` | Scores the editor's 400-row label deck, pre- vs post-walkthrough-call slices. | `deck/` labels → prints |
+| `corpora/stage_corpora.js` | (JS) Assembles the raw-candidate corpus — dedupes snapshots, builds serve-time text. | `issue_history.json` + snapshots → `corpora/raw_candidate_*.json` |
 
 | Folder | Contents |
 |---|---|

@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-22
+- Renamed the section-classifier scripts to name their underlying representation (word-frequency vs. semantic-embedding), keeping the module organized by the problem it solves, and rewrote its README as a producer/consumer data-flow map so the pipeline can be navigated at a glance.
+- Built an interactive 2D visualization of the embedding space, colored by editor section, as a sanity check on class separability ahead of formal evaluation.
+
 ## 2026-07-21
 - Audited the completed 400-event editor labeling deck and measured editor self-consistency on unannounced repeat pairs — isolating include/exclude as the unstable boundary rather than section placement.
 - Pre-registered the classifier's evaluation gates (minimum per-class recall, abstention coverage, and an ablation switch rule) before any model results existed, locking the evaluation against post-hoc threshold tuning.

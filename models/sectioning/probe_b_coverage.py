@@ -55,7 +55,7 @@ import numpy as np
 # to bottom — so this line executes the whole fit (~seconds) and then hands us
 # its variables: vec (the trained TfidfVectorizer) and clf (the trained
 # LogisticRegression). All the 1506/1126/CV output at startup is that import.
-from fit_section_classifier import vec, clf
+from fit_tfidf import vec, clf
 
 # relative paths resolve from wherever Python was LAUNCHED (the working dir),
 # not from where this .py file lives — so we anchor to __file__ (this script's

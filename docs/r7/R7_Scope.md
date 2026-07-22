@@ -454,7 +454,7 @@ once predictions exist. Rough target was 07-18–21 (see 07-12 planning); Probe 
 
 ### Results log (append-only — never edit prior results)
 
-**2026-07-17 — Step 1 DONE: the fit exists (`models/sectioning/fit_section_classifier.py`) and `coef_` is read.**
+**2026-07-17 — Step 1 DONE: the fit exists (`models/sectioning/fit_tfidf.py`, renamed from `fit_section_classifier.py` 07-22) and `coef_` is read.**
 - **CV = 78.68% (cv=5, 3-class, title+desc, locked config C=4.0).** Reproduces the 07-09 3-class
   baseline (77.0%) within tuning noise. Training accuracy 98.57% (the overfitting gap, on 2692
   features / 1126 rows).
