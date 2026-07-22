@@ -7,6 +7,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 ## 2026-07-22
 - Renamed the section-classifier scripts to name their underlying representation (word-frequency vs. semantic-embedding), keeping the module organized by the problem it solves, and rewrote its README as a producer/consumer data-flow map so the pipeline can be navigated at a glance.
 - Built an interactive 2D visualization of the embedding space, colored by editor section, as a sanity check on class separability ahead of formal evaluation.
+- Ran cross-validated evaluation across two embedding representations; selected the stronger on per-class recall and retired the weaker.
+- Audited the text-processing pipeline to confirm training and serve-time inputs match ahead of the transfer evaluation.
 
 ## 2026-07-21
 - Audited the completed 400-event editor labeling deck and measured editor self-consistency on unannounced repeat pairs — isolating include/exclude as the unstable boundary rather than section placement.

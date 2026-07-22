@@ -7,7 +7,8 @@
 > ~~**Blocking everything: the accuracy bar and #98's coverage bar are unwritten**~~ **RESOLVED
 > (2026-07-21 session 2): W6 bars pre-registered before any fit ran** — recall ≥75% min-class
 > (gate slice, includable only), coverage ≥60% (#98), cats-ablation switch rule, and the exit
-> table. See §3 results log. **The fit and CV are now unblocked — Ariel's keyboard.**
+> table. See §3 results log. **CV DONE (2026-07-22): large picked, small eliminated (§71; min-class
+> recall 0.774 vs 0.747) — next is the transfer test (`transfer_test.py`), the real gate.**
 >
 > *(Superseded status, 2026-07-16: pre-build checks phase.)* Design capture (07-09) has been through four
 > working sessions; the doc is now ordered **current-truth-first**:
@@ -76,6 +77,10 @@ calibration tripwire), not design-now.
 
 **Feature set v1 locked.** *(07-13, measured on candidates_2026-07-12 snapshot, n=2,533; deliberately
 stopping here rather than adding more before the baseline says what's needed)*
+> **Amendment (2026-07-22):** this v1 line predates the URL-join kill and the embeddings switch and is
+> partially rotted — **SourceCategories is *excluded* from the W6 embedded text by default** (re-entering
+> only via the pre-registered cats ablation), and **source-prior/deterministic routing were killed** by
+> the editor's rulings (Decision_Log §63). Read the current recipe from **Decision_Log §70**, not this line.
 - **v1 = title + description + SourceCategories + source-prior (targeted).**
 - **Description dropout ~47%**, not the earlier 42%: "all candidates" (32.6% missing) is diluted by
   ~2,300 older enriched records (1.4% missing); the **production-relevant post-R5 pool (added ≥
@@ -255,6 +260,11 @@ That is the whole handoff — §61: *"R6 only needs the classifier offline to se
    (`corpora/embeddings_text-embedding-3-{small,large}.npy`, $0.004 total, 07-21). Read agreement, not
    a winner: two representations of very different width (1,536 vs 3,072) landing within fold noise
    (~±2–3 pts) is the strongest available evidence that **77% was the task's ceiling, not TF-IDF's**.
+   > **RESULT (2026-07-22) — W6 go/no-go, internal CV screen.** Representation = **`text-embedding-3-large`**.
+   > 5-fold min-class recall (Golden the weak class both): **large 0.774 ≥ 0.75 → survives to the transfer
+   > gate; small 0.747 → eliminated** (under the bar on the easier internal measure; transfer only degrades).
+   > This is a *screen*, not the release gate — the §3 ≥0.75 bar is over the gate slice. Large's +2.4pp margin
+   > is thin, so the transfer test stays load-bearing. Decision_Log §71 (inverts §68). `cv_embeddings.py`.
 2. **Transfer test — train on the 1,126 edited, score the 400 raw deck.** Three arms: TF-IDF /
    small / large. This **replaces the dead transfer instrument**: Gates 1 and 2 are structurally
    impossible on embeddings (no vocabulary, no tokens to look up), so transfer must be measured on
