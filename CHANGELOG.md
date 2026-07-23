@@ -9,6 +9,9 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 - Built an interactive 2D visualization of the embedding space, colored by editor section, as a sanity check on class separability ahead of formal evaluation.
 - Ran cross-validated evaluation across two embedding representations; selected the stronger on per-class recall and retired the weaker.
 - Audited the text-processing pipeline to confirm training and serve-time inputs match ahead of the transfer evaluation.
+- Captured a baseline measurement of the human-review queue before an upcoming pipeline change closes that measurement window permanently, and found the queue is dominated by events that an automated filter should have removed rather than genuinely ambiguous ones — redirecting effort from classifier tuning toward a missing filtering stage.
+- Triaged an external technical review of the classifier against the project's own pre-registered decisions, establishing that its headline recommendation rested on a mismodelled version of the system, then commissioned an independent expert review — prompted according to the model vendor's official guidance rather than intuition — to pressure-test the plan from a second angle.
+- Consolidated the surviving proposals into a ranked improvement backlog anchored to the three measured constraints that actually limit accuracy, scheduled against the upcoming transfer evaluation, and added a reusable internal command for briefing specialist review agents.
 
 ## 2026-07-21
 - Audited the completed 400-event editor labeling deck and measured editor self-consistency on unannounced repeat pairs — isolating include/exclude as the unstable boundary rather than section placement.

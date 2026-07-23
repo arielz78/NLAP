@@ -750,8 +750,24 @@ Execution_Log 07-21 session 2). These unblock the entire W6 sequence.**
 - **"Usable" vs merely-present description** — the ~47% is a *structural* blank check; a semantic
   contentful-vs-fluff check would push true-missing somewhat higher. Deferred.
 - **Fable "what other features?" question** — at the Step 6 critique, ask which features to add
-  given the field inventory and which are traps. **First research how to prompt Fable** — anecdotally
-  general prompts beat sharp/loaded ones; test both framings. Don't research now.
+  given the field inventory and which are traps. ~~First research how to prompt Fable — anecdotally
+  general prompts beat sharp/loaded ones.~~ **RESOLVED 2026-07-22:** researched against Anthropic's
+  official Fable-5 prompting guide. The anecdote is half-right — the axis is *goal-oriented vs
+  method-prescriptive*, not broad-vs-narrow: give it **max context + clear objective + acceptance
+  criteria** and let it choose the method; step-by-step checklists degrade it. (Gotchas: no
+  "echo your reasoning" instruction — trips a refusal→Opus fallback; add an autonomy clause for
+  background agents.) Distilled into the `/spinup` command.
+
+### New lead — 2026-07-22 (post-transfer-test improvement backlog)
+
+- **Weak-class (Golden) improvement backlog → [issue #105](https://github.com/arielz78/NLAP/issues/105).**
+  Ranked menu of levers to lift weak-class precision/recall, from the Fable staff-ML review of the
+  external classification doc. **Revisit trigger:** immediately after `transfer_test.py` produces the
+  gate-slice number — the test routes us to the right lever (label noise / genre gap / too-few
+  boundary examples), it does not gate improvement. Top levers: fold the deck's train-slice labels
+  into training (raw-genre text + ~35 unseen Golden), serve-time text normalization, a CV-only head
+  sweep. Full ranking + the three binding constraints live in the issue. *(This is the post-test menu;
+  the pre-run pre-registration items stay in §3, Ariel's authored-core.)*
 
 ---
 
