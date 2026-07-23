@@ -8,6 +8,7 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 - Built the offline transfer-test harness for the section classifier: joins editor labels to raw candidate text, constructs the production serve-time text recipe, caches embeddings for two feature variants, and locks in pre-registered evaluation gates before any result is seen.
 - Designed the classifier's abstention rule — when to decline to place an event rather than guess — from a two-signal read of prediction confidence and margin.
 - Diagnostic analysis found that model confidence separates in-scope from out-of-scope events only on a representative sample (not on the deliberately hard one), showing the abstention threshold must be calibrated on a different dataset than first planned.
+- Refined the studio's public case-study page: rewrote the build write-up for factual accuracy, added a metrics summary band, realigned the service offer, and verified the mobile layout before deploying.
 
 ## 2026-07-22
 - Renamed the section-classifier scripts to name their underlying representation (word-frequency vs. semantic-embedding), keeping the module organized by the problem it solves, and rewrote its README as a producer/consumer data-flow map so the pipeline can be navigated at a glance.

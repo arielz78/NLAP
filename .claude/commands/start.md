@@ -52,15 +52,21 @@ Keep it short. This is orientation, not a full report. Flag anything that looks 
 
 **Tools available this session:**
 
-Slash commands (project):
-- `/start` — session orientation (this command)
-- `/wrap` — end-of-session log update
+Slash commands (project — this repo only):
+- `/start` — session orientation (this command). NLAP build-session bootstrap: logs + active Scope snapshot.
+- `/wrap` — end-of-session log update. Fires when repo/NLAP state changed.
 - `/recap` — active-recall session recap (quizzes you on logic/sequence first, then fills gaps)
-- `/gutcheck [target]` — pressure-test a decision or plan as a staff engineer
-- `/pro-approach [task]` — how a pro would frame a problem before any plan exists
+- `/brief` — morning brief: today's schedule + the full open board. Read-only renderer, day-level, any day. **Not interchangeable with `/start`.**
+- `/checkout` — end-of-day ledger for non-NLAP summer work (SQL, retrieval, networking, learning). Never holds NLAP build content.
 
-Slash commands (global):
-- `/review <PR#>` — review a GitHub PR by number (e.g. `/review 34`). Reads the diff and returns structured findings — bugs, correctness issues, cleanup. Use every time Nate submits work instead of reading the diff manually.
+Slash commands (global — all projects):
+- `/gutcheck [target]` — pressure-test a decision or plan as a staff engineer. Audits an artifact that already exists.
+- `/pro-approach [task]` — how a pro would frame a problem before any plan exists. Generative, pre-artifact. **Not interchangeable with `/gutcheck`.**
+- `/spinup [task]` — package a task for a subagent: gate (delegate at all? which model?) → you author the judgment core → Claude assembles the scaffold → lint for model traps (esp. Fable). Use before any delegation that isn't trivial.
+- `/learn [topic]` — tutoring skill for building understanding of a concept, not getting a task done.
+
+Slash commands (built-in — not ours):
+- `/code-review` — review your working diff / current branch. Returns structured findings: bugs, correctness issues, cleanup. Use at the R6/R7 PR-review bar.
 
 Subagents — two types, use them:
 - **Foreground subagent** — spins up a separate Claude instance for a specific task, you wait for the result. Use for research or exploration you need before continuing. Say "use an Explore agent to find X" or "use a Plan agent to design Y."

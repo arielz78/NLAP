@@ -408,3 +408,38 @@ Pipeline and infrastructure work logged separately in `Execution_Log.md`.
 * Founder photos + credibility lines
 
 ---
+
+**2026-07-23 — Case study + home page: accuracy pass, offer realignment, hero stat band**
+**Log updated: 2026-07-23 5:16 PM**
+
+Big website session, resumed after the May gap — triggered by needing a credible case-study link to send a referral lead (White Shark / Roger). Reworked `Nlap.tsx` (the `/nlap` case study) and `Home.tsx`. Committed + pushed to `bwna-web` master (`e7f32d2`), cleanly rebased over Nathan's concurrent favicon/cache commits. Vercel auto-deploy expected; if it's off, Nate triggers from the dashboard.
+
+**Accuracy pass (both pages) — the core of the session**
+
+* **Killed the overclaims.** `/nlap` Result was "<10 min / running weekly since launch" → **"1 review / the editor checks and sends"** (the after-time was never measured; "since launch" implied the system ran the newsletter for its whole life). Home mirrored: "4 hrs → 10 min" → "4 hrs → one review"; "under 10 min / running every week since launch" → "a single editor review / Live for Vaughan Brief".
+* **Fixed the one claim the data contradicts.** Decision "AI handles the ambiguous ones / only sees ambiguous events" → **"a model should learn your taste"** (trained on the editor's own past decisions). The old line implied the LLM handles a minority; measured load is 86% LLM-touched, and that only flips once R7's classifier ships. New framing is honest *and* surfaces the classifier as a differentiator.
+* **Removed every em dash** across both pages (9 spots, 5 of them pre-dating this session) — reads as an AI tell.
+* **Stat number is 1,100+, not 1,500.** "Editorial decisions it learns from" = the 3-class training set (1,126), NOT the 1,506 total labeled — the 380 Local Aroma events are dropped and the model never learns from them, so "1,500 it learns from" would overstate.
+
+**Offer realignment (strategy fix, not cosmetic)**
+
+* **"First build free" / "Get a free build" → "Free workflow map" everywhere** (Home hero, offer section, contact line; `/nlap` CTA). A public *free build* offer contradicted the plan to steer leads into a *paid* engagement — a free build is weeks of unpaid work per lead. The free offer is now a call + a diagnostic map; the build is quoted from there.
+
+**Design**
+
+* **Hero 4-stat proof band added to `/nlap`** (13,000 subscribers · 10+ sources · 1,100+ decisions · 24× faster data collection, 14 min → 35 s), replacing the descriptive lede paragraph. Mobile-responsive 4→2→1 column.
+* **Key Decisions**: adopted the 4-card principle-framed version (was 3, pain-framed) + a descriptive section heading; claim headline standardized from `T.h3` (24–34px, "massive") through the `T` scale to a settled 19px.
+* **Serif-italic accents tried and reverted** — looked worse; the brand reserves italic for the testimonial quote, so plain sans is the on-brand choice.
+* **Transfer thesis pulled into the hero** ("the newsletter is only the example, the shape is the product"); **CTA de-targeted** back to general (removed the field-service example list — White Shark targeting belongs in the outreach text, not the reusable page).
+* **Kept**: Nathan as co-founder (confirmed still a co-founder); the Vaughan Brief testimonial (confirmed a real, cleared quote).
+
+**Verification**
+
+* `npm run build` (tsc + vite) clean, twice. **Mobile checked on a real device** via `--host` network preview — stat band collapses 4→1 col, decision cards stack, pipeline goes vertical, no horizontal overflow.
+
+**Not done / handed off**
+
+* **Deploy confirmation** — pushed to master; whether Vercel auto-deploys or Nate must trigger is unconfirmed (no Vercel access, and the SPA can't be verified by fetch). Ariel verifies the live page, loops in Nate if stale.
+* **The Roger outreach itself** (the reason for the session) — the give-first text is written and waits on the live page; **not sent**. Networking layer → `/checkout` + `contacts.md`, not this log.
+
+---
