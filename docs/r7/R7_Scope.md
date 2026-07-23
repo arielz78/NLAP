@@ -9,6 +9,11 @@
 > (gate slice, includable only), coverage ≥60% (#98), cats-ablation switch rule, and the exit
 > table. See §3 results log. **CV DONE (2026-07-22): large picked, small eliminated (§71; min-class
 > recall 0.774 vs 0.747) — next is the transfer test (`transfer_test.py`), the real gate.**
+> **Transfer test IN PROGRESS (2026-07-23):** plumbing + 4 blind pins + fit + recall block done;
+> abstention design reasoned (§64 two-signal read: max-prob→None, margin→flex; low-τ choice). **OPEN —
+> τ-calibration fork:** the pinned "calibrate on the train slice" is degenerate (it is uncertainty-sampled
+> → None/includable max-prob don't separate); the gate slice separates modestly; leaning to calibrate on
+> the 1,126 corpus via CV. Coverage / ablation / verdict unrun.
 >
 > *(Superseded status, 2026-07-16: pre-build checks phase.)* Design capture (07-09) has been through four
 > working sessions; the doc is now ordered **current-truth-first**:

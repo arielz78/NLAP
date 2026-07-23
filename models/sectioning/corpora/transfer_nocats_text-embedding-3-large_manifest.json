@@ -1,0 +1,9 @@
+{
+  "model": "text-embedding-3-large",
+  "tag": "nocats",
+  "n": 416,
+  "sha256": "48ac08dce9a38315458a58427e967ea14bbd3a3c9470407646594a3d0a943212",
+  "tokens": 15481,
+  "cost_usd": 0.002013,
+  "embedded_at": "2026-07-23T15:50:36"
+}

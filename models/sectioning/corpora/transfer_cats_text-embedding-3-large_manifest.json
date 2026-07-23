@@ -1,0 +1,9 @@
+{
+  "model": "text-embedding-3-large",
+  "tag": "cats",
+  "n": 416,
+  "sha256": "9d552c7eb8ba6d2dec2996a3daa934e90a6ebdf644b1d885958c661689dcbded",
+  "tokens": 16992,
+  "cost_usd": 0.002209,
+  "embedded_at": "2026-07-23T15:50:40"
+}
