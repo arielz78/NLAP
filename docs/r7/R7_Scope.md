@@ -774,6 +774,85 @@ Execution_Log 07-21 session 2). These unblock the entire W6 sequence.**
   sweep. Full ranking + the three binding constraints live in the issue. *(This is the post-test menu;
   the pre-run pre-registration items stay in §3, Ariel's authored-core.)*
 
+### Problem inventory — 2026-07-23 (the live-demo session + client meeting)
+
+> **NEXT SESSION STARTS HERE.** This block was written fast at the end of a long session — it is a
+> capture, not a cleaned section. **Next session's step 1 is to reconcile it with §1/§3 and prune the
+> doc**, THEN decide next moves. Do not act on a lever before the reconcile; the whole point of the
+> session was that we kept reaching for fixes before the problem was named.
+>
+> **What produced it:** a 30-event live classifier demo (filtered draw, batch 5 in `R7 Label Deck`,
+> rows 427–456) run for the editor. He ruled 29/30 cold; the readout + his comments decomposed the
+> failures by *stage*. The one-line finding: **the classifier owns ~3 of ~19 failures. Filter owns
+> ~12, ranking ~4.** Most of what looks like a classification problem is not one — the same read as
+> #94/#96 and the 07-19 call, now measured a third way.
+
+**The demo readout (n=29, NOT a gate number — the 184-event transfer test is the gate):**
+- Includables correct:incorrect = **12:5 (71%)**, argmax, same rule as the transfer test → consistent
+  with the 0.61 there. Golden weak again (2/5).
+- **"Correct" has four defensible denominators** — 71% (section-correct includables) / 81% (flex not a
+  miss) / 64% (correct AND he'd publish) / 31% (usable slots out of 29 in). The 30-point spread IS the
+  finding: it's ambiguous *because* "None" is undefined (see root #3 below).
+- **None rate 41%** (12/29) on *filtered* input — replicates 48.5% (400) / 50% (walkthrough) / stated
+  50–75%. **The model committed on 9 of 12 Nones** (margin ≥0.15 — would not have abstained). Abstention
+  is NOT doing filter work.
+
+**Every problem caught this release, by severity (= how much it distorts decisions). "Home = none"
+means it has nowhere it's currently tracked — that's the actionable column.**
+
+| # | Problem | Evidence | Home |
+|---|---|---|---|
+| **ROOT** | | | |
+| 1 | Training population ≠ serving population (published/edited/post-selection vs raw/scraped/pre-selection) | URL join 69 matches · 0.774→0.61 · 41% None | **none** |
+| 2 | Training corpus has **zero negatives** — every one of the 1,126 already won → cannot learn rejection | structural | **none** |
+| **DEFINITIONAL (blocks measurement)** | | | |
+| 3 | **"None" conflates fails-criteria vs fine-but-outranked** — flagged 07-19 consequence #1, 12 days unactioned | 07-19 doc | 07-19 only |
+| 4 | "Correct" has 4 denominators (71/81/64/31%) — downstream of #3 | tonight | **none** |
+| **ARCHITECTURE / SCOPE** | | | |
+| 5 | No content-reject stage exists | 12/29 · 76+/226 · `isBusinessy` dead | #94/#96 |
+| 6 | R5 solved supply, created a filtering problem — no release absorbs the cost (pool ~100 → ~1,800) | Eventbrite 93%→6% | **none** |
+| 7 | R7-before-R6 ordering may be wrong — filter+ranking own ~80% of failures | tonight's decomposition | Decision_Log §61 |
+| 8 | W6 scope builds the classifier; the value sits in stages it excludes | same | §3 |
+| **DATA / INGESTION** | | | |
+| 9 | **`CostRaw` 14% fill, cut as dead** — the price rule stated 4× (free→senior/paid→couples) is invisible | R6_Scope:76 · 402/406/413 · 451 | **none** |
+| 10 | `DescriptionRaw` 61% fill; ~47% title-only on some sources | 07-16 recap | uncosted |
+| 11 | Structured signals unused (`SourceCategories` 42%, source slug) | §1 open call | #75 |
+| **MEASUREMENT INTEGRITY** | | | |
+| 12 | **Deck exempted aggregators from the venue cap → gate slice is aggregator-shifted, "representative" is softer than claimed; 0.61 measured on that sample** | `classifier2give2editor.py` MAX_VENUE | **#106** (opened 07-24) |
+| 13 | τ-calibration pin degenerate (train slice is uncertainty-sampled) | 07-23 diagnostic | §3, fork open |
+| 14 | Coverage bar unrun → exit table can't be routed | one bar of two | §3 |
+| 15 | Golden n=18–21, ~5 pts/event | #105 | #105 |
+| 16 | Editor ~89% self-consistent → hard label ceiling | n=18 | #105 |
+| **MODEL** | | | |
+| 17 | **Min-class recall 0.61 vs 0.75 bar — FAIL** | transfer test | §3 |
+| 18 | Golden weak in CV and transfer | 0.774 / 0.61 / 2-of-5 | #105 |
+| 19 | **Abstention not doing filter work — committed on 9 of 12 Nones** | tonight | **none — new** |
+| **PROCESS DEBT** | | | |
+| 20 | Pairwise dates overdue 2 meetings — blocks R6 (does NOT need the classifier; draws off his 194 labels) | 07-16 Item 2 | meeting doc |
+| 21 | Notebook blurbs, 9 sessions owed | — | Ariel |
+| 22 | Two files unreviewed from the 07-20 override | — | #99 |
+
+**The finding underneath: 8 of 22 have no home** (1, 2, 4, 6, 9, 12, 19) — and they are the
+*structural* ones. They're homeless *because* nothing in the workflow was watching for them, the same
+failure mode that slipped the NeedsReview baseline a whole work package.
+
+**The through-line (three things, not thirty):** one root (population gap, #1/#2), one undefined term
+(None, #3 — unblocks #4 and defines what the filter is *for*), one sampling artifact (aggregator cap,
+#12 — makes the headline number softer than it reads). **#3 is the cheapest high-value move on the
+board** — an hour of definition, not a build, and nothing measures cleanly until it's settled.
+
+**Client-generated inputs from the meeting (his ideas, not yet evaluated):**
+- **Source prioritization / tiering** — fill from trusted sources first, fall back to others only if
+  short. He clarified: sources where *classification is easier*, i.e. source→trust (untested), NOT
+  source→section (settled "varies" 07-16, dead). Testable tonight-cheap: **None-rate per source on the
+  416 labels** (they carry URLs). Concentrated junk → tiering works; distributed → it doesn't.
+- **His Eventbrite observation is partly right** — the deck over-weights aggregators (venue cap #12),
+  on top of their base rate. Ties to #12.
+- **He proposed a 4th "None" class.** Held, not adopted: None is 6 mechanisms not a class (§64), and a
+  4th class shares the softmax so it suppresses exactly the look-like-real-events junk (443 Baby &
+  Books) you most want caught. A separate binary include/reject stage is the better shape (#96). This
+  is now client-requested — a conversation to have, not a call to make silently either way.
+
 ---
 
 ## §5 Frozen background — the 2026-07-09 capture (historical; §1 wins where they disagree)

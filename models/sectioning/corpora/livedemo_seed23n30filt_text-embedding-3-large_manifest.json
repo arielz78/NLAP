@@ -1,0 +1,7 @@
+{
+  "model": "text-embedding-3-large",
+  "n": 30,
+  "sha256": "79833f23c39bd1034b4848aec2f17e6cda7768e9115833d4d602cc1a8c1c2ed4",
+  "tokens": 978,
+  "cost_usd": 0.000127
+}

@@ -1,0 +1,302 @@
+[
+ {
+  "n": 1,
+  "title": "How to Laser Engrave a Custom Cutting Board with Epilog",
+  "desc": "Audience: Adult, Youth Learn how to prepare a design for laser engraving and engrave a small charcuterie board. Participants are asked to prepare 2-3 design ideas prior to the class. Further instruction and image criteria will be provided closer to the session date. Please check your spam folders pr",
+  "url": "https://markham.bibliocommons.com/events/6a0630d9703c33630027a3d4",
+  "model_pred": "Couples",
+  "confidence": 0.389,
+  "margin": 0.024,
+  "editor_ruling": ""
+ },
+ {
+  "n": 2,
+  "title": "STEM Workshop: Python Programming for Grades 5-7",
+  "desc": "Audience: Children, Youth In this workshop, students will learn about computer science fundamentals, software design and variables. Using the engineering design process, they will acquire the skills to code their very own Python program! Discover the wonderful world of software engineering through t",
+  "url": "https://markham.bibliocommons.com/events/69dd089dad384e40edbaa2aa",
+  "model_pred": "Families",
+  "confidence": 0.752,
+  "margin": 0.546,
+  "editor_ruling": ""
+ },
+ {
+  "n": 3,
+  "title": "Living Well Fair 2026",
+  "desc": "Discover ways to live your best life at any age.",
+  "url": "https://www.eventbrite.ca/e/living-well-fair-2026-tickets-1987131826786",
+  "model_pred": "Golden",
+  "confidence": 0.727,
+  "margin": 0.552,
+  "editor_ruling": ""
+ },
+ {
+  "n": 4,
+  "title": "The Menopause Playbook: Couples Edition",
+  "desc": "A guided couples workshop to better understand perimenopause, menopause, communication, support & connection through this transition.About this EventSo… this is menopause.But what does that actually mean for bo",
+  "url": "https://allevents.in/vaughan/the-menopause-playbook-couples-edition/100001989403128310",
+  "model_pred": "Couples",
+  "confidence": 0.605,
+  "margin": 0.241,
+  "editor_ruling": ""
+ },
+ {
+  "n": 5,
+  "title": "The Mom Market is at THE ASADO LATIN FOOD FESTIVAL!!",
+  "desc": "",
+  "url": "https://allevents.in/vaughan/the-mom-market-is-at-the-asado-latin-food-festival/200030307838239",
+  "model_pred": "Families",
+  "confidence": 0.637,
+  "margin": 0.307,
+  "editor_ruling": ""
+ },
+ {
+  "n": 6,
+  "title": "Chess Meet Up for Children (drop-in)",
+  "desc": "Audience: Children Is your child interested in learning how to play chess? CITL is a non-profit student-run organization that aims to promote chess across Canada to players of all skill levels. Through our bi-weekly chess program, CITL provides an environment where children can learn how to play che",
+  "url": "https://markham.bibliocommons.com/events/688d2e36b354fd28002ed4f9",
+  "model_pred": "Families",
+  "confidence": 0.865,
+  "margin": 0.758,
+  "editor_ruling": ""
+ },
+ {
+  "n": 7,
+  "title": "Understanding Your Digestive Health: Gallbladder and Upper GI",
+  "desc": "Live webinar: How serious symptoms may have a hidden cause in your foregut and gallbladder",
+  "url": "https://www.eventbrite.com/e/understanding-your-digestive-health-gallbladder-and-upper-gi-tickets-1988422104040",
+  "model_pred": "Golden",
+  "confidence": 0.758,
+  "margin": 0.58,
+  "editor_ruling": ""
+ },
+ {
+  "n": 8,
+  "title": "Game Night",
+  "desc": "AllEvents Categories: fitness AllEvents Organizer: Reid Events AllEvents Score: 35.830002",
+  "url": "https://allevents.in/markham/game-night/100001991294634857",
+  "model_pred": "Couples",
+  "confidence": 0.482,
+  "margin": 0.184,
+  "editor_ruling": ""
+ },
+ {
+  "n": 9,
+  "title": "Bitchfest",
+  "desc": "",
+  "url": "https://allevents.in/vaughan/bitchfest/100001992024183958",
+  "model_pred": "Couples",
+  "confidence": 0.619,
+  "margin": 0.364,
+  "editor_ruling": ""
+ },
+ {
+  "n": 10,
+  "title": "2026 Strawberry Season Opener",
+  "desc": "AllEvents Categories: holiday AllEvents Organizer: Organics Family Farm AllEvents Score: 49.549999",
+  "url": "https://allevents.in/markham/2026-strawberry-season-opener/200030214782531",
+  "model_pred": "Families",
+  "confidence": 0.836,
+  "margin": 0.727,
+  "editor_ruling": ""
+ },
+ {
+  "n": 11,
+  "title": "The Power of Bioenergetic Medicine - Seqex ICR Presentation",
+  "desc": "Join us for a deep-dive training event with Dr. Alberto Garoli, where we explore the cutting edge of ICR Therapy",
+  "url": "https://www.eventbrite.ca/e/the-power-of-bioenergetic-medicine-seqex-icr-presentation-tickets-1987454934209",
+  "model_pred": "Golden",
+  "confidence": 0.578,
+  "margin": 0.194,
+  "editor_ruling": ""
+ },
+ {
+  "n": 12,
+  "title": "Discover Financial Aid @ Markham Campus (in-person)",
+  "desc": "",
+  "url": "https://allevents.in/markham/discover-financial-aid-markham-campus-in-person/100001991725782431",
+  "model_pred": "Families",
+  "confidence": 0.407,
+  "margin": 0.019,
+  "editor_ruling": ""
+ },
+ {
+  "n": 13,
+  "title": "AnimeFiesta 2026 Summer Con",
+  "desc": "Visit Vaughan Types: FESTIVAL Visit Vaughan Cost: From $16.47 This summer, AnimeFiesta invites you to travel back to Upper Canada in the Victorian era, where history, fantasy, and anime culture collide in a one-of-a-kind immersive outdoor convention. June 27–28, 11:00 AM – 6:00 PM ✨ WHAT TO EXPECT T",
+  "url": "https://visitvaughan.ca/calendar/event/animefiesta-2026-summer-con/",
+  "model_pred": "Families",
+  "confidence": 0.755,
+  "margin": 0.564,
+  "editor_ruling": ""
+ },
+ {
+  "n": 14,
+  "title": "6h-Intensiv: Selbstregulation, Regulationsstörungen & Darmgesundheit",
+  "desc": "Online-Fortbildung für Hebammen, Pflegende & interessierte Fachkräfte",
+  "url": "https://www.eventbrite.com/e/6h-intensiv-selbstregulation-regulationsstorungen-darmgesundheit-tickets-1978590709073",
+  "model_pred": "Golden",
+  "confidence": 0.608,
+  "margin": 0.336,
+  "editor_ruling": ""
+ },
+ {
+  "n": 15,
+  "title": "Ester Experience",
+  "desc": "✨ Bem-vinda ao Ester Experience ✨",
+  "url": "https://www.eventbrite.ca/e/ester-experience-tickets-1990524323836",
+  "model_pred": "Couples",
+  "confidence": 0.551,
+  "margin": 0.189,
+  "editor_ruling": ""
+ },
+ {
+  "n": 16,
+  "title": "CELLS TO SUCCESS",
+  "desc": "Panel Discussion. Redefining life after incarceration through professional excellence, business success, and community empowerment.",
+  "url": "https://www.eventbrite.com/e/cells-to-success-tickets-1985225160897",
+  "model_pred": "Golden",
+  "confidence": 0.745,
+  "margin": 0.575,
+  "editor_ruling": ""
+ },
+ {
+  "n": 17,
+  "title": "Baby & Books",
+  "desc": "Audience: Infants (0 to 12 months) Enjoy early literacy fun that focuses on sharing stories, rhymes, lap play, and songs with your baby. Please bring a blanket or mat for your baby. We will provide simple sensory toys for you to explore with your child, but feel free to bring your own! Drop-in progr",
+  "url": "https://markham.bibliocommons.com/events/69274b3f44d0e96d007b8756",
+  "model_pred": "Families",
+  "confidence": 0.783,
+  "margin": 0.595,
+  "editor_ruling": ""
+ },
+ {
+  "n": 18,
+  "title": "Monet's Wonderland",
+  "desc": "",
+  "url": "https://www.pinotspalette.com/woodbridge/event/908607",
+  "model_pred": "Families",
+  "confidence": 0.43,
+  "margin": 0.142,
+  "editor_ruling": ""
+ },
+ {
+  "n": 19,
+  "title": "Neoleas Panigiri",
+  "desc": "A youth-only outdoor festival bringing together teens from across the community for a night of music, dancing, food and epic summer energy",
+  "url": "https://www.eventbrite.ca/e/neoleas-panigiri-tickets-1990613540686",
+  "model_pred": "Families",
+  "confidence": 0.651,
+  "margin": 0.349,
+  "editor_ruling": ""
+ },
+ {
+  "n": 20,
+  "title": "Tehran Book Fair, Uncensored",
+  "desc": "A Celebration of Literature, Art, & Culture",
+  "url": "https://www.eventbrite.ca/e/tehran-book-fair-uncensored-tickets-1988939536695",
+  "model_pred": "Golden",
+  "confidence": 0.437,
+  "margin": 0.012,
+  "editor_ruling": ""
+ },
+ {
+  "n": 21,
+  "title": "MUZZLED",
+  "desc": "Let’s GET MUZZLED!",
+  "url": "https://www.eventbrite.ca/e/muzzled-tickets-1980870139912",
+  "model_pred": "Couples",
+  "confidence": 0.508,
+  "margin": 0.246,
+  "editor_ruling": ""
+ },
+ {
+  "n": 22,
+  "title": "Wine Tasting Fundraiser",
+  "desc": "This exclusive event features 5 Southbrook Vineyards wines, hors d’oeuvres & a guided tasting by owner Bill Redelmeier. $50 by e-transfer.",
+  "url": "https://www.eventbrite.ca/e/wine-tasting-fundraiser-tickets-1988048684131",
+  "model_pred": "Couples",
+  "confidence": 0.609,
+  "margin": 0.249,
+  "editor_ruling": ""
+ },
+ {
+  "n": 23,
+  "title": "Date Night Painting",
+  "desc": "",
+  "url": "https://allevents.in/richmond-hill/date-night-painting/200030364729452",
+  "model_pred": "Couples",
+  "confidence": 0.768,
+  "margin": 0.628,
+  "editor_ruling": ""
+ },
+ {
+  "n": 24,
+  "title": "Markham First Aid Training - St. John Ambulance",
+  "desc": "",
+  "url": "https://allevents.in/markham/markham-first-aid-training-st-john-ambulance/200030272090130",
+  "model_pred": "Families",
+  "confidence": 0.396,
+  "margin": 0.045,
+  "editor_ruling": ""
+ },
+ {
+  "n": 25,
+  "title": "French Bulldog Puppy Yoga in Vaughan",
+  "desc": "Squishy French Bulldog puppies, gentle yoga, and the Saturday you've been meaning to take back in Vaughan. Mats provided",
+  "url": "https://www.eventbrite.ca/e/french-bulldog-puppy-yoga-in-vaughan-tickets-1991362470756",
+  "model_pred": "Golden",
+  "confidence": 0.463,
+  "margin": 0.136,
+  "editor_ruling": ""
+ },
+ {
+  "n": 26,
+  "title": "Thriving Through Transition: Part III – The Business Breakthrough",
+  "desc": "Thriving Through Transition: Part 3 – The Business Breakthrough Join us for the final installment of our Thriving Through Transition series",
+  "url": "https://www.eventbrite.com/e/thriving-through-transition-part-iii-the-business-breakthrough-tickets-1985623821301",
+  "model_pred": "Golden",
+  "confidence": 0.644,
+  "margin": 0.39,
+  "editor_ruling": ""
+ },
+ {
+  "n": 27,
+  "title": "How to Make a Vinyl Sticker with Cricut",
+  "desc": "Audience: Adult, Youth Want to learn how to create unique designs for your next craft project? This workshop will provide step-by-step instructions on how to create a vinyl sticker using Cricut’s Design Space. Participants are asked to prepare 2-3 design ideas prior to the class. Further instruction",
+  "url": "https://markham.bibliocommons.com/events/6a0631fdf6bd012f0067f804",
+  "model_pred": "Golden",
+  "confidence": 0.421,
+  "margin": 0.048,
+  "editor_ruling": ""
+ },
+ {
+  "n": 28,
+  "title": "Canada Day Family Glow Lab: Body Butter + Lip Gloss Making",
+  "desc": "",
+  "url": "https://allevents.in/vaughan/canada-day-family-glow-lab-body-butter-lip-gloss-making/100001992675660542",
+  "model_pred": "Families",
+  "confidence": 0.804,
+  "margin": 0.686,
+  "editor_ruling": ""
+ },
+ {
+  "n": 29,
+  "title": "Starry Moon",
+  "desc": "",
+  "url": "https://www.pinotspalette.com/woodbridge/event/920005",
+  "model_pred": "Couples",
+  "confidence": 0.415,
+  "margin": 0.051,
+  "editor_ruling": ""
+ },
+ {
+  "n": 30,
+  "title": "Canada Day Community Mural",
+  "desc": "Free | Registration not required Celebrate Canada Day at the Varley by contributing to a collaborative colourful community mural. Visitors of all ages can add their own creative touch using a variety of art materials, helping the artwork evolve throughout the day.",
+  "url": "https://varleyartgallery.ca/canada-day-2026/",
+  "model_pred": "Families",
+  "confidence": 0.688,
+  "margin": 0.439,
+  "editor_ruling": ""
+ }
+]

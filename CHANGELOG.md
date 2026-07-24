@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-24
+- Ran a live classifier demo with the client: 30 real scraped events, sectioned by the editor cold, then compared against the model's calls. Decomposing the disagreements by cause showed most failures belong to two pipeline stages that don't exist yet — an up-front relevance filter and a downstream ranker — rather than to the classifier itself.
+- Turned that read into a ranked, whole-release problem inventory separating root causes (training data drawn from a different population than production serves) from measurement issues and genuine model gaps, to be reconciled into the release plan next session before any further tuning.
+- Added a reusable demo tool that samples raw candidates, classifies them, and prints a blind-then-reveal scorecard for structured client review.
+
 ## 2026-07-23
 - Built the offline transfer-test harness for the section classifier: joins editor labels to raw candidate text, constructs the production serve-time text recipe, caches embeddings for two feature variants, and locks in pre-registered evaluation gates before any result is seen.
 - Designed the classifier's abstention rule — when to decline to place an event rather than guess — from a two-signal read of prediction confidence and margin.
