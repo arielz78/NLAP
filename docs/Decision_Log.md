@@ -1805,3 +1805,19 @@ The R5 reusability audit (standing gate, `R5_Scope.md`) found the newsletter con
 **Cost is moot, not overridden.** §68 chose small partly on serve-cost (large ~6× per token). At newsletter volume that difference is pennies, and a model under its own recall gate isn't a cheaper option — it's a failing one. So the cost logic of §68 does not survive contact with the recall result.
 
 **Anti-scope note (what did *not* become new decisions).** The session re-derived, but did not re-decide: the cats train/serve asymmetry and score=serve recipe invariant (§70, already measured 43%), the flex-vs-None two-signal read and fuzzy C/G boundary (§64), and the deploy lifecycle (standard practice). The `clean()` 300-char truncation Ariel feared was audited to *display-only* (editor deck), zero model effect — consistent with §70. One decision, not four; the design held.
+
+---
+
+## 72. R7-W6 Release Gates Pre-Registered — Min-Class Recall ≥75% + Coverage ≥60% + Cats-Ablation Switch + Exit Table (2026-07-21)
+
+**Decision:** the pass/fail contract for W6 — the bars the transfer test scores against — was pre-registered before any embeddings fit, CV, or transfer number was seen (Ariel's sign-off; derivation walked in-session, Execution_Log 07-21 session 2). *(Recorded as its own entry 2026-07-24 — it had been living only in `R7_Scope.md`'s results log, homeless in Decision_Log; §65 covered the earlier, now-dead representation gates (Gate 1/2/3), not these release bars. Promoting it out of the Scope doc was part of the 07-24 slim.)*
+
+- **Recall bar: min per-class recall ≥ 75%**, gate slice, includable events only. Report raw fractions, not just percentages (Golden n=21 → 16/21; one event ≈ 5 pts of recall). Anchors: ceiling = editor self-consistency ~89% on both-included repeats (n=18, CI ~67–97); floor = 70% is the Gate 1 kill-line convention; precedent = the old (void) Gate 3's 75% floor.
+- **Coverage bar (#98): ≥ 60% of includable gate events committed** (margin ≥ τ). Denominator is includable events only — abstaining on None-labeled events is correct behavior and excluded. TF-IDF's 18–24% confident band was known-too-thin; 50% was the derivation midpoint, raised to 60 on Ariel's editorial anchor (the system's purpose is killing the sorting work, not assisting with half of it). A floor, not a forecast — the model ships at whatever coverage it achieves ≥ 60.
+- **Cats-ablation switch rule:** with-cats replaces without-cats only if min per-class recall improves by ≥ 10 points (≥ 2 events) with no class degrading. Forced by resolution arithmetic (per-class n = 20–46 → noise ≈ ±2 events); anything finer reads static.
+- **Exit table (the bars' meaning):** both pass → ship to R6 (close-sequence Step 5). One fails → one iteration cycle (recipe/τ), re-run once. Both fail, or a second miss → embeddings don't transfer; reopen the LLM-primary path (§67, deliberately left undecided; horse-raced at the close-sequence gpt-5.4-nano step, under the roadmap's May decision rule).
+- **CV on the 1,126 is a sanity check only** — no bar attaches; it cannot pass or fail the release. It picked large-over-small (§71) and confirms the representation isn't broken, nothing more.
+
+**Why pre-register.** Thresholds set after seeing the data get rationalized ("74% is basically fine"). Locking the numbers first — against a derived rationale, not round numbers — removes that degree of freedom before it can be used. Same principle as §65's representation gates; this entry is the *release* version of it.
+
+**Caveat carried forward (2026-07-24).** Both the recall and coverage bars are defined over the include/None split, and "None" is still undefined (conflates fails-criteria vs fine-but-outranked — `R7_Scope.md` §1 problem #3). Resolving that definition may revise these denominators; the bars are locked as *values*, not as immune to the definitional fix.
