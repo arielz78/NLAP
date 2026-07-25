@@ -14,7 +14,12 @@ DESIGN CONSTRAINTS baked into the plumbing (settled elsewhere, not re-litigated 
         SourceCategories EXCLUDED by default, re-entering only via the ablation arm.
   §69  the gate and train slices are scored SEPARATELY, never pooled (train is drawn
         deliberately hard/low-margin, so a pooled number is meaningless).
-  §71  representation = text-embedding-3-large (small eliminated).
+  §71  representation = voyage-4-large @ 2048d (07-25; OpenAI -large before that, -small
+        eliminated earlier). The provider swap was made on availability grounds and is
+        performance-neutral — see eval/voyage_probe.py. Do NOT read the post-swap transfer
+        numbers as a gain: both arms were seen before choosing, so any delta there is
+        post-hoc selection on the eval set, which is exactly what the four blind
+        pre-commitments below exist to prevent.
   join label(Airtable pull) --by URL--> raw text(raw_candidate_events)
        label(Airtable pull) --by Row--> slice(answer_key: gate / train)
 
@@ -34,16 +39,16 @@ from collections import Counter
 
 import numpy as np
 from dotenv import load_dotenv
-from openai import OpenAI
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
 CORPORA = HERE / "corpora"
 
-MODEL = "text-embedding-3-large"   # §71 pick; small (1536-d) eliminated under the internal CV bar
+MODEL = "voyage-4-large"           # §71 pick (07-25 swap); must match embed_corpus.py or the
+VOYAGE_DIM = 2048                  # head is fit on one space and served another
 BATCH_SIZE = 100
 MAX_CHARS = 24_000                 # per-input ceiling; nothing here is close
-USD_PER_1M = 0.13                  # -large; verify before quoting (embed_corpus.py pricing note)
+USD_PER_1M = 0.0                   # free while the 200M Voyage allowance lasts (list: 0.12)
 
 # --- deck-pull field ids: the Airtable export keys cells by field id, not by name ---
 F_SECTION = "fld8YycTYbx63EC22"    # editor's label: Families / Couples / Golden / None
@@ -149,14 +154,18 @@ def embed(texts, tag, force):
             return X
 
     load_dotenv(ROOT / "NLAP_Airtable.env")
-    client = OpenAI()                              # reads OPENAI_API_KEY from the environment
+    import voyageai
+    client = voyageai.Client()                     # reads VOYAGE_API_KEY from the environment
     payload = [t[:MAX_CHARS] for t in texts]
     vectors, tokens = [], 0
     for start in range(0, len(payload), BATCH_SIZE):
         batch = payload[start:start + BATCH_SIZE]
-        resp = client.embeddings.create(model=MODEL, input=batch)
-        vectors.extend(d.embedding for d in sorted(resp.data, key=lambda d: d.index))
-        tokens += resp.usage.total_tokens
+        # input_type=None: classification is symmetric, so the query/document retrieval
+        # prompts would only inject a constant string. Must match embed_corpus.py.
+        resp = client.embed(batch, model=MODEL, input_type=None,
+                            output_dimension=VOYAGE_DIM, truncation=True)
+        vectors.extend(resp.embeddings)            # already ordered; no index sort needed
+        tokens += resp.total_tokens
         print(f"  embedded {start + len(batch):>4}/{len(payload)}  [{tag}]")
 
     X = np.array(vectors, dtype=np.float32)

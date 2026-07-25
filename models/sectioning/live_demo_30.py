@@ -34,7 +34,6 @@ from collections import Counter
 
 import numpy as np
 from dotenv import load_dotenv
-from openai import OpenAI
 from sklearn.linear_model import LogisticRegression
 
 HERE = Path(__file__).resolve().parent
@@ -42,7 +41,8 @@ ROOT = HERE.parent.parent
 CORPORA = HERE / "corpora"
 OUT = HERE / "deck"
 
-MODEL = "text-embedding-3-large"   # §71 pick
+MODEL = "voyage-4-large"           # §71 pick (07-25 swap); must match embed_corpus.py or the
+VOYAGE_DIM = 2048                  # head is fit on one space and served another
 N_DRAW = 30
 DESC_CHAR_CAP = 300
 
@@ -161,13 +161,18 @@ def embed(texts, tag):
             print(f"  cache HIT {xp.name}")
             return np.load(xp)
     load_dotenv(ROOT / "NLAP_Airtable.env")
-    client = OpenAI()
-    resp = client.embeddings.create(model=MODEL, input=[t[:24_000] for t in texts])
-    X = np.array([d.embedding for d in sorted(resp.data, key=lambda d: d.index)], dtype=np.float32)
-    cost = resp.usage.total_tokens / 1_000_000 * 0.13
+    import voyageai
+    client = voyageai.Client()
+    # input_type=None + 2048d must match embed_corpus.py: the head below is fit on those
+    # vectors, so a mismatch here scores the demo in a different space than it trained in.
+    resp = client.embed([t[:24_000] for t in texts], model=MODEL, input_type=None,
+                        output_dimension=VOYAGE_DIM, truncation=True)
+    X = np.array(resp.embeddings, dtype=np.float32)
+    cost = 0.0   # free while the 200M Voyage allowance lasts (list: $0.12/1M)
     np.save(xp, X)
-    mp.write_text(json.dumps({"model": MODEL, "n": len(texts), "sha256": digest,
-                              "tokens": resp.usage.total_tokens, "cost_usd": round(cost, 6)},
+    mp.write_text(json.dumps({"model": MODEL, "output_dimension": VOYAGE_DIM,
+                              "n": len(texts), "sha256": digest,
+                              "tokens": resp.total_tokens, "cost_usd": round(cost, 6)},
                              indent=2), encoding="utf-8")
     print(f"  embedded {len(texts)}  ${cost:.5f}")
     return X

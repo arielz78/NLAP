@@ -1,0 +1,9 @@
+{
+  "model": "voyage-4-large",
+  "tag": "cats",
+  "n": 416,
+  "sha256": "9d552c7eb8ba6d2dec2996a3daa934e90a6ebdf644b1d885958c661689dcbded",
+  "tokens": 17606,
+  "cost_usd": 0.0,
+  "embedded_at": "2026-07-25T12:09:12"
+}

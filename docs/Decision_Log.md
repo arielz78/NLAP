@@ -1821,3 +1821,26 @@ The R5 reusability audit (standing gate, `R5_Scope.md`) found the newsletter con
 **Why pre-register.** Thresholds set after seeing the data get rationalized ("74% is basically fine"). Locking the numbers first — against a derived rationale, not round numbers — removes that degree of freedom before it can be used. Same principle as §65's representation gates; this entry is the *release* version of it.
 
 **Caveat carried forward (2026-07-24).** Both the recall and coverage bars are defined over the include/None split, and "None" is still undefined (conflates fails-criteria vs fine-but-outranked — `R7_Scope.md` §1 problem #3). Resolving that definition may revise these denominators; the bars are locked as *values*, not as immune to the definitional fix.
+
+---
+
+## 73. R7-W6 Embedding Provider Swapped to `voyage-4-large` @2048d — Availability, Not Quality; Amends §71's Model, Not Its Finding (2026-07-25)
+
+**Decision:** the W6 representation is `voyage-4-large` at `output_dimension=2048`, `input_type=None`, replacing `text-embedding-3-large`. This **amends the model named in §71, not the finding §71 made** — that a higher-capacity representation beats a smaller one on the internal CV screen still holds, and `text-embedding-3-small` stays eliminated.
+
+**Why the swap — and what it is explicitly not.** It is **not** a quality upgrade and **not** a cost saving. It is dependency removal on the one pipeline leg where the swap is free: Voyage grants 200M free tokens with no expiry, a full re-embed of all three corpora is ~42K tokens, so the embedding leg now costs nothing and consumes no OpenAI credit. That is the entire case.
+
+**The benchmark that had to clear first** (`models/sectioning/eval/voyage_probe.py`, kept in-repo so this entry is falsifiable — it re-runs both existing tests verbatim with the representation as the only variable, reading the OpenAI baselines live from the cached matrices):
+
+| min-class recall | OpenAI 3072d | Voyage 1024d | Voyage 2048d |
+|---|---|---|---|
+| Internal CV (n=1,126) | **0.774** | 0.728 | 0.744 |
+| Transfer gate (n=77) | 0.611 | 0.615 | **0.667** |
+
+**Read: performance-neutral, and 2048d is the condition of the swap.** The two tests disagree, so the question is which resolves a difference this size. CV at n=1,126 says OpenAI is ahead by 3 points min-class. Transfer at n=77 deduped includables — **one event ≈ 4 points** — cannot resolve a 5.6-point gap at all; Voyage's entire transfer "win" is 1–2 events. 1024d was rejected outright (loses 4.6 points of CV); 2048d halves that, and the 4-series is Matryoshka, so 2048 is a strictly wider view of the same space rather than a different model.
+
+**Integrity caveat — the transfer number is not claimed as a gain.** Both arms were seen before the choice was made, so treating 0.611 → 0.667 as an improvement would be post-hoc selection on the eval set. That is precisely what §72's pre-registration and `transfer_test.py`'s four blind pre-commitments exist to prevent, and the caveat is duplicated in that file's docstring so it sits next to the guard it protects. The §3 bars, the §72 gates, and the head's hyperparameters are all unchanged; only X changed.
+
+**Why the obvious rationale is wrong, recorded so it isn't re-derived.** "Conserve OpenAI credits" does not hold: a full re-embed is **half a cent** on `text-embedding-3-large`, and the content-hash cache re-runs it only when the corpus changes. The OpenAI bill is `generateBlurbs.js` on gpt-5.4-nano, and **Voyage sells no chat endpoint** — this swap does not touch it. Equally, "voyage-4-large is the better model" is true on MTEB-style *retrieval* and does not transfer to fitting a linear head on 1,126 labeled rows against an ~89% human ceiling. Consistent with the 07-24 fresh-lens read: the 3-class classifier is at its label-noise ceiling, so the backbone is not what's limiting.
+
+**Reversibility + the new failure mode.** `embed_corpus.py` dispatches on model-name prefix, so `--model text-embedding-3-large` restores the OpenAI path; the old matrices are retained locally as the baseline. The cost is that `input_type` and `VOYAGE_DIM` are now duplicated across four call sites (`embed_corpus`, `transfer_test`, `live_demo_30`, `cv_embeddings`) under the same copy-don't-import discipline as `clean()` — but with a worse failure mode: a mismatch fits the head in one space and serves it in another, **silently**, with no exception raised.

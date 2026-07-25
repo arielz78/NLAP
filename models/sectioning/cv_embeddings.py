@@ -5,7 +5,7 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 
 # --- plumbing (mine): load what embed_corpus.py already made ---
-X = np.load(HERE / "corpora/embeddings_text-embedding-3-large.npy")    # (1126, 3072) the vectors
+X = np.load(HERE / "corpora/embeddings_voyage-4-large.npy")           # (1126, 2048) the vectors
 y = json.loads((HERE / "corpora/embeddings_labels.json").read_text())  # 1126 section labels, row-aligned
 
 # ============ classifier + cross-validated per-class recall ============

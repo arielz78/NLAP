@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-25
+- Benchmarked a newer third-party embedding model against the one in use before adopting it, re-running both existing evaluations with the representation as the only changed variable. The result was performance-neutral, so the switch was made on availability grounds and recorded as such — explicitly not as a quality or cost improvement.
+- Made the embedding layer provider-agnostic, so either vendor is a one-flag change rather than a rewrite, and kept the benchmark in the repository as a reproducible record behind the decision.
+
 ## 2026-07-24
 - Commissioned an independent, deliberately un-anchored engineering review to pressure-test whether the release was still solving the right problem — briefed from raw facts and data only, walled off from the team's own diagnosis so it couldn't inherit it. It independently reached the same conclusion the team had been forming: the work is a top-of-list selection problem needing a relevance gate and a ranker, not a harder classifier.
 - Validated the direction with a concrete experiment on existing labels: a lightweight keep-vs-drop model cleanly separates relevant from irrelevant events, and demonstrably outperforms tuning the current model's confidence threshold for the same job — retiring a path the team had been parked on.

@@ -1,0 +1,11 @@
+{
+  "model": "voyage-4-large",
+  "output_dimension": 2048,
+  "n_rows": 1126,
+  "n_dims": 2048,
+  "corpus_sha256": "23dc6cb9e6bfae1fe63840d61f965c43638f0257392f41fdc9c1b21fccfe5dfe",
+  "total_tokens": 26377,
+  "cost_usd": 0.003165,
+  "embedded_at": "2026-07-25T12:08:37",
+  "text_recipe": "displayTitle + ' ' + (description or '')"
+}
