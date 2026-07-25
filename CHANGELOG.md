@@ -5,6 +5,9 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-07-24
+- Commissioned an independent, deliberately un-anchored engineering review to pressure-test whether the release was still solving the right problem — briefed from raw facts and data only, walled off from the team's own diagnosis so it couldn't inherit it. It independently reached the same conclusion the team had been forming: the work is a top-of-list selection problem needing a relevance gate and a ranker, not a harder classifier.
+- Validated the direction with a concrete experiment on existing labels: a lightweight keep-vs-drop model cleanly separates relevant from irrelevant events, and demonstrably outperforms tuning the current model's confidence threshold for the same job — retiring a path the team had been parked on.
+- Held the scope decision open pending a second independent review, rather than committing off a single opinion.
 - Ran a live classifier demo with the client: 30 real scraped events, sectioned by the editor cold, then compared against the model's calls. Decomposing the disagreements by cause showed most failures belong to two pipeline stages that don't exist yet — an up-front relevance filter and a downstream ranker — rather than to the classifier itself.
 - Turned that read into a ranked, whole-release problem inventory separating root causes (training data drawn from a different population than production serves) from measurement issues and genuine model gaps, to be reconciled into the release plan next session before any further tuning.
 - Added a reusable demo tool that samples raw candidates, classifies them, and prints a blind-then-reveal scorecard for structured client review.
