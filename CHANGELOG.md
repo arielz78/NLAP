@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-26
+- Designed and shipped a structured labelling round to the client editor — the input that decides which direction the current release takes. Built it as additive columns on the existing dataset rather than a parallel table, with the prior labels frozen and a pre-round snapshot captured, so an in-progress collection can never overwrite work already banked.
+- Deliberately framed the ask to avoid biasing the answer: the editor is asked for his own rejection criteria before being shown ours, and picks the wording for the key distinction himself. A field was added to record when a listing's own text was insufficient to judge — which measures the ceiling on what any text-based model can achieve, rather than leaving it as an assumption.
+- Audited the request before sending and caught two load-bearing figures that had entered planning documents without measurement behind them. One conflated two different rates and materially understated how much of the candidate pool is genuinely usable; correcting it changes which pipeline stage the release's success actually depends on. Amended the decision record and the metrics log accordingly, and deferred the resulting scope questions rather than settling them off a fresh finding.
+
 ## 2026-07-25
 - Ran the third independent engineering review and reconciled all reads into a single decision: the release pivots from building a section classifier to building an up-front relevance gate, with the existing classifier kept in a suggest-only role behind it. The gate's relevance score also serves as the ranking signal, which is why the two adjacent releases now feed one another.
 - Rewrote the release's scope document as a one-week, step-by-step execution plan (cleanup, a fast client-labeling experiment, a zero-training ranking baseline, the deterministic pre-filter, the gate, and a one-week end-to-end dry run), with clear done-when criteria and a new success bar centered on relevance recall and editor effort rather than raw classification accuracy.
