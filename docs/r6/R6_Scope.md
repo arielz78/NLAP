@@ -15,6 +15,8 @@ This doc is the single home of the R6 approach. It absorbs the findings delibera
 
 Single source of truth for "where are we."
 
+> **⚠️ Reframe banner (2026-07-25) — read before trusting the draft below.** The R7 reject-gate reframe (`docs/r7/R7_Scope.md` Status Snapshot) reopens R6's approach. The gate's `P(include)` may serve as the ranking score directly (`final = P(include) × P(section)`), which could make R6 a thin "reuse the gate score" build rather than the formula-hybrid drafted in §3. **R6's scope is gated on the fork-B result — the centroid-baseline recall@30 from R7_Scope Step 2:** ~0.5–0.6 → cheap ranker suffices (R6 stays small); ~0.15 → real ranker (BT + structured features) needed. **Do not finalize this doc or open r6 issues until that number is in hand.** The ranker also trains on the "outcompeted" pile from R7_Scope Step 1 (the None-split), which doesn't exist yet. Also: pairwise dates for a BT ranker are still unsecured from the editor. The §3 formula-hybrid below is pre-reframe and may be superseded.
+
 **Phase:** scope drafted. Prerequisite data work complete; awaiting critique pass → finalize → open `r6` issues (§58: issues come from the finalized doc, not before).
 
 **Done (prereqs):**

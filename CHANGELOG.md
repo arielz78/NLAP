@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-07-25
+- Ran the third independent engineering review and reconciled all reads into a single decision: the release pivots from building a section classifier to building an up-front relevance gate, with the existing classifier kept in a suggest-only role behind it. The gate's relevance score also serves as the ranking signal, which is why the two adjacent releases now feed one another.
+- Rewrote the release's scope document as a one-week, step-by-step execution plan (cleanup, a fast client-labeling experiment, a zero-training ranking baseline, the deterministic pre-filter, the gate, and a one-week end-to-end dry run), with clear done-when criteria and a new success bar centered on relevance recall and editor effort rather than raw classification accuracy.
 - Benchmarked a newer third-party embedding model against the one in use before adopting it, re-running both existing evaluations with the representation as the only changed variable. The result was performance-neutral, so the switch was made on availability grounds and recorded as such — explicitly not as a quality or cost improvement.
 - Made the embedding layer provider-agnostic, so either vendor is a one-flag change rather than a rewrite, and kept the benchmark in the repository as a reproducible record behind the decision.
 
