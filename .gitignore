@@ -23,3 +23,7 @@ __pycache__/
 # Path-anchored deliberately — a bare *.npy would match at any depth (same trap
 # as `data/` on line 6; see root README).
 /models/sectioning/corpora/*.npy
+
+# R7 scan intermediates — regenerate, don't stage (see _tmp_rulebreak_scan.js header)
+models/sectioning/deck/_tmp_deck_pull_*.json
+models/sectioning/deck/_tmp_rulebreak_scan*.json

@@ -8,25 +8,34 @@
 
 **Type: Release-working.** Current truth + the one-week plan. Build history (probe numbers, confusion matrices, the dead investigation sequence) is in `logs/R7_Log.md`; decisions in `docs/Decision_Log.md` §61–72; chronological recaps in `Execution_Log.md`. Verbatim prior version (the pre-reframe 261-line doc) is in git (`2fcb5f5`).
 
-**Key data input:** the **416 editor-labeled events** (`R7 Label Deck`, Airtable `tblOxYHuAl2yp9Znl`; 225 None / 191 includable) + the **cached embeddings** (current representation `voyage-4-large` @2048d, §73 — `models/sectioning/corpora/embeddings_voyage-4-large.npy` + `transfer_*_voyage-4-large.npy`; OpenAI `text-embedding-3-large` matrices also cached, which is what Fable's AUC 0.823 floor was measured on — the gate is representation-agnostic). The gate is trained on these — no new embedding spend, no new labeling session required to start.
+**Key data input:** the editor-labeled deck (`R7 Label Deck`, Airtable `tblOxYHuAl2yp9Znl`). **Row count is contested: Airtable holds 456 rows (239 None / 211 includable / 6 blank); the modeling set uses 416, and which 40 differ is unexplained — see #107.** Use 456 when talking about what the editor has ruled on, 416 only when describing a fit that was actually run on 416.
+
+Plus the **cached embeddings** (current representation `voyage-4-large` @2048d, §73 — `models/sectioning/corpora/embeddings_voyage-4-large.npy` + `transfer_*_voyage-4-large.npy`; OpenAI `text-embedding-3-large` matrices also cached, which is what Fable's AUC 0.823 floor was measured on — the gate is representation-agnostic). The gate is trained on these — no new embedding spend, no new labeling session required to start.
 
 ---
 
-## Status Snapshot (2026-07-25)
+## Status Snapshot (2026-07-27)
 
 Single source of truth for "where are we." Supersedes the roadmap's R7 header and the pre-reframe body of this doc.
 
-**The reframe (validated 3 independent ways, then confirmed by 3 outside LLM reviews):** this is a **top-k selection problem, not a classification problem.** The pipeline ships 5 events/section from ~720 raw candidates/week (~2% keep rate). The section classifier — the thing W6 spent the release building — **owns only ~3 of ~19 failures.** The filter owns ~12, ranking ~4. The classifier was trained on 1,126 *published* events (all winners); in production it sees raw scraped candidates (~98% junk) and, having never seen a negative, confidently sections the junk. **The missing stage is a binary include/None gate** — the reject decision the system has never had.
+**The reframe (validated 3 independent ways, then confirmed by 3 outside LLM reviews):** this is a **top-k selection problem, not a classification problem.** The pipeline ships 5 events/section from ~720 raw candidates/week. The section classifier — the thing W6 spent the release building — **owns only ~3 of ~19 failures.** The filter owns ~12, ranking ~4. The classifier was trained on 1,126 *published* events (all winners); in production it sees raw scraped candidates it has never seen a negative example of, and confidently sections the junk. **The missing stage is a binary include/None gate** — the reject decision the system has never had.
 
-**The scope call (made this session, 2026-07-25):** W6 pivots from "ship a section classifier ≥0.75" to **build the reject gate + run the classifier suggest-only behind it.** The gate's `P(include)` also serves as the interim ranking score (`final = P(include) × P(section)`), which is why R7 and R6 now feed each other. This is validated but not blindly committed — two cheap experiments (Steps 1–2) can still redirect it before any real build.
+**⚠️ Population correction (2026-07-26, Decision_Log §74 amendment) — the arithmetic this doc used to run on was wrong.** The old snapshot cited a "~2% keep rate / ~98% junk." **That 2% is a *slot* rate, not a junk rate:** 15 published ÷ ~720 in window conflates *ineligible* events with *eligible-but-outcompeted* ones, because 5-per-section is a hard quota. **The measured eligibility rate is ~46.5%** (deck's representative gate slice, n=114, CI ±9; batches 1–2 independently 38.6% None). The reframe's conclusion is unaffected — ~53% ineligible is still a large removable chunk that nothing implements today — but **the downstream funnel changes**: at the measured operating point a gate leaves ~537 events for the ranker, and even a **perfect** gate leaves ~335 for 15 slots. **Consequence: ranking is load-bearing *inside* W6, and Fork B no longer defers cleanly to R6.**
+
+**The scope call (2026-07-25):** W6 pivots from "ship a section classifier ≥0.75" to **build the reject gate + run the classifier suggest-only behind it.** The gate's `P(include)` also serves as the interim ranking score (`final = P(include) × P(section)`), which is why R7 and R6 now feed each other.
+
+**The None-split taxonomy is settled (2026-07-27, Decision_Log §75):** `NoneType` is **four-way** — `Rule-break` (→ Stage 0) · `Wrong fit` (→ the gate) · `Outcompeted` (→ R6's ranker) · `Ambiguous` (excluded). `NeededLink` is retired in favour of free-text `LinkGave` plus live text-first labelling sittings. The **breadth criterion** — an event must appeal *across* communities, not single one out — is adopted as a written editorial rule and evaluated **inside the gate, never in Stage 0** (a religion/nationality regex separates the two cases at only 1.7× and would delete measured keepers). Implementation: `R7_None_Split_Labelling_Plan.md`.
 
 **What the reframe kills (do not resume):**
 - **The τ-abstention path is dead.** Confidence cannot do reject work — None vs includable confidence distributions are near-identical (medians 0.52 / 0.57); to abstain on 87% of junk you keep only 27% of keepers. A dedicated binary gate is ~7× more keeper-efficient at the same junk removal.
 - **The transfer test / min-class-recall exit table (old §3) is moot** as the release gate. It measured section accuracy on a population that doesn't exist in production. Retired as the headline; kept only as an internal diagnostic. The unresolved 0.61 provenance and τ-calibration fork die with it.
 
-**The two live decisions ("forks") — resolved by experiment, not deliberation:**
-- **Fork A — does the gate train on split labels?** The 225 None is two different things fused: *ineligible* (permanent, wrong type/geo — trains the gate) and *outcompeted* (fine event that lost its slot that week — a property of the week, not the event; feeds R6's ranker). Training the gate on the merged pile teaches it to permanently reject good events for having competition. **Resolved by Step 1 (the None-split).**
-- **Fork B — cheap ranker or real ranker?** The gate score used twice (`P(include) × P(section)`) is free and ships with the gate; a proper Bradley-Terry ranker on the outcompeted pile is the upgrade. **Resolved by Step 2 (the centroid baseline)** — and it's an R6 decision, it does not block W6.
+**The live decisions ("forks"):**
+- **Fork A — does the gate train on split labels?** ✅ **Answered in principle** (§75): yes, four ways, with only `Wrong fit` as the gate's negatives. **Still executing** — the editor is 12 of 239 rows in, and the instrument is being respecced before the remaining ~227.
+- **Fork B — threshold gate or *scoring* gate? (OPEN, Ariel's)** Not the old cheap-vs-real-ranker question. Candidate principle: **hard-kill on facts, never on scores** — while the gate score also ranks, deleting a low scorer and burying it produce identical output, so *keeping* weakly dominates and it preserves both the audit trail and the label stream. Raises the question of whether the gate needs a threshold at all. **This no longer defers cleanly to R6** (see the population correction above). Was to be resolved by Step 2; Step 2 is blocked (below).
+- **Fork C — W6's scope (NEW, OPEN, Ariel's).** Given that a perfect gate still leaves ~335 events for 15 slots: keep the gate and change the sign-off bar / expand W6 to include ranking / merge W6 with R6.
+
+**Blocking order for the forks:** neither B nor C can be decided before **Step 4a** prices the recall/junk-rejection curve — that number *sets* the release bar rather than confirming it.
 
 **Convergence evidence (why this is de-risked, not a guess):** un-anchored Fable review re-derived the reframe from raw data (never saw our diagnosis); Ariel's independent per-source None-rate read matched it; ChatGPT + a second Claude review independently prescribed the same spine. All three outside reviews: build the gate, don't touch the classifier, retire min-class recall, don't chase Golden.
 
@@ -37,7 +46,7 @@ Single source of truth for "where are we." Supersedes the roadmap's R7 header an
 ```
 raw ~720/week
   → Step 3  Stage 0: deterministic pre-filter   (geo/date/language/domain; drop foreign Eventbrite)   ← R7-W6
-  → Step 4  Stage 1: the GATE  P(include)        (binary, tuned to 0.98 keeper recall)                 ← R7-W6
+  → Step 4  Stage 1: the GATE  P(include)        (binary; operating point UNSET — Step 4a)             ← R7-W6
   → Stage 2: section classifier (untouched) on survivors → P(section)                                  ← R7 (exists)
   → Stage 3: rank by  P(include) × P(section)     (cheap interim ranker; BT upgrade = fork B)           ← R6
   → Stage 4: buildIssues allocator fills 5/section under quota + thin-section flag                      ← R6
@@ -56,29 +65,31 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 
 - **Golden is 367 training examples, not 18–21.** (1,126 = 376 Fam / 383 Coup / 367 Gold; 18–21 is the *transfer-slice* count.) So "Golden weak from too few training examples" is FALSE — it's transfer slice-noise + genuine C/G editorial softness. Fix everywhere it appears.
 - **Section is partly contextual (issue-packing).** 8 titles were published in different sections in different weeks — the same farmers market under all three. A per-event section classifier has a hard ceiling; this is why C/G is Case B (genuine overlap), not a curve a fancier model traces.
-- **Capture the demo rulings.** `live_demo_30_seed23.json` has `editor_ruling` empty on all 30 rows — 30 labeled events, paid for, currently unsaved. Recover them.
-- **Dedup the corpus at fit** (~1,126 → ~1,042 unique; one sponsor ad appears 19×). Duplicates over-weight patterns in training and distort recall/precision measurement. Simple exact-match dedup (title+date or URL); skip fuzzy canonicalization.
+- ~~**Capture the demo rulings.**~~ **DISSOLVED (2026-07-26) — they were never lost.** The rulings are in Airtable as `Batch = "5 - Live Demo (30)"`, 29 of 30 carrying a `Section`; only the local `live_demo_30_seed23.json` mirror is empty. This is a one-command export (`scripts/readLiveDemoRulings.js`), not an editor re-ask. No editor time, no cost.
+- ~~**Dedup the corpus at fit.**~~ **SUPERSEDED (2026-07-26) — use grouped CV, not deletion.** Title-only dedup removes 98 rows, but most are legitimately *recurring* programs (a farmers market ×6, chair yoga ×5) concentrated in Golden — **repeat publication is signal, not a data artifact**, and deleting it would strip the weakest class. The leakage concern is real; the correct fix is **URL/title-grouped CV folds** so no group straddles train and test. **PinotsPalette ×19 remains deletable for a different reason** — it is a sponsor ad, not an event.
 
-**Done when:** the three errors are corrected in this doc + `logs/R7_Log.md`; demo rulings saved to a readable file; corpus deduped.
+**Done when:** the two live errors (Golden-367, section-is-contextual) are corrected in this doc + `logs/R7_Log.md`; grouped CV is the fit's default splitter.
 
-### Step 1 — Experiment A: the None-split (resolves Fork A; ~45–90 min editor time)
+### Step 1 — The None-split (IN PROGRESS; ~3–4 live sittings with the editor)
 
-**What it's for:** the single highest-information-per-minute move on the board. Splits the 225 None so the gate trains on the right negatives.
+**What it's for:** the single highest-information-per-minute move on the board. Splits the **239** None so the gate trains on the right negatives. Full plan: `R7_None_Split_Labelling_Plan.md`.
 
-- Editor re-tags each of the 225 None as **ineligible** (wrong type/geo/not-an-event — permanent) vs **eligible-but-outcompeted** (fine, lost its slot) vs **ambiguous**, with a reason code (geo / wrong-type / non-event / duplicate / other).
-- **Interpret:** mostly ineligible → the gate is the win, ranking is easy, grow volume freely. Mostly outcompeted → filtering buys little and the real problem is preference-ranking (pushes weight to R6).
+- **Four-way `NoneType`** per §75 — `Rule-break` → Stage 0 · `Wrong fit` → the gate · `Outcompeted` → R6's ranker · `Ambiguous` → excluded from both. `NoneReason` (multi-select) applies to `Rule-break` rows only.
+- **Live, text-first sittings**, not solo async work. `NeededLink` is retired; free-text `LinkGave` records what the link added.
+- **Status: 12 of 239 done.** Those 12 are the **pilot** — the instrument is being respecced now, at row 12, rather than never; 10 of them carry reasoning clear enough to remap for a two-minute confirm rather than a redo.
+- **Interpret:** mostly Wrong fit → the gate is the win. Mostly Outcompeted → filtering buys little and the problem is preference-ranking (weight moves to R6). *Pilot signal, n=11, not to be trusted as a rate:* Rule-break 3 / Wrong fit 6 / Outcompeted 1.
 
-**Done when:** 225 split into the three buckets with reason codes; the ineligible pile is the gate's negative set, the outcompeted pile is reserved for R6's ranker.
+**Done when:** 239 split four ways; the `Wrong fit` pile is the gate's negative set, the `Outcompeted` pile is reserved for R6's ranker, the `Rule-break` pile is a Stage-0 rule inventory.
 
-### Step 2 — Experiment B: the centroid baseline (resolves Fork B; ~2–3h, Claude plumbing)
+### Step 2 — ~~Experiment B: the centroid baseline~~ **BLOCKED AS SPECCED — re-point or cut**
 
-**What it's for:** a zero-training floor that tells R6 whether the cheap ranker suffices or a real one is needed. Does not block the gate.
+**Why it's blocked (2026-07-26):** recall@30 has **no valid denominator.** Only 0–6 of each issue's ~20 published events exist in the candidate pool at all (**3.1% corpus-wide overlap**), so the denominator is ~2, not 15. This is the same dead URL-join assumption that §62 killed on 2026-07-12, in a new costume — reconstructing "the ~720 candidates that week" and "the 15 published that week" as the same population is exactly what the data says we cannot do.
 
-- Reconstruct one past issue window's ~720 candidates. Score each by **cosine similarity to the centroid** (average vector) of the 1,126 published embeddings. No model, no fitting.
-- Compute **recall@30** against the 15 events actually published that week.
-- **Interpret:** ~0.5–0.6 → ranking is tractable, the cheap `P(include) × P(section)` ranker is plausibly enough (R6 stays small). ~0.15 → text alone isn't enough; R6 needs the real BT ranker + structured features. Every future ranker must beat this number.
+**Do not run it as written.** Two live options, **neither chosen — Ariel's call:**
+- **Re-point** at a population where the join is real (e.g. rank *within the labelled deck* and measure against the editor's own includable/None calls), accepting that it is a weaker proxy for production ranking.
+- **Cut it.** Fork B is now a W6-internal architecture question (threshold vs scoring gate), not the cheap-vs-BT-ranker question this step was built to answer — so its original consumer no longer exists.
 
-**Done when:** recall@30 number in hand; recorded as the R6 ranker floor. (Homes the fork-B call in `docs/r6/R6_Scope.md`.)
+**Not a blocker either way:** it never blocked the gate, and Fork B is now priced by Step 4a instead.
 
 ### Step 3 — Build Stage 0: deterministic pre-filter (~1 day, no ML)
 
@@ -87,6 +98,7 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 - Domain allow/blocklist — **drop the 59 foreign-Eventbrite domains** (.de/.fr/.co.uk/.sg — zero possible keepers) and forms.gle.
 - Language detection; geography where the source provides it; date-window; is-it-an-event. Every rejection emits a typed reason code (`OUTSIDE_AREA` / `WRONG_DATE` / `NON_EVENT` / `NOT_ENGLISH`), auditable.
 - **Source stays a feature, not a delete button** — do NOT drop sources by junk *rate*. allevents.in is 56% junk but supplies ~300 keepers/year; the gate handles its junk per-event. Delete only provably-100%-junk sources.
+- **⚠️ New geo hole found 2026-07-27 (#108 backfill, unresolved):** AllEvents' `richmond-hill` city slug conflates **Richmond Hill, Ontario with Richmond Hill, Georgia, USA**, and R1's `CITY_MAP` passes it. 10 rows detected in the 456-row deck (detection incomplete — it needs description text to see), and **3 of them carry a positive editor label**. This is a Stage-0 rule on *facts*, and the discriminator the API already returns is `full_address`, not a keyword. Touches R1; **not actioned, needs a ruling** (own issue vs fold into Stage 0 vs re-ask the editor about the 3).
 
 **Done when:** Stage 0 runs on the raw pool, drops ~5–10% deterministically with typed reasons, keeps every source that can ever produce a keeper.
 
@@ -96,12 +108,22 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 
 - **Representation:** the embeddings you already have (`voyage-4-large` @2048d, §71/§73 — TF-IDF killed, §67). Same vectors the classifier uses → zero marginal cost.
 - **Model:** binary logistic regression. Features = embedding + one-hot source + has-category-tags + description length. Fable's text-only floor was **AUC 0.823** on the 416; source + more labels likely pushes it to ~0.87+.
-- **Trained on:** the Step-1 split (ineligible = negatives, includables = positives). *Not* the merged None (Fork A).
-- **Operating point:** tune to **≥0.98 keeper recall**, take whatever junk rejection that buys (~43% text-only at 0.95; higher with features). The dial is recall because a **killed keeper is invisible and unrecoverable**; surviving junk just loses in ranking. Precision is the ranker's job.
+- **Trained on:** the Step-1 four-way split — **`Wrong fit` = negatives**, includables = positives. `Outcompeted` is *withheld* (it is a property of the week, not the event); `Rule-break` belongs to Stage 0; `Ambiguous` is excluded. *Not* the merged None.
+- **Operating point: UNSET — see Step 4a. Do not treat 0.98 as settled.** The ≥0.98 keeper-recall figure entered this doc unpriced and **has no measurement behind it**; the fresh-lens review prescribed **0.95** (`fresh_lens_review_2026-07-24.md:75`), and only two points on the curve are measured — **0.95 → 43% junk rejection, 0.90 → 55%**. With ~211 positives, a 0.98 threshold is set by roughly 4 events. The dial is still recall, because a **killed keeper is invisible and unrecoverable** while surviving junk just loses in ranking — but *which* recall is an open number, and 0.98 was chosen against an assumed **scarcity** of keepers that does not exist at ~335 eligible per window. What recall must still guard is **bias, not volume**: losing 67 events at random is survivable, losing 67 that are all Golden Age library programs is not — which argues for a per-section floor rather than one global number.
 - Output a **calibrated probability** (needed to set the recall threshold, and to serve as the ranking score). Calibration check before trusting the threshold.
 - **Grow labels for free:** every weekly editor review writes back ~30–50 labels → ~800 rows by September with no dedicated labeling session.
 
-**Done when:** the gate scores the raw pool, hits ≥0.98 keeper recall on CV (URL-grouped, no leak), reports rejection rate by source, outputs a calibrated `P(include)` per event.
+**Done when:** the gate scores the raw pool, hits the Step-4a operating point on **grouped** CV (no leak), reports rejection rate by source, outputs a calibrated `P(include)` per event.
+
+### Step 4a — Price the recall / junk-rejection curve (authored-core, Ariel; ~1h, cached data)
+
+**What it's for:** this **sets the release bar**; it does not confirm one. Everything downstream — the Step-4 operating point, Fork B, Fork C — waits on it. No new spend: the labels and embeddings are cached.
+
+- Sweep the threshold across the full range and plot **keeper recall vs junk rejection**, with the two measured points (0.95→43%, 0.90→55%) as anchors.
+- Report **per-section** keeper recall at each point, not just the global number — the failure that matters is a class going dark, not a random loss.
+- Report how many *events* separate 0.95 from 0.98, so the cost of the last three points is visible rather than assumed.
+
+**Done when:** the curve exists, an operating point is chosen **with the number in hand**, and it is written into this doc as the bar. Until then, this doc names no recall target.
 
 ### Step 5 — Validate: the one-week dry run (the real go/no-go)
 
@@ -119,19 +141,21 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 **Retired:** min per-class recall ≥ 0.75. It measured section accuracy on a population that doesn't exist in production; for C/G it sat at/below the ~89% human self-consistency ceiling anyway. Kept only as an internal diagnostic.
 
 **New:**
-- **Gate: keeper recall ≥ 0.98** (CV on the growing labeled set) — the one number that must be conservative; a silently killed keeper is the unrecoverable failure.
+- **Gate: keeper recall ≥ TBD — set by Step 4a, not by this doc.** ⚠️ **0.98 is UNMEASURED** and must not be quoted as the bar anywhere. What is measured: **0.95 → 43% junk rejection · 0.90 → 55%.** What was *prescribed* by the fresh-lens review: **0.95.** The direction is settled (recall is the conservative dial, because a silently killed keeper is the unrecoverable failure); the value is not. Report **per-section** recall alongside the global figure.
 - **Product: editor swaps ≤ 2–3 of the 15 shipped slots, approve in < 15 min** — measurable every week for free from the review loop.
-- **Recall@30** (from Step 2) — the ranking floor R6 must beat.
+- ~~**Recall@30**~~ — **removed. Step 2 has no valid denominator** (3.1% pool/published overlap); it is not a live metric until the step is re-pointed or cut.
+
+**Standing caution (meta, 2026-07-26):** four load-bearing numbers in this release entered documents with no measurement behind them — the 2% keep rate, min-class 0.75, the 0.98 recall bar, and recall@30's denominator. That is **one pattern, not four mistakes**, and it is the only one still live. Any number that enters this doc as a *bar* names its measurement or is marked UNMEASURED.
 
 ---
 
 ## R7-W6 Sign-off gate
 
 W6 is done when:
-1. The gate ships at ≥0.98 keeper recall with a calibrated `P(include)`.
+1. The gate ships **at the operating point chosen in Step 4a** (a priced point on a measured curve — *not* a number carried over from this doc's history) with a calibrated `P(include)`.
 2. It sections the fresh pool (survivors → classifier) — the artifact R6 consumes.
-3. The one-week dry run clears ≤2–3 swaps.
-4. Forks A and B are resolved (Steps 1–2) and their outcomes recorded (B → R6_Scope).
+3. The one-week dry run clears ≤2–3 swaps. **⚠️ This bar is itself in question — see Fork C**; a perfect gate still leaves ~335 events for 15 slots, so a swap count measures the ranker as much as the gate.
+4. Fork A is executed (Step 1 complete, 239 rows split four ways) and **Forks B and C are resolved with the Step-4a number in hand**, their outcomes recorded (B → `R6_Scope` if it lands there).
 5. Decision_Log entry logged (the reframe + scope pivot; supersedes the min-class exit table in §72).
 
 **Deferred to R6 (Week 2), not W6:**
@@ -160,7 +184,7 @@ W6 is done when:
 **Missingness (measured, post-R5):** description dropout ~47%, but true signal-dead (no desc AND no cats) only ~15% — concentrated in title-only single-venue sources (PinotsPalette 100%, RichmondHill 95%, Facebook 81%). Include description *with* dropout so the model survives the ~half of production that lacks it.
 
 **Blind-pass catches (in scope regardless of architecture):**
-- **Self-reinforcing `NoSection` drift** — a wrong section is visible (editor moves it); a silently-dropped event never appears, never gets corrected, and retraining on published survivors narrows the newsletter irreversibly. Mitigation: never hard-drop; weekly reject-rate alarm; one-click editor rescue. **Directly relevant to the gate — the 0.98 recall floor is this catch made quantitative.**
+- **Self-reinforcing `NoSection` drift** — a wrong section is visible (editor moves it); a silently-dropped event never appears, never gets corrected, and retraining on published survivors narrows the newsletter irreversibly. Mitigation: never hard-drop; weekly reject-rate alarm; one-click editor rescue. **Directly relevant to the gate — the keeper-recall floor (value TBD, Step 4a) is this catch made quantitative.**
 - **Calibration tripwire** — if editor-override inside the auto-accept band > ~10%, auto-downgrade to suggest-only until retrained.
 
 **Corpus freeze (07-15):** `published_titles.json` 1,126 rows (376/383/367); `raw_candidate_titles.json` 1,805 unique. Frozen once into serve-time text — do not re-stage mid-analysis (but dedup at fit, Step 0).
