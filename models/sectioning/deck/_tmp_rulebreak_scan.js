@@ -1,5 +1,16 @@
 /**
- * Task 2 — rule-break scan over the 239 None rows. REPORT ONLY, writes no Airtable, no deck.
+ * Rule-break scan over the 239 None rows. REPORT ONLY, writes no Airtable, no deck.
+ *
+ * PROVISIONAL — kept only until the pre-sort vs pre-label call is made (see
+ * R7_None_Split_Labelling_Plan.md §4, "The rule-break pre-sort"). Delete it if that lands
+ * as "neither"; promote it to scripts/ if the pre-sort ships.
+ *
+ * Rerun in two commands (its input JSON is deliberately not committed -- regenerate, don't stage):
+ *     node models/sectioning/deck/_tmp_pull_none_split.js     # read-only Airtable pull
+ *     node models/sectioning/deck/_tmp_rulebreak_scan.js
+ *
+ * Measured 2026-07-27: 41/239 flagged (17.2%); hand-adjudicated precision 78% strict / 90%
+ * counting five contested. Re-run with #108 backfilled text appended: 51 flags (+24%).
  *
  * CLAUDE.md's WRITTEN reject list is exactly four things:
  *   B2B · civic · professional development · non-GTA
