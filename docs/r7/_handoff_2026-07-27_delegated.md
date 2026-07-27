@@ -147,10 +147,22 @@ see, and only 137 rows have recovered text). Confirmed by the recovered prose:
 | 166 | **Families** | Splash into Summer presented by Salty Paws Savannah | Savannah GA |
 | 174 | **Golden** | Community yard sale | Savannah Harley-Davidson, GA |
 
-**This is label noise in the positive class of the gate's training set**, caused by feature poverty:
-the editor could not see the geography because the deck text did not carry it. It is also a free
-Stage-0 rule (facts, not taste — exactly what §75 says Stage 0 is for), but it needs a real fix at R1,
-not a keyword: the discriminator is the venue address, which the API does carry (`full_address`).
+**This is label noise in the positive class of the gate's training set.** It is also a free Stage-0
+rule (facts, not taste — exactly what §75 says Stage 0 is for), but it needs a real fix at R1, not a
+keyword: the discriminator is the venue address, which the API does carry (`full_address`).
+
+**⚠️ Correction to an earlier draft of this section.** I first wrote that these were mislabelled
+"because the editor could not see the geography — the deck text did not carry it." **That claim is
+not supported and is withdrawn.** The parallel session's 12:55 PM log entry makes the point that kills
+it: the editor had the link on every row and opens links by habit, so his labels were made with more
+information than our feature vector has. Rows 23/166/174 were labelled in the original `Section` pass,
+long before the None-split instrument existed, so **there is no record either way of whether he opened
+those three links** — the honest status is *unknown*, not *he couldn't see it*.
+
+What survives, and it is still the point: **whether or not the editor knew, the model cannot know.**
+These three rows teach a gate that Georgia events are keepers, because the geography is absent from
+`title + clean(desc)`. That is a **feature** defect, not a labelling defect — the same distinction the
+parallel session drew about the 30.9% block rate, and I made the same error one branch over.
 
 **Open for Ariel — I did not act on it:** whether to (a) file this as its own issue, (b) fold it into
 Stage 0, (c) re-ask the editor about those three rows, or (d) all three. It touches R1, which is
@@ -264,10 +276,15 @@ been ~6× over-stated** under the three-way instrument. It also means the pilot'
 `Wrong fit` — the bucket that did not exist — at ~55% of rejections.
 
 **Two things this remap surfaced that the §75 write-up did not have:**
-1. **r6 is a mislabel caused by feature poverty, not by taxonomy.** The instrument fix does not touch
-   it; the Task-1 backfill does. It is a single row, but it is the existence proof that blank
-   descriptions produce *wrong* labels, not merely weak ones — and he had ticked `NeededLink` on it,
-   i.e. he opened the link and still got the nature of the event wrong from our summary.
+1. **r6's stated *reason* does not match the event — but this is NOT an existence proof that blank
+   descriptions cause wrong labels, and an earlier draft of this doc overclaimed it as one.**
+   He ticked `NeededLink` on r6, i.e. **he opened the link**, so he had more information than the blank
+   `Details` field — the missing text cannot be blamed for the mismatch. What is actually shown is
+   narrower: his written reason ("professional training") describes something the event is not (a
+   YorkU prospective-student open day), while his verdict ("my focus is entertainment") still stands.
+   **That is a reasoning-trace defect, not a label defect** — worth a two-second confirm, not a
+   conclusion about features. The parallel session made the same correction about the 30.9% block rate;
+   this is the same error one branch over.
 2. **r25 and r36 are the same boundary from opposite sides** — an event where a written rule and a
    taste verdict both apply, and the editor reaches for taste. If Rule-break is defined as *"a written
    rule applies"* rather than *"a written rule is why I rejected it,"* both become Rule-break and Stage-0
@@ -435,13 +452,16 @@ finding rather than a description finding.
 ## Ranked list — what needs Ariel's ruling
 
 1. **Does the recovered text go into the deck's `Details` before the sittings?** *(highest leverage,
-   time-critical.)* For: 111 rows stop being blind, r6 proves blind rows produce wrong labels, and the
-   editor's ~227 remaining rows are the expensive resource. Against: it changes the instrument at row
-   12 **and** it destroys the text-only-ceiling measurement the sittings were designed to produce
-   (plan §5.1) — you cannot measure the ceiling of text you have now improved. **These two cannot both
-   be had.** My read: the ceiling measurement was a proxy for "should we fetch richer features," and
-   Task 1 has already answered that question directly, so the ceiling is worth less than it was
-   yesterday. But that is a scope call, and it is yours.
+   time-critical.)* For: 111 rows stop being blind, and the editor's ~227 remaining rows are the
+   expensive resource. Against: it changes the instrument at row 12 **and** it destroys the
+   text-only-ceiling measurement the sittings were designed to produce (plan §5.1) — you cannot measure
+   the ceiling of text you have now improved. **These two cannot both be had.**
+   ⚠️ **The "for" case is weaker than I first wrote it.** I originally cited r6 as proof that blind rows
+   produce wrong labels; **that is withdrawn** (see Task 3). The editor opens links by habit, so *his*
+   labels are not text-limited — **the model's features are.** So backfilling improves the feature
+   vector, not the labelling, and the real trade is *"better features now"* vs *"a measurement of how
+   bad the features are."* My read is that Task 1 already answered the latter directly, so the ceiling
+   is worth less than it was yesterday — but that is a scope call, and it is yours.
 2. **The `Rule-break` definition — "a written rule applies" vs "a written rule is why I rejected it."**
    r25 and r36 turn on it, it changes Stage-0 coverage, and it must be settled *before* the field
    description is written. One sentence, but it is load-bearing.
