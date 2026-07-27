@@ -458,6 +458,30 @@ finding rather than a description finding.
 
 ---
 
+## QA pass on the staging file (run after the tasks, before handing over)
+
+All checks pass on `allevents_backfill_2026-07-27.json`:
+
+- **Schema:** all 11 required keys present on all 137 records; `recoveredLen === recoveredText.length` on every row.
+- **Provenance:** every record's `Row` exists in `editor_deck_2026-07-18.json`, its `Link` is byte-identical
+  to the deck's, its host is `allevents.in`, and it genuinely lacked prose. No duplicate rows. 0 integrity errors.
+- **The redirect invariant holds:** 0 records with `idMatched === false` carry any text.
+- **No `og:description` leakage:** 0 records contain the boilerplate string *"Find tickets & information for"*.
+- **Right-event check:** 106 of 111 recoveries open with the deck's event title. I read the other 5 —
+  **all five are correct matches**, failing the string test only because the extractor renders emoji as `?`
+  (*STEAM Fair 🧪🎨⚙️*, *🎲 Backgammon Day Tournament*, *🌮 Flaco's House…*) or because a banner precedes the
+  title. No wrong-event contamination in the file.
+- **Prohibited files:** `git diff master..HEAD` confirms zero changes to `workflows/NLAP R1.json`,
+  `editor_deck_2026-07-18.json`, `models/sectioning/corpora/**`, any `.npy`, `transfer_test.py`,
+  `Execution_Log.md`, or `CHANGELOG.md`. Airtable access was GET-only (`_tmp_pull_none_split.js`).
+
+**One extra thing the QA pass surfaced, worth a line:** row 342's page opens
+*"EVENT CANCELLED (EXTREME WEATHER) — Bike Bonanza 2026! Please note as of June 13, this event has been
+cancelled…"*. **AllEvents publishes cancellation banners that the API does not carry.** A cancelled event
+is a *fact*, not a taste judgement — which makes it exactly the kind of thing §75 says Stage 0 may act on.
+Not counted, not measured, not actioned; noting it because the fetch that recovers descriptions would
+recover this for free.
+
 ## Files touched
 
 **New (staging / temp, all under `models/sectioning/deck/`):**
