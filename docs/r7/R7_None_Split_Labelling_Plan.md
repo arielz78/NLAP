@@ -193,6 +193,14 @@ is **78% strict / 90% counting the contested five**. Every false positive is the
 **a rule word appearing as content rather than as the event's nature** — *Leonid & Friends* matched
 "Chicago" (a tribute band), an author talk matched "Georgia" (the novel's setting).
 
+**✅ DECIDED 2026-07-27 (Ariel): pre-*sort*, don't pre-*label*.** He accepts touching every row — the
+sort exists to stop the templated block eating his attention, not to save him rows. **Implementation is
+deliberately held until the four-way `NoneType` respec**, so the instrument changes once rather than
+twice at row 12 (the same trade §75 already ruled on). Ships with the respec, in one trip.
+⚠️ **§76 narrows what this pre-sort is *for*:** prof-dev and B2B flags no longer route to Stage 0 at all
+(they are content judgments, not record facts), so the sort now buys editor attention — **not** Stage-0
+coverage. The reasoning that produced the call is kept below.
+
 **Do not pre-label.** 78% precision is nowhere near good enough for a bucket that feeds a stage which
 **hard-deletes**. **Pre-*sort* instead:** put the flagged rows first with the matched rule shown as a
 hint, and have him confirm or override. He still touches every row — no label is machine-authored —

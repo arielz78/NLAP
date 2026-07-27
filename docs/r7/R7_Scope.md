@@ -97,8 +97,8 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 
 - Domain allow/blocklist — **drop the 59 foreign-Eventbrite domains** (.de/.fr/.co.uk/.sg — zero possible keepers) and forms.gle.
 - Language detection; geography where the source provides it; date-window; is-it-an-event. Every rejection emits a typed reason code (`OUTSIDE_AREA` / `WRONG_DATE` / `NON_EVENT` / `NOT_ENGLISH`), auditable.
-- **Source stays a feature, not a delete button** — do NOT drop sources by junk *rate*. allevents.in is 56% junk but supplies ~300 keepers/year; the gate handles its junk per-event. Delete only provably-100%-junk sources.
-- **⚠️ New geo hole found 2026-07-27 (#108 backfill, unresolved):** AllEvents' `richmond-hill` city slug conflates **Richmond Hill, Ontario with Richmond Hill, Georgia, USA**, and R1's `CITY_MAP` passes it. 10 rows detected in the 456-row deck (detection incomplete — it needs description text to see), and **3 of them carry a positive editor label**. This is a Stage-0 rule on *facts*, and the discriminator the API already returns is `full_address`, not a keyword. Touches R1; **not actioned, needs a ruling** (own issue vs fold into Stage 0 vs re-ask the editor about the 3).
+- **Source stays a feature, not a delete button** — do NOT drop sources by junk *rate*. allevents.in is 56% junk but supplies ~300 keepers/year; the gate handles its junk per-event. Delete only provably-100%-junk sources. ⚠️ **Both numbers are STALE-BY-CONSTRUCTION** — they were measured on text missing ~74% of AllEvents descriptions (#108) *and* before the #109 geo guard removed 12.9% of AllEvents ingestion. Directionally fine, not re-derived; do not quote as a bar.
+- **✅ Geo hole CLOSED 2026-07-27 (#109) — and it was 5× bigger than the deck showed.** AllEvents' `richmond-hill` slug conflates **Richmond Hill Ontario with Richmond Hill GEORGIA and Richmond Hill NEW YORK**; `CITY_MAP` passed all three because the city name is genuinely correct. Deck detection found 10 rows; **a live API pull found 51 of 396 (12.9%)** — deck detection was incomplete because it inferred geography from description text. **Fixed in all three `AllEvents Normalize*` nodes** of `workflows/NLAP R1.json`: `venue.full_address` (blank on **0 of 390** live records) is now tested for positive foreign evidence, never for a missing address. Verified against live data — 51 dropped (50 Richmond Hill GA/NY, 1 Markham **Illinois**), 0 false drops. **Still open:** the 3 deck rows carrying a positive editor label (label noise in the gate's *positive* class) and an n8n re-import.
 
 **Done when:** Stage 0 runs on the raw pool, drops ~5–10% deterministically with typed reasons, keeps every source that can ever produce a keeper.
 
@@ -114,6 +114,8 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 - **Grow labels for free:** every weekly editor review writes back ~30–50 labels → ~800 rows by September with no dedicated labeling session.
 
 **Done when:** the gate scores the raw pool, hits the Step-4a operating point on **grouped** CV (no leak), reports rejection rate by source, outputs a calibrated `P(include)` per event.
+
+**Also report here — the trigger that un-parks the breadth flag (§75).** §75 parked the religion/nationality flag on the theory that the *embedding* carries breadth semantically where a regex cannot. That theory has never been tested, and nothing in the workflow was scheduled to test it. **Report gate recall on the single-community stratum** (the ~30 rows the §75 regex identifies, used here as a diagnostic slice, never as a feature). If those events systematically **survive** the gate, the embedding is not carrying breadth and the flag comes off the shelf; if they are rejected at the base rate or better, the flag stays parked permanently and §75's reasoning is confirmed. Either result is a finding — this is the check, not a formality.
 
 ### Step 4a — Price the recall / junk-rejection curve (authored-core, Ariel; ~1h, cached data)
 
@@ -142,10 +144,24 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 
 **New:**
 - **Gate: keeper recall ≥ TBD — set by Step 4a, not by this doc.** ⚠️ **0.98 is UNMEASURED** and must not be quoted as the bar anywhere. What is measured: **0.95 → 43% junk rejection · 0.90 → 55%.** What was *prescribed* by the fresh-lens review: **0.95.** The direction is settled (recall is the conservative dial, because a silently killed keeper is the unrecoverable failure); the value is not. Report **per-section** recall alongside the global figure.
-- **Product: editor swaps ≤ 2–3 of the 15 shipped slots, approve in < 15 min** — measurable every week for free from the review loop.
+- **Product: editor swaps ≤ 2–3 of the 15 shipped slots, approve in < 15 min** — measurable every week for free from the review loop. ⚠️ **UNMEASURED as a bar.** No swap count has ever been recorded; 2–3 is a target someone wrote down, not a baseline anyone observed. It is also the bar Fork C questions (a perfect gate still leaves ~335 for 15 slots, so a swap count measures the ranker as much as the gate). Capture a *current* swap count on one real issue before treating this as pass/fail.
 - ~~**Recall@30**~~ — **removed. Step 2 has no valid denominator** (3.1% pool/published overlap); it is not a live metric until the step is re-pointed or cut.
 
-**Standing caution (meta, 2026-07-26):** four load-bearing numbers in this release entered documents with no measurement behind them — the 2% keep rate, min-class 0.75, the 0.98 recall bar, and recall@30's denominator. That is **one pattern, not four mistakes**, and it is the only one still live. Any number that enters this doc as a *bar* names its measurement or is marked UNMEASURED.
+**Standing caution (meta, 2026-07-26; extended 2026-07-27):** four load-bearing numbers in this release entered documents with no measurement behind them — the 2% keep rate, min-class 0.75, the 0.98 recall bar, and recall@30's denominator. That is **one pattern, not four mistakes**, and it is the only one still live. Any number that enters this doc as a *bar* names its measurement or is marked UNMEASURED.
+
+**The convention that enforces it (adopted 2026-07-27):**
+1. **Every number carries its provenance inline** — `(n=X, measured YYYY-MM-DD, how)`. A number without that tag may be quoted as context, never as a bar.
+2. **Before a number sizes a solution, ask: is this a fact about the world, or a fact about my instrument?** Every failure so far was the latter read as the former, and the check costs ten seconds:
+
+   | The number | Read as | Actually an artifact of |
+   |---|---|---|
+   | 2% keep rate | the pool is junk | the 5-per-section **quota** |
+   | ~40% no prose | the data doesn't exist | **which endpoint** we call (#108) |
+   | 30.9% block include rate | those events are worse | **our feature vector** |
+   | 10 Georgia rows | the leak is small | **detecting via description text** (real: 51/396, #109) |
+   | 0.98 keeper recall | a measured bar | nothing — never measured |
+
+3. **Name which claim you are making: "the editor was wrong" vs "the model cannot see it."** Different bugs, different fixes (relabel vs add a feature). This was conflated three separate times on 2026-07-27. The tell: **if the editor had the link, it is a feature bug, not a label bug.**
 
 ---
 
@@ -181,7 +197,7 @@ W6 is done when:
 
 **Feature recipe = serve-time text: `title + clean(DescriptionRaw)`** *(§70).* SourceCategories excluded by default (re-enters only via ablation). Source-prior and deterministic-source routing killed by the editor's "every source varies" rulings (§63). **Open (Ariel, decide by CV):** does the source slug become a *feature* for the gate (VPL ~90% not-Couples, PinotsPalette 0/33 Families are real per-source signal) — watch per-class confusion for the source-as-shortcut risk. Invariant: **score-time recipe == serve-time recipe.**
 
-**Missingness (measured, post-R5):** description dropout ~47%, but true signal-dead (no desc AND no cats) only ~15% — concentrated in title-only single-venue sources (PinotsPalette 100%, RichmondHill 95%, Facebook 81%). Include description *with* dropout so the model survives the ~half of production that lacks it.
+**Missingness (measured, post-R5):** description dropout ~47%, but true signal-dead (no desc AND no cats) only ~15% — concentrated in title-only single-venue sources (PinotsPalette 100%, RichmondHill 95%, Facebook 81%). ⚠️ **The ~47% describes what we FETCH, not what EXISTS** (measured pre-#108). On the label deck the same gap is 42.3% → **14.8%** once AllEvents detail pages are read. Still true of the corpus as it stands today; **wrong the moment R1 fetches descriptions**, which is open decision #1. Re-measure then rather than editing this line now. Include description *with* dropout so the model survives the ~half of production that lacks it.
 
 **Blind-pass catches (in scope regardless of architecture):**
 - **Self-reinforcing `NoSection` drift** — a wrong section is visible (editor moves it); a silently-dropped event never appears, never gets corrected, and retraining on published survivors narrows the newsletter irreversibly. Mitigation: never hard-drop; weekly reject-rate alarm; one-click editor rescue. **Directly relevant to the gate — the keeper-recall floor (value TBD, Step 4a) is this catch made quantitative.**
