@@ -4,6 +4,12 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-27
+- Resolved the blocking design decision on the client labelling round: the rejection taxonomy now splits four ways so each category feeds exactly one downstream stage, and the first completed batch is reframed as a pilot rather than rework. Changing the instrument at twelve rows costs two rows of comparability; changing it at a hundred and fifty would cost the batch.
+- Documented a selection criterion the business has applied for fifteen months but never written down — events must appeal across communities rather than single one out. Measured it before deciding where it belongs: a keyword approach separates the two cases at only 1.7×, and would have deleted ten events the client actually published. It becomes evidence a model weighs, never a rule that deletes.
+- Replaced a self-reported checkbox with observed behaviour, after the client pointed out that someone habituated to a workflow cannot reliably report their own counterfactual. Measured three standing assumptions against cached data and overturned two, including one that would have led to discarding a fifth of the candidate pool at random.
+- Found that the largest data source publishes full event descriptions on its web pages that the API integration never requested — meaning a constraint this release has been designing around may be a collection gap rather than a data limitation, and fixable upstream at a fraction of the cost of working around it.
+
 ## 2026-07-26
 - Designed and shipped a structured labelling round to the client editor — the input that decides which direction the current release takes. Built it as additive columns on the existing dataset rather than a parallel table, with the prior labels frozen and a pre-round snapshot captured, so an in-progress collection can never overwrite work already banked.
 - Deliberately framed the ask to avoid biasing the answer: the editor is asked for his own rejection criteria before being shown ours, and picks the wording for the key distinction himself. A field was added to record when a listing's own text was insufficient to judge — which measures the ceiling on what any text-based model can achieve, rather than leaving it as an assumption.
