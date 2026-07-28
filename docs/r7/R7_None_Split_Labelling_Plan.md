@@ -283,7 +283,15 @@ depends on information the model will never have — the stratum from §5.2.
 1. **Does the #108 recovered text go into `Details` before the sittings?** (§3.2 — legibility vs the
    ceiling measurement; they are mutually exclusive, and the editor's time is the scarce resource.)
 2. **The `Rule-break` definition** — "a rule applies" vs "a rule is why I rejected it" (§0). One
-   sentence, changes Stage-0 coverage, blocks the field description.
+   sentence, changes Stage-0 coverage, blocks the field description. **Partially resolved 2026-07-27
+   (Ariel): adjacency to B2B or professional development is *always* a rejection — no ambiguity, no
+   case-by-case.** That settles the **adjudication**. It does not settle the **detection** (keyword
+   precision is still 78%, every false positive a rule word appearing as content, so these stay
+   gate-scored per §76), and it does not settle the **record-fact** rules — which is the only part
+   that still moves Stage-0 coverage. **Consequence worth keeping:** a rule the editor applies 100%
+   consistently is learnable from text, unlike the C/G boundary he flip-flops on. So this makes the
+   *gate's* job easier, not Stage 0's. Now empirically testable via the prof-dev/B2B stratum
+   diagnostic added to `R7_Scope` Step 4.
 3. **The `not-an-event` / `not-English` contradiction** between this ladder and CLAUDE.md (§4).
 4. **Pre-sort vs pre-label vs neither** for the 51 flagged rule-break rows (§4).
 5. **`NoneReason`:** keep-and-scope-to-Rule-break (recommended) vs delete. **`NeededLink`:** hide
@@ -297,4 +305,6 @@ depends on information the model will never have — the stratum from §5.2.
 - The **`Outcompeted` label** — his word, not ours.
 - The **breadth sentence** — *"An event is too niche when ______."*
 - The five **contested rule-break rows** (§4), which all turn on intent rather than fact: is a free
-  library job-search session "professional development"?
+  library job-search session "professional development"? **Note (2026-07-27):** Ariel's blanket
+  adjacency rule (Open-items 2) *would* resolve all five as rejections; he has deliberately **left
+  them with the editor** rather than deciding them himself, so they stay TBD-from-editor.
