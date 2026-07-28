@@ -124,24 +124,19 @@ def build_published():
 # ============================================================
 # CORPUS 2 — the labeled deck (copied from transfer_test.py: clean/serve_text/load_rows)
 # ============================================================
-DESC_CHAR_CAP = 300
 F_SECTION = "fld8YycTYbx63EC22"
 F_URL     = "fldndzHXPEBm43EJv"
 F_ROW     = "fldwjfVY5pN1qajFj"
 LABEL_MAP = {"Families": "For Families", "Couples": "For Couples",
              "Golden": "For Golden Age Readers", "None": "None"}
 
-BOILER = re.compile(
-    r"^(overview|good to know|highlights|refund policy|organized by|about this event"
-    r"|followers?|hosting.*|events?\d*|in person|online|\d+ hours?.*|\d+ minutes?"
-    r"|refunds? up to .*|more events from .*|time:.*)$", re.I)
-
-def clean(s):
-    s = html.unescape(str(s or ""))
-    s = re.sub(r"<[^>]+>", " ", s)
-    lines = [ln.strip() for ln in s.splitlines()]
-    lines = [ln for ln in lines if ln and not BOILER.match(ln)]
-    return re.sub(r"\s+", " ", " ".join(lines)).strip()[:DESC_CHAR_CAP]
+# --- §70 serve-time text recipe: IMPORTED, not copied (consolidated 2026-07-28).
+# The ONE definition lives in models/sectioning/text_recipe.py. All four former copies were
+# verified byte-identical on the 1,805-row corpus before the move; behaviour is unchanged.
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parent.parent))
+from text_recipe import DESC_CHAR_CAP, BOILER, clean          # noqa: E402
 
 def serve_text(ev):
     """§70 default arm: title + clean(desc). Cats excluded."""

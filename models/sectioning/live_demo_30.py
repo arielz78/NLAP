@@ -44,8 +44,6 @@ OUT = HERE / "deck"
 MODEL = "voyage-4-large"           # §71 pick (07-25 swap); must match embed_corpus.py or the
 VOYAGE_DIM = 2048                  # head is fit on one space and served another
 N_DRAW = 30
-DESC_CHAR_CAP = 300
-
 ap = argparse.ArgumentParser()
 ap.add_argument("--seed", type=int, default=23)
 ap.add_argument("--n", type=int, default=N_DRAW)
@@ -58,17 +56,13 @@ args = ap.parse_args()
 # executes on import). Same discipline as transfer_test.py: if it changes there, change
 # it here, or the demo scores different text than production serves.
 # ============================================================
-BOILER = re.compile(
-    r"^(overview|good to know|highlights|refund policy|organized by|about this event"
-    r"|followers?|hosting.*|events?\d*|in person|online|\d+ hours?.*|\d+ minutes?"
-    r"|refunds? up to .*|more events from .*|time:.*)$", re.I)
-
-def clean(s):
-    s = html.unescape(str(s or ""))
-    s = re.sub(r"<[^>]+>", " ", s)
-    lines = [ln.strip() for ln in s.splitlines()]
-    lines = [ln for ln in lines if ln and not BOILER.match(ln)]
-    return re.sub(r"\s+", " ", " ".join(lines)).strip()[:DESC_CHAR_CAP]
+# --- §70 serve-time text recipe: IMPORTED, not copied (consolidated 2026-07-28).
+# The ONE definition lives in models/sectioning/text_recipe.py. All four former copies were
+# verified byte-identical on the 1,805-row corpus before the move; behaviour is unchanged.
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parent))
+from text_recipe import DESC_CHAR_CAP, BOILER, clean          # noqa: E402
 
 def serve_text(ev):
     """§70: title + clean(DescriptionRaw). Cats EXCLUDED (default arm)."""

@@ -67,25 +67,15 @@ KEEP = ("For Families", "For Couples", "For Golden Age Readers")   # the 3 inclu
 
 # ============================================================
 # PART 1 — the §70 serve-time text recipe.
-# clean() is COPIED from classifier2give2editor.py, not imported: that file executes on
-# import. Same discipline embed_corpus.py uses for its copied recipe — if clean() changes
-# there, change it here or the eval measures a different text than production serves.
-# The 300-char cap was audited 2026-07-22 as display-only / zero model effect; kept so this
-# recipe stays byte-identical to what the editor saw, and exposed as a knob (DESC_CHAR_CAP).
+# IMPORTED, not copied (consolidated 2026-07-28). It previously lived inline here because
+# classifier2give2editor.py executes on import; text_recipe.py is side-effect-free, which
+# removes that reason. All four former copies were verified byte-identical on the 1,805-row
+# corpus before the move — the recipe did not change, only its address.
 # ============================================================
-DESC_CHAR_CAP = 300
-
-BOILER = re.compile(
-    r"^(overview|good to know|highlights|refund policy|organized by|about this event"
-    r"|followers?|hosting.*|events?\d*|in person|online|\d+ hours?.*|\d+ minutes?"
-    r"|refunds? up to .*|more events from .*|time:.*)$", re.I)
-
-def clean(s):
-    s = html.unescape(str(s or ""))
-    s = re.sub(r"<[^>]+>", " ", s)                                  # strip HTML
-    lines = [ln.strip() for ln in s.splitlines()]
-    lines = [ln for ln in lines if ln and not BOILER.match(ln)]
-    return re.sub(r"\s+", " ", " ".join(lines)).strip()[:DESC_CHAR_CAP]
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from text_recipe import DESC_CHAR_CAP, BOILER, clean          # noqa: E402  (the ONE definition)
 
 def serve_text(ev, with_cats):
     """§70 recipe. Default arm (with_cats=False) does NOT widen the train/serve gap; the

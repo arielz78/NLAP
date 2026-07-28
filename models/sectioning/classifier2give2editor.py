@@ -144,17 +144,13 @@ print("language filter: removed", n0 - len(events), "->", len(events), "remain")
 # Clean DescriptionRaw BEFORE drawing: mcmichael rows carry unstripped HTML and
 # Eventbrite rows carry listing boilerplate. Cleaning first matters because the
 # draw uses "has a usable description" as a criterion (see PART 3).
-BOILER = re.compile(
-    r"^(overview|good to know|highlights|refund policy|organized by|about this event"
-    r"|followers?|hosting.*|events?\d*|in person|online|\d+ hours?.*|\d+ minutes?"
-    r"|refunds? up to .*|more events from .*|time:.*)$", re.I)
-
-def clean(s):
-    s = html.unescape(str(s or ""))
-    s = re.sub(r"<[^>]+>", " ", s)                                  # strip HTML
-    lines = [ln.strip() for ln in s.splitlines()]
-    lines = [ln for ln in lines if ln and not BOILER.match(ln)]
-    return re.sub(r"\s+", " ", " ".join(lines)).strip()[:300]
+# --- §70 serve-time text recipe: IMPORTED, not copied (consolidated 2026-07-28).
+# The ONE definition lives in models/sectioning/text_recipe.py. All four former copies were
+# verified byte-identical on the 1,805-row corpus before the move; behaviour is unchanged.
+import sys as _sys
+from pathlib import Path as _Path
+_sys.path.insert(0, str(_Path(__file__).resolve().parent))
+from text_recipe import DESC_CHAR_CAP, BOILER, clean          # noqa: E402
 
 Xraw = vec.transform([e["text"] for e in events])                   # transform, NOT fit_transform
 probs = clf.predict_proba(Xraw)
