@@ -43,8 +43,46 @@ Then give me a tight briefing — no preamble:
 - **Windowed captures:** pending ⏳ items from the metrics log (step 4b) whose window closes at the active or next release. Omit the section entirely if there are none.
 - **Current release focus:** which release (R5/R6/etc.) is active and what it needs.
 - **Your hands-on focus this session:** render the current release's reminder from the CLAUDE.md Learning Mode section.
+- **→ THE SINGLE NEXT ACTION:** end every briefing with exactly one bolded line naming
+  the one thing to do next — not a ranked list, one action. Pick it by what unblocks the
+  most other work, and say in half a sentence what it unblocks. If the top item is a
+  *decision* rather than a task, say so explicitly ("this is a call, not a build").
 
 Keep it short. This is orientation, not a full report. Flag anything that looks stale or contradictory between the log and the roadmap.
+
+---
+
+## `/start zoom` — the drift mode (only when the `zoom` argument is passed)
+
+Plain `/start` stays fast and per-session. **`/start zoom` adds a cross-session synthesis
+first**, then the normal briefing. Use it when you've lost the thread — when the last few
+sessions felt like disconnected firefighting and you can't say what actually moved.
+
+*Why it lives here rather than in its own command:* when you're disoriented you won't
+remember a sixth slash command, but you always run `/start`.
+
+When `zoom` is passed, read the **last 5–6 `Execution_Log.md` entries** (not just the
+latest) plus the active Scope doc, and lead with:
+
+1. **The problem that arose** — the through-line, not a list. If several sessions kept
+   hitting variations of one underlying problem, name that problem once and give the
+   instances as a table. Resist writing six independent summaries.
+2. **Where we started → where we left.** Two states, concrete. Include what was *believed*
+   at the start that turned out wrong.
+3. **The linkage between sessions** — how each session's finding *created* the next
+   session's work. Call out findings that surfaced while doing something else; a run where
+   most discoveries were incidental is telling you the board isn't pointed at the real work.
+4. **The linkage to the Scope doc** — which Step each session touched, as a table. If a
+   session touched nothing, say so.
+5. **Overall progress** — which releases are shipped, which is active, and **what fraction
+   of the active release's steps are actually done.** Be blunt when documentation moved and
+   the critical path didn't.
+6. **The honest flag** — if the critical path hasn't moved across those sessions, say it
+   plainly, and name the external dependency (editor time, a client answer) if one is the
+   real long pole.
+
+Then continue into the normal briefing above. Do not skip the single-next-action line —
+it matters more in zoom mode, not less.
 
 ---
 

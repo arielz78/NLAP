@@ -1,7 +1,9 @@
 # R7-W6 — None-Split Labelling Plan (239 rows)
 
-**Status: LIVE.** The taxonomy fork that blocked the first draft is **decided** — see `Decision_Log.md` §75.
-Written 2026-07-26 from the editor's first 12 rows; rewritten 2026-07-27 to match §75.
+**Status: LIVE.** Written 2026-07-26 from the editor's first 12 rows; rewritten 2026-07-27 to match
+`Decision_Log.md` §75; **§0 replaced 2026-07-28 — the instrument is now a single multiselect field**
+(`NoneType` deleted). This doc is the only home for the instrument design, the sitting script, and the
+sitting log — there is no separate meeting doc.
 
 **Type: Release-working.** Implements `R7_Scope.md` Step 1; delete or archive at R7 close.
 
@@ -11,28 +13,93 @@ approval** — the base has not been touched since the 07-26 build. Two items ar
 
 ---
 
-## 0. The taxonomy — decided, four-way (§75)
+## 0. The instrument — ONE field, **6 options**, multiselect (revised 2026-07-28, Ariel's call)
 
-The editor rejects **four** ways, not three:
+**`NoneType` is deleted. `NoneReason` (multiselect) carries everything.** Tick every option that
+applies; more than one is normal and expected.
 
-| Bucket | Means | Feeds | If mislabelled |
+⚠️ **An 8th option, `outside window`, was drafted and cut the same day (Ariel).** No deck row can be
+outside the window — the 456 were drawn from candidates R1's `DateWindow` node had already filtered to
++30 days. More fundamentally, a date is a **pure record fact the machine knows exactly**, so asking a
+human to tick it violates this doc's own rule (*record facts are detected, never asked*). `non-GTA`
+survives that test only as a **fallback**: the deck predates the #109 geo guard, non-AllEvents sources
+expose no address field, and the editor may spot "Savannah" while reading — so his tick can add
+information the machine lacks. A date never can.
+
+| Option | What it means (editor-facing) | Routes to |
+|---|---|---|
+| **non-GTA** | Not in the GTA — including listings that *say* a GTA city but are elsewhere (there is a Richmond Hill in Georgia and one in New York). | Stage 0 |
+| **B2B / professional** | Aimed at businesses, or at people in a professional role — training, certification, career advancement, networking. Not at readers as residents. **Adjacency always counts** (Ariel's 07-27 ruling — no case-by-case). | the gate |
+| **civic** | Municipal/government business: council meetings, public consultations, zoning, official plan. | the gate |
+| **wrong fit / not our audience** | Breaks no rule, but he'd never run it, any week. Includes **too niche** — appeals to one community rather than across them. | the gate |
+| **outcompeted** *(name TBD-from-editor)* | A good event that lost its slot **this week**. | R6's ranker (withheld from the gate) |
+| **can't tell** | Not enough information to decide. | excluded from both |
+
+### Why one field and not two
+
+The four-way `NoneType` + scoped `NoneReason` design (§75) **forced a single answer where a row often
+has more than one thing wrong with it.** That is the same failure shape as the three-way instrument the
+pilot broke — forcing a single answer where reality is plural — moved one level over.
+
+Two other things pushed it: **§76 broke `NoneType`'s one-bucket-one-consumer property** (content rules
+route to the gate, not Stage 0, so `Rule-break` no longer mapped to one stage), and a two-field design
+means routing can **fail silently** when the second field is blank.
+
+⚠️ **Correction to §75's stated reasoning:** the argument that `NoneReason` was "the field he fills 0/12"
+is **withdrawn**. The 0/12 was a **UI affordance failure** — the multiselect requires clicking a `+` and
+the editor never saw it. It is an untested field, not a rejected one. That does not change the decision,
+but it removes the reason §75 gave for it.
+
+### The routing order (ours — the editor never sees it)
+
+Multiselect means a row can carry `non-GTA` **and** `B2B / professional`. Routing resolves in this order:
+
+1. **`non-GTA`** → Stage 0 delete. *Facts act first: the row is deletable regardless of what else is ticked.*
+2. **`can't tell`** → excluded from everything.
+3. **`wrong fit`, `B2B / professional`, `civic`** → the gate's negatives.
+4. **`outcompeted` alone** → reserved for R6's ranker; **withheld from the gate.**
+
+**Why `outcompeted` ranks last:** it is the weakest claim and the most damaging if wrong (§75 withholds
+it from the gate because it is a property of the week, not the event). Anything else ticked beats it,
+so a confused double-tick **fails safe — into the gate, never out of it.**
+
+### What the change bought immediately
+
+Both **contested** pilot rows dissolve, with no adjudication needed. *GODfidence Conference* (r25) was
+breadth-vs-B2B: tick `wrong fit` **and** `B2B / professional`. *Zumba Instructor Training* (r36) was a
+professional-development fact against a popularity verdict: tick `B2B / professional` **and** `wrong fit`. **The `Rule-break` definitional
+question — "does a rule *apply*, or is it *why* I rejected it" — is dissolved, not answered.** Both are
+recorded; routing decides the rest.
+
+### The 12 pilot rows — remap to the flat field
+
+Re-derived 2026-07-28 from the four-way draft. Ten are a two-minute confirm; two need a genuine re-look.
+
+| Row | Event | Ticks | Conf |
 |---|---|---|---|
-| **Rule-break** | Breaks a standing rule: B2B / professional development / civic / non-GTA. A checkable fact. | **Stage 0**, the deterministic pre-filter (Scope Step 3) | We under-count free rules and skip a filter that cost nothing |
-| **Wrong fit** | Breaks no rule, but he would never run it, any week. Wrong audience, wrong format, **or too narrow — appeals to one community rather than across communities.** | **Stage 1, the gate** — the only thing the gate can learn that Stage 0 cannot | The gate learns to reject the wrong events |
-| **Outcompeted** *(name TBD-from-editor)* | A fine event that lost its slot **this week**. | **R6's ranker** | The ranker trains on junk labelled "good" — actively harmful |
-| **Ambiguous** | Genuinely cannot tell what the event is. | Excluded from both | — |
+| 6 | First Day Preview: Markham Edition | `wrong fit` | LOW — ⚠️ the event is a **YorkU prospective-student open day**, not the "professional training" his note describes. Verdict stands on his own ground ("my focus is entertainment"); the *reason* doesn't match the event. Confirm out loud. |
+| 11 | Effective Vendor Management Training | `B2B / professional` | HIGH — was two ticks under the split options; the merge makes it one |
+| 12 | Geocaching & Orienteering with BIAYR | `outcompeted` | HIGH — the only pilot row that passes the slow-week test |
+| 20 | Indigenous Hockey Equipment Drive Golf Tournament | `wrong fit` | HIGH (breadth) |
+| 24 | Internet Marketing Fundamentals Training | `B2B / professional` | HIGH |
+| 25 | GODfidence Conference 2026 | `wrong fit` + `B2B / professional` | HIGH — *was contested under four-way; multiselect resolves it* |
+| 29 | Spring Colours - Album Release Show | *(blank — re-ask)* | no reasoning recorded, cannot remap honestly |
+| 30 | Unbreakable Minds Community Event | `wrong fit` | HIGH |
+| 33 | Bona Sport Program: Hands-On Training | `wrong fit` | HIGH — a consumer sports clinic; the scan false-positived it on "Training" |
+| 34 | TPM North — Shabbat Korach | `wrong fit` | HIGH (breadth) |
+| 35 | Love as a Foreign Language Book Tour | `wrong fit` | HIGH |
+| 36 | Zumba Instructor Training | `B2B / professional` + `wrong fit` | HIGH — *was contested under four-way; multiselect resolves it* |
 
-**Why four and not three with redefined boundaries:** the missing bucket was the largest one.
-*"Not audience fit / too niche"* had no home and was leaking into **both** `Ineligible` and
-`Outcompeted`, poisoning the gate's negatives and the ranker's positives at the same time. Four
-buckets put the load on the field he fills 12/12 (`NoneType`) and off the one he fills 0/12
-(`NoneReason`), and collapse the reason-code ask from every row to rule-break rows only.
+**The headline holds: only 1 of his 6 `Outcompeted` rows survives as outcompeted.** Under the old
+instrument R6's ranker positives were being over-stated ~6×, and the pilot's real signal is
+`wrong fit` — the bucket that did not exist — at roughly 55% of rejections.
 
-**The one definitional question still open (Ariel's, one sentence, load-bearing):** does `Rule-break`
-mean *"a written rule applies"* or *"a written rule is why I rejected it"*? Two pilot rows turn on it
-— *GODfidence Conference* ("Christian Business… niche") and *Zumba Instructor Training* ("this type of
-event is not popular"), where a written rule and a taste verdict both apply and he reached for taste.
-The answer changes Stage-0 coverage and must be settled **before** the field description is written.
+**Scan-agreement, measured on the 12** *(n=12, 2026-07-27, keyword scan of the four written rules)*:
+**50.0% against his raw three-way labels · 91.7% against the remap.** The scan did not improve between
+those two numbers — **the taxonomy did.** Three of the six raw-label disagreements are rows where he
+used `Ineligible` to mean *"too niche."* ⚠️ Do not promote 91.7% to a bar: n=12, the four-way column is
+our reading rather than his confirmation, and the full-239 precision is **78%** — the worse number is
+the one that governs the pre-sort decision.
 
 ---
 
@@ -277,6 +344,50 @@ depends on information the model will never have — the stratum from §5.2.
 
 ---
 
+## 7. The sitting — script and log
+
+Not a client meeting; `meetings/Meeting_protocol`'s demo format does not apply. There is nothing to
+show. This is 227 rows of labelling, live and text-first.
+
+### Say this first (60 seconds)
+
+> "Last time I gave you two dropdowns. Now it's one, and you can tick more than one box. If an event is
+> both out of area *and* a business event, tick both — you don't have to pick."
+
+Their 12 rows are **not wasted** — they remap (§0) and take about two minutes to re-confirm.
+
+### ⚠️ The mechanical trap that cost the pilot
+
+`NoneReason` is a multiselect: **each option needs the `+` sign.** The editor filled it **0 of 12** times
+— not because he disagreed, but because the affordance was invisible. **Show him the `+` before row one.**
+If nothing else here happens, do this.
+
+### The one distinction that matters most
+
+The pilot got this wrong on **5 of 6 rows** — he ticked "Outcompeted" for events he'd never run at all,
+and outcompeted rows are deliberately **withheld** from the gate's training.
+
+> **Ask out loud on every borderline row: "Would you run this in a quieter week?"**
+> **Yes → `outcompeted`. No → `wrong fit`.**
+
+Pilot phrasings that all mean `wrong fit`, never `outcompeted`: *"people don't like such events"* ·
+*"this type of event is not popular"* · *"from my experience…"* — permanent verdicts about the event,
+not statements about this week's competition.
+
+### Sitting log
+
+*(fill in during or immediately after; TBD-from-editor answers go to §Open items, not here)*
+
+| | |
+|---|---|
+| **Ariel's prediction, recorded BEFORE starting** *(the delta is the signal)* | Rule-break __ / Wrong fit __ / Outcompeted __ |
+| Rows completed | |
+| Split observed — **gate slice only** (first ~89) | non-GTA __ / B2B-professional __ / civic __ / wrong fit __ / outcompeted __ / can't tell __ |
+| Anything that surprised him | |
+| Next sitting scheduled | |
+
+---
+
 ## Open items
 
 **Ariel's, ranked:**
@@ -308,3 +419,11 @@ depends on information the model will never have — the stratum from §5.2.
   library job-search session "professional development"? **Note (2026-07-27):** Ariel's blanket
   adjacency rule (Open-items 2) *would* resolve all five as rejections; he has deliberately **left
   them with the editor** rather than deciding them himself, so they stay TBD-from-editor.
+- **Non-English listings — new 2026-07-28.** Language detection was **dropped from Stage 0** because
+  "can my readers use this listing?" is a **content** judgment, not a record fact (§76): the live pool
+  holds `Photography 101 攝影基礎班` at a Richmond Hill church and the deck holds
+  `Hebrew Storytime / שעת סיפור בעברית` (r274) — both plausibly legitimate local events whose *listing*
+  is non-English. A `NOT_ENGLISH` delete rule kills them sight-unseen. **Ask him:** does a non-English
+  listing for a real local event get included, excluded, or does it depend — and if it depends, on what?
+  His answer decides whether these rows are `Rule-break`, `Wrong fit`, or includable, and it is one of
+  the two halves of the §4 not-an-event/not-English contradiction.

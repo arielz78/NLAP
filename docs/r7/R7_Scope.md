@@ -14,9 +14,15 @@ Plus the **cached embeddings** (current representation `voyage-4-large` @2048d, 
 
 ---
 
-## Status Snapshot (2026-07-27)
+## Status Snapshot (2026-07-28)
 
 Single source of truth for "where are we." Supersedes the roadmap's R7 header and the pre-reframe body of this doc.
+
+**Step status at a glance (2026-07-28).** Step 0 ✅ · **Step 1 IN PROGRESS, 12 of 239** — instrument respecced and all prep done, blocked only on booking the editor · **Step 2 CUT** (it duplicated Step 4a) · **Step 3 nearly done** — geography shipped (#109), date-window and completeness already existed in R1, language / is-it-an-event / cancellation dropped from scope; **one item left, the Eventbrite TLD allowlist, written in-repo and awaiting a re-import** · **Step 4a STAGED, NOT RUN** — plumbing built, blocked on four blind pins plus the score-vs-delete call · Step 4 blocked on Step 1 · Step 5 untouched.
+
+⚠️ **The instrument changed again on 2026-07-28 (§77):** the None-split is now **one 6-option multiselect** (`non-GTA` · `B2B / professional` · `civic` · `wrong fit / not our audience` · `outcompeted` · `can't tell`), with `NoneType` deleted and routing derived in code from a written priority order. §75's four-way *taxonomy* still describes how the editor rejects; it is no longer the *form he fills*. A new `Slice` field makes the gate/train split groupable in Airtable for the first time (gate 184 · train 210 · walkthrough 22 · not-in-model-set 40) — **label the 89 `Section=None` gate rows first**, because only that slice is drawn like production and the four-way split can then be read at ~89 rows instead of 239.
+
+⚠️ **Stage 0's deletable set has shrunk three times, each time on measurement** — §75 (facts only) → §76 (content rules route to the gate) → §76 amendment (not-English and not-an-event removed). **The direction is the finding:** every time this step is measured it gets smaller. Treat any un-measured Stage-0 sizing as an over-estimate.
 
 **The reframe (validated 3 independent ways, then confirmed by 3 outside LLM reviews):** this is a **top-k selection problem, not a classification problem.** The pipeline ships 5 events/section from ~720 raw candidates/week. The section classifier — the thing W6 spent the release building — **owns only ~3 of ~19 failures.** The filter owns ~12, ranking ~4. The classifier was trained on 1,126 *published* events (all winners); in production it sees raw scraped candidates it has never seen a negative example of, and confidently sections the junk. **The missing stage is a binary include/None gate** — the reject decision the system has never had.
 
@@ -81,7 +87,10 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 
 **Done when:** 239 split four ways; the `Wrong fit` pile is the gate's negative set, the `Outcompeted` pile is reserved for R6's ranker, the `Rule-break` pile is a Stage-0 rule inventory.
 
-### Step 2 — ~~Experiment B: the centroid baseline~~ **BLOCKED AS SPECCED — re-point or cut**
+### Step 2 — ~~Experiment B: the centroid baseline~~ **CUT (2026-07-28)**
+
+**Decision: cut, not re-pointed.** Re-pointing meant ranking within the labelled deck against the editor's own includable/None calls — which is exactly what **Step 4a's threshold sweep already does.** It would be a duplicate measurement. Nothing downstream consumes it: Fork B is now a W6-internal architecture question, not the cheap-vs-BT-ranker question this step was built to answer. *(Original blocking rationale preserved below for the record.)*
+
 
 **Why it's blocked (2026-07-26):** recall@30 has **no valid denominator.** Only 0–6 of each issue's ~20 published events exist in the candidate pool at all (**3.1% corpus-wide overlap**), so the denominator is ~2, not 15. This is the same dead URL-join assumption that §62 killed on 2026-07-12, in a new costume — reconstructing "the ~720 candidates that week" and "the 15 published that week" as the same population is exactly what the data says we cannot do.
 
@@ -95,12 +104,18 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 
 **What it's for:** kill the provably-dead junk cheaply, before the gate. **Rules for facts, never content keywords** (a "no B2B words" list doesn't scale; provenance rules do — small closed vocabularies, near-zero maintenance).
 
-- Domain allow/blocklist — **drop the 59 foreign-Eventbrite domains** (.de/.fr/.co.uk/.sg — zero possible keepers) and forms.gle.
-- Language detection; geography where the source provides it; date-window; is-it-an-event. Every rejection emits a typed reason code (`OUTSIDE_AREA` / `WRONG_DATE` / `NON_EVENT` / `NOT_ENGLISH`), auditable.
+- **Domain rule — an ALLOWLIST, not a blocklist** *(revised 2026-07-28 on measurement; n=624 Eventbrite/forms.gle Candidates, Airtable URL scan)*. Keep `eventbrite.ca` (432) and `eventbrite.com` (154); **drop every other Eventbrite TLD — 38 records.** The previously-written "59 foreign domains (.de/.fr/.co.uk/.sg)" list catches only 29 and **misses nine** on `.nl`/`.be`/`.com.au`/`.at`/`.ch`. Same lesson as #109: enumerate the fact, not the instances. ⚠️ **Never extend to `eventbrite.com`** — 20.6% includable (7 of 34), so folding it in kills 7 keepers.
+  - **`forms.gle` REMOVED from the rule** *(2026-07-28)*. The single pool record is **"Historic Unionville Walking Tour"** — a Google Form is a *registration mechanism* small local organizers use, not a geography or content signal. Blocking it is a category error.
+  - **Online events do not rescue the foreign TLDs** — checked, since the editor sometimes includes online. The `.fr`/`.de` rows *are* largely online ("Happy WEEM en ligne", "Webinaire de mai", a CMS talk) but are French/German B2B-prof-dev. They fail on language and content independently.
+- **Date-window: already exists** — R1's `DateWindow` node (`DAYS_AHEAD = 30`; drops past, invalid, and too-far). **Field completeness: already exists** — `_valid = title && isoDate && eventUrl` → `Validity Filter`. Neither is new W6 work.
+- **Language detection — DROPPED from Stage 0** *(2026-07-28)*. Whether readers can use a non-English listing is a **content** judgment, not a record fact (§76): the pool holds `Photography 101 攝影基礎班` at a Richmond Hill church — a legitimate local event. Routed to the gate; the wording is a TBD-from-editor question in `R7_None_Split_Labelling_Plan.md`.
+- **Is-it-an-event — DROPPED from Stage 0** *(2026-07-28)*. Low yield, not deterministically decidable.
+- **Cancellation — DEFERRED** *(2026-07-28, `Future` milestone)*. Only AllEvents exposes it, and a filter covering ~40% of sources invites trust it hasn't earned. The editor reviews manually and opens links by habit. Revisit if it is ever observed to ship.
+- **Typed reason codes (`MISSING_TITLE`/`MISSING_LINK`/`MISSING_DATE`/`INVALID_DATE`/`OUT_OF_WINDOW`) — BUILT, THEN DESTROYED.** They wrote `data/tracking/ingestion_rejections.jsonl`, read by `scripts/rejectionCheck.js` inside `postRunChecks.js`. The code lived **only in the live n8n instance and was never committed** (`git log -S "OUT_OF_WINDOW" --all` on the workflow is empty); the 2026-07-27 repo→live re-import overwrote it. Last write 07-24; run 518 on 07-27 wrote nothing. **Re-authoring into the repo file is W7 deploy work.**
 - **Source stays a feature, not a delete button** — do NOT drop sources by junk *rate*. allevents.in is 56% junk but supplies ~300 keepers/year; the gate handles its junk per-event. Delete only provably-100%-junk sources. ⚠️ **Both numbers are STALE-BY-CONSTRUCTION** — they were measured on text missing ~74% of AllEvents descriptions (#108) *and* before the #109 geo guard removed 12.9% of AllEvents ingestion. Directionally fine, not re-derived; do not quote as a bar.
 - **✅ Geo hole CLOSED 2026-07-27 (#109) — and it was 5× bigger than the deck showed.** AllEvents' `richmond-hill` slug conflates **Richmond Hill Ontario with Richmond Hill GEORGIA and Richmond Hill NEW YORK**; `CITY_MAP` passed all three because the city name is genuinely correct. Deck detection found 10 rows; **a live API pull found 51 of 396 (12.9%)** — deck detection was incomplete because it inferred geography from description text. **Fixed in all three `AllEvents Normalize*` nodes** of `workflows/NLAP R1.json`: `venue.full_address` (blank on **0 of 390** live records) is now tested for positive foreign evidence, never for a missing address. Verified against live data — 51 dropped (50 Richmond Hill GA/NY, 1 Markham **Illinois**), 0 false drops. **Still open:** an **n8n re-import** (the repo is fixed, the running instance is not), and **deck re-detection via `full_address`** — deck detection inferred geography from description text and is known-incomplete, so the 10 is a floor. ⚠️ The 3 rows carrying a positive editor label were previously called *"label noise in the gate's positive class"* — **retracted 2026-07-27, see Decision_Log §76 corollary.** They keep both labels: post-#109 a foreign event never reaches the gate, so the gate is never asked the geography question. The direction that actually matters is foreign rows in the gate's ***negative*** pile, which must be tagged `Rule-break` (→ Stage 0), never `Wrong fit` (→ the gate).
 
-**Done when:** Stage 0 runs on the raw pool, drops ~5–10% deterministically with typed reasons, keeps every source that can ever produce a keeper.
+**Done when:** the Eventbrite TLD allowlist ships. That is the whole of Step 3's remaining new work — date-window and completeness already exist, geography shipped as #109, language/is-it-an-event/cancellation are out of scope, and reason-code restoration is W7. **Revised 2026-07-28: this step is far smaller than originally written.**
 
 ### Step 4 — Build Stage 1: the gate (authored-core, Ariel; ~1–2 days)
 

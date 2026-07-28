@@ -4,6 +4,12 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-28
+- Simplified the client-facing labelling tool from two fields to one after realising the two-field design forced a single answer where an item often has several things wrong with it. The change dissolved two open judgement calls outright — they had only ever been disputes because one category had to win — and removed the deepest blocker on the release's board.
+- Re-measured a filtering rule that had been written from assumption rather than data: the existing list caught 29 records and missed 9 more sitting on domains nobody had thought to write down. Replaced an enumerated blocklist with a rule expressed as a fact, and found one entry on the list was actually a legitimate local event being discarded.
+- Traced a monitoring gap to its root: the component that records why items are silently discarded had been destroyed by last week's deployment, because it had only ever existed on the live system and was never committed to version control. The audit performed immediately after that deployment could not structurally have detected it — a finding about verification method, not just this one defect.
+- Consolidated the release's working documents from four files to two, cut one planned step entirely after proving it duplicated a later measurement, and reduced another step's remaining scope to a single item.
+
 ## 2026-07-27
 - Deployed the ingestion fix to the live automation platform, then verified it against the running system rather than trusting the deployment report — and found the deployment had silently removed the pipeline's entry point, leaving it unable to run at all despite every component being present and correctly configured. Repaired, re-verified component by component, and executed a clean end-to-end run with the full post-run health-check suite.
 - Established a complete audit trail proving the running pipeline now differs from its last known-good state by exactly the intended change and nothing else — twelve added lines, zero removed, across three components.
