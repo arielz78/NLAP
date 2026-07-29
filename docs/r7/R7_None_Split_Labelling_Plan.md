@@ -1,15 +1,19 @@
 # R7-W6 — None-Split Labelling Plan (239 rows)
 
-**Status: LIVE.** Written 2026-07-26 from the editor's first 12 rows; rewritten 2026-07-27 to match
-`Decision_Log.md` §75; **§0 replaced 2026-07-28 — the instrument is now a single multiselect field**
-(`NoneType` deleted). This doc is the only home for the instrument design, the sitting script, and the
-sitting log — there is no separate meeting doc.
+**Status: LIVE RUNBOOK (verified against Airtable 2026-07-29).** Written 2026-07-26 from the editor's
+first 12 rows; rewritten 2026-07-27 to match `Decision_Log.md` §75; §0 replaced 2026-07-28 when the
+instrument collapsed to one multiselect; reconciled to the live deck and call-prep audit on 2026-07-29.
+This doc is the only home for the instrument design, sitting protocol, and sitting log — there is no
+separate meeting doc.
 
 **Type: Release-working.** Implements `R7_Scope.md` Step 1; delete or archive at R7 close.
 
-**What is still not applied:** the Airtable field changes below are a **proposal awaiting Ariel's
-approval** — the base has not been touched since the 07-26 build. Two items are marked
-**TBD-from-editor** and must come from the editor's own words on the call, not from us.
+**Live deck state (2026-07-29):** 239 `Section=None` rows · 25 already carry `NoneReason` · 214 remain
+blank · 15 factual `OutsideGTA` labels · 63 `PreMarked` hints. Start with the representative **gate
+slice: 89 total = 8 resolved + 17 hinted/unlabelled + 64 unhinted/unlabelled.** `PreMarked` is a
+machine hint, never an editor label. `OutsideGTA` is the provenance field that distinguishes the
+15 machine-applied geography facts. Two wording decisions remain **TBD-from-editor** and are asked
+once at the opening, not re-litigated row by row.
 
 ---
 
@@ -125,7 +129,7 @@ also because of the **feature budget**: 456 labelled rows against ~2,048 embeddi
 already 4.5× overdrawn, and every added column is a fresh chance to overfit. (Same reason `Organizer`
 is unsafe as a one-hot — count- or threshold-encode it if it enters at all.)
 
-**TBD-from-editor:** the *sentence* he will apply consistently over 227 rows. Ariel has the rule; the
+**TBD-from-editor:** the *sentence* he will apply consistently over the remaining rows. Ariel has the rule; the
 phrasing must be the editor's. Ask him to complete: *"An event is too niche when ______."*
 
 ---
@@ -135,9 +139,11 @@ phrasing must be the editor's. Ask him to complete: *"An event is too niche when
 **Superseded:** the solo async workflow, and the 25-row pilot that was to precede the bulk.
 **The first 12 rows *are* the pilot** (§75) — a solo pilot now has no consumer.
 
-**The format:** all ~227 remaining rows labelled **live with him, text-first**, over **3–4 sittings**
-of ~40–60 rows (~30–40 min each). Text-first means he calls it from `Event` + `Details` **before**
-the link is opened; then, if he wants the link, he opens it and we record what it changed.
+**The format:** label the **gate slice first**: 89 total, 8 resolved, **81 still requiring an editor
+touch**. Expect two sittings for the gate slice, then roughly three more for the remaining train /
+walkthrough / not-in-model-set rows. Work in blocks of ~40–60 rows (~30–40 min each). Text-first means
+he calls it from `Event` + `Details` **before** the link is opened; if he needs the link, open it and
+record what it changed.
 
 **Why live rather than async:** it converts a self-report into an **observed behaviour**. The retired
 `NeededLink` asked an editor habituated to opening every link for 15 months to report a counterfactual
@@ -146,14 +152,18 @@ both real-prose rows, blank on 5 of 7 metadata-only rows). Watching him is the o
 It also beats the cheaper LLM-based ceiling estimate for one reason: it names the missing **feature**
 rather than merely sizing the gap.
 
-**Per row, in order — stop at the first YES:**
+**Per row, in order:**
 
-| # | Question | If yes |
+| # | Action | What to record |
 |---|---|---|
-| 1 | Does it break a rule? B2B · professional development · civic · outside the GTA | **Rule-break** — then tick every rule that applies in `NoneReason` |
-| 2 | Would you *never* run this in the Brief, on any week — wrong audience, wrong format, too narrow? | **Wrong fit** — one line why in `NoneReasoning` |
-| 3 | **If next week were slow and this event were available, would you run it?** | **Outcompeted** |
-| 4 | You genuinely cannot tell what this event even *is* | **Ambiguous** — say what is missing in `NoneReasoning` |
+| 1 | Read only `Event` + `Details`. Do not open the link yet. | Nothing until he has a text-only call. |
+| 2 | Ask whether any permanent reject reason applies. | Tick **every** applicable option: `non-GTA`, `B2B / professional`, `civic`, `wrong fit / not our audience`. Do not stop after the first tick. |
+| 3 | If no permanent reason applies, ask: **"Would you run this in a quieter week?"** | Yes → `outcompeted`. No → `wrong fit / not our audience`. |
+| 4 | If the event itself is too unclear to judge, use `can't tell`. | State what information is missing in `NoneReasoning`. |
+| 5 | Only if needed, open the link and let the real event override the text. | Write what the link added or changed in `LinkGave`; revise `NoneReason` if necessary. |
+
+`NoneReasoning` gets one short line for `wrong fit`, `outcompeted`, or `can't tell`. Obvious factual
+or professional-rule rows do not need prose unless the editor's reason differs from the visible hint.
 
 ### The two sentences that fix most of the pilot's errors
 
@@ -166,12 +176,13 @@ individual rather than for couples or families"*). All are permanent verdicts. *
 survives as genuinely Outcompeted** — which means the three-way instrument was over-stating the R6
 ranker's positive pile by roughly 6×.
 
-> **Ambiguous is about the event, not about these instructions.** If the *event* is unclear, tick
-> Ambiguous. If the *instruction* is unclear, pick your best guess and say so in `NoneReasoning` —
+> **`can't tell` is about the event, not about these instructions.** If the *event* is unclear, tick
+> `can't tell`. If the *instruction* is unclear, pick your best guess and say so in `NoneReasoning` —
 > then flag it so we can fix the instruction.
 
-Both of his Ambiguous rows are clear rule-breaks (professional training) where he stated the reason
-correctly and still could not find the branch. That is an instrument defect, not his error.
+Both rows he called Ambiguous under the retired instrument are clear professional-training rejections
+where he stated the reason correctly and still could not find the branch. That was an instrument defect,
+not his error.
 
 ---
 
@@ -196,43 +207,31 @@ he found this himself (#108), and it is why ~40% of these rows looked textless.
 
 ---
 
-## 3. The text he is reading — and the #108 change pending on it
+## 3. The text he is reading — live state
 
-`clean()` (`transfer_test.py:83`, copied to four other files): unescape HTML → strip tags → drop
-whole lines matching a boilerplate list → collapse whitespace → **truncate at 300 chars**. The deck's
-`Details` column *is* `clean(desc)`, so **the editor is looking at almost exactly what the model
-sees** (model text = `title + clean(desc)`). That alignment is a real asset — don't break it casually.
+**The deck is ready.** B3/B4 recovered 111 AllEvents descriptions, removed the duplicated-title and
+trailing-navigation artifacts, and wrote the cleaned text uncapped into `Details` (110 writes; one row
+already current). Verification after the write: 111 current, zero pending, zero conflicts.
 
-**Findings, ranked:**
+This deliberately improves the editor's information before labelling. It means the sitting now measures
+the ceiling of the **improved deck text**, not the original sparse collection. `LinkGave` still measures
+what remains missing after that improvement.
 
-1. **The problem was never cleaning — it was that there was nothing to clean, and that turns out to be
-   fixable.** Of the 400-row deck, **42.3% had no real prose**; 81% of that gap was AllEvents. The
-   #108 backfill recovers a real description for **111 of 137 (81%)** of those AllEvents rows from
-   their HTML detail pages, taking the deck-wide gap to **14.8%** — and the residual is now
-   Eventbrite-shaped, not AllEvents-shaped. **Staging file:
-   `models/sectioning/deck/allevents_backfill_2026-07-27.json`. Not applied to the deck.**
-2. **⚠️ The blocking trade-off, Ariel's call, and it is time-critical.** Putting the recovered text
-   into `Details` before the sittings makes 111 rows legible — the pilot already contains a row
-   (*First Day Preview: Markham Edition*, a YorkU campus open day) that he **mislabelled as
-   "professional training"** because his `Details` was blank. But it also **destroys the text-only
-   ceiling measurement** the sittings were designed to produce (§5): you cannot measure the ceiling of
-   text you have just improved. **These two cannot both be had.**
-3. **The 300-char cap now governs whether the backfill is worth anything** — **88.3% of the recovered
-   text exceeds 300 chars**. The 07-22 audit that called the cap "display-only / zero model effect"
-   was run on the *classifier*; for a **reject gate** the disqualifying phrase ("networking event for
-   realtors…") often sits at the end. Re-audit `DESC_CHAR_CAP` before the fit.
-4. **`clean()` itself is low-risk.** The boilerplate list only strips lines matching *exactly*
-   end-to-end (`^…$`), so it removes headers like `Overview` / `About this event`, not the content
-   under them. Two entries do lose signal: whole-line `online` and `in person` are stripped — noise
-   for a section classifier, possibly load-bearing for a reject gate.
-5. **The recovered text carries two mechanical artifacts** that must be stripped before any use:
-   the **title is duplicated at the head** (106 of 111 records), and a trailing nav sentence
-   (*"Also check out other Workshops in Markham , Health & Wellness events in Vaughan ."*). Two
-   regexes, both position-anchored, zero risk to real content. **Not applied — `clean()` is untouched.**
-6. **§70's "SourceCategories excluded" is partly defeated.** For AllEvents rows the categories are
-   written *inside* `DescriptionRaw`, so `clean(desc)` carries them into model text regardless of the
-   `with_cats` flag — **256 of 1,805 corpus rows (14%)**. The cats-ablation arm isn't clean. Note the
-   backfill **changes this**: block-only rows become real prose, which removes the leak for them.
+Do not tell the editor about the backfill mechanics row by row. The only relevant instruction is:
+**read all of `Details`; for AllEvents, use "View Details" if the page initially looks collapsed.**
+
+Production remains separate:
+
+- R1/R2 do **not** fetch these detail pages yet.
+- Raw text remains preserved in the store.
+- `clean()` has one shared Python definition in `models/sectioning/text_recipe.py`, but the serve side
+  does not exist until W7.
+- Arm 2 under #108 decides whether recurring AllEvents fetching and a new `DESC_CHAR_CAP` ship.
+- The cached arm-1 model still reflects the old capped representation; do not claim current deck text
+  equals current model text.
+
+Model-only follow-ups — not sitting work: sweep the cap, test the source-category leak, and compare
+arm 1 against the backfilled arm 2.
 
 ---
 
@@ -241,60 +240,62 @@ sees** (model text = `title + clean(desc)`). That alignment is a real asset — 
 | # | Risk | Safeguard |
 |---|---|---|
 | 1 | **Wrong-fit rejections land in Outcompeted** (5 of 6 in the pilot) | The slow-week test in §1. Highest-value single fix. |
-| 2 | **Ambiguous used as "the instructions are unclear"** (2 of 2 in the pilot) | "Ambiguous is about the event, not the instructions." |
-| 3 | **`NoneReason` left blank** (0 of 12) | Now required on **Rule-break rows only**. Each tick is a Stage-0 filter we get for free — say that out loud. |
+| 2 | **`can't tell` used as "the instructions are unclear"** (2 of 2 in the pilot) | "`can't tell` is about the event, not the instructions." |
+| 3 | **`NoneReason` left blank** | Every completed row needs at least one tick. Show the multiselect `+` before row one. |
 | 4 | **Only the strongest reason ticked** on multi-reason rows | Multi-select on purpose. "A German business webinar in Hamburg is three ticks, not one." |
-| 5 | **Similar events labelled differently** — Rows 24 and 11 are both AdeptSkil 1-day workshops; one Ineligible, one Ambiguous | Post-hoc consistency sweep by organizer and title keyword. Ours, not his. |
-| 6 | **Guessing when unsure** | Ambiguous exists so he never has to. A high Ambiguous count is a *useful* result. |
+| 5 | **Similar events labelled differently** — Rows 24 and 11 are both AdeptSkil 1-day workshops; one was Ineligible, one Ambiguous | Post-hoc consistency sweep by organizer and title keyword. Ours, not his. |
+| 6 | **Guessing when the event is unclear** | `can't tell` exists so he never has to. A high count is a *useful* result. |
 | 7 | **Link-only information baked into labels** the model can never see | Text-first ordering + `LinkGave` turns this into a measured stratum instead of silent contamination. |
-| 8 | **Fatigue drift** over ~227 rows | 40–60 rows a sitting. The **11 unannounced repeat pairs** measure drift for free — **do not tell him they exist.** |
-| 9 | **Slice pooling** — 239 = **89 gate / 125 train / 25 batch 4–5**. Only the gate slice is representative | Compute every proportion on the 89 alone. |
-| 10 | **Decision-relevant data arrives last** in row order — Batch 1 holds only 4 gate rows | **Re-sort the view: gate slice first.** Still open. |
-| 11 | **Templated junk eats his attention** — 18 of the 32 true rule-breaks in the 239 are one organizer (AdeptSkil) emitting near-identical titles, ~13% of his remaining workload | A rule-break **pre-sort** (below). Open. |
+| 8 | **Fatigue drift** over 214 blank rows | 40–60 rows a sitting. The **11 unannounced repeat pairs** measure drift for free — **do not tell him they exist.** |
+| 9 | **Slice pooling** — 239 = **89 gate / 124 train / 12 walkthrough / 14 not in model set**. Only the gate slice is representative | Compute every proportion on the 89 alone. |
+| 10 | **The wrong slice is worked first** | Before the call, filter/group the view so `Slice=gate` is first. Gate has 8 resolved, 17 hinted/unlabelled, 64 unhinted/unlabelled. |
+| 11 | **Templated professional events eat attention** — 18 None rows are AdeptSkil templates | `PreMarked` brings them into the hint block. The editor still touches each row; do not bulk-author labels for him. |
 | 12 | Editor edits `Section` / `Flag` / `Label` | Frozen in the table description; the 07-26 snapshot detects drift on exactly those fields. |
 
-### The rule-break pre-sort — proposed, not decided
+### The call-prep pre-sort — LIVE
 
-A keyword scan of the four written rules flags **41 of 239 rows (17.2%)**; hand-adjudicated precision
-is **78% strict / 90% counting the contested five**. Every false positive is the same failure mode:
-**a rule word appearing as content rather than as the event's nature** — *Leonid & Friends* matched
-"Chicago" (a tribute band), an author talk matched "Georgia" (the novel's setting).
+**Decision remains: pre-sort, never subjective pre-label.** `PreMarked` is visibly a guess and writes
+no editor answer. `OutsideGTA` is different: it records a machine-established fact and is allowed to
+write `NoneReason=non-GTA` because the provenance remains visible.
 
-**✅ DECIDED 2026-07-27 (Ariel): pre-*sort*, don't pre-*label*.** He accepts touching every row — the
-sort exists to stop the templated block eating his attention, not to save him rows. **Implementation is
-deliberately held until the four-way `NoneType` respec**, so the instrument changes once rather than
-twice at row 12 (the same trade §75 already ruled on). Ships with the respec, in one trip.
-⚠️ **§76 narrows what this pre-sort is *for*:** prof-dev and B2B flags no longer route to Stage 0 at all
-(they are content judgments, not record facts), so the sort now buys editor attention — **not** Stage-0
-coverage. The reasoning that produced the call is kept below.
+The 2026-07-29 full-row audit replaced the raw keyword result with the call-ready state:
 
-**Do not pre-label.** 78% precision is nowhere near good enough for a bucket that feeds a stage which
-**hard-deletes**. **Pre-*sort* instead:** put the flagged rows first with the matched rule shown as a
-hint, and have him confirm or override. He still touches every row — no label is machine-authored —
-but the AdeptSkil block clears in one pass instead of ten minutes. *(A narrower option worth separate
-consideration: auto-label the exact templated families only — organizer = AdeptSkil AND title matching
-`… Training — {city}, ON | 1 Day Workshop` — which is a **provenance** rule, not a content rule.)*
+- **63 `PreMarked` rows** — up from 46 after adding 27 strong misses and removing 11 misleading tags.
+- **15 `OutsideGTA` facts** — the original 14 address-derived rows plus r103, whose recovered text
+  repeatedly locates the event in Ottawa despite its Richmond Hill URL.
+- **25 rows already carry `NoneReason`; 214 remain blank.**
+- **18 AdeptSkil rows** are all visibly hinted; two were already editor-confirmed.
+- Gate slice: **8 resolved + 17 hinted/unlabelled + 64 unhinted/unlabelled.**
 
-**Measured, and it changes the sizing:** re-running the identical scan with the #108 backfilled text
-appended takes it from **41 to 51 flags (+24%)**, and `civic` fires for the first time (civic language
-lives in descriptions, never in titles). **Stage-0 coverage was being under-counted by ~15–25% purely
-because of missing text.** Any Stage-0 sizing done before the backfill is a floor, not an estimate.
+False-positive examples deliberately removed: *Leonid & Friends* ("Chicago" is the band whose music is
+performed), the Karin Slaughter author talk ("Georgia" is the novel's setting), a youth soccer event
+whose description mentions a leadership program, and a children's baseball clinic that says
+"training." This is why `PreMarked` must stay a hint.
 
-### A contradiction to resolve before the field descriptions are written
+**During the call:** work the hinted block first, but let the editor tick each row. Do not announce the
+repeat pairs or say "these are all the same"; that would destroy the self-consistency check. When a hint
+is wrong, leave `PreMarked` untouched as audit evidence and enter the editor's real `NoneReason`.
 
-The ladder above and CLAUDE.md disagree. CLAUDE.md's written reject list is **exactly** B2B / civic /
-professional development / non-GTA. *Not-an-event* and *not-English* are **not** in it, yet three real
-rows in the 239 need them (two *Theatre Workshop Sign-up Form* rows; *Hebrew Storytime / שעת סיפור
-בעברית*). **Either add them to CLAUDE.md's reject list and to `NoneReason`'s options, or accept those
-rows landing in `Ambiguous`.** That is an edit to the *rules*, not to the instrument — Ariel's call.
+### Language and "not an event" — operational ruling
+
+Neither becomes a Stage-0 rule or a new field option. The audit's supposed cases were themselves mixed:
+the two *Theatre Workshop Sign-up Form* rows resolve to a real theatre event after backfill; *Russian
+Nights* is a real local party; *Hebrew Storytime* is bilingual; *July Book Sale* is plainly an event.
+Treat language and event-ness as content judgments using the six existing options. The editor's policy
+on non-English listings is still asked once in the opening and recorded under TBD-from-editor.
 
 ---
 
 ## 5. Making the labels usable for future model rating
 
-**What the model receives at serve time:** `title + clean(DescriptionRaw)`, capped at 300 characters.
-That is all. **No link. No page content. No images. No price, venue, city, or organizer** as separate
-features (the AllEvents block smuggles categories in for ~14% of rows — §3.6, a bug not a feature).
+**Arm 1's cached representation:** `title + clean(DescriptionRaw)`, capped at 300 characters. There is
+still no serve-time gate in R1/R2; §70's score==serve invariant is a design requirement, not a live
+property. The editor now sees improved, uncapped `Details`, so the deck and cached arm 1 are no longer
+byte-aligned. Arm 2 is the test of whether that richer text improves the gate enough to justify
+production fetching.
+
+**No link, images, price, venue, city, or organizer enters arm 1 as a separate feature** (the
+AllEvents category block leaks into some historical `DescriptionRaw`; that is a bug, not a feature).
 
 So: **any label that depends on link-only information is not learnable from the current features.**
 
@@ -302,131 +303,188 @@ So: **any label that depends on link-only information is not learnable from the 
 Resist it: that produces labels that are wrong about the world, and labels outlive feature sets.
 Three moves instead:
 
-1. **Measure it.** The text-first sittings give the exact share of rows where text was insufficient,
-   and `LinkGave` names *what* was missing. **⚠️ Conditional on §3.2** — if the backfilled text is
-   applied first, this measurement is no longer available in its original form.
+1. **Measure it.** The text-first sittings give the share of rows where the **improved deck text** was
+   still insufficient, and `LinkGave` names *what* remained missing. The original sparse-text ceiling
+   is intentionally no longer recoverable after B3/B4.
 2. **Stratify the eval.** Report gate recall twice — on text-sufficient rows and on link-needed rows.
    If the gate is fine on the first and hopeless on the second, the diagnosis is **features, not
    model**, and no amount of fitting fixes it.
-3. **If the link-needed share is large, the answer is richer features, not a better model.** In rough
-   cost order: **fetch the AllEvents detail page (#108 — already measured at 81% recovery, the cheapest
-   item on this list)** → raise `DESC_CHAR_CAP` → add `City` / `LocationName` / `CostRaw` / `Organizer`
-   from Candidates. Mind the **feature budget** (§0b) on the last one.
+3. **If the link-needed share is still large, the answer is richer collection/features, not a fancier
+   model.** In rough cost order: ship the measured AllEvents detail-page fetch if arm 2 wins → raise
+   `DESC_CHAR_CAP` → add `City` / `LocationName` / `CostRaw` / a bounded organizer signal. Mind the
+   feature budget (§0b) on the last one.
 
 ---
 
 ## 6. Quality control
 
 **Per-row checklist:**
-1. `NoneType` filled?
-2. If Rule-break — is **every** applicable `NoneReason` ticked, not just the strongest?
-3. If Outcompeted — would I really run it on a slow week?
-4. One line in `NoneReasoning` unless it's an obvious rule-break?
-5. `Section` / `Flag` / `Label` untouched?
+1. Does `NoneReason` contain at least one option?
+2. Is **every** applicable permanent reason ticked, not just the strongest?
+3. If `outcompeted`: would he genuinely run it in a quieter week?
+4. If `wrong fit`, `outcompeted`, or `can't tell`: is there one short line in `NoneReasoning`?
+5. If the link was needed: does `LinkGave` say what it added or changed?
+6. Are `Section` / `Flag` / `Label` untouched?
 
-**The first 12 are remapped, not redone.** Their `NoneReasoning` is clear enough on 10 of 12 to
-propose the four-way remap ourselves and have him confirm in two minutes. **Rows 29 and 11 have no
-reasoning and need a genuine re-look** — and row 6 needs one for a different reason: the recovered
-description shows the event is not what he thought it was. Draft table:
-`_handoff_2026-07-27_delegated.md` §Task 3.
+**The first 12 are remapped, not redone.** Ten already carry the flat-field remap. **Rows 6 and 29
+remain blank and need a genuine re-look** — row 29 had no reasoning; row 6's recovered description
+shows a YorkU prospective-student open day, not the professional training described in the old note.
 
 **Consistency sweeps (ours, after the fact, not his):**
 - The **11 unannounced repeat pairs** inside the 239 — a free self-consistency rate on the new labels.
-- Group by organizer and by title keyword; any group with mixed `NoneType` gets a second look.
+- Group by organizer and by title keyword; any group with materially different `NoneReason` gets a second look.
   Start with AdeptSkil, which already has a known inconsistency.
-- **New:** the AllEvents *Richmond Hill, Georgia* rows (#108) — 10 detected, **3 carrying a positive
-  label**. Those are wrong labels caused by missing geography, not by taxonomy.
+- Verify that every `OutsideGTA` row also carries `NoneReason=non-GTA`; provenance and label must agree.
 
 **Final review pass:** every row with a non-empty `LinkGave`. Those are the labels whose correctness
 depends on information the model will never have — the stratum from §5.2.
 
-**Pace:** 40–60 rows a sitting, ~30–40 minutes. Three to four sittings.
+**Pace:** 40–60 rows a sitting, ~30–40 minutes. Expect two sittings for the gate slice and roughly
+three more for the remaining slices.
 
 ---
 
-## 7. The sitting — script and log
+## 7. The sitting — live protocol
 
-Not a client meeting; `meetings/Meeting_protocol`'s demo format does not apply. There is nothing to
-show. This is 227 rows of labelling, live and text-first.
+This is a working labelling session, not a demo. Ariel controls Airtable; the editor makes the calls.
+Do not teach the model, defend the hints, or explain the experiment while he is deciding.
 
-### Say this first (60 seconds)
+### 7.1 Before the editor joins — five minutes
 
-> "Last time I gave you two dropdowns. Now it's one, and you can tick more than one box. If an event is
-> both out of area *and* a business event, tick both — you don't have to pick."
+1. Open the `Negatives labelling` view.
+2. Put `Slice=gate` first and hide already-completed rows (`NoneReason` is not empty). The working
+   population should be **81 rows**.
+3. Group or sort by `Flagged` so the **17 hinted/unlabelled** rows come first, followed by the
+   **64 unhinted/unlabelled** rows.
+4. Keep these columns visible, in order: `Event` · `Details` · `PreMarked` · `NoneReason` ·
+   `NoneReasoning` · `Link` · `LinkGave`. Keep `OutsideGTA` visible as provenance if a factual row
+   appears. Do not expose modeling columns.
+5. Record Ariel's split prediction in the log below **before** seeing new labels.
+6. Set a 35-minute working window. Stop around 40–60 rows or earlier if the editor starts rushing.
 
-Their 12 rows are **not wasted** — they remap (§0) and take about two minutes to re-confirm.
+### 7.2 What Ariel says at the start
 
-### ⚠️ The mechanical trap that cost the pilot
+> "Last time I gave you two dropdowns and the setup made you choose one reason even when several were
+> true. I fixed that. Now there is one field, and you can tick more than one reason.
+>
+> Before today, we did the mechanical work we could safely do. We recovered missing descriptions,
+> removed obvious out-of-area events where the location was factual, and grouped likely business or
+> professional events. The `PreMarked` column is only our guess — it is not your answer, and you should
+> override it whenever it is wrong.
+>
+> We still need your judgment on whether an event is permanently wrong for the Brief or whether it was
+> simply good but lost its slot that week. We will read the title and description first. We only open
+> the link if the text is not enough."
 
-`NoneReason` is a multiselect: **each option needs the `+` sign.** The editor filled it **0 of 12** times
-— not because he disagreed, but because the affordance was invisible. **Show him the `+` before row one.**
-If nothing else here happens, do this.
+Then show the multiselect mechanics:
 
-### The one distinction that matters most
+> "To add a reason, click the `+`. If two reasons apply, tick both. For example, an out-of-area
+> business seminar gets both `non-GTA` and `B2B / professional`."
 
-The pilot got this wrong on **5 of 6 rows** — he ticked "Outcompeted" for events he'd never run at all,
-and outcompeted rows are deliberately **withheld** from the gate's training.
+**Do not start row one until the editor has personally added two ticks in the field once.** The hidden
+`+` affordance caused the pilot's 0/12 `NoneReason` result.
 
-> **Ask out loud on every borderline row: "Would you run this in a quieter week?"**
-> **Yes → `outcompeted`. No → `wrong fit`.**
+### 7.3 Settle three vocabulary calls once
 
-Pilot phrasings that all mean `wrong fit`, never `outcompeted`: *"people don't like such events"* ·
-*"this type of event is not popular"* · *"from my experience…"* — permanent verdicts about the event,
-not statements about this week's competition.
+Ask these once, record the answer, then use it consistently:
+
+1. **Ranking word:** "When an event is good enough for the Brief but loses because stronger events took
+   the slots that week, what word would you naturally use?" Keep the Airtable option `outcompeted`
+   during this sitting; record his preferred word for a later schema decision.
+2. **Breadth sentence:** "Finish this sentence in your own words: an event is too niche for the Brief
+   when ______."
+3. **Language policy:** "If a real local event is listed partly or fully in another language, is that
+   automatically out, potentially usable, or does it depend? If it depends, on what?"
+
+Do not debate the answer. Ask one concrete example only if the rule is still ambiguous.
+
+### 7.4 Per-row loop
+
+1. Ariel reads the `Event` and enough of `Details` aloud for both people to know what it is.
+2. If `PreMarked` is present, say only: **"The machine suspects this may be B2B/professional/civic.
+   Agree or disagree?"** Never say the machine is confident.
+3. Ask: **"Which permanent reasons apply?"** Tick every applicable permanent reason.
+4. If none applies, ask the decisive question: **"Would you run this in a quieter week?"**
+   - Yes → `outcompeted`.
+   - No → `wrong fit / not our audience`.
+5. If the event itself is unclear, use `can't tell`; do not force a guess.
+6. Add one short `NoneReasoning` line for `wrong fit`, `outcompeted`, or `can't tell`.
+7. Open the link only if the editor says the text is insufficient. If the link changes or completes
+   the decision, record exactly what it added in `LinkGave`.
+8. Move on. Do not discuss whether the model could learn the label.
+
+### 7.5 Phrases Ariel should use
+
+- **When `outcompeted` is drifting:** "Would you genuinely run it if next week were quiet?"
+- **When the editor gives a popularity reason:** "Is that permanent, or only true because this week's
+  alternatives were stronger?"
+- **When several reasons apply:** "Tick all of them; we resolve the routing later."
+- **When the hint is wrong:** "Good — the hint is allowed to be wrong. What is your actual reason?"
+- **When the event is unclear:** "What information is missing?" Record that; do not solve it for him.
+- **When the link is requested:** "Before we open it, what is your best call from the text alone?"
+
+### 7.6 What Ariel must not do
+
+- Do not tell him about the 11 repeat pairs.
+- Do not bulk-confirm a repeated family; he still touches each row.
+- Do not change or erase `PreMarked` when it is wrong — the disagreement is audit evidence.
+- Do not lead with "this looks B2B" on unhinted rows.
+- Do not turn `wrong fit` into a catch-all without capturing the reason.
+- Do not use `can't tell` for unclear instructions; it means the event itself is unclear.
+- Do not edit `Section`, `Flag`, `Label`, `OutsideGTA`, or `Slice`.
+- Do not continue through visible fatigue just to finish a block.
+
+### 7.7 Stop and close
+
+Stop after 35–40 minutes, 40–60 rows, or when answers become noticeably faster and less reasoned.
+Before ending:
+
+1. Confirm the last row was saved.
+2. Record rows completed and the gate-slice split below.
+3. Ask what felt unclear or repetitive.
+4. Schedule the next sitting before leaving.
+5. Do **not** run the consistency correction in front of him; that happens after the sitting.
 
 ### Sitting log
 
-*(fill in during or immediately after; TBD-from-editor answers go to §Open items, not here)*
-
 | | |
 |---|---|
-| **Ariel's prediction, recorded BEFORE starting** *(the delta is the signal)* | Rule-break __ / Wrong fit __ / Outcompeted __ |
-| Rows completed | |
-| Split observed — **gate slice only** (first ~89) | non-GTA __ / B2B-professional __ / civic __ / wrong fit __ / outcompeted __ / can't tell __ |
-| Anything that surprised him | |
-| Next sitting scheduled | |
+| Date / sitting number | |
+| **Ariel's prediction before starting** | non-GTA __ / B2B-professional __ / civic __ / wrong fit __ / outcompeted __ / can't tell __ |
+| Gate rows at start | 89 total · 8 resolved · 81 blank |
+| Rows completed this sitting | |
+| Gate rows remaining | |
+| Split observed — gate slice only | non-GTA __ / B2B-professional __ / civic __ / wrong fit __ / outcompeted __ / can't tell __ |
+| Links opened / non-empty `LinkGave` | |
+| Editor's preferred word for `outcompeted` | |
+| Editor's breadth sentence | |
+| Editor's non-English policy | |
+| Anything surprising or unclear | |
+| Next sitting | |
 
 ---
 
 ## Open items
 
-**Ariel's, ranked:**
-1. ~~**Does the #108 recovered text go into `Details` before the sittings?**~~ **RESOLVED 2026-07-29: yes.**
-   B3/B4 stripped the duplicated-title and trailing-navigation artifacts, then wrote all 111
-   successful recoveries uncapped into `Details` (110 writes; one row already current). Post-write
-   verification: 111 current, zero pending, zero conflicts. Production R1/R2 remains unchanged;
-   #108 owns the arm-2 gate and any later R1 integration.
-2. **The `Rule-break` definition** — "a rule applies" vs "a rule is why I rejected it" (§0). One
-   sentence, changes Stage-0 coverage, blocks the field description. **Partially resolved 2026-07-27
-   (Ariel): adjacency to B2B or professional development is *always* a rejection — no ambiguity, no
-   case-by-case.** That settles the **adjudication**. It does not settle the **detection** (keyword
-   precision is still 78%, every false positive a rule word appearing as content, so these stay
-   gate-scored per §76), and it does not settle the **record-fact** rules — which is the only part
-   that still moves Stage-0 coverage. **Consequence worth keeping:** a rule the editor applies 100%
-   consistently is learnable from text, unlike the C/G boundary he flip-flops on. So this makes the
-   *gate's* job easier, not Stage 0's. Now empirically testable via the prof-dev/B2B stratum
-   diagnostic added to `R7_Scope` Step 4.
-3. **The `not-an-event` / `not-English` contradiction** between this ladder and CLAUDE.md (§4).
-4. **Pre-sort vs pre-label vs neither** for the 51 flagged rule-break rows (§4).
-5. **`NoneReason`:** keep-and-scope-to-Rule-break (recommended) vs delete. **`NeededLink`:** hide
-   (recommended) vs delete — deletion is irreversible and the 6 pilot ticks are the only record.
-6. Re-audit `DESC_CHAR_CAP` for the gate (§3.3) and the cats-in-desc leak (§3.6) before the fit.
-7. Re-sort the `Negatives labelling` view: gate slice first (§4.10).
-8. **Prediction before the data lands:** of the remaining 227, what's your split across
-   Rule-break / Wrong fit / Outcompeted? Worth on record before we compute it.
+**Before the next sitting:**
 
-**TBD-from-editor (the call):**
-- The **`Outcompeted` label** — his word, not ours.
-- The **breadth sentence** — *"An event is too niche when ______."*
-- The five **contested rule-break rows** (§4), which all turn on intent rather than fact: is a free
-  library job-search session "professional development"? **Note (2026-07-27):** Ariel's blanket
-  adjacency rule (Open-items 2) *would* resolve all five as rejections; he has deliberately **left
-  them with the editor** rather than deciding them himself, so they stay TBD-from-editor.
-- **Non-English listings — new 2026-07-28.** Language detection was **dropped from Stage 0** because
-  "can my readers use this listing?" is a **content** judgment, not a record fact (§76): the live pool
-  holds `Photography 101 攝影基礎班` at a Richmond Hill church and the deck holds
-  `Hebrew Storytime / שעת סיפור בעברית` (r274) — both plausibly legitimate local events whose *listing*
-  is non-English. A `NOT_ENGLISH` delete rule kills them sight-unseen. **Ask him:** does a non-English
-  listing for a real local event get included, excluded, or does it depend — and if it depends, on what?
-  His answer decides whether these rows are `Rule-break`, `Wrong fit`, or includable, and it is one of
-  the two halves of the §4 not-an-event/not-English contradiction.
+1. Confirm the Airtable view presents `Slice=gate`, unresolved rows only, with `Flagged=yes` first.
+2. Ariel records his predicted split in the sitting log before the first new label.
+3. Rows 6 and 29 still require genuine re-looks when their slice is reached.
+
+**TBD-from-editor during the sitting:**
+
+- His preferred word for a good event that lost its slot (`outcompeted` remains the live option today).
+- His one-sentence breadth rule.
+- His policy for non-English listings.
+- The intent-based edge cases, including whether a free library job-search session counts as
+  `B2B / professional`; do not pre-decide those from keywords.
+
+**After the sitting — Ariel/Codex, not the editor:**
+
+1. Run the per-row completeness check and verify locked fields did not move.
+2. Compare the 11 hidden repeat pairs and organizer/title families for inconsistent `NoneReason`.
+3. Review every non-empty `LinkGave` as the feature-gap stratum.
+4. Update the sitting log and R7 status through `/wrap`.
+5. Keep model work separate: pins 2–4, arm 1, the cap sweep, and the arm-2 #108 decision do not enter
+   the editor session.

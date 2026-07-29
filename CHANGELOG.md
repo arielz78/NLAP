@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-07-29
+- Completed a full call-preparation audit of the rejection deck, removing misleading automated hints, adding reviewed cues, and preserving a visible boundary between machine facts, machine guesses, and human decisions.
+- Converted the client-labelling plan into a verified live runbook with a gate-first workflow, exact facilitator script, per-item decision protocol, fatigue safeguards, and post-session quality checks.
 - Completed the final preparation step for the client’s rejection-labelling round by recovering missing source descriptions, removing source-page navigation contamination, and publishing clean editor-ready text with a verified, idempotent backfill.
 - Kept the production pipeline unchanged until the richer-text experiment demonstrates value, while recording the exact integration boundary and acceptance criteria in the existing release issue.
 
