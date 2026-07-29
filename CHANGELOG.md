@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-29
+- Completed the final preparation step for the client’s rejection-labelling round by recovering missing source descriptions, removing source-page navigation contamination, and publishing clean editor-ready text with a verified, idempotent backfill.
+- Kept the production pipeline unchanged until the richer-text experiment demonstrates value, while recording the exact integration boundary and acceptance criteria in the existing release issue.
+
 ## 2026-07-28
 - Closed the release's headline open question by inspection rather than judgement: it had been carried as an unresolved decision for four consecutive sessions, and turned out to have been settled all along by where the component gets deployed. The design it appeared to be choosing between was never available. Recorded as a standing check — before pricing a trade-off, confirm the deployment target hasn't already eliminated one side.
 - Measured, for the first time, how consistently the client agrees with his own earlier judgements on the core include/exclude question: 80% across forty repeated items. That figure sets a realistic ceiling on what any automated system can be expected to reproduce, and shows that chasing the last few points of accuracy would be chasing noise rather than signal.

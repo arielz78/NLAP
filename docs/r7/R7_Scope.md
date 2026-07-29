@@ -14,11 +14,11 @@ Plus the **cached embeddings** (current representation `voyage-4-large` @2048d, 
 
 ---
 
-## Status Snapshot (2026-07-28)
+## Status Snapshot (2026-07-29)
 
 Single source of truth for "where are we." Supersedes the roadmap's R7 header and the pre-reframe body of this doc.
 
-**Step status at a glance (2026-07-28).** Step 0 ✅ · **Step 1 IN PROGRESS, 12 of 239** — instrument respecced and all prep done, blocked only on booking the editor · **Step 2 CUT** (it duplicated Step 4a) · **Step 3 nearly done** — geography shipped (#109), date-window and completeness already existed in R1, language / is-it-an-event / cancellation dropped from scope; **one item left, the Eventbrite TLD allowlist, written in-repo and awaiting a re-import** · **Step 4a STAGED, NOT RUN** — plumbing built, blocked on four blind pins plus the score-vs-delete call · Step 4 blocked on Step 1 · Step 5 untouched.
+**Step status at a glance (2026-07-29).** Step 0 ✅ · **Step 1 IN PROGRESS, 12 of 239** — instrument ready and B3/B4 complete: all 111 recovered AllEvents descriptions are cleaned and live in `Details`; blocked only on booking the editor · **Step 2 CUT** (it duplicated Step 4a) · **Step 3 nearly done** — geography shipped (#109), date-window and completeness already existed in R1, language / is-it-an-event / cancellation dropped from scope; **one item left, the Eventbrite TLD allowlist, written in-repo and awaiting a re-import** · **Step 4a STAGED, NOT RUN** — plumbing built; pin 1 is set (`RECALL_DIAL = "global"`), pins 2–4 remain Ariel's · Step 4 blocked on Step 1 · Step 5 untouched.
 
 ⚠️ **The instrument changed again on 2026-07-28 (§77):** the None-split is now **one 6-option multiselect** (`non-GTA` · `B2B / professional` · `civic` · `wrong fit / not our audience` · `outcompeted` · `can't tell`), with `NoneType` deleted and routing derived in code from a written priority order. §75's four-way *taxonomy* still describes how the editor rejects; it is no longer the *form he fills*. A new `Slice` field makes the gate/train split groupable in Airtable for the first time (gate 184 · train 210 · walkthrough 22 · not-in-model-set 40) — **label the 89 `Section=None` gate rows first**, because only that slice is drawn like production and the four-way split can then be read at ~89 rows instead of 239.
 
@@ -26,7 +26,7 @@ Single source of truth for "where are we." Supersedes the roadmap's R7 header an
 
 **The reframe (validated 3 independent ways, then confirmed by 3 outside LLM reviews):** this is a **top-k selection problem, not a classification problem.** The pipeline ships 5 events/section from ~720 raw candidates/week. The section classifier — the thing W6 spent the release building — **owns only ~3 of ~19 failures.** The filter owns ~12, ranking ~4. The classifier was trained on 1,126 *published* events (all winners); in production it sees raw scraped candidates it has never seen a negative example of, and confidently sections the junk. **The missing stage is a binary include/None gate** — the reject decision the system has never had.
 
-**⚠️ Population correction (2026-07-26, Decision_Log §74 amendment) — the arithmetic this doc used to run on was wrong.** The old snapshot cited a "~2% keep rate / ~98% junk." **That 2% is a *slot* rate, not a junk rate:** 15 published ÷ ~720 in window conflates *ineligible* events with *eligible-but-outcompeted* ones, because 5-per-section is a hard quota. **The measured eligibility rate is ~46.5%** (deck's representative gate slice, n=114, CI ±9; batches 1–2 independently 38.6% None). The reframe's conclusion is unaffected — ~53% ineligible is still a large removable chunk that nothing implements today — but **the downstream funnel changes**: at the measured operating point a gate leaves ~537 events for the ranker, and even a **perfect** gate leaves ~335 for 15 slots. **Consequence: ranking is load-bearing *inside* W6, and Fork B no longer defers cleanly to R6.**
+**⚠️ Population correction (2026-07-26, Decision_Log §74 amendment) — the arithmetic this doc used to run on was wrong.** The old snapshot cited a "~2% keep rate / ~98% junk." **That 2% is a *slot* rate, not a junk rate:** 15 published ÷ ~720 in window conflates *ineligible* events with *eligible-but-outcompeted* ones, because 5-per-section is a hard quota. **The measured eligibility rate is ~46.5%** (deck's representative gate slice, n=114, CI ±9; batches 1–2 independently 38.6% None). The reframe's conclusion is unaffected — ~53% ineligible is still a large removable chunk that nothing implements today — but **the downstream funnel changes**: at the measured operating point a gate leaves ~537 events for the ranker, and even a **perfect** gate leaves ~335 for 15 slots. **Consequence: ranking is load-bearing inside W6; §78 resolves the gate as score-and-sort, never delete.**
 
 **The scope call (2026-07-25):** W6 pivots from "ship a section classifier ≥0.75" to **build the reject gate + run the classifier suggest-only behind it.** The gate's `P(include)` also serves as the interim ranking score (`final = P(include) × P(section)`), which is why R7 and R6 now feed each other.
 
@@ -37,11 +37,11 @@ Single source of truth for "where are we." Supersedes the roadmap's R7 header an
 - **The transfer test / min-class-recall exit table (old §3) is moot** as the release gate. It measured section accuracy on a population that doesn't exist in production. Retired as the headline; kept only as an internal diagnostic. The unresolved 0.61 provenance and τ-calibration fork die with it.
 
 **The live decisions ("forks"):**
-- **Fork A — does the gate train on split labels?** ✅ **Answered in principle** (§75): yes, four ways, with only `Wrong fit` as the gate's negatives. **Still executing** — the editor is 12 of 239 rows in, and the instrument is being respecced before the remaining ~227.
-- **Fork B — threshold gate or *scoring* gate? (OPEN, Ariel's)** Not the old cheap-vs-real-ranker question. Candidate principle: **hard-kill on facts, never on scores** — while the gate score also ranks, deleting a low scorer and burying it produce identical output, so *keeping* weakly dominates and it preserves both the audit trail and the label stream. Raises the question of whether the gate needs a threshold at all. **This no longer defers cleanly to R6** (see the population correction above). Was to be resolved by Step 2; Step 2 is blocked (below).
+- **Fork A — does the gate train on split labels?** ✅ **Answered in principle** (§75): yes, four ways, with only `Wrong fit` as the gate's negatives. **Still executing** — the editor is 12 of 239 rows in; the instrument and recovered-text prep are complete, and the first sitting is ready to book.
+- **Fork B — threshold gate or *scoring* gate?** ✅ **DISSOLVED by architecture (§78): score and sort, never delete.** The gate deploys into R2 after R1 has already upserted the record, so "do not write it" was never available. Pin 1 is therefore a reporting/alarm commitment, not a kill threshold.
 - **Fork C — W6's scope (NEW, OPEN, Ariel's).** Given that a perfect gate still leaves ~335 events for 15 slots: keep the gate and change the sign-off bar / expand W6 to include ranking / merge W6 with R6.
 
-**Blocking order for the forks:** neither B nor C can be decided before **Step 4a** prices the recall/junk-rejection curve — that number *sets* the release bar rather than confirming it.
+**Blocking order for the remaining fork:** Fork C needs **Step 4a** to price the recall/junk-rejection curve. Step 4a arm 1 can bound filtering-vs-ranking on merged None, but the final release bar waits on Step 1's split labels.
 
 **Convergence evidence (why this is de-risked, not a guess):** un-anchored Fable review re-derived the reframe from raw data (never saw our diagnosis); Ariel's independent per-source None-rate read matched it; ChatGPT + a second Claude review independently prescribed the same spine. All three outside reviews: build the gate, don't touch the classifier, retire min-class recall, don't chase Golden.
 
@@ -54,7 +54,7 @@ raw ~720/week
   → Step 3  Stage 0: deterministic pre-filter   (geo/date/language/domain; drop foreign Eventbrite)   ← R7-W6
   → Step 4  Stage 1: the GATE  P(include)        (binary; operating point UNSET — Step 4a)             ← R7-W6
   → Stage 2: section classifier (untouched) on survivors → P(section)                                  ← R7 (exists)
-  → Stage 3: rank by  P(include) × P(section)     (cheap interim ranker; BT upgrade = fork B)           ← R6
+  → Stage 3: rank by  P(include) × P(section)     (cheap interim ranker; BT upgrade belongs to R6)     ← R6
   → Stage 4: buildIssues allocator fills 5/section under quota + thin-section flag                      ← R6
   → editor reviews ~24, accept/reject/move writes back as next round's labels
 ```

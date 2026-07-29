@@ -391,8 +391,11 @@ not statements about this week's competition.
 ## Open items
 
 **Ariel's, ranked:**
-1. **Does the #108 recovered text go into `Details` before the sittings?** (§3.2 — legibility vs the
-   ceiling measurement; they are mutually exclusive, and the editor's time is the scarce resource.)
+1. ~~**Does the #108 recovered text go into `Details` before the sittings?**~~ **RESOLVED 2026-07-29: yes.**
+   B3/B4 stripped the duplicated-title and trailing-navigation artifacts, then wrote all 111
+   successful recoveries uncapped into `Details` (110 writes; one row already current). Post-write
+   verification: 111 current, zero pending, zero conflicts. Production R1/R2 remains unchanged;
+   #108 owns the arm-2 gate and any later R1 integration.
 2. **The `Rule-break` definition** — "a rule applies" vs "a rule is why I rejected it" (§0). One
    sentence, changes Stage-0 coverage, blocks the field description. **Partially resolved 2026-07-27
    (Ariel): adjacency to B2B or professional development is *always* a rejection — no ambiguity, no
