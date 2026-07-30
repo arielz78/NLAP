@@ -3,18 +3,17 @@
 **Status: LIVE RUNBOOK (verified against Airtable 2026-07-30).** Written 2026-07-26 from the editor's
 first 12 rows; rewritten 2026-07-27 to match `Decision_Log.md` §75; §0 replaced 2026-07-28 when the
 instrument collapsed to one multiselect; reconciled to the live deck and call-prep audit on 2026-07-29;
-Sitting 1 and its read-only consistency audit recorded 2026-07-30.
+all 239 labels and the repeatable QC audit recorded 2026-07-30.
 This doc is the only home for the instrument design, sitting protocol, and sitting log — there is no
 separate meeting doc.
 
 **Type: Release-working.** Implements `R7_Scope.md` Step 1; delete or archive at R7 close.
 
-**Live deck state (2026-07-30):** 239 `Section=None` rows · 101 carry `NoneReason` · 138 remain blank ·
-15 factual `OutsideGTA` labels · 63 `PreMarked` hints. Sitting 1 added 76 editor labels across deliberately
-selected low-hanging strata. The representative **gate slice is 89 total = 25 resolved + 64
-unhinted/unlabelled.** `PreMarked` is a machine hint, never an editor label. `OutsideGTA` is the
-provenance field that distinguishes the 15 machine-applied geography facts. The editor settled the
-language policy and supplied an explicit breadth example; the preferred ranking word remains open.
+**Live deck state (2026-07-30):** all 239 `Section=None` rows carry `NoneReason` — gate 89/89 ·
+train 124/124 · walkthrough 12/12 · not-in-model-set 14/14. `PreMarked` remains a machine hint,
+never an editor label; `OutsideGTA` remains factual provenance. Labelling is complete, but QC still
+blocks evaluation: adjudicate the audit's target conflicts, evidence mismatches and missing reasoning
+before `gate_step4a.py` consumes the split.
 
 ---
 
@@ -34,7 +33,7 @@ information the machine lacks. A date never can.
 | Option | What it means (editor-facing) | Routes to |
 |---|---|---|
 | **non-GTA** | Not in the GTA — including listings that *say* a GTA city but are elsewhere (there is a Richmond Hill in Georgia and one in New York). | Stage 0 |
-| **B2B / professional** | Aimed at businesses, or at people in a professional role — training, certification, career advancement, networking. Not at readers as residents. **Adjacency always counts** (Ariel's 07-27 ruling — no case-by-case). | the gate |
+| **B2B / professional dev** | Aimed at businesses, or at people in a professional role — training, certification, career advancement, networking. Not at readers as residents. **Adjacency always counts** (Ariel's 07-27 ruling — no case-by-case). | the gate |
 | **civic** | Municipal/government business: council meetings, public consultations, zoning, official plan. | the gate |
 | **wrong fit / not our audience** | Breaks no rule, but he'd never run it, any week. Includes **too niche** — appeals to one community rather than across them. | the gate |
 | **outcompeted** *(name TBD-from-editor)* | A good event that lost its slot **this week**. | R6's ranker (withheld from the gate) |
@@ -57,11 +56,11 @@ but it removes the reason §75 gave for it.
 
 ### The routing order (ours — the editor never sees it)
 
-Multiselect means a row can carry `non-GTA` **and** `B2B / professional`. Routing resolves in this order:
+Multiselect means a row can carry `non-GTA` **and** `B2B / professional dev`. Routing resolves in this order:
 
 1. **`non-GTA`** → Stage 0 delete. *Facts act first: the row is deletable regardless of what else is ticked.*
 2. **`can't tell`** → excluded from everything.
-3. **`wrong fit`, `B2B / professional`, `civic`** → the gate's negatives.
+3. **`wrong fit`, `B2B / professional dev`, `civic`** → the gate's negatives.
 4. **`outcompeted` alone** → reserved for R6's ranker; **withheld from the gate.**
 
 **Why `outcompeted` ranks last:** it is the weakest claim and the most damaging if wrong (§75 withholds
@@ -71,8 +70,8 @@ so a confused double-tick **fails safe — into the gate, never out of it.**
 ### What the change bought immediately
 
 Both **contested** pilot rows dissolve, with no adjudication needed. *GODfidence Conference* (r25) was
-breadth-vs-B2B: tick `wrong fit` **and** `B2B / professional`. *Zumba Instructor Training* (r36) was a
-professional-development fact against a popularity verdict: tick `B2B / professional` **and** `wrong fit`. **The `Rule-break` definitional
+breadth-vs-B2B: tick `wrong fit` **and** `B2B / professional dev`. *Zumba Instructor Training* (r36) was a
+professional-development fact against a popularity verdict: tick `B2B / professional dev` **and** `wrong fit`. **The `Rule-break` definitional
 question — "does a rule *apply*, or is it *why* I rejected it" — is dissolved, not answered.** Both are
 recorded; routing decides the rest.
 
@@ -83,17 +82,17 @@ Re-derived 2026-07-28 from the four-way draft. Ten are a two-minute confirm; two
 | Row | Event | Ticks | Conf |
 |---|---|---|---|
 | 6 | First Day Preview: Markham Edition | `wrong fit` | LOW — ⚠️ the event is a **YorkU prospective-student open day**, not the "professional training" his note describes. Verdict stands on his own ground ("my focus is entertainment"); the *reason* doesn't match the event. Confirm out loud. |
-| 11 | Effective Vendor Management Training | `B2B / professional` | HIGH — was two ticks under the split options; the merge makes it one |
+| 11 | Effective Vendor Management Training | `B2B / professional dev` | HIGH — was two ticks under the split options; the merge makes it one |
 | 12 | Geocaching & Orienteering with BIAYR | `outcompeted` | HIGH — the only pilot row that passes the slow-week test |
 | 20 | Indigenous Hockey Equipment Drive Golf Tournament | `wrong fit` | HIGH (breadth) |
-| 24 | Internet Marketing Fundamentals Training | `B2B / professional` | HIGH |
-| 25 | GODfidence Conference 2026 | `wrong fit` + `B2B / professional` | HIGH — *was contested under four-way; multiselect resolves it* |
+| 24 | Internet Marketing Fundamentals Training | `B2B / professional dev` | HIGH |
+| 25 | GODfidence Conference 2026 | `wrong fit` + `B2B / professional dev` | HIGH — *was contested under four-way; multiselect resolves it* |
 | 29 | Spring Colours - Album Release Show | *(blank — re-ask)* | no reasoning recorded, cannot remap honestly |
 | 30 | Unbreakable Minds Community Event | `wrong fit` | HIGH |
 | 33 | Bona Sport Program: Hands-On Training | `wrong fit` | HIGH — a consumer sports clinic; the scan false-positived it on "Training" |
 | 34 | TPM North — Shabbat Korach | `wrong fit` | HIGH (breadth) |
 | 35 | Love as a Foreign Language Book Tour | `wrong fit` | HIGH |
-| 36 | Zumba Instructor Training | `B2B / professional` + `wrong fit` | HIGH — *was contested under four-way; multiselect resolves it* |
+| 36 | Zumba Instructor Training | `B2B / professional dev` + `wrong fit` | HIGH — *was contested under four-way; multiselect resolves it* |
 
 **The headline holds: only 1 of his 6 `Outcompeted` rows survives as outcompeted.** Under the old
 instrument R6's ranker positives were being over-stated ~6×, and the pilot's real signal is
@@ -158,7 +157,7 @@ rather than merely sizing the gap.
 | # | Action | What to record |
 |---|---|---|
 | 1 | Read only `Event` + `Details`. Do not open the link yet. | Nothing until he has a text-only call. |
-| 2 | Ask whether any permanent reject reason applies. | Tick **every** applicable option: `non-GTA`, `B2B / professional`, `civic`, `wrong fit / not our audience`. Do not stop after the first tick. |
+| 2 | Ask whether any permanent reject reason applies. | Tick **every** applicable option: `non-GTA`, `B2B / professional dev`, `civic`, `wrong fit / not our audience`. Do not stop after the first tick. |
 | 3 | If no permanent reason applies, ask: **"Would you run this in a quieter week?"** | Yes → `outcompeted`. No → `wrong fit / not our audience`. |
 | 4 | If the event itself is too unclear to judge, use `can't tell`. | State what information is missing in `NoneReasoning`. |
 | 5 | Only if needed, open the link and let the real event override the text. | Write what the link added or changed in `LinkGave`; revise `NoneReason` if necessary. |
@@ -380,7 +379,7 @@ Do not teach the model, defend the hints, or explain the experiment while he is 
 Then show the multiselect mechanics:
 
 > "To add a reason, click the `+`. If two reasons apply, tick both. For example, an out-of-area
-> business seminar gets both `non-GTA` and `B2B / professional`."
+> business seminar gets both `non-GTA` and `B2B / professional dev`."
 
 **Do not start row one until the editor has personally added two ticks in the field once.** The hidden
 `+` affordance caused the pilot's 0/12 `NoneReason` result.
@@ -463,24 +462,25 @@ Before ending:
 | Anything surprising or unclear | B2B / wrong-fit conflation; professional events routed to `outcompeted`; two link findings not propagated; source categories too noisy for routing. |
 | Next sitting | TBD · 64 unresolved gate/unflagged rows, after the adjudication pass |
 
+**Completion pass (2026-07-30):** the remaining 138 rows were labelled (gate 64 · train 74), bringing
+the deck to 239/239. The durable one-pull audit now owns repeatable post-sitting QC and snapshot diffs.
+
 ---
 
 ## Open items
 
-**Before the next sitting:**
+**Before evaluation:**
 
-1. Adjudicate the target-flipping, language, link, repeat-pair and factual-provenance conflicts from
-   Sitting 1 without erasing the raw audit trail.
-2. Confirm the Airtable view presents `Slice=gate`, `Flagged=unflagged`, unresolved rows only
-   (**64 rows**).
-3. Ariel records his predicted split in the sitting log before the first new label.
-4. Rows 6 and 29 still require genuine re-looks when their slice is reached.
+1. Adjudicate the target conflicts, link-evidence mismatches, repeat disagreements, cancelled positive,
+   missing reasoning and factual-provenance mismatch reported by `scripts/auditR7Labels.js`.
+2. Make `gate_step4a.py` consume the live `B2B / professional dev` option string and corrected target
+   mapping; fail on unknown values rather than silently dropping them.
 
 **Still TBD-from-editor:**
 
 - His preferred word for a good event that lost its slot (`outcompeted` remains the live option today).
 - The intent-based edge cases, including whether a free library job-search session counts as
-  `B2B / professional`; do not pre-decide those from keywords.
+  `B2B / professional dev`; do not pre-decide those from keywords.
 
 **After the sitting — Ariel/Codex, not the editor:**
 

@@ -5,6 +5,7 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-07-30
+- Completed the rejection-label deck and added a repeatable, read-only audit that snapshots and compares editor sittings without routing raw records through the model.
 - Completed the first live rejection-labelling sitting and a full post-session integrity audit, preserving the editor's raw decisions while isolating inconsistencies before they could enter evaluation.
 - Captured the client's language and cultural-breadth policy, and measured source-provided categories as useful supporting signal but too noisy for deterministic filtering.
 
