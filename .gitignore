@@ -17,6 +17,11 @@ test_runs/
 .claude/skills/checkout/
 __pycache__/
 
+# Local AI-agent configuration and private working agreements.
+AGENTS.md
+.agents/
+.codex/
+
 # Embedding matrices: ~21 MB of binary, regenerable in ~2 min for ~$0.004 via
 # models/sectioning/embed_corpus.py. The committed manifests carry the corpus
 # SHA-256, so reproducibility is verifiable without the blobs.
