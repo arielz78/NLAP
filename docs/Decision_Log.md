@@ -1973,3 +1973,19 @@ Both survive into the training set, so any fit can stratify on or exclude machin
 **Why:** The first live None-split sitting exposed a conflation between *the editor cannot immediately read the listing* and *the event itself lacks enough information*. Those are different conditions. It also confirmed that cultural theme and audience exclusivity are not synonyms: the operative question is whether the broader readership would use the event.
 
 **Operational consequence:** `can't tell` is used only when the event remains genuinely indeterminate after the available text and necessary link check. Language and cultural keywords never become Stage-0 delete rules. Lunar New Year is an editorial positive exception, not evidence that every culturally specific event passes the breadth test.
+
+---
+
+## 82. The Editor Sample Is The Gate's Disagreement Set, Not A Designed Sample (2026-07-30)
+
+**Decision:** the positive-class audit is sourced from the gate's own highest-confidence errors after a diagnostic Step 4a run, not from a stratified sample designed before the model exists. Step 4a runs on current labels and is explicitly **diagnostic** — it bounds Fork C and locates label errors; it does not set the release bar.
+
+**Why the designed sample was cancelled.** Three instruments were proposed and each was tested before it was built. A breadth keyword scan finds 8 of 211 with ~78% precision — no rule isolates the contamination. A published-history control arm joins on 2 of 211 — the §62 join failure again. And a 20–50 row "would you run this?" pass sits under a **15–25% noise floor** set by the editor's own 75–82.5% self-agreement, so the null and the finding are the same number. **The instrument could not detect what it was built for.**
+
+**Why disagreement-based sampling beats it.** Contaminated positives are *self-revealing*: a single-community event sitting in a section pile resembles the breadth violations in the negative pile, so the gate scores it low and it surfaces as a false negative without anyone guessing which rows to check. The model samples at the decision boundary — where a label error actually moves the operating point — and it **ranks** the errors, so the sitting starts with the rows that move the number most. A uniform sample spends editor time on easy rows that decide nothing.
+
+**What it costs, named rather than discovered.** This pass of Step 4a is measured against a positive class known to be unaudited, so its curve **bounds** the answer and cannot set the bar. The bar is set on the re-fit after the disagreement sitting.
+
+**The question framing is part of the decision.** The sitting asks *"is there a reason you'd never run this?"* — a rule question — not *"would you run this?"*, which is a preference question and therefore the `outcompeted` variable wearing a different hat. Rules have higher self-agreement than preferences; that difference is the only thing lifting the signal above the noise floor.
+
+**Generalized:** do not buy human labels before the model says where it is confused. The corollary is the one that bites — when the instrument's expected null equals its expected finding, the instrument is not cheap, it is worthless, and that is checkable before it is built.
