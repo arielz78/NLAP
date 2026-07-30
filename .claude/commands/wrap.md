@@ -57,14 +57,15 @@ Wrap up this session. Follow these steps in order:
    - **Repo folder layout** (root `README.md`) — was a top-level folder added,
      removed, or renamed this session? If yes → propose the layout-table edit
      (and flag any `scripts/` path literals that need fixing). If no → skip.
-   - **Learning Mode handoff** (`CLAUDE.md`) — two separate triggers, check both:
-     (a) did a release with a learnable core CLOSE this session (e.g. R7→R6
-     handoff)? If yes → propose swapping the **durable** authored-core line to the
-     next release. (b) did the **architecture move** this session — a technique
-     dropped or adopted, a scope stage added, an authorship override taken? If yes
-     → propose refreshing the **current step** line (and its date stamp). Trigger
-     (b) exists because a release-close-only cadence let the R7-W6 block name
-     TF-IDF for a day after it was killed. If neither → skip.
+   - **Learning Mode split** (`CLAUDE.md`) — one trigger only: did the *rule itself*
+     change this session — a standing authorship override, or a class of decision
+     moving sides? If yes → propose the edit. **Do NOT refresh it for a release
+     close, an architecture move, or "what we're working on now"** — the split is
+     stated by decision type and is release-agnostic on purpose. A dated
+     "current step" line used to live there, accreted status, and drifted two
+     sessions stale; that's why the file now says nothing release-specific,
+     dated, or status-bearing belongs in it. Release status → Scope snapshot.
+     If the rule didn't change → skip.
    - Whatever changed goes to its one home only — never duplicate across homes.
 
 5. Show me every drafted entry before/after writing so I can eyeball it.
