@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-30
+- Completed the first live rejection-labelling sitting and a full post-session integrity audit, preserving the editor's raw decisions while isolating inconsistencies before they could enter evaluation.
+- Captured the client's language and cultural-breadth policy, and measured source-provided categories as useful supporting signal but too noisy for deterministic filtering.
+
 ## 2026-07-29
 - Completed a full call-preparation audit of the rejection deck, removing misleading automated hints, adding reviewed cues, and preserving a visible boundary between machine facts, machine guesses, and human decisions.
 - Converted the client-labelling plan into a verified live runbook with a gate-first workflow, exact facilitator script, per-item decision protocol, fatigue safeguards, and post-session quality checks.

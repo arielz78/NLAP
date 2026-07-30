@@ -1963,3 +1963,13 @@ Both survive into the training set, so any fit can stratify on or exclude machin
 **The cost, named rather than waved at.** A visible hint **anchors the editor**, and roughly 1 in 5 hints is wrong. Accepted, because he touches every row regardless and the field says out loud that it is a guess — but the consequence is real: **his labels on flagged rows are no longer fully independent of ours.** That is why the marker is permanent rather than a temporary sort key. A future analysis that finds the flagged stratum unusually clean must consider that we told him the answer first.
 
 **The generalizable rule:** *pre-sort on suspicion, pre-fill only on facts, and never let the two share a column.* The 2026-07-27 call was "pre-sort, don't pre-label"; this refines it — pre-labelling **is** allowed, but only where the evidence is a record fact, and it must be labelled as ours forever.
+
+---
+
+## 81. Listing Language Never Decides Eligibility Alone; Cultural Breadth Turns on Cross-Community Appeal, With Lunar New Year an Explicit Accepted Case (2026-07-29)
+
+**Decision:** A listing being partly or fully in another language is neither an automatic rejection nor, by itself, grounds for `can't tell`. The event is judged from the rest of its content, using the link or translation when needed. Separately, association with one cultural or religious community does not automatically make an event too narrow: Lunar New Year is an explicit accepted case because its appeal crosses communities. This refines §75's breadth criterion and closes §76's TBD-from-editor language policy.
+
+**Why:** The first live None-split sitting exposed a conflation between *the editor cannot immediately read the listing* and *the event itself lacks enough information*. Those are different conditions. It also confirmed that cultural theme and audience exclusivity are not synonyms: the operative question is whether the broader readership would use the event.
+
+**Operational consequence:** `can't tell` is used only when the event remains genuinely indeterminate after the available text and necessary link check. Language and cultural keywords never become Stage-0 delete rules. Lunar New Year is an editorial positive exception, not evidence that every culturally specific event passes the breadth test.

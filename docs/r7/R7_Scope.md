@@ -14,11 +14,11 @@ Plus the **cached embeddings** (current representation `voyage-4-large` @2048d, 
 
 ---
 
-## Status Snapshot (2026-07-29)
+## Status Snapshot (2026-07-30)
 
 Single source of truth for "where are we." Supersedes the roadmap's R7 header and the pre-reframe body of this doc.
 
-**Step status at a glance (2026-07-29).** Step 0 ✅ · **Step 1 IN PROGRESS, 12 of 239** — instrument ready and B3/B4 complete: all 111 recovered AllEvents descriptions are cleaned and live in `Details`; blocked only on booking the editor · **Step 2 CUT** (it duplicated Step 4a) · **Step 3 nearly done** — geography shipped (#109), date-window and completeness already existed in R1, language / is-it-an-event / cancellation dropped from scope; **one item left, the Eventbrite TLD allowlist, written in-repo and awaiting a re-import** · **Step 4a STAGED, NOT RUN** — plumbing built; pin 1 is set (`RECALL_DIAL = "global"`), pins 2–4 remain Ariel's · Step 4 blocked on Step 1 · Step 5 untouched.
+**Step status at a glance (2026-07-30).** Step 0 ✅ · **Step 1 IN PROGRESS, 101 of 239** — Sitting 1 added 76 editor labels across deliberately selected low-hanging strata (gate 17 · train 33 · walkthrough 12 · not-in-model-set 14). The representative gate slice is now 25/89 resolved with 64 unhinted rows remaining. A read-only post-sitting audit found target-flipping `outcompeted` calls, two inconsistent completed repeat pairs, missing reasoning and link decisions not propagated into labels; the data is **not evaluation-ready** until those rows are adjudicated · **Step 2 CUT** (it duplicated Step 4a) · **Step 3 nearly done** — geography shipped (#109), date-window and completeness already existed in R1, language / is-it-an-event / cancellation dropped from scope; **one item left, the Eventbrite TLD allowlist, written in-repo and awaiting a re-import** · **Step 4a STAGED, NOT RUN** — plumbing built; pin 1 is set (`RECALL_DIAL = "global"`), pins 2–4 remain Ariel's, and `gate_step4a.py` must consume `NoneReason` with the corrected target mapping before any final evaluation · Step 4 blocked on Step 1 · Step 5 untouched.
 
 ⚠️ **The instrument changed again on 2026-07-28 (§77):** the None-split is now **one 6-option multiselect** (`non-GTA` · `B2B / professional` · `civic` · `wrong fit / not our audience` · `outcompeted` · `can't tell`), with `NoneType` deleted and routing derived in code from a written priority order. §75's four-way *taxonomy* still describes how the editor rejects; it is no longer the *form he fills*. A new `Slice` field makes the gate/train split groupable in Airtable for the first time (gate 184 · train 210 · walkthrough 22 · not-in-model-set 40) — **label the 89 `Section=None` gate rows first**, because only that slice is drawn like production and the four-way split can then be read at ~89 rows instead of 239.
 
@@ -37,7 +37,7 @@ Single source of truth for "where are we." Supersedes the roadmap's R7 header an
 - **The transfer test / min-class-recall exit table (old §3) is moot** as the release gate. It measured section accuracy on a population that doesn't exist in production. Retired as the headline; kept only as an internal diagnostic. The unresolved 0.61 provenance and τ-calibration fork die with it.
 
 **The live decisions ("forks"):**
-- **Fork A — does the gate train on split labels?** ✅ **Answered in principle** (§75): yes, four ways, with only `Wrong fit` as the gate's negatives. **Still executing** — the editor is 12 of 239 rows in; the instrument and recovered-text prep are complete, and the first sitting is ready to book.
+- **Fork A — does the gate train on split labels?** ✅ **Answered in principle** (§75): yes, four ways, with permanent content rejections as gate negatives, `outcompeted` as gate-positive ranking material, and `can't tell` excluded. **Still executing** — 101 of 239 None rows are labelled, the representative gate slice is 25/89 resolved, and Sitting 1's conflicts must be adjudicated before the mapping is evaluated.
 - **Fork B — threshold gate or *scoring* gate?** ✅ **DISSOLVED by architecture (§78): score and sort, never delete.** The gate deploys into R2 after R1 has already upserted the record, so "do not write it" was never available. Pin 1 is therefore a reporting/alarm commitment, not a kill threshold.
 - **Fork C — W6's scope (NEW, OPEN, Ariel's).** Given that a perfect gate still leaves ~335 events for 15 slots: keep the gate and change the sign-off bar / expand W6 to include ranking / merge W6 with R6.
 

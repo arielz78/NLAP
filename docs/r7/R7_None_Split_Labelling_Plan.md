@@ -1,19 +1,20 @@
 # R7-W6 — None-Split Labelling Plan (239 rows)
 
-**Status: LIVE RUNBOOK (verified against Airtable 2026-07-29).** Written 2026-07-26 from the editor's
+**Status: LIVE RUNBOOK (verified against Airtable 2026-07-30).** Written 2026-07-26 from the editor's
 first 12 rows; rewritten 2026-07-27 to match `Decision_Log.md` §75; §0 replaced 2026-07-28 when the
-instrument collapsed to one multiselect; reconciled to the live deck and call-prep audit on 2026-07-29.
+instrument collapsed to one multiselect; reconciled to the live deck and call-prep audit on 2026-07-29;
+Sitting 1 and its read-only consistency audit recorded 2026-07-30.
 This doc is the only home for the instrument design, sitting protocol, and sitting log — there is no
 separate meeting doc.
 
 **Type: Release-working.** Implements `R7_Scope.md` Step 1; delete or archive at R7 close.
 
-**Live deck state (2026-07-29):** 239 `Section=None` rows · 25 already carry `NoneReason` · 214 remain
-blank · 15 factual `OutsideGTA` labels · 63 `PreMarked` hints. Start with the representative **gate
-slice: 89 total = 8 resolved + 17 hinted/unlabelled + 64 unhinted/unlabelled.** `PreMarked` is a
-machine hint, never an editor label. `OutsideGTA` is the provenance field that distinguishes the
-15 machine-applied geography facts. Two wording decisions remain **TBD-from-editor** and are asked
-once at the opening, not re-litigated row by row.
+**Live deck state (2026-07-30):** 239 `Section=None` rows · 101 carry `NoneReason` · 138 remain blank ·
+15 factual `OutsideGTA` labels · 63 `PreMarked` hints. Sitting 1 added 76 editor labels across deliberately
+selected low-hanging strata. The representative **gate slice is 89 total = 25 resolved + 64
+unhinted/unlabelled.** `PreMarked` is a machine hint, never an editor label. `OutsideGTA` is the
+provenance field that distinguishes the 15 machine-applied geography facts. The editor settled the
+language policy and supplied an explicit breadth example; the preferred ranking word remains open.
 
 ---
 
@@ -139,11 +140,11 @@ phrasing must be the editor's. Ask him to complete: *"An event is too niche when
 **Superseded:** the solo async workflow, and the 25-row pilot that was to precede the bulk.
 **The first 12 rows *are* the pilot** (§75) — a solo pilot now has no consumer.
 
-**The format:** label the **gate slice first**: 89 total, 8 resolved, **81 still requiring an editor
-touch**. Expect two sittings for the gate slice, then roughly three more for the remaining train /
-walkthrough / not-in-model-set rows. Work in blocks of ~40–60 rows (~30–40 min each). Text-first means
-he calls it from `Event` + `Details` **before** the link is opened; if he needs the link, open it and
-record what it changed.
+**The format:** finish the representative **gate slice**: 89 total, 25 resolved, **64 still requiring
+an editor touch**. Sitting 1 also cleared low-hanging rows from train / walkthrough / not-in-model-set;
+that work is retained but does not substitute for the representative gate split. Work in blocks of
+~40–60 rows (~30–40 min each). Text-first means he calls it from `Event` + `Details` **before** the link
+is opened; if he needs the link, open it and record what it changed.
 
 **Why live rather than async:** it converts a self-report into an **observed behaviour**. The retired
 `NeededLink` asked an editor habituated to opening every link for 15 months to report a counterfactual
@@ -353,9 +354,9 @@ Do not teach the model, defend the hints, or explain the experiment while he is 
 
 1. Open the `Negatives labelling` view.
 2. Put `Slice=gate` first and hide already-completed rows (`NoneReason` is not empty). The working
-   population should be **81 rows**.
-3. Group or sort by `Flagged` so the **17 hinted/unlabelled** rows come first, followed by the
-   **64 unhinted/unlabelled** rows.
+   population should be **64 rows**.
+3. Confirm the visible group is **`Slice=gate` → `Flagged=unflagged`**. The 17 hinted gate rows were
+   completed in Sitting 1.
 4. Keep these columns visible, in order: `Event` · `Details` · `PreMarked` · `NoneReason` ·
    `NoneReasoning` · `Link` · `LinkGave`. Keep `OutsideGTA` visible as provenance if a factual row
    appears. Do not expose modeling columns.
@@ -449,18 +450,18 @@ Before ending:
 
 | | |
 |---|---|
-| Date / sitting number | |
-| **Ariel's prediction before starting** | non-GTA __ / B2B-professional __ / civic __ / wrong fit __ / outcompeted __ / can't tell __ |
+| Date / sitting number | 2026-07-29 · Sitting 1 |
+| **Ariel's prediction before starting** | Not captured |
 | Gate rows at start | 89 total · 8 resolved · 81 blank |
-| Rows completed this sitting | |
-| Gate rows remaining | |
-| Split observed — gate slice only | non-GTA __ / B2B-professional __ / civic __ / wrong fit __ / outcompeted __ / can't tell __ |
-| Links opened / non-empty `LinkGave` | |
-| Editor's preferred word for `outcompeted` | |
-| Editor's breadth sentence | |
-| Editor's non-English policy | |
-| Anything surprising or unclear | |
-| Next sitting | |
+| Rows completed this sitting | 76 total · gate 17 · train 33 · walkthrough 12 · not-in-model-set 14 |
+| Gate rows remaining | 64 blank · 25/89 currently resolved |
+| Split observed — gate slice only | **Provisional:** non-GTA 5 · B2B-professional 14 · civic 0 · wrong fit 6 · outcompeted 0 · can't tell 2. Multiselect counts overlap; adjudication pending. |
+| Links opened / non-empty `LinkGave` | Opened count not captured · 3 non-empty |
+| Editor's preferred word for `outcompeted` | Not captured |
+| Editor's breadth sentence | Policy captured, not exact wording: community association is not automatically too narrow; judge cross-community appeal. Lunar New Year is explicitly accepted. |
+| Editor's non-English policy | Depends on the rest of the event; language alone is not a rejection. |
+| Anything surprising or unclear | B2B / wrong-fit conflation; professional events routed to `outcompeted`; two link findings not propagated; source categories too noisy for routing. |
+| Next sitting | TBD · 64 unresolved gate/unflagged rows, after the adjudication pass |
 
 ---
 
@@ -468,15 +469,16 @@ Before ending:
 
 **Before the next sitting:**
 
-1. Confirm the Airtable view presents `Slice=gate`, unresolved rows only, with `Flagged=yes` first.
-2. Ariel records his predicted split in the sitting log before the first new label.
-3. Rows 6 and 29 still require genuine re-looks when their slice is reached.
+1. Adjudicate the target-flipping, language, link, repeat-pair and factual-provenance conflicts from
+   Sitting 1 without erasing the raw audit trail.
+2. Confirm the Airtable view presents `Slice=gate`, `Flagged=unflagged`, unresolved rows only
+   (**64 rows**).
+3. Ariel records his predicted split in the sitting log before the first new label.
+4. Rows 6 and 29 still require genuine re-looks when their slice is reached.
 
-**TBD-from-editor during the sitting:**
+**Still TBD-from-editor:**
 
 - His preferred word for a good event that lost its slot (`outcompeted` remains the live option today).
-- His one-sentence breadth rule.
-- His policy for non-English listings.
 - The intent-based edge cases, including whether a free library job-search session counts as
   `B2B / professional`; do not pre-decide those from keywords.
 
