@@ -64,6 +64,8 @@ from pathlib import Path
 
 import numpy as np
 
+from text_recipe import clean   # §70 serve-time cleaning; used to verify duplicate collapse
+
 HERE = Path(__file__).resolve().parent
 CORPORA = HERE / "corpora"
 DECK = HERE / "deck"
@@ -220,24 +222,26 @@ def route_s77(section, reasons):
     raise AssertionError(f"unroutable reason set: {sorted(reasons)}")
 
 
-# Precedence cases, asserted at import. These encode the DECISIONS, not the syntax --
-# if someone reorders the branches above, these fail before any number is produced.
-for _sec, _reasons, _want in [
-    ("For Families", [], "positive"),
-    ("None", [NON_GTA], "stage0"),
-    ("None", [NON_GTA, OUTCOMPETED], "stage0"),          # 1 beats 4
-    ("None", [NON_GTA, "civic"], "stage0"),              # 1 beats 3
-    ("None", [CANT_TELL], "excluded"),
-    ("None", [CANT_TELL, "wrong fit / not our audience"], "excluded"),   # 2 beats 3
-    ("None", ["wrong fit / not our audience"], "negative"),
-    ("None", ["B2B / professional dev"], "negative"),
-    ("None", ["civic"], "negative"),
-    ("None", ["wrong fit / not our audience", OUTCOMPETED], "negative"),  # 3 beats 4
-    ("None", [OUTCOMPETED], "withheld"),
-    ("None", [], "unlabelled"),
-]:
-    _got = route_s77(_sec, _reasons)
-    assert _got == _want, f"routing contract broken: {_sec} {_reasons} -> {_got}, want {_want}"
+# Precedence cases, asserted at import from the SHARED fixture that scripts/auditR7Labels.js
+# also loads. Two copied case lists are not parity -- both could be edited consistently
+# with their own local tests and still diverge. One fixture, two consumers, no local copy.
+_CASES = json.loads((HERE / "routing_s77_cases.json").read_text(encoding="utf-8"))
+_SECTION_ALIAS = {"Families": "For Families", "Couples": "For Couples", "Golden": "For Golden Age Readers"}
+
+for _c in _CASES["cases"]:
+    _sec = _SECTION_ALIAS.get(_c["section"], _c["section"])
+    _got = route_s77(_sec, _c["reasons"])
+    assert _got == _c["want"], (
+        f"§77 routing contract broken: {_c['section']} {_c['reasons']} "
+        f"-> {_got}, want {_c['want']}"
+    )
+for _c in _CASES["throw_cases"]:
+    try:
+        route_s77(_SECTION_ALIAS.get(_c["section"], _c["section"]), _c["reasons"])
+    except ValueError:
+        pass
+    else:
+        raise AssertionError(f"§77 contract: expected a raise for {_c['reasons']} ({_c['why']})")
 
 route = np.array([route_s77(lab, reasons_of.get(r["row"], []))
                   for lab, r in zip(labels, rows)], dtype=object)
@@ -505,29 +509,91 @@ for lo in np.arange(0.0, 1.0, 0.2):
 # Step 4a done-when: export the highest-disagreement gate positives for Step 4b's sitting.
 # These are rows the EDITOR called includable and the model scores lowest -- either the
 # model cannot see it (feature bug) or the label is wrong (label bug). 4b asks which.
-disagree_idx = np.argsort(np.where(y == 1, p, np.inf))[:30]
-disagreements = [{
-    "row": rows_fit[i]["row"],
-    "p_include": round(float(p[i]), 4),
-    "section": str(section[i]),
-    "slice": str(slice_[i]),
-    "title": raw_by_url.get(rows_fit[i]["url"], {}).get("title", ""),
-    "url": rows_fit[i]["url"],
-} for i in disagree_idx if y[i] == 1]
+#
+# DEDUPLICATED BY CV GROUP -- BUT A CV GROUP IS NOT AUTOMATICALLY ONE EDITORIAL EVENT.
+# `groups` is keyed on normalised TITLE. That is the right key for leak-free folds; it is
+# NOT proof that two occurrences carry the same description or deserve the same ruling.
+# So the collapse is CHECKED, not assumed:
+#   pass 1  pick the n lowest-scoring positives, one per group (the representative)
+#   pass 2  scan the WHOLE fit set for every positive occurrence of those groups -- an
+#           earlier version stopped at n and therefore missed later twins entirely
+#   pass 3  compare cleaned description text; collapse only genuinely equivalent copies,
+#           and surface the rest as VARIANTS the sitting must judge separately
+N_DISAGREEMENTS = 30
 
+
+def _evidence_key(i):
+    """What the editor would actually read. Same text -> same ruling; different -> ask."""
+    e = raw_by_url.get(rows_fit[i]["url"], {})
+    return " ".join((clean(e.get("desc") or "")).lower().split())
+
+
+def top_disagreements(scores, n=N_DISAGREEMENTS):
+    """Lowest-scoring POSITIVES, one per CV group, with twins verified not assumed."""
+    reps, seen = [], set()
+    for i in np.argsort(scores):                    # ascending: most disagreed-with first
+        if y[i] != 1 or int(groups[i]) in seen:
+            continue
+        seen.add(int(groups[i]))
+        reps.append(int(i))
+        if len(reps) == n:
+            break
+
+    by_group = collections.defaultdict(list)        # pass 2: FULL scan, no early stop
+    for i in range(len(y)):
+        if y[i] == 1 and int(groups[i]) in seen:
+            by_group[int(groups[i])].append(i)
+
+    out = []
+    for i in reps:
+        g = int(groups[i])
+        rep_key = _evidence_key(i)
+        same = [j for j in by_group[g] if j != i and _evidence_key(j) == rep_key]
+        diff = [j for j in by_group[g] if j != i and _evidence_key(j) != rep_key]
+        out.append({"idx": i, "group": g,
+                    "twins": [rows_fit[j]["row"] for j in same],
+                    "variants": [{"row": rows_fit[j]["row"],
+                                  "p_include": round(float(scores[j]), 4)} for j in diff]})
+    return out
+
+
+picked = top_disagreements(p)
+disagreements = [{
+    "row": rows_fit[e["idx"]]["row"],
+    "p_include": round(float(p[e["idx"]]), 4),
+    "section": str(section[e["idx"]]),
+    "slice": str(slice_[e["idx"]]),
+    "cv_group": e["group"],
+    # Same group AND byte-identical serve text -> one ruling covers all of these.
+    "duplicate_rows": e["twins"],
+    # Same group, DIFFERENT text -> the editor must judge these separately. Do not
+    # apply the representative's ruling to them.
+    "variant_rows": e["variants"],
+    "title": raw_by_url.get(rows_fit[e["idx"]]["url"], {}).get("title", ""),
+    "url": rows_fit[e["idx"]]["url"],
+} for e in picked]
+
+_collapsed = sum(len(e["twins"]) for e in picked)
+_variants = sum(len(e["variants"]) for e in picked)
 OUT = HERE / "eval" / "step4a_disagreements.json"
 OUT.parent.mkdir(exist_ok=True)
 OUT.write_text(json.dumps(stamped({
     "generated": CURRENT_PULL.name,
     "arm": "embeddings only, C=1.0, grouped 5-fold CV",
     "n_fit": int(len(y)),
+    "deduplicated_by": "cv_group (normalised title), VERIFIED against cleaned serve text. "
+                       "duplicate_rows = same group AND identical text, one ruling covers "
+                       "all. variant_rows = same group, DIFFERENT text -- judge separately, "
+                       "do not inherit the representative's ruling.",
     "note": "Editor called these includable; the model scores them lowest. Step 4b asks "
             "the RULE question ('is there a permanent reason you would never run this?'), "
             "never the preference question. Enriched for suspected errors -- it repairs, "
             "it does not estimate contamination.",
     "rows": disagreements,
 }), indent=2), encoding="utf-8")
-print(f"\nexported {len(disagreements)} highest-disagreement positives -> {OUT.relative_to(HERE)}")
+print(f"\nexported {len(disagreements)} unique-group disagreement positives -> {OUT.relative_to(HERE)}")
+print(f"  {_collapsed} duplicate row(s) collapsed (same group, identical serve text).")
+print(f"  {_variants} variant row(s) share a group but NOT the text -> judged separately.")
 print("  (Step 4b's sitting list. Enriched for errors: repairs, does not estimate.)")
 #
 # TODO(ariel): the breadth diagnostic (§75 un-park trigger, R7_Scope Step 4). Report gate

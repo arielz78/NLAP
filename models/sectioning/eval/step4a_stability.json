@@ -1,0 +1,391 @@
+{
+  "_warning": "DIAGNOSTIC ONLY - UNAUDITED POSITIVE LABELS - NOT A RELEASE BAR",
+  "_step": "R7-W6 Step 4a (diagnostic)",
+  "bar": 23,
+  "n": 30,
+  "rule": "base top-N must share >= BAR unique cv-groups with EVERY comparison config; otherwise 4b is built from selection frequency, tie-broken by mean rank",
+  "verdict": "base",
+  "failures": [],
+  "configs": [
+    {
+      "name": "BASE  C=1.0  GroupKFold(5)",
+      "auc_gate": 0.8888,
+      "auc_train": 0.9176,
+      "shared_with_base": 30
+    },
+    {
+      "name": "C=0.1  GroupKFold(5)",
+      "auc_gate": 0.8342,
+      "auc_train": 0.8874,
+      "shared_with_base": 25
+    },
+    {
+      "name": "C=0.3  GroupKFold(5)",
+      "auc_gate": 0.8629,
+      "auc_train": 0.9088,
+      "shared_with_base": 27
+    },
+    {
+      "name": "C=3.0  GroupKFold(5)",
+      "auc_gate": 0.9095,
+      "auc_train": 0.9222,
+      "shared_with_base": 28
+    },
+    {
+      "name": "C=10.0 GroupKFold(5)",
+      "auc_gate": 0.9227,
+      "auc_train": 0.9226,
+      "shared_with_base": 26
+    },
+    {
+      "name": "C=1.0  SGKF(5) seed=0",
+      "auc_gate": 0.8742,
+      "auc_train": 0.9191,
+      "shared_with_base": 24
+    },
+    {
+      "name": "C=1.0  SGKF(5) seed=1",
+      "auc_gate": 0.8809,
+      "auc_train": 0.9116,
+      "shared_with_base": 25
+    },
+    {
+      "name": "C=1.0  SGKF(5) seed=2",
+      "auc_gate": 0.8755,
+      "auc_train": 0.9131,
+      "shared_with_base": 26
+    }
+  ],
+  "consensus_rows": [
+    {
+      "row": 22,
+      "cv_group": 183,
+      "n_configs": 8,
+      "mean_rank": 0.5,
+      "p_include_base": 0.3401,
+      "section": "For Families",
+      "slice": "train",
+      "title": "Canadian Blood Services, Donor Centre",
+      "url": "https://allevents.in/vaughan/canadian-blood-services-donor-centre-tickets/80009507399302"
+    },
+    {
+      "row": 218,
+      "cv_group": 197,
+      "n_configs": 8,
+      "mean_rank": 1.12,
+      "p_include_base": 0.346,
+      "section": "For Golden Age Readers",
+      "slice": "gate",
+      "title": "10 Health Financial Management Habits",
+      "url": "https://markham.bibliocommons.com/events/6a061df60c0f2c4503fa2461"
+    },
+    {
+      "row": 151,
+      "cv_group": 256,
+      "n_configs": 8,
+      "mean_rank": 2.38,
+      "p_include_base": 0.3497,
+      "section": "For Golden Age Readers",
+      "slice": "train",
+      "title": "Voices of Tomorrow: Toronto CASG TEDEd Student Talks Showcase",
+      "url": "https://www.eventbrite.ca/e/voices-of-tomorrow-toronto-casg-teded-student-talks-showcase-tickets-676927035987"
+    },
+    {
+      "row": 125,
+      "cv_group": 109,
+      "n_configs": 8,
+      "mean_rank": 5.38,
+      "p_include_base": 0.4303,
+      "section": "For Golden Age Readers",
+      "slice": "gate",
+      "title": "Free Workshop: Navigating Grief & Loss",
+      "url": "https://www.eventbrite.ca/e/free-workshop-navigating-grief-loss-tickets-1981813752282"
+    },
+    {
+      "row": 270,
+      "cv_group": 81,
+      "n_configs": 8,
+      "mean_rank": 5.75,
+      "p_include_base": 0.4017,
+      "section": "For Golden Age Readers",
+      "slice": "train",
+      "title": "NEW: Why Do People Fall in Love with ChatGPT?",
+      "url": "https://www.eventbrite.ca/e/new-why-do-people-fall-in-love-with-chatgpt-tickets-1988239148816"
+    },
+    {
+      "row": 304,
+      "cv_group": 364,
+      "n_configs": 8,
+      "mean_rank": 7.25,
+      "p_include_base": 0.4337,
+      "section": "For Golden Age Readers",
+      "slice": "train",
+      "title": "De-stressing The Downsizing Process",
+      "url": "https://www.vaughanpl.info/programs/view/3711"
+    },
+    {
+      "row": 78,
+      "cv_group": 295,
+      "n_configs": 8,
+      "mean_rank": 7.38,
+      "p_include_base": 0.4167,
+      "section": "For Couples",
+      "slice": "train",
+      "title": "OPENFRAME International Film Festival",
+      "url": "https://allevents.in/vaughan/openframe-international-film-festival/100001988599227822"
+    },
+    {
+      "row": 1,
+      "cv_group": 32,
+      "n_configs": 8,
+      "mean_rank": 7.88,
+      "p_include_base": 0.4559,
+      "section": "For Golden Age Readers",
+      "slice": "train",
+      "title": "Short Film Premiere - Jeevan Marana Porattam (Life Death Showdown)",
+      "url": "https://allevents.in/richmond-hill/short-film-premiere-jeevan-marana-porattam-life-death-showdown/100001992700496828"
+    },
+    {
+      "row": 258,
+      "cv_group": 153,
+      "n_configs": 8,
+      "mean_rank": 8.12,
+      "p_include_base": 0.4217,
+      "section": "For Golden Age Readers",
+      "slice": "gate",
+      "title": "Making Your Money Last in Retirement",
+      "url": "https://www.eventbrite.ca/e/making-your-money-last-in-retirement-tickets-1982088306481"
+    },
+    {
+      "row": 213,
+      "cv_group": 114,
+      "n_configs": 8,
+      "mean_rank": 10.25,
+      "p_include_base": 0.457,
+      "section": "For Couples",
+      "slice": "train",
+      "title": "Conversations with my Father: An Intergenerational Program",
+      "url": "https://markham.bibliocommons.com/events/6a0aa490c7d3cd580059ebe2"
+    },
+    {
+      "row": 332,
+      "cv_group": 148,
+      "n_configs": 8,
+      "mean_rank": 10.38,
+      "p_include_base": 0.4704,
+      "section": "For Families",
+      "slice": "gate",
+      "title": "Volunteers Needed - Thornhill Summer Camp",
+      "url": "https://allevents.in/markham/volunteers-needed-thornhill-summer-camp/100001989145140662"
+    },
+    {
+      "row": 256,
+      "cv_group": 370,
+      "n_configs": 8,
+      "mean_rank": 11.38,
+      "p_include_base": 0.4749,
+      "section": "For Couples",
+      "slice": "train",
+      "title": "Wedbiz Society Socials Cocktails & Conversations :\"The Prelude\"",
+      "url": "https://www.eventbrite.ca/e/wedbiz-society-socials-cocktails-conversations-the-prelude-tickets-1985315173126"
+    },
+    {
+      "row": 352,
+      "cv_group": 341,
+      "n_configs": 8,
+      "mean_rank": 12.12,
+      "p_include_base": 0.4823,
+      "section": "For Families",
+      "slice": "train",
+      "title": "P1 Raceway @ Taste of Asia 2026",
+      "url": "https://allevents.in/markham/p1-raceway-taste-of-asia-2026/200030214782732"
+    },
+    {
+      "row": 399,
+      "cv_group": 200,
+      "n_configs": 8,
+      "mean_rank": 12.5,
+      "p_include_base": 0.4714,
+      "section": "For Golden Age Readers",
+      "slice": "train",
+      "title": "Black Coffee in Toronto",
+      "url": "https://www.eventbrite.ca/e/black-coffee-in-toronto-tickets-1988338903184"
+    },
+    {
+      "row": 62,
+      "cv_group": 211,
+      "n_configs": 8,
+      "mean_rank": 12.62,
+      "p_include_base": 0.4867,
+      "section": "For Families",
+      "slice": "gate",
+      "title": "YouTube AI Production Studio (Aug 10-14:AM)",
+      "url": "https://allevents.in/vaughan/youtube-ai-production-studio-aug-10-14-am/200030125523057"
+    },
+    {
+      "row": 235,
+      "cv_group": 133,
+      "n_configs": 8,
+      "mean_rank": 15.88,
+      "p_include_base": 0.5416,
+      "section": "For Families",
+      "slice": "gate",
+      "title": "360 Collector Expo \u2013 World Cup Edition | Cards, Comics & Collectibles Show",
+      "url": "https://www.eventbrite.ca/e/360-collector-expo-world-cup-edition-cards-comics-collectibles-show-tickets-1988758236421"
+    },
+    {
+      "row": 8,
+      "cv_group": 360,
+      "n_configs": 8,
+      "mean_rank": 16.88,
+      "p_include_base": 0.5085,
+      "section": "For Families",
+      "slice": "gate",
+      "title": "Young Founder Co. Week 4 \u2014 Lemonade Stand Live",
+      "url": "https://allevents.in/vaughan/young-founder-co-week-4-\u2014-lemonade-stand-live/200030289794550"
+    },
+    {
+      "row": 257,
+      "cv_group": 38,
+      "n_configs": 8,
+      "mean_rank": 20.38,
+      "p_include_base": 0.5798,
+      "section": "For Golden Age Readers",
+      "slice": "train",
+      "title": "Ballet Night 2026",
+      "url": "https://allevents.in/markham/ballet-night-2026/200030090286855"
+    },
+    {
+      "row": 85,
+      "cv_group": 35,
+      "n_configs": 7,
+      "mean_rank": 14.14,
+      "p_include_base": 0.524,
+      "section": "For Golden Age Readers",
+      "slice": "train",
+      "title": "Richard Hell: Godlike",
+      "url": "https://www.eventbrite.ca/e/richard-hell-godlike-tickets-1983988221177"
+    },
+    {
+      "row": 65,
+      "cv_group": 47,
+      "n_configs": 7,
+      "mean_rank": 22.0,
+      "p_include_base": 0.5755,
+      "section": "For Golden Age Readers",
+      "slice": "gate",
+      "title": "Gospel Music & The Pop Music of The 50s & 60s with Tom Locke",
+      "url": "https://www.eventbrite.ca/e/gospel-music-the-pop-music-of-the-50s-60s-with-tom-locke-tickets-1989661376738"
+    },
+    {
+      "row": 333,
+      "cv_group": 349,
+      "n_configs": 7,
+      "mean_rank": 23.0,
+      "p_include_base": 0.5708,
+      "section": "For Golden Age Readers",
+      "slice": "train",
+      "title": "Downsizing & Decluttering",
+      "url": "https://www.eventbrite.ca/e/downsizing-decluttering-tickets-1977535599211"
+    },
+    {
+      "row": 110,
+      "cv_group": 5,
+      "n_configs": 7,
+      "mean_rank": 23.86,
+      "p_include_base": 0.581,
+      "section": "For Families",
+      "slice": "train",
+      "title": "DLDA  Thursday Recital - \"Workin' Day &  Night - Part 1\"",
+      "url": "https://www.eventbrite.ca/e/dlda-thursday-recital-workin-day-night-part-1-tickets-1988343660413"
+    },
+    {
+      "row": 105,
+      "cv_group": 141,
+      "n_configs": 6,
+      "mean_rank": 21.83,
+      "p_include_base": 0.5838,
+      "section": "For Couples",
+      "slice": "train",
+      "title": "Henry's Newmarket - Moon Photography Workshop",
+      "url": "https://www.eventbrite.ca/e/henrys-newmarket-moon-photography-workshop-tickets-1983574395413"
+    },
+    {
+      "row": 161,
+      "cv_group": 113,
+      "n_configs": 6,
+      "mean_rank": 24.67,
+      "p_include_base": 0.5998,
+      "section": "For Couples",
+      "slice": "gate",
+      "title": "International Yoga Day Fusion Flow with lululemon Ambassadors",
+      "url": "https://allevents.in/vaughan/international-yoga-day-fusion-flow-with-lululemon-ambassadors/100001990814806678"
+    },
+    {
+      "row": 104,
+      "cv_group": 1,
+      "n_configs": 5,
+      "mean_rank": 19.2,
+      "p_include_base": 0.5768,
+      "section": "For Families",
+      "slice": "gate",
+      "title": "Conservation Youth Corps | Thornhill Garden Maintenance",
+      "url": "https://allevents.in/vaughan/conservation-youth-corps-|-thornhill-garden-maintenance/100001988775014605"
+    },
+    {
+      "row": 319,
+      "cv_group": 227,
+      "n_configs": 5,
+      "mean_rank": 22.0,
+      "p_include_base": 0.5922,
+      "section": "For Couples",
+      "slice": "gate",
+      "title": "Sunday Morning Sweat Series I Pilates Edition",
+      "url": "https://www.eventbrite.ca/e/sunday-morning-sweat-series-i-pilates-edition-tickets-1988451111803"
+    },
+    {
+      "row": 414,
+      "cv_group": 358,
+      "n_configs": 5,
+      "mean_rank": 22.2,
+      "p_include_base": 0.5853,
+      "section": "For Couples",
+      "slice": "walkthrough",
+      "title": "Secret Saturdays | Each & Every Saturday | Aurea Lounge",
+      "url": "https://www.eventbrite.ca/e/secret-saturdays-each-every-saturday-aurea-lounge-tickets-1982324472861"
+    },
+    {
+      "row": 31,
+      "cv_group": 252,
+      "n_configs": 5,
+      "mean_rank": 23.4,
+      "p_include_base": 0.5866,
+      "section": "For Families",
+      "slice": "gate",
+      "title": "LEGO\u00ae FIFA Mini Trophy at Staples Store 19",
+      "url": "https://www.eventbrite.ca/e/lego-fifa-mini-trophy-at-staples-store-19-tickets-1991872432064"
+    },
+    {
+      "row": 367,
+      "cv_group": 2,
+      "n_configs": 5,
+      "mean_rank": 24.6,
+      "p_include_base": 0.6074,
+      "section": "For Couples",
+      "slice": "gate",
+      "title": "Markham Cycling Day",
+      "url": "https://www.markham.ca/about-city-markham/events/attend-city-event/markham-cycling-day"
+    },
+    {
+      "row": 174,
+      "cv_group": 246,
+      "n_configs": 4,
+      "mean_rank": 23.25,
+      "p_include_base": 0.5876,
+      "section": "For Golden Age Readers",
+      "slice": "train",
+      "title": "Community yard sale",
+      "url": "https://allevents.in/richmond-hill/community-yard-sale/200030321737319"
+    }
+  ]
+}

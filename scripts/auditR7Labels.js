@@ -61,8 +61,10 @@ const REQUIRED_FIELDS = Object.freeze([
   "PreMarked",
   "OutsideGTA",
 ]);
+// §77 routing: `non-GTA` is a RECORD FACT and routes to Stage 0 — it is NOT a gate
+// negative. It used to live in this set, which is why the gate slice printed 123/60
+// where §77-correct is 95/54. Permanent CONTENT rejections are the gate's negatives.
 const PERMANENT_NEGATIVES = new Set([
-  REASONS.NON_GTA,
   REASONS.B2B,
   REASONS.CIVIC,
   REASONS.WRONG_FIT,
@@ -284,21 +286,100 @@ function validateRows(rows) {
   }
 }
 
+// ---------------------------------------------------------------------------------------
+// THE §77 ROUTING CONTRACT — the JS twin of `route_s77()` in models/sectioning/gate_step4a.py.
+//
+// Two implementations, ONE case table. The Python side is canonical because that is where
+// the model target is built; this side must agree, and PARITY_CASES below is the same list
+// asserted in both files so a change to one that is not made to the other fails loudly at
+// startup rather than surfacing as a mismatched count weeks later.
+//
+// PRECEDENCE (the order IS the contract):
+//   1. non-GTA     -> stage0    record fact; beats every content judgment
+//   2. can't tell  -> excluded  editor could not decide; nothing brings these back
+//   3. permanent   -> negative  wrong fit / B2B / civic; the gate's job
+//   4. outcompeted -> withheld  LAST, so permanent+outcompeted falls through to (3)
+//                               and lands in the gate as a negative — fails safe
+//
+// The previous version of this function returned "positive" for `outcompeted` and folded
+// `non-GTA` into the negatives. That single defect produced three separate wrong numbers
+// on 2026-07-30: a gate slice reported as 123/60, a false "zero residual conflicts", and a
+// merged-binary target in the Python fit.
+//
+// NOTE ON "conflicted": it is gone as a routing outcome. Precedence RESOLVES double-ticks
+// by design — that is what evaluating `outcompeted` last buys. A permanent+outcompeted row
+// is still worth a human look, so it is surfaced by combinationFlags() as INFORMATIONAL,
+// never as an unrouted row.
+// ---------------------------------------------------------------------------------------
 function targetOf(row) {
   const reasons = arr(row.NoneReason);
-  if (!reasons.length) return "unlabelled";
-
-  const permanent = reasons.some((reason) => PERMANENT_NEGATIVES.has(reason));
-  const outcompeted = reasons.includes(REASONS.OUTCOMPETED);
-  const cantTell = reasons.includes(REASONS.CANT_TELL);
-
-  if ((permanent && outcompeted) || (cantTell && reasons.length > 1)) {
-    return "conflicted";
+  if (INCLUDED_SECTIONS.has(row.Section)) return "positive";
+  if (row.Section !== "None") return "excluded";
+  // Throw on an unrecognised option, matching the Python side. Returning "unknown" here
+  // would let an Airtable rename route silently into a bucket nobody reads.
+  const unknown = reasons.filter((reason) => !KNOWN_REASONS.has(reason));
+  if (unknown.length) {
+    throw new Error(`unrecognised NoneReason option(s): ${JSON.stringify(unknown.sort())}`);
   }
-  if (permanent) return "negative";
-  if (outcompeted) return "positive";
-  if (cantTell) return "excluded";
-  return "unknown";
+  if (!reasons.length) return "unlabelled";
+  if (reasons.includes(REASONS.NON_GTA)) return "stage0";
+  if (reasons.includes(REASONS.CANT_TELL)) return "excluded";
+  if (reasons.some((reason) => PERMANENT_NEGATIVES.has(reason))) return "negative";
+  if (reasons.includes(REASONS.OUTCOMPETED)) return "withheld";
+  throw new Error(`unroutable reason set: ${JSON.stringify(reasons.sort())}`);
+}
+
+// A permanent reason ticked alongside `outcompeted` routes cleanly to the gate, but it
+// means the editor gave two different KINDS of reason on one row. Informational only.
+function combinationFlags(row) {
+  const reasons = arr(row.NoneReason);
+  const flags = [];
+  if (
+    reasons.includes(REASONS.OUTCOMPETED) &&
+    reasons.some((reason) => PERMANENT_NEGATIVES.has(reason))
+  ) {
+    flags.push("permanent+outcompeted (routes to gate-negative by precedence)");
+  }
+  if (reasons.includes(REASONS.CANT_TELL) && reasons.length > 1) {
+    flags.push("can't-tell alongside a decided reason (routes to excluded)");
+  }
+  if (reasons.includes(REASONS.NON_GTA) && reasons.length > 1) {
+    flags.push("non-GTA alongside a content reason (routes to stage0)");
+  }
+  return flags;
+}
+
+// PARITY, for real this time. Both implementations load THIS file — there is no local
+// copy of the cases to edit, so the two cannot be changed consistently-with-themselves
+// and still diverge from each other. The Python side asserts the same fixture at import.
+const ROUTING_CASES = JSON.parse(
+  fs.readFileSync(
+    path.join(__dirname, "..", "models", "sectioning", "routing_s77_cases.json"),
+    "utf8"
+  )
+);
+
+for (const c of ROUTING_CASES.cases) {
+  const got = targetOf({ Section: c.section, NoneReason: c.reasons });
+  if (got !== c.want) {
+    throw new Error(
+      `§77 routing contract broken: ${c.section} ${JSON.stringify(c.reasons)} ` +
+        `-> ${got}, want ${c.want}`
+    );
+  }
+}
+for (const c of ROUTING_CASES.throw_cases) {
+  let threw = false;
+  try {
+    targetOf({ Section: c.section, NoneReason: c.reasons });
+  } catch {
+    threw = true;
+  }
+  if (!threw) {
+    throw new Error(
+      `§77 contract: expected a throw for ${JSON.stringify(c.reasons)} (${c.why})`
+    );
+  }
 }
 
 function tally(values) {
@@ -380,7 +461,9 @@ function printGateRead(rows) {
     (row) => row.Section === "None" && arr(row.NoneReason).length
   );
   const targetCounts = tally(gateNone.map(targetOf));
-  const positives = originalIncludables + (targetCounts.positive ?? 0);
+  // §77: a `Section=None` row is NEVER a gate positive. Positives are the sectioned rows.
+  // `outcompeted` routes to `withheld` and is deliberately absent from the fit.
+  const positives = originalIncludables;
   const negatives = targetCounts.negative ?? 0;
   const usable = positives + negatives;
 
@@ -394,7 +477,8 @@ function printGateRead(rows) {
     ).toFixed(1)}% positive, n=${usable})`
   );
   console.log(
-    `  excluded/conflicted   ${(targetCounts.excluded ?? 0) + (targetCounts.conflicted ?? 0)}`
+    `  not fitted            ${targetCounts.withheld ?? 0} withheld (§83, pending Step 1c)` +
+      `  ${targetCounts.stage0 ?? 0} stage0  ${targetCounts.excluded ?? 0} excluded`
   );
 }
 
@@ -532,8 +616,11 @@ function qualityAudit(rows) {
     (row) => row.Section === "None" && arr(row.NoneReason).length
   );
 
+  // §77 precedence RESOLVES every double-tick, so there is no such thing as an unrouted
+  // row any more. These are surfaced because a row carrying two different KINDS of reason
+  // is worth a human look — not because the target is ambiguous. Informational.
   const targetConflicts = labelled.filter(
-    (row) => targetOf(row) === "conflicted"
+    (row) => combinationFlags(row).length > 0
   );
   const missingReasoning = labelled.filter(
     (row) =>
@@ -556,7 +643,10 @@ function qualityAudit(rows) {
   );
 
   const linkEvidence = labelled.filter((row) => text(row.LinkGave));
-  const cancelledPositive = labelled.filter(
+  // Runs over ALL rows, not just the None pile. Under §77 a `Section=None` row can never
+  // be a gate positive, so scanning `labelled` here would have silently found nothing —
+  // the check would have looked green while testing an empty set.
+  const cancelledPositive = rows.filter(
     (row) =>
       targetOf(row) === "positive" &&
       /\bcancel(?:led|ed|lation)\b/i.test(`${text(row.Event)} ${text(row.Details)}`)
@@ -588,7 +678,9 @@ function qualityAudit(rows) {
     sensitiveLanguage.test(`${text(row.NoneReasoning)} ${text(row.LinkGave)}`)
   );
 
-  printRows("TARGET-CONFLICTING COMBINATIONS", targetConflicts);
+  // Not conflicts: §77 precedence routes every one of these deterministically. They are
+  // surfaced because the row carries two different KINDS of reason, which is worth a look.
+  printRows("MIXED-REASON COMBINATIONS — INFORMATIONAL, ROUTED BY PRECEDENCE", targetConflicts);
   printRows("OUTSIDE-GTA PROVENANCE MISMATCH", outsideMismatch);
   printRows("CANCELLED ROWS MAPPED POSITIVE", cancelledPositive);
   printRows("POSSIBLE SEMANTIC TARGET CONTRADICTIONS", semanticContradiction);

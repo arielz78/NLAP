@@ -1,0 +1,43 @@
+{
+  "_contract": "R7 §77 routing — the SHARED case fixture.",
+  "_why": "This file exists because two copied test lists are not parity. Both implementations (route_s77() in models/sectioning/gate_step4a.py and targetOf() in scripts/auditR7Labels.js) load THIS file and assert against it at startup. A change made to one implementation and its own local tests could previously diverge silently; it now cannot, because there are no local tests to change.",
+  "_precedence": [
+    "1. non-GTA     -> stage0    record fact; beats every content judgment",
+    "2. can't tell  -> excluded  editor could not decide; nothing brings these back",
+    "3. permanent   -> negative  wrong fit / B2B / civic; the gate's job",
+    "4. outcompeted -> withheld  LAST, so permanent+outcompeted falls through to (3)"
+  ],
+  "_unknown_reason_behaviour": "BOTH implementations must THROW on a reason string outside the six known options. A rename in Airtable is silent corruption otherwise.",
+  "reasons": {
+    "NON_GTA": "non-GTA",
+    "B2B": "B2B / professional dev",
+    "CIVIC": "civic",
+    "WRONG_FIT": "wrong fit / not our audience",
+    "OUTCOMPETED": "outcompeted",
+    "CANT_TELL": "can't tell"
+  },
+  "cases": [
+    { "section": "Families", "reasons": [], "want": "positive", "why": "editor placed it in an issue section" },
+    { "section": "Couples", "reasons": [], "want": "positive" },
+    { "section": "Golden", "reasons": [], "want": "positive" },
+    { "section": "", "reasons": [], "want": "excluded", "why": "blank label is not a ruling" },
+    { "section": "None", "reasons": ["non-GTA"], "want": "stage0" },
+    { "section": "None", "reasons": ["non-GTA", "outcompeted"], "want": "stage0", "why": "1 beats 4" },
+    { "section": "None", "reasons": ["non-GTA", "civic"], "want": "stage0", "why": "1 beats 3" },
+    { "section": "None", "reasons": ["non-GTA", "can't tell"], "want": "stage0", "why": "1 beats 2" },
+    { "section": "None", "reasons": ["can't tell"], "want": "excluded" },
+    { "section": "None", "reasons": ["can't tell", "wrong fit / not our audience"], "want": "excluded", "why": "2 beats 3" },
+    { "section": "None", "reasons": ["can't tell", "outcompeted"], "want": "excluded", "why": "2 beats 4" },
+    { "section": "None", "reasons": ["wrong fit / not our audience"], "want": "negative" },
+    { "section": "None", "reasons": ["B2B / professional dev"], "want": "negative" },
+    { "section": "None", "reasons": ["civic"], "want": "negative" },
+    { "section": "None", "reasons": ["wrong fit / not our audience", "outcompeted"], "want": "negative", "why": "3 beats 4 — the fail-safe: a double-tick lands IN the gate, never escapes it" },
+    { "section": "None", "reasons": ["B2B / professional dev", "civic"], "want": "negative" },
+    { "section": "None", "reasons": ["outcompeted"], "want": "withheld", "why": "§83: impure label, pending Step 1c relabel" },
+    { "section": "None", "reasons": [], "want": "unlabelled", "why": "asserted to be 0 — the split closed at 239/239" }
+  ],
+  "throw_cases": [
+    { "section": "None", "reasons": ["not-a-real-option"], "why": "unrecognised option must raise, not route" },
+    { "section": "None", "reasons": ["wrong fit"], "why": "near-miss of the real string; the live option is 'wrong fit / not our audience'" }
+  ]
+}
