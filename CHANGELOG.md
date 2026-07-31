@@ -9,7 +9,7 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 - Traced three separate wrong figures across docs and scripts to a single outdated mapping rule, so one fix now closes all three rather than three patches drifting apart.
 - Corrected several stale figures in the release plan and removed a claim the underlying data could not support.
 - Closed the labelling stage, then found that only the rejected half had ever been quality-checked — the accepted half had been read as answering a question it was never asked.
-- Cancelled a planned client review session after testing showed its expected result would be indistinguishable from the reviewer's own natural inconsistency; replaced it with a cheaper approach that lets the model identify which items are worth a human's time.
+- Pressure-tested a planned client review session before building it, and found its expected result would be hard to separate from the reviewer's own natural inconsistency. Deferred it in favour of letting the model first identify which items are worth a human's time; whether a smaller independent review is still needed remains open.
 - Corrected a recorded figure the release plan depended on: the share of listings an automated filter can remove is roughly a third, not half, which shifts weight from filtering toward ranking.
 - Completed the rejection-label deck and added a repeatable, read-only audit that snapshots and compares editor sittings without routing raw records through the model.
 - Completed the first live rejection-labelling sitting and a full post-session integrity audit, preserving the editor's raw decisions while isolating inconsistencies before they could enter evaluation.

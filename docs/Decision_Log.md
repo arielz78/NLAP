@@ -1992,9 +1992,9 @@ Both survive into the training set, so any fit can stratify on or exclude machin
 
 ---
 
-## 83. `outcompeted` Is Not a Week-Dependent Judgment; It Absorbed Permanent Audience-Fit Rejections (2026-07-30)
+## 83. `outcompeted` Is an Impure Label That Absorbed Permanent Audience-Fit Rejections (2026-07-30)
 
-**Decision:** the 69 rows carrying `outcompeted` alone stay **withheld from the gate** — not because §77's rationale was validated, but because the label is impure. The remaining 49 are relabelled in one blind sitting before Step 4a, under a written contract: *eligible regardless of the week* keeps `outcompeted`; *permanent audience/content rejection* becomes the applicable permanent reason or `wrong fit`; *unclear* becomes `can't tell`; a permanent reason already ticked alongside `outcompeted` wins, per §77.
+**Decision:** the 69 rows carrying `outcompeted` alone stay **withheld from the gate** — not because §77's rationale was validated, but because the label is impure. The remaining 49 are **scheduled to be relabelled** in one blind sitting before Step 4a — not yet run — under a written contract: *eligible regardless of the week* keeps `outcompeted`; *permanent audience/content rejection* becomes the applicable permanent reason or `wrong fit`; *unclear* becomes `can't tell`; a permanent reason already ticked alongside `outcompeted` wins, per §77.
 
 **Why.** A 20-row blind sitting on deliberately hard cases returned **10 eligible / 7 permanent-reject / 1 unclear**. Seven permanent rejections is impurity, full stop. The *mechanism* is the finding: the editor rejects on **audience-demographic fit** — a permanent property of the event against the readership — and never once reasoned about competition, on any row but one. Rejections read *"demographic is 75% women AND 30-65"*, *"older women probably don't listen to Afrobeats"*, *"not an age range of old people or like our demographic"*; the accepts run the same axis (*"exactly what older women like"*). That is `wrong fit` — a gate **negative** — living inside a label routed to R6.
 

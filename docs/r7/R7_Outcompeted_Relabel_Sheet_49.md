@@ -2,7 +2,7 @@
 
 **Blind run sheet. Contains no labels, no prior reasoning, and no slice markers.** Safe to show the editor directly — unlike `R7_Outcompeted_Validation_Sitting.md`, which holds the Phase 2 reveals.
 
-**Why this exists:** the 20-row validation sitting (2026-07-30) established that `outcompeted` is an impure label — it absorbed audience-fit rejections that are permanent properties of the event, not properties of the week. The 69 rows carrying `outcompeted` alone are two clean piles mislabelled as one. This sheet separates them.
+**Why this exists:** the 20-row validation sitting (2026-07-30) established that `outcompeted` is an impure label — it absorbed audience-fit rejections that are permanent properties of the event. The sitting returned three distinct outcomes — eligible, permanent-reject and unclear — so the 69 are a **mixture**. It established that the pile is mixed; it did **not** establish how many latent groups it holds, or in what proportion. This sheet sorts them.
 
 **The sample that proved impurity was deliberately discriminative, so it estimates nothing.** Do not infer the split of these 49 from the split of those 20.
 
