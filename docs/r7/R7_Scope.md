@@ -8,21 +8,21 @@
 
 **Type: Release-working.** Current truth + the one-week plan. Build history (probe numbers, confusion matrices, the dead investigation sequence) is in `logs/R7_Log.md`; decisions in `docs/Decision_Log.md` §61–72; chronological recaps in `Execution_Log.md`. Verbatim prior version (the pre-reframe 261-line doc) is in git (`2fcb5f5`).
 
-**Key data input:** the editor-labeled deck (`R7 Label Deck`, Airtable `tblOxYHuAl2yp9Znl`). **Row count is contested: Airtable holds 456 rows (239 None / 211 includable / 6 blank); the modeling set uses 416, and which 40 differ is unexplained — see #107.** Use 456 when talking about what the editor has ruled on, 416 only when describing a fit that was actually run on 416.
+**Key data input:** the editor-labeled deck (`R7 Label Deck`, Airtable `tblOxYHuAl2yp9Znl`). Airtable holds **456 rows** (239 None / 211 includable / 6 blank); the current modeling set uses **416**. **#107 accounts for all 40 omitted rows:** 30 Batch-5 rows post-date the embedding pull, 4 walkthrough rows were omitted at staging, 4 have blank `Section`, and 2 have no URL. Use 456 when talking about what the editor has ruled on, 416 only when describing a fit actually run on the cached model set.
 
 Plus the **cached embeddings** (current representation `voyage-4-large` @2048d, §73 — `models/sectioning/corpora/embeddings_voyage-4-large.npy` + `transfer_*_voyage-4-large.npy`; OpenAI `text-embedding-3-large` matrices also cached, which is what Fable's AUC 0.823 floor was measured on — the gate is representation-agnostic). The gate is trained on these — no new embedding spend, no new labeling session required to start.
 
 ---
 
-## Status Snapshot (2026-07-30)
+## Status Snapshot (2026-07-31)
 
 Single source of truth for "where are we." Supersedes the roadmap's R7 header and the pre-reframe body of this doc.
 
-**Step status at a glance (2026-07-30, 12:23 PM).** Step 0 ✅ · **Step 1 ✅ CLOSED — 239 of 239 None rows split** (gate 89 · train 124 · walkthrough 12 · not-in-model-set 14) across two live sittings. Five conflict rows adjudicated 07-30 (r106/r153/r287 `outcompeted`+`B2B`; r64 `wrong fit`+`B2B`; r103 `B2B`+`non-GTA`); the post-write audit finds **zero residual conflicts** across all four checks · **Step 2 CUT** (it duplicated Step 4a) · **Step 3 nearly done** — geography shipped (#109), date-window and completeness already existed in R1, language / is-it-an-event / cancellation dropped from scope; **one item left, the Eventbrite TLD allowlist, written in-repo and awaiting a re-import** · **Step 4a STAGED, NOT RUN** — pin 1 is set (`RECALL_DIAL = "global"`), pins 2–4 remain Ariel's, and three plumbing items in `gate_step4a.py` are stale: `CURRENT_PULL` points at the 07-26 file (predates both sittings, and is field-id keyed where the current pull is name-keyed), the target at line 141 is still merged-binary, and the header banner still says the split is "12 of 239 done" · Step 4 unblocked · Step 5 untouched.
+**Step status at a glance (2026-07-31, 10:34 AM).** Step 0 ✅ · **Step 1a ✅ CLOSED — 239 of 239 None rows labelled** · **Step 1b OPEN — the §77 routing contract; it blocks the gate plumbing and therefore Step 4a** · **Step 1c OPEN — 38 model-relevant `outcompeted` rows require blind relabelling; 11 outside the current model are optional; r220 remains withheld for language adjudication. It does NOT block 4a — the withheld rows are excluded from that fit, not misfitted — it blocks 4c** · **Step 2 CUT** · **Step 3 nearly done** — the Eventbrite TLD allowlist is written in-repo and awaiting re-import · **Steps 4/4a STAGED, NOT RUN** — 4a is diagnostic-only and its three plumbing corrections wait on 1b · **Step 4b OPEN** — targeted positive-class disagreement audit · **Step 4c OPEN** — corrected re-fit sets the bar · **Step 5 untouched and editor-dependent.**
 
 **The §77 routing, applied to the whole deck for the first time (2026-07-30).** Full deck: **211 gate-positive · 142 gate-negative · 69 withheld to R6 · 16 Stage 0 · 12 excluded.** Over the 416 *embedded* rows the fit set is **191 pos / 137 neg = 328 rows** (88 drop out); the gate-slice eval set is **95 pos / 54 neg.**
 
-⚠️ **Corrected arithmetic — the removable rate is 29.9%, not the ~53% the population-correction paragraph below still runs on.** Eligibility on the complete gate slice is **66.8%** (n=184), superseding the 07-26 ~46.5% figure, which counted `outcompeted` rows as ineligible. **A perfect gate removes about a third of the pool, not half** — ranking is more load-bearing than planned, and **the old junk-rejection points (0.95 → 43%, 0.90 → 55%) were computed on the obsolete merged-None target and are SUPERSEDED and non-comparable. Step 4a must recompute the curve after corrected routing and relabelling before any point can price an operating policy.** Numbers home: `NA/Vaughan_Metrics_Log.md`.
+⚠️ **Corrected arithmetic — the removable rate is 29.9%, not the ~53% the population-correction paragraph below still runs on.** Eligibility on the complete gate slice is **66.8%** (n=184), superseding the 07-26 ~46.5% figure, which counted `outcompeted` rows as ineligible. **A perfect gate removes about a third of the pool, not half** — ranking is more load-bearing than planned, and **the old junk-rejection points (0.95 → 43%, 0.90 → 55%) were computed on the obsolete merged-None target and are SUPERSEDED and non-comparable. Step 4a runs the diagnostic sweep; Step 4c must recompute the curve after label repair before any point can price an operating policy.** Numbers home: `NA/Vaughan_Metrics_Log.md`.
 
 ⚠️ **The positive class has never been audited — the largest open risk in the release.** All 239 rejections were checked against the breadth criterion; **zero of the 211 acceptances were.** The editor's task when he sectioned them was *"which section does this belong in?"*, not *"would you publish this?"*, and three rows say in his own words that a row is correctly sectioned but would never run. 178 of 211 carry no commentary at all. Neither a keyword scan (8 of 211, ~78% precision) nor a published-history control arm (joins on 2 of 211) can find the contamination cheaply. **Consequence: Step 4a's first pass is DIAGNOSTIC — it bounds Fork C and locates label errors, and it cannot set the release bar.** The audit is sourced from the gate's own highest-disagreement rows after that run, not from a designed sample (`Decision_Log` §82). The bar is set on the re-fit afterwards.
 
@@ -47,11 +47,11 @@ Single source of truth for "where are we." Supersedes the roadmap's R7 header an
 - **The transfer test / min-class-recall exit table (old §3) is moot** as the release gate. It measured section accuracy on a population that doesn't exist in production. Retired as the headline; kept only as an internal diagnostic. The unresolved 0.61 provenance and τ-calibration fork die with it.
 
 **The live decisions ("forks"):**
-- **Fork A — does the gate train on split labels?** ✅ **CLOSED (2026-07-30).** Yes, and the routing is §77's, not §75's: permanent content rejections (`wrong fit` / `B2B / professional dev` / `civic`) are the gate's negatives, `non-GTA` routes to Stage 0, `can't tell` is excluded, and **`outcompeted` is withheld from the gate** — *not* because it is a property of the week (§83 shows that rationale failed on measurement) but because the label is impure and the pile is unseparated. It is held pending the relabel of the remaining 49; genuinely eligible rows may become gate-positive afterwards while still serving R6 as ranking evidence. All 239 None rows are labelled (gate 89 · train 124 · walkthrough 12 · not-in-model-set 14) and every conflict row is adjudicated. ⚠️ Earlier versions of this line called `outcompeted` "gate-positive ranking material," which inverts §77 and inflates the removable rate — see the corrected-arithmetic note in the Status Snapshot.
+- **Fork A — does the gate train on split labels?** ✅ **CLOSED (2026-07-30).** Yes, and the routing is §77's, not §75's: permanent content rejections (`wrong fit` / `B2B / professional dev` / `civic`) are the gate's negatives, `non-GTA` routes to Stage 0, `can't tell` is excluded, and **`outcompeted` is withheld from the gate** — *not* because it is a property of the week (§83 shows that rationale failed on measurement) but because the label is impure and the pile is unseparated. It is held pending Step 1c: 38 model-relevant rows are required, 11 rows outside the current model are optional, and genuinely eligible rows may afterwards become gate-positive while still serving R6 as ranking evidence. All 239 None rows are labelled (gate 89 · train 124 · walkthrough 12 · not-in-model-set 14). ⚠️ Earlier versions of this line called `outcompeted` "gate-positive ranking material," which inverts §77 and inflates the removable rate — see the corrected-arithmetic note in the Status Snapshot.
 - **Fork B — threshold gate or *scoring* gate?** ✅ **DISSOLVED by architecture (§78): score and sort, never delete.** The gate deploys into R2 after R1 has already upserted the record, so "do not write it" was never available. Pin 1 is therefore a reporting/alarm commitment, not a kill threshold.
 - **Fork C — W6's scope (NEW, OPEN, Ariel's).** Given that a perfect gate removes only the **29.9%** permanently-rejectable share and so still leaves **~505 of ~720** events for 15 slots (the ~335 this line used to quote came from the superseded ~46.5% eligibility figure, and the correction makes the fork *harder*, not easier): keep the gate and change the sign-off bar / expand W6 to include ranking / merge W6 with R6.
 
-**Blocking order for the remaining fork:** Fork C needs **Step 4a** to price the recall/junk-rejection curve. Step 4a arm 1 can bound filtering-vs-ranking on merged None, but the final release bar waits on Step 1's split labels.
+**Blocking order for the remaining fork:** Fork C needs the **Step 4c corrected re-fit** to price the recall/junk-rejection curve. Step 4a is deliberately diagnostic, Step 4b repairs the consequential positive-label disagreements it surfaces, and only Step 4c sets the release bar.
 
 **Convergence evidence (why this is de-risked, not a guess):** un-anchored Fable review re-derived the reframe from raw data (never saw our diagnosis); Ariel's independent per-source None-rate read matched it; ChatGPT + a second Claude review independently prescribed the same spine. All three outside reviews: build the gate, don't touch the classifier, retire min-class recall, don't chase Golden.
 
@@ -62,7 +62,7 @@ Single source of truth for "where are we." Supersedes the roadmap's R7 header an
 ```
 raw ~720/week
   → Step 3  Stage 0: deterministic pre-filter   (geo/date/language/domain; drop foreign Eventbrite)   ← R7-W6
-  → Step 4  Stage 1: the GATE  P(include)        (binary; operating point UNSET — Step 4a)             ← R7-W6
+  → Step 4  Stage 1: the GATE  P(include)        (binary; operating point UNSET — Step 4c)             ← R7-W6
   → Stage 2: section classifier (untouched) on survivors → P(section)                                  ← R7 (exists)
   → Stage 3: rank by  P(include) × P(section)     (cheap interim ranker; BT upgrade belongs to R6)     ← R6
   → Stage 4: buildIssues allocator fills 5/section under quota + thin-section flag                      ← R6
@@ -86,17 +86,41 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 
 **Done when:** the two live errors (Golden-367, section-is-contextual) are corrected in this doc + `logs/R7_Log.md`; grouped CV is the fit's default splitter.
 
-### Step 1 — The None-split (✅ CLOSED 2026-07-30; two live sittings)
+### Step 1a — The None-split (✅ CLOSED 2026-07-30; two live sittings)
 
 **What it's for:** the single highest-information-per-minute move on the board. Splits the **239** None so the gate trains on the right negatives. Full plan: `R7_None_Split_Labelling_Plan.md`.
 
-- **Four-way `NoneType`** per §75 — `Rule-break` → Stage 0 · `Wrong fit` → the gate · `Outcompeted` → R6's ranker · `Ambiguous` → excluded from both. `NoneReason` (multi-select) applies to `Rule-break` rows only.
+- **Current instrument (§77):** one six-option `NoneReason` multiselect. Routing is derived from all ticks in a written priority order; the editor does not choose an architectural destination.
 - **Live, text-first sittings**, not solo async work. `NeededLink` is retired; free-text `LinkGave` records what the link added.
 - **Status: 239 of 239 done** (gate 89 · train 124 · walkthrough 12 · not-in-model-set 14), across two live sittings on 07-29 and 07-30. The first 12 were the **pilot** — the instrument was respecced at row 12 rather than never, and those rows were remapped by confirm rather than redo. Verify any time with `node scripts/auditR7Labels.js`.
-- ⚠️ **Labelling is closed; the positive class is not validated.** All 239 rejections were checked against the breadth criterion; **zero of the 211 acceptances were.** That audit is carried into Step 4a — see the Status Snapshot and `Decision_Log` §82.
+- ⚠️ **Labelling is closed; the positive class is not validated.** All 239 rejections were checked against the breadth criterion; **zero of the 211 acceptances were.** Step 4a locates the consequential disagreements and Step 4b audits them — see the Status Snapshot and `Decision_Log` §82.
 - **Interpret:** mostly Wrong fit → the gate is the win. Mostly Outcompeted → filtering buys little and the problem is preference-ranking (weight moves to R6). *Pilot signal, n=11, not to be trusted as a rate:* Rule-break 3 / Wrong fit 6 / Outcompeted 1.
 
-**Done when:** 239 split four ways; the `Wrong fit` pile is the gate's negative set, the `Outcompeted` pile is reserved for R6's ranker, the `Rule-break` pile is a Stage-0 rule inventory.
+**Done when:** all 239 `Section=None` rows carry at least one reason tick. Label completion does not imply target purity; Steps 1b–1c own that repair.
+
+### Step 1b — Implement the §77 routing contract (~30 min)
+
+**What it's for:** turn editor-authored reason ticks into the gate target without silently changing the question. For `Section=None` rows, precedence is `non-GTA` → Stage 0 · `can't tell` → excluded · permanent content reason (`wrong fit` / `B2B / professional dev` / `civic`) → gate-negative · `outcompeted` alone → withheld pending relabelling. `Outcompeted` is evaluated last so a permanent-reason double-tick fails safe into the gate rather than escaping it. Existing section labels route gate-positive.
+
+- Define one canonical routing contract and apply it consistently in `scripts/auditR7Labels.js` and `models/sectioning/gate_step4a.py`; do not leave two independently interpreted mappings.
+- Assert the **pre-relabel 416-row baseline**: 191 gate-positive · 137 gate-negative · 64 withheld · 16 Stage 0 · 8 excluded. Step 1c is expected to change these counts, so any update must be explicit rather than silent.
+- The label → target mapping is a **design decision** — it changes the model's numbers and its conclusions, so it is settled deliberately and asserted in code. The consumer wiring around it is not a design decision and follows mechanically.
+
+**Done when:** the contract passes precedence cases and the pre-relabel count assertion; `auditR7Labels.js` reports the §77-correct target/conflict counts; `gate_step4a.py` no longer builds a merged include/None target; and its stale header no longer says 12 of 239 are done. **Blocks Step 4a.**
+
+### Step 1c — Relabel the impure `outcompeted` pile (one editor sitting)
+
+**What it's for:** separate permanent eligibility from weekly competition before the gate learns from the label. Run blind from `R7_Outcompeted_Relabel_Sheet_49.md`, using the quiet-week counterfactual and applying the relabelling contract only after each answer is recorded.
+
+**Where the numbers come from (69 → 49 → 38):** **69** `outcompeted` rows were withheld across the full deck by §77's routing → **20** were already reviewed in the 2026-07-30 blind validation sitting (the one that established the label is impure, §83) → **49** remain on the relabel sheet → **38** of those affect the current model set, and the other **11** are optional consistency cleanup. Quote whichever number the context calls for, but say which.
+
+- **Required for the current model:** Section A's 38 rows (17 gate slice · 21 train slice).
+- **Optional deck cleanup:** Section B's 11 rows (6 walkthrough · 5 not in model set). They improve deck consistency but do not enter the current fit or gate evaluation; stop before them if editor fatigue threatens judgment quality.
+- Truly eligible rows become gate-positive while remaining useful to R6 as ranking evidence; permanent audience/content rejections become gate-negative; unclear rows are excluded. **r220 remains withheld** pending §81 language adjudication.
+
+**Done when:** all 38 model-relevant rows are re-decided blind, their eligible/permanent/unclear outcomes are applied, the post-relabel routing counts change only as those decisions predict, and no model-relevant `outcompeted` row remains unresolved. Section B's 11 are explicitly optional and do not block R7.
+
+⚠️ **This step does NOT block Step 4a** *(corrected 2026-07-31)*. The withheld `outcompeted` rows are **excluded from 4a's fit set**, not fitted incorrectly — 4a runs on 191 positive / 137 negative either way, and relabelling only ever *adds* rows afterward. §82 specifies the diagnostic runs on current labels, so gating 4a behind an editor sitting would both contradict that decision and put a human dependency in front of the one step that needs none. **1c blocks Step 4c**, which is where the corrected labels are actually consumed.
 
 ### Step 2 — ~~Experiment B: the centroid baseline~~ **CUT (2026-07-28)**
 
@@ -109,7 +133,7 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 - **Re-point** at a population where the join is real (e.g. rank *within the labelled deck* and measure against the editor's own includable/None calls), accepting that it is a weaker proxy for production ranking.
 - **Cut it.** Fork B is now a W6-internal architecture question (threshold vs scoring gate), not the cheap-vs-BT-ranker question this step was built to answer — so its original consumer no longer exists.
 
-**Not a blocker either way:** it never blocked the gate, and Fork B is now priced by Step 4a instead.
+**Not a blocker either way:** it never blocked the gate, and Fork B is now priced by the Step 4a diagnostic plus the corrected Step 4c re-fit instead.
 
 ### Step 3 — Build Stage 0: deterministic pre-filter (~1 day, no ML)
 
@@ -128,36 +152,63 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 
 **Done when:** the Eventbrite TLD allowlist ships. That is the whole of Step 3's remaining new work — date-window and completeness already exist, geography shipped as #109, language/is-it-an-event/cancellation are out of scope, and reason-code restoration is W7. **Revised 2026-07-28: this step is far smaller than originally written.**
 
-### Step 4 — Build Stage 1: the gate (authored-core, Ariel; ~1–2 days)
+### Step 4 — Build Stage 1: the gate (~1–2 days)
 
 **What it's for:** the one new model. Binary `P(include | event)` — the reject decision.
+
+**Steps 4, 4a and 4c are one script:** `models/sectioning/gate_step4a.py`. Plumbing and authored core are split at the `===== EVAL =====` banner; Step 4a is the diagnostic run and Step 4c reruns the same fit/sweep after Step 4b repairs labels.
 
 - **Representation:** the embeddings you already have (`voyage-4-large` @2048d, §71/§73 — TF-IDF killed, §67). Same vectors the classifier uses → zero marginal cost.
 - **Model:** binary logistic regression. Features = embedding + one-hot source + has-category-tags + description length. Fable's text-only floor was **AUC 0.823** on the 416; source + more labels likely pushes it to ~0.87+.
 - **Trained on:** the Step-1 four-way split — **`Wrong fit` = negatives**, includables = positives. `Outcompeted` is **withheld pending §83's relabelling because the current label is impure** — genuinely eligible rows may re-enter as positives; `Rule-break` belongs to Stage 0; `Ambiguous` is excluded. *Not* the merged None.
-- **Operating point: UNSET — see Step 4a. Do not treat 0.98 as settled.** The ≥0.98 keeper-recall figure entered this doc unpriced and **has no measurement behind it**; the fresh-lens review prescribed **0.95** (`fresh_lens_review_2026-07-24.md:75`). ⚠️ **The two previously-quoted curve points — 0.95 → 43% junk rejection, 0.90 → 55% — are SUPERSEDED and non-comparable.** They were measured on the obsolete merged-None target and cannot serve as anchors for anything. **Step 4a reports the complete corrected curve in event counts, with no preset recall target.** With ~211 positives, a 0.98 threshold is set by roughly 4 events. The dial is still recall, because a **killed keeper is invisible and unrecoverable** while surviving junk just loses in ranking — but *which* recall is an open number, and 0.98 was chosen against an assumed **scarcity** of keepers that does not exist at ~505 of ~720 per window. What recall must still guard is **bias, not volume**: losing 67 events at random is survivable, losing 67 that are all Golden Age library programs is not — which argues for a per-section floor rather than one global number.
+- **Operating point: UNSET — see Step 4c. Do not treat 0.98 as settled.** The ≥0.98 keeper-recall figure entered this doc unpriced and **has no measurement behind it**; the fresh-lens review prescribed **0.95** (`fresh_lens_review_2026-07-24.md:75`). ⚠️ **The two previously-quoted curve points — 0.95 → 43% junk rejection, 0.90 → 55% — are SUPERSEDED and non-comparable.** They were measured on the obsolete merged-None target and cannot serve as anchors for anything. **Step 4a produces a diagnostic curve; Step 4c reports the corrected curve in event counts and sets the bar with no preset recall target.** With ~211 positives, a 0.98 threshold is set by roughly 4 events. The dial is still recall, because a **killed keeper is invisible and unrecoverable** while surviving junk just loses in ranking — but *which* recall is an open number, and 0.98 was chosen against an assumed **scarcity** of keepers that does not exist at ~505 of ~720 per window. What recall must still guard is **bias, not volume**: losing 67 events at random is survivable, losing 67 that are all Golden Age library programs is not — which argues for a per-section floor rather than one global number.
 - Output a **calibrated probability** (needed to set the recall threshold, and to serve as the ranking score). Calibration check before trusting the threshold.
 - **Grow labels for free:** every weekly editor review writes back ~30–50 labels → ~800 rows by September with no dedicated labeling session.
 
-**Done when:** the gate scores the raw pool, hits the Step-4a operating point on **grouped** CV (no leak), reports rejection rate by source, outputs a calibrated `P(include)` per event.
+**Done when:** the gate scores the raw pool, hits the Step-4c operating point on **grouped** CV (no leak), reports rejection rate by source, and outputs a calibrated `P(include)` per event.
 
 **Also report here — the trigger that un-parks the breadth flag (§75).** §75 parked the religion/nationality flag on the theory that the *embedding* carries breadth semantically where a regex cannot. That theory has never been tested, and nothing in the workflow was scheduled to test it. **Report gate recall on the single-community stratum** (the ~30 rows the §75 regex identifies, used here as a diagnostic slice, never as a feature). If those events systematically **survive** the gate, the embedding is not carrying breadth and the flag comes off the shelf; if they are rejected at the base rate or better, the flag stays parked permanently and §75's reasoning is confirmed. Either result is a finding — this is the check, not a formality.
 
 **Same diagnostic, second stratum (added 2026-07-27).** Report gate recall on the **prof-dev / B2B stratum** as well — the rows §76 routes to the gate as content judgments. Identical logic, identical cost, one more line: if those rows systematically score **low** `P(include)`, the embedding carries the rule and no hand-crafted flag column is warranted; if they **survive**, a column earns its place. This is the cleaner of the two tests, because Ariel's 2026-07-27 ruling makes the rule crisp — adjacency to B2B or prof-dev is *always* a rejection, no case-by-case — so a survival result isolates the representation rather than the rule. Breadth, by contrast, is fuzzy on both sides. **General principle this encodes: with a strong representation, test whether it already carries the signal before hand-crafting a feature for it.** The aux columns are already staged and row-aligned in `gate_step4a.py` — this is a selection, not an implementation.
 
-### Step 4a — Price the recall / junk-rejection curve (authored-core, Ariel; ~1h, cached data)
+### Step 4a — Diagnostic fit and recall / junk-rejection sweep (~1h, cached data)
 
-**What it's for:** this **sets the release bar**; it does not confirm one. Everything downstream — the Step-4 operating point, Fork B, Fork C — waits on it. No new spend: the labels and embeddings are cached.
+**What it's for:** bound whether the simple gate has useful signal and locate consequential errors in the unaudited positive class. This run is deliberately **diagnostic-only** (§82): it does not set the release bar. No new spend; labels and embeddings are cached.
+
+**Preconditions (blocked on Step 1b):**
+
+- [ ] Point `CURRENT_PULL` at the current name-keyed label pull and join it correctly.
+- [ ] Replace line 141's merged include/None target with the asserted §77 routing contract.
+- [ ] Replace the stale header banner that says the split is 12 of 239 done and state the diagnostic provenance accurately.
 
 - Sweep the threshold across the full range and plot **keeper recall vs junk rejection**, reporting the curve **in event counts** and with **no preset recall target**. ⚠️ The old anchors (0.95→43%, 0.90→55%) were measured on the obsolete merged-None target and are **superseded and non-comparable** — do not plot them alongside the corrected curve.
 - Report **per-section** keeper recall at each point, not just the global number — the failure that matters is a class going dark, not a random loss.
 - Report how many *events* separate 0.95 from 0.98, so the cost of the last three points is visible rather than assumed.
 
-**Done when:** the curve exists, an operating point is chosen **with the number in hand**, and it is written into this doc as the bar. Until then, this doc names no recall target.
+**Done when:** an out-of-fold diagnostic curve exists in event counts, per-section keeper recall is reported, and the highest-disagreement gate-positive rows are exported for Step 4b. No operating point is chosen from this run.
+
+### Step 4b — Audit the positive-class disagreement set (one editor sitting)
+
+**What it's for:** repair—not estimate—the unaudited positive class. Review Step 4a's highest-disagreement gate-positive rows using the rule question **“is there a permanent reason you would never run this?”**, not the preference question “would you run this?” The set is deliberately enriched for suspected errors and therefore cannot estimate contamination across all 211 positives.
+
+**Done when:** every selected disagreement row is re-judged, resulting label corrections are applied, and no selected row remains unresolved before re-fit. The number or percentage that survives re-judgment is **not** a pass/fail statistic.
+
+### Step 4c — Corrected re-fit that sets the bar
+
+**What it's for:** rerun the same fit and sweep after Steps 1c and 4b repair the labels, then choose the operating point from the corrected curve rather than the diagnostic one.
+
+- Repeat Step 4a's event-count curve, calibration check, grouped-CV read and per-section keeper recall.
+- Treat the gate-slice resolution honestly: with ~95 positives before relabelling, recall moves about one percentage point per event; do not manufacture precision the sample cannot support.
+- **Saturation check (the guard Step 4b cannot provide).** 4b's exit is "every selected row re-judged," which finishes the *sitting* but cannot tell you the positive class is clean — the set is enriched for suspected errors, so its survival rate estimates nothing. So: after 4b's corrections, **4c exports a fresh, untouched disagreement set and reports how far the curve moved from 4a.** Two readings, and they mean opposite things. A fresh set that flips few labels and a curve that barely moves says the repair is approaching saturation. A fresh set still flipping at the old rate says the disagreement-set strategy is sampling a contamination too broad for targeted repair, and the 211 need a full audit.
+  - `TODO(ariel):` **define the escalation trigger** — how much continued label flipping in the fresh set, or how much curve movement between 4a and 4c, forces another targeted batch, and how much forces a full positive-class audit. Write both numbers here *before* seeing 4c's output; a threshold set afterwards is a rationalization, not a bar.
+
+**Done when:** `TODO(ariel):` choose the operating point with the corrected curve and per-section losses in hand, record the bar here, and state the fallback if no point provides worthwhile junk rejection without unacceptable keeper loss.
 
 ### Step 5 — Validate: the one-week dry run (the real go/no-go)
 
 **What it's for:** the only number the business cares about, measured end-to-end on one real issue before committing.
+
+**External dependency:** this step requires editor time for a real-issue review. It cannot be scheduled or completed by the build work alone.
 
 - Take one real issue window. Run Stage 0 → gate → classifier (suggest-only) → rank by `P(include) × P(section)`. Hand the editor **top-8 per section**. Count swaps against the **≤2–3** bar.
 - If swaps ≥8, the swap *positions* localize the failure (gate vs section vs rank), so you fix the right stage.
@@ -171,7 +222,7 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 **Retired:** min per-class recall ≥ 0.75. It measured section accuracy on a population that doesn't exist in production; for C/G it sat at/below the ~89% human self-consistency ceiling anyway. Kept only as an internal diagnostic.
 
 **New:**
-- **Gate: keeper recall ≥ TBD — set by Step 4a, not by this doc.** ⚠️ **0.98 is UNMEASURED** and must not be quoted as the bar anywhere. ⚠️ **The former measured points (0.95 → 43% · 0.90 → 55%) are SUPERSEDED** — measured on the obsolete merged-None target, non-comparable, and no longer current anchors. **Step 4a reports the complete corrected curve in event counts with no preset recall target.** What was *prescribed* by the fresh-lens review: **0.95.** The direction is settled (recall is the conservative dial, because a silently killed keeper is the unrecoverable failure); the value is not. Report **per-section** recall alongside the global figure.
+- **Gate: keeper recall ≥ TBD — set by Step 4c, not by this doc.** ⚠️ **0.98 is UNMEASURED** and must not be quoted as the bar anywhere. ⚠️ **The former measured points (0.95 → 43% · 0.90 → 55%) are SUPERSEDED** — measured on the obsolete merged-None target, non-comparable, and no longer current anchors. **Step 4a is diagnostic; Step 4c reports the corrected curve in event counts with no preset recall target.** What was *prescribed* by the fresh-lens review: **0.95.** The direction is settled (recall is the conservative dial, because a silently killed keeper is the unrecoverable failure); the value is not. Report **per-section** recall alongside the global figure.
 - **Product: editor swaps ≤ 2–3 of the 15 shipped slots, approve in < 15 min** — measurable every week for free from the review loop. ⚠️ **UNMEASURED as a bar.** No swap count has ever been recorded; 2–3 is a target someone wrote down, not a baseline anyone observed. It is also the bar Fork C questions (a perfect gate still leaves **~505 of ~720** for 15 slots, so a swap count measures the ranker as much as the gate). Capture a *current* swap count on one real issue before treating this as pass/fail.
 - ~~**Recall@30**~~ — **removed. Step 2 has no valid denominator** (3.1% pool/published overlap); it is not a live metric until the step is re-pointed or cut.
 
@@ -196,7 +247,7 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 ## R7-W6 Sign-off gate
 
 W6 is done when:
-1. The gate ships **at the operating point chosen in Step 4a** (a priced point on a measured curve — *not* a number carried over from this doc's history) with a calibrated `P(include)`.
+1. The gate ships **at the operating point chosen in Step 4c** (a priced point on a measured, post-audit curve — *not* a number carried over from this doc's history) with a calibrated `P(include)`.
 2. It sections the fresh pool (survivors → classifier) — the artifact R6 consumes.
 3. The one-week dry run clears ≤2–3 swaps. **⚠️ This bar is itself in question — see Fork C**; a perfect gate still leaves **~505 of ~720** events for 15 slots, so a swap count measures the ranker as much as the gate.
 4. Fork A is executed (Step 1 complete, 239 rows split four ways) and **Forks B and C are resolved with the Step-4a number in hand**, their outcomes recorded (B → `R6_Scope` if it lands there).
@@ -228,7 +279,7 @@ W6 is done when:
 **Missingness (measured, post-R5):** description dropout ~47%, but true signal-dead (no desc AND no cats) only ~15% — concentrated in title-only single-venue sources (PinotsPalette 100%, RichmondHill 95%, Facebook 81%). ⚠️ **The ~47% describes what we FETCH, not what EXISTS** (measured pre-#108). On the label deck the same gap is 42.3% → **14.8%** once AllEvents detail pages are read. Still true of the corpus as it stands today; **wrong the moment R1 fetches descriptions**, which is open decision #1. Re-measure then rather than editing this line now. Include description *with* dropout so the model survives the ~half of production that lacks it.
 
 **Blind-pass catches (in scope regardless of architecture):**
-- **Self-reinforcing `NoSection` drift** — a wrong section is visible (editor moves it); a silently-dropped event never appears, never gets corrected, and retraining on published survivors narrows the newsletter irreversibly. Mitigation: never hard-drop; weekly reject-rate alarm; one-click editor rescue. **Directly relevant to the gate — the keeper-recall floor (value TBD, Step 4a) is this catch made quantitative.**
+- **Self-reinforcing `NoSection` drift** — a wrong section is visible (editor moves it); a silently-dropped event never appears, never gets corrected, and retraining on published survivors narrows the newsletter irreversibly. Mitigation: never hard-drop; weekly reject-rate alarm; one-click editor rescue. **Directly relevant to the gate — the keeper-recall floor (value TBD, Step 4c) is this catch made quantitative.**
 - **Calibration tripwire** — if editor-override inside the auto-accept band > ~10%, auto-downgrade to suggest-only until retrained.
 
 **Corpus freeze (07-15):** `published_titles.json` 1,126 rows (376/383/367); `raw_candidate_titles.json` 1,805 unique. Frozen once into serve-time text — do not re-stage mid-analysis (but dedup at fit, Step 0).

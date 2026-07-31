@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-07-31
+- Turned the editor's rejection reasons into a single, tested rule for how each reason feeds the model, replacing a mapping that had been interpreted differently in two places and had quietly produced three inconsistent figures.
+- Fitted and evaluated the first version of the relevance filter, reporting its results as event counts across four separate populations rather than one headline number, and confirming the reviewer's own prediction about which audience segment is hardest to serve.
+- Restructured the release plan so every remaining piece of work is a named step with its own completion test, and flagged the results as diagnostic — the quality bar is deliberately set later, after a label-review pass.
+
 ## 2026-07-30
 - Ran a blind two-phase review session with the client's editor and found that one rejection category had been quietly absorbing two different kinds of decision — a temporary "lost out this week" verdict and a permanent "not for our readers" one. Caught before it reached the model.
 - Traced three separate wrong figures across docs and scripts to a single outdated mapping rule, so one fix now closes all three rather than three patches drifting apart.

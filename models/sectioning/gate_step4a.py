@@ -26,20 +26,28 @@ DESIGN CONSTRAINTS baked into the plumbing (settled elsewhere, not re-litigated 
   ############################################################################
   # READ THIS BEFORE QUOTING ANY NUMBER THIS SCRIPT PRODUCES.                #
   #                                                                          #
-  # The negatives here are the MERGED None (225 rows), not `Wrong fit`.      #
-  # The four-way NoneType split (§75) is 12 of 239 done, so the split does   #
-  # not exist yet at scale and cannot be used. Step 4 specifies `Wrong fit`  #
-  # as the gate's negatives, with `Outcompeted` WITHHELD (it is a property   #
-  # of the week, not the event) and `Rule-break` routed to Stage 0.          #
+  # The None split is COMPLETE: 239 of 239 (closed 2026-07-30). The merged-  #
+  # None target is GONE -- the target is now the §77 routing contract below, #
+  # so `outcompeted` is WITHHELD from the fit and `non-GTA` goes to Stage 0  #
+  # rather than being scored as a gate negative.                             #
   #                                                                          #
-  # Consequence: this curve is a PROVISIONAL pricing and it will move when   #
-  # the split lands. It moves in BOTH directions and they do not cancel --   #
-  #   * Rule-break negatives are trivially separable -> flatter the gate     #
-  #   * Outcompeted negatives are genuinely includable events labelled None  #
-  #     -> the gate is being scored as wrong for keeping good events         #
+  # This is Step 4a: DIAGNOSTIC ONLY. It does not set the release bar.       #
+  # Two reasons, and the second is the bigger one:                           #
+  #   * The 211 gate positives have NEVER been audited. The editor's task    #
+  #     when he sectioned them was "which section?", not "would you publish  #
+  #     this?" -- three rows say in his own words that a row is correctly    #
+  #     sectioned but would never run. Contamination of unknown size.        #
+  #   * The withheld `outcompeted` pile is impure (§83) and 38 model-        #
+  #     relevant rows are still awaiting blind relabel (Step 1c). Eligible   #
+  #     ones re-enter as POSITIVES, so the positive count only goes up.      #
+  #                                                                          #
+  # Step 4c re-runs this same fit after Steps 1c and 4b repair the labels,   #
+  # and THAT run prices the operating point.                                 #
+  #                                                                          #
   # Per the 07-26 standing caution: a number without its provenance may be   #
   # quoted as context, never as a bar. Tag anything that leaves here with    #
-  # (n=416, merged-None negatives, measured YYYY-MM-DD, grouped 5-fold CV).  #
+  # (n=328 fit rows, §77 routing, unaudited positives, measured YYYY-MM-DD,  #
+  # grouped 5-fold CV).                                                      #
   ############################################################################
 
 Run:
@@ -63,20 +71,28 @@ DECK = HERE / "deck"
 MODEL = "voyage-4-large"            # §71; must match the cached manifests or the head is
 ARM = "nocats"                      # fit in one space and served in another
 
-# --- deck-pull field ids: the Airtable export keys cells by field id, not by name ---
-F_SECTION = "fld8YycTYbx63EC22"     # editor's label: Families / Couples / Golden / None
-F_ROW = "fldwjfVY5pN1qajFj"         # join key -> transfer_rows.json
-F_BATCH = "fldDymraKt7oQxdBv"       # which labelling sitting the row came from
-F_NOTE = "fld7p5LjFLTcU9hCP"        # editor free-text reasoning (73 rows; qualitative only)
+# --- deck-pull field NAMES -----------------------------------------------------------
+# The snapshot written by scripts/auditR7Labels.js is flat and keyed by field NAME, not
+# by field id (the old 07-26 export was id-keyed, which is why this join silently broke:
+# a missing id reads as None and the row drops out of a filter without raising).
+# A rename upstream must fail loud, so every name below is asserted present after load.
+F_SECTION = "Section"       # editor's label: Families / Couples / Golden / None
+F_ROW = "Row"               # join key -> transfer_rows.json
+F_BATCH = "Batch"           # which labelling sitting the row came from
+F_NOTE = "NoneReasoning"    # editor free-text reasoning (qualitative only)
+F_REASON = "NoneReason"     # the 6-option multiselect (§77) -- the gate target's input
+REQUIRED_PULL_FIELDS = (F_SECTION, F_ROW, F_BATCH, F_NOTE, F_REASON)
 
 SECTIONS = ("For Families", "For Couples", "For Golden Age Readers")
 LABEL_MAP = {"Families": "For Families", "Couples": "For Couples",
              "Golden": "For Golden Age Readers", "None": "None"}
 
 # The newest pull. transfer_rows.json was built from the 07-20 pull, so the labels baked
-# into it are 6 days stale; this file is the current truth and the drift is reported below
-# rather than silently applied.
-CURRENT_PULL = DECK / "r7_label_deck_raw_pull_2026-07-26.json"
+# into it are stale; this file is the current truth and the drift is reported below
+# rather than silently applied. Refresh with: node scripts/auditR7Labels.js
+CURRENT_PULL = sorted(
+    (HERE.parent.parent / "data" / "tracking" / "r7_label_audits").glob("r7_label_deck_*.json")
+)[-1]
 
 # ============================================================
 # PART 1 — load the cached deck matrix and its row metadata.
@@ -102,19 +118,29 @@ print(f"deck matrix  {X.shape}  [{ARM} arm, {MODEL}, embedded {manifest['embedde
 # ============================================================
 pull = json.loads(CURRENT_PULL.read_text(encoding="utf-8"))["records"]
 
-current, batch_of, note_of = {}, {}, {}
+# Fail loud on a field rename rather than dropping rows silently (the 07-26 failure).
+for name in REQUIRED_PULL_FIELDS:
+    if not any(name in rec for rec in pull):
+        raise SystemExit(
+            f"\nFIELD MISSING: '{name}' is absent from all {len(pull)} records in\n"
+            f"  {CURRENT_PULL.name}\n"
+            "A rename in Airtable reads as absent here and would silently empty the join.\n"
+        )
+
+current, batch_of, note_of, reasons_of = {}, {}, {}, {}
 for rec in pull:
-    c = rec["cellValuesByFieldId"]
-    row = c.get(F_ROW)
-    sec = c.get(F_SECTION)
+    row = rec.get(F_ROW)
     if row is None:
         continue
-    if isinstance(sec, dict):
-        current[row] = LABEL_MAP.get(sec["name"], sec["name"])
-    if isinstance(c.get(F_BATCH), dict):
-        batch_of[row] = c[F_BATCH]["name"]
-    if c.get(F_NOTE):
-        note_of[row] = c[F_NOTE]
+    sec = rec.get(F_SECTION)
+    if sec:
+        current[row] = LABEL_MAP.get(sec, sec)
+    if rec.get(F_BATCH):
+        batch_of[row] = rec[F_BATCH]
+    if rec.get(F_NOTE):
+        note_of[row] = rec[F_NOTE]
+    raw_reasons = rec.get(F_REASON) or []
+    reasons_of[row] = [raw_reasons] if isinstance(raw_reasons, str) else list(raw_reasons)
 
 drift, missing = [], []
 for r in rows:
@@ -136,9 +162,110 @@ labels = [current.get(r["row"], r["label"]) for r in rows]
 # ============================================================
 # PART 3 — the binary target, the groups, and the auxiliary columns.
 # ============================================================
-# y = 1 (include) for any of the 3 sections, 0 (None) otherwise. This is the ONLY place the
-# merged-None simplification enters, and it is the thing the header banner is about.
-y = np.array([1 if lab in SECTIONS else 0 for lab in labels], dtype=int)
+# ------------------------------------------------------------------------------------
+# THE §77 ROUTING CONTRACT (R7_Scope Step 1b). Editor-authored destinations.
+#
+# This is the ONE place a reason tick becomes a model target. It exists as a single
+# asserted function because the same mapping, written twice and interpreted
+# independently, produced three separate wrong numbers on 2026-07-30: a gate slice
+# reported as 123/60 when it is 95/54, a false "zero residual conflicts", and a
+# merged-binary target here. All three were the same defect wearing three hats.
+#
+# PRECEDENCE -- the order is the contract, not an implementation detail:
+#   1. non-GTA     -> stage0    A record fact. Beats every content judgment because a
+#                               foreign event never reaches the gate to be judged.
+#   2. can't tell  -> excluded  The editor could not decide. Nothing brings these back,
+#                               which is what separates `excluded` from `withheld`.
+#   3. permanent   -> negative  wrong fit / B2B / civic. A permanent property of the
+#                               event against the readership. This is the gate's job.
+#   4. outcompeted -> withheld  Evaluated LAST so that a permanent + outcompeted row
+#                               falls through to (3) and lands in the gate as a
+#                               negative. Fails safe: a double-tick cannot escape.
+#
+# `withheld` is NOT `negative` and NOT `positive` -- these rows leave the fit entirely.
+# §83 found the label impure, Step 1c is relabelling the 38 model-relevant ones blind,
+# and eligible ones re-enter as POSITIVES at Step 4c. Scoring them either way today
+# would prejudge the sitting that exists to answer the question.
+# ------------------------------------------------------------------------------------
+NON_GTA = "non-GTA"
+CANT_TELL = "can't tell"
+OUTCOMPETED = "outcompeted"
+PERMANENT = ("wrong fit / not our audience", "B2B / professional dev", "civic")
+KNOWN_REASONS = {NON_GTA, CANT_TELL, OUTCOMPETED, *PERMANENT}
+
+
+def route_s77(section, reasons):
+    """Editor label -> gate destination.
+
+    Returns 'positive' | 'negative' | 'withheld' | 'stage0' | 'excluded' | 'unlabelled'.
+    Only 'positive' and 'negative' enter the fit.
+    """
+    if section in SECTIONS:
+        return "positive"            # the editor placed it in an issue section
+    if section != "None":
+        return "excluded"            # blank / unrecognised label: not a ruling
+    reasons = set(reasons or ())
+    if unknown := reasons - KNOWN_REASONS:
+        raise ValueError(f"unrecognised NoneReason option(s): {sorted(unknown)}")
+    if not reasons:
+        return "unlabelled"          # asserted to be 0 -- the split closed at 239/239
+    if NON_GTA in reasons:
+        return "stage0"
+    if CANT_TELL in reasons:
+        return "excluded"
+    if reasons & set(PERMANENT):
+        return "negative"
+    if OUTCOMPETED in reasons:
+        return "withheld"
+    raise AssertionError(f"unroutable reason set: {sorted(reasons)}")
+
+
+# Precedence cases, asserted at import. These encode the DECISIONS, not the syntax --
+# if someone reorders the branches above, these fail before any number is produced.
+for _sec, _reasons, _want in [
+    ("For Families", [], "positive"),
+    ("None", [NON_GTA], "stage0"),
+    ("None", [NON_GTA, OUTCOMPETED], "stage0"),          # 1 beats 4
+    ("None", [NON_GTA, "civic"], "stage0"),              # 1 beats 3
+    ("None", [CANT_TELL], "excluded"),
+    ("None", [CANT_TELL, "wrong fit / not our audience"], "excluded"),   # 2 beats 3
+    ("None", ["wrong fit / not our audience"], "negative"),
+    ("None", ["B2B / professional dev"], "negative"),
+    ("None", ["civic"], "negative"),
+    ("None", ["wrong fit / not our audience", OUTCOMPETED], "negative"),  # 3 beats 4
+    ("None", [OUTCOMPETED], "withheld"),
+    ("None", [], "unlabelled"),
+]:
+    _got = route_s77(_sec, _reasons)
+    assert _got == _want, f"routing contract broken: {_sec} {_reasons} -> {_got}, want {_want}"
+
+route = np.array([route_s77(lab, reasons_of.get(r["row"], []))
+                  for lab, r in zip(labels, rows)], dtype=object)
+
+routed = collections.Counter(route.tolist())
+print("\n§77 routing over the {} embedded rows:".format(len(rows)))
+for dest in ("positive", "negative", "withheld", "stage0", "excluded", "unlabelled"):
+    print(f"  {dest:12} {routed.get(dest, 0):4}")
+
+# The pre-relabel baseline (R7_Scope Step 1b). Step 1c WILL move these -- that is the
+# point of it -- so this assertion is a tripwire on silent drift, not a permanent truth.
+# When 1c lands, update these numbers deliberately and say so in the Execution_Log.
+EXPECTED_PRE_RELABEL = {"positive": 191, "negative": 137, "withheld": 64,
+                        "stage0": 16, "excluded": 8, "unlabelled": 0}
+_actual = {k: routed.get(k, 0) for k in EXPECTED_PRE_RELABEL}
+if _actual != EXPECTED_PRE_RELABEL:
+    raise SystemExit(
+        "\nROUTING COUNTS MOVED -- refusing to fit on a target nobody has looked at.\n"
+        f"  expected {EXPECTED_PRE_RELABEL}\n"
+        f"  actual   {_actual}\n"
+        "If this is Step 1c landing, that is expected: update EXPECTED_PRE_RELABEL and\n"
+        "record the change. If it is not, a label moved that nobody decided to move.\n"
+    )
+
+# Only positives and negatives are fitted. The 88 others are not 'missing data' -- they
+# are rows the contract deliberately declines to score.
+fit_mask = np.isin(route, ("positive", "negative"))
+y = np.where(route == "positive", 1, 0)[fit_mask].astype(int)
 
 # Groups for leak-free CV. Key = URL, falling back to normalised title so that a recurring
 # program appearing under different URLs still lands in one fold. Within THIS deck the two
@@ -166,14 +293,33 @@ desc_len = np.array([len((raw_by_url.get(r["url"], {}).get("desc") or "")) for r
 has_cats = np.array([bool((raw_by_url.get(r["url"], {}).get("cats") or "").strip()) for r in rows])
 has_note = np.array([r["row"] in note_of for r in rows])        # editor wrote reasoning on this row
 
+# Apply the routing mask to EVERYTHING at once, in one place, so row alignment cannot
+# drift between X and a column that was masked a few lines later. After this line the
+# fit set is the 328 rows the §77 contract scores; the 88 it declines are gone.
+_n_before = len(rows)
+X = X[fit_mask]
+groups = groups[fit_mask]
+section = section[fit_mask]
+slice_ = slice_[fit_mask]
+is_pair = is_pair[fit_mask]
+source = source[fit_mask]
+desc_len = desc_len[fit_mask]
+has_cats = has_cats[fit_mask]
+has_note = has_note[fit_mask]
+route_fit = route[fit_mask]
+rows_fit = [r for r, keep in zip(rows, fit_mask) if keep]
+assert X.shape[0] == len(y) == len(groups) == len(rows_fit), "mask misaligned X and y"
+print(f"\nfit set: {X.shape[0]} of {_n_before} embedded rows"
+      f"  ({_n_before - X.shape[0]} withheld/stage0/excluded by the §77 contract)")
+
 # ============================================================
 # PART 4 — the staging report. Everything the eval needs to know about its own inputs
 # BEFORE a number exists, so no surprise gets read as a finding later.
 # ============================================================
 print(f"\ntarget: {int(y.sum())} include / {int((1 - y).sum())} None"
       f"  (base rate {y.mean():.1%} includable)")
-print(f"groups: {len(set(groups.tolist()))} distinct for {len(rows)} rows"
-      f"  |  {int(is_pair.sum())} PAIR repeat rows -> {len(rows) - len(set(groups.tolist()))} collisions absorbed")
+print(f"groups: {len(set(groups.tolist()))} distinct for {len(rows_fit)} rows"
+      f"  |  {int(is_pair.sum())} PAIR repeat rows -> {len(rows_fit) - len(set(groups.tolist()))} collisions absorbed")
 
 print("\nincludables by section (the per-section recall denominators):")
 for s in SECTIONS:
@@ -195,15 +341,34 @@ print(f"\ndesc length: {int(desc_len.min())}-{int(desc_len.max())} chars, median
 print(f"has category tags: {int(has_cats.sum())}  |  editor wrote reasoning on: {int(has_note.sum())} rows")
 
 # What is NOT in this matrix, stated so it cannot be forgotten mid-eval:
-full_deck_none = sum(1 for r in pull
-                     if isinstance(r["cellValuesByFieldId"].get(F_SECTION), dict)
-                     and r["cellValuesByFieldId"][F_SECTION]["name"] == "None")
+full_deck_none = sum(1 for r in pull if r.get(F_SECTION) == "None")
 print(f"\ncoverage: the full deck has {len(current)} labelled rows ({full_deck_none} None);"
-      f" {len(rows)} are embedded here.")
-print(f"  -> {len(current) - len(rows)} labelled rows are NOT in this fit"
-      f" (no raw text to build the §70 serve recipe from).")
+      f" {_n_before} are embedded and {len(rows_fit)} survive the §77 contract.")
+print(f"  -> of the {len(pull)} deck rows, {len(pull) - _n_before} are NOT embedded"
+      f" (#107: 30 post-date the embedding pull, 4 walkthrough staging, 4 blank, 2 no URL).")
 print("  -> the #108 AllEvents prose backfill is NOT applied to these vectors."
       " Re-embedding after that call lands will move every AllEvents row.")
+
+# -------------------------------------------------------------------------------------
+# DIAGNOSTIC STAMP (R7_Scope Step 4a). Step 4a is diagnostic-only: the positive class has
+# never been audited (0 of 211 acceptances checked), so no number below is a release bar.
+# Step 4c sets the bar, after Steps 1c and 4b repair the labels.
+#
+# This is printed rather than merely documented because numbers travel without their
+# surrounding prose -- that is precisely how 0.98 keeper recall and the 0.95->43% /
+# 0.90->55% anchors entered the Scope doc as bars with no measurement behind them.
+# Stamp every exported artifact with DIAGNOSTIC_STAMP too, not just the console run.
+DIAGNOSTIC_STAMP = "DIAGNOSTIC ONLY - UNAUDITED POSITIVE LABELS - NOT A RELEASE BAR"
+
+
+def stamped(payload: dict) -> dict:
+    """Wrap an export payload so the warning cannot be separated from the numbers."""
+    return {"_warning": DIAGNOSTIC_STAMP, "_step": "R7-W6 Step 4a (diagnostic)", **payload}
+
+
+print("\n" + "!" * 78)
+print(DIAGNOSTIC_STAMP.center(78))
+print("!" * 78)
 
 # =====================================================================================
 # ================================  EVAL — AUTHORED CORE  ==============================
@@ -211,72 +376,159 @@ print("  -> the #108 AllEvents prose backfill is NOT applied to these vectors."
 # STOP. The plumbing above is done: X, y, groups, and the aux columns are in memory and
 # row-aligned. Everything below is yours.
 #
-# Same discipline as transfer_test.py: the scoring rules are PINNED BLIND -- committed
-# here BEFORE you fit and see a single number. Step 4a is the step most exposed to this,
-# because it SETS the bar rather than testing against one: if you choose the definition
-# of "recall" after seeing which section sags, you have chosen the definition that
-# flatters the model. The guard below refuses to run until all four are set.
+# WHICH RUN IS THIS? The pin discipline applies to the run that SETS the bar, and that
+# is no longer 4a (Decision §82 + R7_Scope: 4a is diagnostic, 4c sets the bar after 1c
+# and 4b repair the labels). Blind pre-commitment exists to stop you choosing the
+# definition of "recall" after seeing which section sags -- a real risk when a number
+# becomes a bar, and not much of one when the run's whole job is to find label errors.
+#
+#   STEP = "4a"  -> report BOTH readings of every choice below. Nothing is pinned,
+#                   nothing is chosen, and no operating point may be taken from it.
+#   STEP = "4c"  -> the guard fires: every pin must be set BEFORE the fit runs.
+STEP = "4a"
 
 # (1) WHICH RECALL IS THE DIAL -- one global keeper-recall number, or a per-section floor?
 #     R7_Scope Step 4 argues for a floor: "losing 67 events at random is survivable,
-#     losing 67 that are all Golden Age library programs is not." Pin it before you see
-#     which section sags, or the choice is post-hoc.
-RECALL_DIAL = None            # TODO(ariel): "global" | "per_section_floor"
+#     losing 67 that are all Golden Age library programs is not."
+#     At 4a: report both. Positives per section are 79 / 57 / 55, so a per-section floor
+#     moves in ~1.8-point steps -- report that granularity alongside the number so the
+#     resolution is visible when you do pin it.
+RECALL_DIAL = None            # TODO(ariel) @4c: "global" | "per_section_floor"
 
 # (2) WHICH ROWS THE CURVE IS MEASURED ON. §69 says gate and train are scored separately
 #     and never pooled -- train was drawn deliberately hard/low-margin, so a pooled number
 #     is not interpretable. But grouped CV over the whole deck is what gives the gate
-#     enough negatives to fit at all. State which population the OPERATING POINT is read
-#     off, and if it is not "gate", say why pooling is legitimate here when §69 says it
-#     is not.
-CURVE_MEASURED_ON = None      # TODO(ariel): "gate" | "all_grouped_cv" | "both_reported"
+#     enough negatives to fit at all.
+#     At 4a: report gate (95/54) and pooled (191/137) SEPARATELY, never as one number.
+#     At 4c: state which population the OPERATING POINT is read off, and if it is not
+#     "gate", say why pooling is legitimate here when §69 says it is not.
+CURVE_MEASURED_ON = None      # TODO(ariel) @4c: "gate" | "all_grouped_cv" | "both_reported"
 
-# (3) WHAT THIS CURVE IS ALLOWED TO DECIDE. The negatives are merged None, not `Wrong fit`
-#     (see the header banner). Does the number that comes out set the release bar, or only
-#     bound it pending the four-way split? Answering "sets it" means committing that the
-#     split will not move the curve -- which is a claim, and one nobody has evidence for.
-MERGED_NONE_VERDICT = None    # TODO(ariel): "sets_the_bar" | "bounds_it_pending_split"
+# (3) RETIRED 2026-07-31 -- this pin's premise is gone.
+#     It asked whether a MERGED-None curve sets the bar or only bounds it pending the
+#     four-way split. The split landed (239/239, closed 07-30) and the §77 routing
+#     contract above replaced the merged target, so the question it guarded is closed.
+#     The live version of the same worry is NOT about the negatives any more -- it is
+#     the unaudited POSITIVE class, which is what Step 4b exists to repair and what the
+#     DIAGNOSTIC_STAMP announces. Same shape as score-vs-delete: the pin was guarding a
+#     door that had already shut while the open one was behind it.
+# MERGED_NONE_VERDICT = ...   # do not re-add; see R7_Scope Step 4b
 
 # (4) THE STOPPING RULE. If no threshold gives an acceptable recall/junk trade, what
 #     happens -- in order, committed before the number, so a bad curve does not become
 #     motivated tuning. (Fork C is one of the legitimate outcomes here: "the gate is not
 #     the win, ranking is" is a finding, not a failure.)
-ITERATION_LADDER = None       # TODO(ariel): list[str]
+ITERATION_LADDER = None       # TODO(ariel) @4c: list[str]
 
-if None in (RECALL_DIAL, CURVE_MEASURED_ON, MERGED_NONE_VERDICT, ITERATION_LADDER):
+# (5) THE ESCALATION TRIGGER (R7_Scope Step 4c saturation check). After 4b's corrections,
+#     4c exports a FRESH untouched disagreement set and reports how far the curve moved
+#     from 4a. Few flips + a curve that barely moves = the repair is saturating. Still
+#     flipping at the old rate = the contamination is too broad for targeted repair and
+#     the full 211 need auditing. Both numbers get written BEFORE 4c runs; a threshold
+#     set after seeing the output is a rationalisation, not a bar.
+ESCALATION_TRIGGER = None     # TODO(ariel) @4c: {"flip_rate": float, "curve_shift": float}
+
+_PINS = {"RECALL_DIAL": RECALL_DIAL, "CURVE_MEASURED_ON": CURVE_MEASURED_ON,
+         "ITERATION_LADDER": ITERATION_LADDER, "ESCALATION_TRIGGER": ESCALATION_TRIGGER}
+
+if STEP == "4c" and any(v is None for v in _PINS.values()):
     raise SystemExit(
-        "\nEVAL BLOCKED - pin the four blind pre-commitments above before scoring.\n"
+        "\nEVAL BLOCKED - Step 4c sets the release bar, so the rules are committed first.\n"
+        f"unset: {sorted(k for k, v in _PINS.items() if v is None)}\n"
         "The plumbing ran; X / y / groups / aux columns are staged and row-aligned.\n"
-        "This guard is deliberate: Step 4a SETS the bar, so the rule is committed\n"
-        "before the number or the bar is just the number wearing a bar's clothes.\n"
+        "Pin these before the fit or the bar is just the number wearing a bar's clothes.\n"
     )
 
-# --- from here down is yours to write ---
-#
-# TODO(ariel): fit the binary gate. LogisticRegression on X with y; get OUT-OF-FOLD
-#     probabilities via cross_val_predict(..., method="predict_proba", cv=GroupKFold)
-#     passing `groups` -- in-sample probabilities would price a curve the gate cannot
-#     reproduce on unseen events, which is the exact failure the 0.774 -> 0.61 drop was.
-#
-# TODO(ariel): sweep the threshold across the full range and build the curve:
-#     keeper recall (y==1 kept) vs junk rejection (y==0 dropped). Anchor it against the
-#     two measured points from the fresh-lens review: 0.95 recall -> 43% junk rejected,
-#     0.90 -> 55%. If your curve disagrees with those, that is a finding about one of the
-#     two setups, not a rounding difference -- chase it before reading anything else.
-#
-# TODO(ariel): report per-section keeper recall at each operating point, not just global.
-#     The failure that matters is a class going dark. Denominators are printed above and
-#     they are small (Golden ~55) -- put a number on how few events move a section's
-#     recall by 10 points before you trust any per-section reading.
-#
-# TODO(ariel): price the last three points. How many EVENTS separate 0.95 from 0.98?
-#     R7_Scope: with ~211 positives a 0.98 threshold is set by roughly 4 events. Make the
-#     cost visible instead of assumed -- 0.98 entered the docs unmeasured and this is the
-#     step that retires it or earns it.
-#
-# TODO(ariel): calibration check before trusting any threshold. The gate's P(include) is
-#     also the interim ranking score (final = P(include) x P(section)), so a miscalibrated
-#     probability breaks ranking as well as the gate.
+if STEP == "4a":
+    print("\nSTEP 4a -- diagnostic. Nothing below is pinned: report BOTH the global and"
+          "\n  per-section recall, and report the gate slice and the pooled fit SEPARATELY."
+          "\n  No operating point may be taken from this run. Set STEP = \"4c\" for that.")
+
+# ARM 1 -- embeddings only (settled in earlier sessions). The aux columns staged above
+# are NOT used here: adding them is a representation choice and therefore arm 2, yours.
+from sklearn.linear_model import LogisticRegression      # noqa: E402
+from sklearn.model_selection import GroupKFold, cross_val_predict  # noqa: E402
+from sklearn.metrics import roc_auc_score                # noqa: E402
+
+clf = LogisticRegression(max_iter=2000, C=1.0)
+cv = GroupKFold(n_splits=5)
+p = cross_val_predict(clf, X, y, cv=cv, groups=groups, method="predict_proba")[:, 1]
+print(f"\nout-of-fold P(include) via grouped 5-fold CV  (arm 1: embeddings only, C=1.0)")
+
+
+def curve(mask, label):
+    """Keeper recall vs junk rejection, in EVENT COUNTS, on the rows selected by mask."""
+    pm, ym, sm = p[mask], y[mask], section[mask]
+    n_pos, n_neg = int(ym.sum()), int((1 - ym).sum())
+    if n_pos == 0 or n_neg == 0:
+        print(f"\n{label}: not scoreable (pos={n_pos}, neg={n_neg})")
+        return
+    print(f"\n=== {label}  (n={mask.sum()}: {n_pos} keepers / {n_neg} junk) ===")
+    print(f"  AUC {roc_auc_score(ym, pm):.3f}")
+    print("  recall   thresh   keepers lost   junk rejected        per-section recall")
+    for target in (0.99, 0.98, 0.95, 0.90, 0.85, 0.80):
+        # highest threshold that still achieves the target keeper recall
+        cand = [t for t in np.unique(pm) if (pm[ym == 1] >= t).mean() >= target]
+        if not cand:
+            continue
+        t = max(cand)
+        kept = pm[ym == 1] >= t
+        lost = int((~kept).sum())
+        rejected = int((pm[ym == 0] < t).sum())
+        per_sec = "  ".join(
+            f"{s.split()[-1][:4]} {(pm[(ym == 1) & (sm == s)] >= t).mean():.2f}"
+            for s in SECTIONS if ((ym == 1) & (sm == s)).sum()
+        )
+        print(f"  {kept.mean():5.3f}   {t:.4f}   {lost:3} of {n_pos:3}    "
+              f"{rejected:3} of {n_neg:3} ({rejected / n_neg:5.1%})   {per_sec}")
+
+
+# Step 4a reports every sampling population separately. The train slice was selected from
+# the old 3-class classifier's low-margin tail, so it is a useful stress test but not a
+# production estimate for this different binary task. Walkthrough rows were selected for
+# criteria elicitation and are more instrument-shaped still. Pooled remains descriptive
+# only: it is not a substitute for any of the three slice-specific reads (§65/§69).
+curve(np.ones(len(y), dtype=bool), "POOLED FIT — 328 rows, gate+train+walkthrough")
+curve(slice_ == "gate", "GATE SLICE — the only representative population")
+curve(slice_ == "train", "TRAIN SLICE — old 3-class low-margin stress test")
+curve(slice_ == "walkthrough", "WALKTHROUGH SLICE — criteria-elicitation rows")
+
+# Calibration. P(include) doubles as the interim ranking score (final = P(inc) x P(sec)),
+# so a miscalibrated probability breaks ranking as well as the threshold.
+print("\ncalibration (pooled, decile bins):")
+print("  bin        n   mean P   actual")
+for lo in np.arange(0.0, 1.0, 0.2):
+    m = (p >= lo) & (p < lo + 0.2)
+    if m.sum():
+        print(f"  {lo:.1f}-{lo + 0.2:.1f}  {m.sum():4}   {p[m].mean():.3f}    {y[m].mean():.3f}")
+
+# Step 4a done-when: export the highest-disagreement gate positives for Step 4b's sitting.
+# These are rows the EDITOR called includable and the model scores lowest -- either the
+# model cannot see it (feature bug) or the label is wrong (label bug). 4b asks which.
+disagree_idx = np.argsort(np.where(y == 1, p, np.inf))[:30]
+disagreements = [{
+    "row": rows_fit[i]["row"],
+    "p_include": round(float(p[i]), 4),
+    "section": str(section[i]),
+    "slice": str(slice_[i]),
+    "title": raw_by_url.get(rows_fit[i]["url"], {}).get("title", ""),
+    "url": rows_fit[i]["url"],
+} for i in disagree_idx if y[i] == 1]
+
+OUT = HERE / "eval" / "step4a_disagreements.json"
+OUT.parent.mkdir(exist_ok=True)
+OUT.write_text(json.dumps(stamped({
+    "generated": CURRENT_PULL.name,
+    "arm": "embeddings only, C=1.0, grouped 5-fold CV",
+    "n_fit": int(len(y)),
+    "note": "Editor called these includable; the model scores them lowest. Step 4b asks "
+            "the RULE question ('is there a permanent reason you would never run this?'), "
+            "never the preference question. Enriched for suspected errors -- it repairs, "
+            "it does not estimate contamination.",
+    "rows": disagreements,
+}), indent=2), encoding="utf-8")
+print(f"\nexported {len(disagreements)} highest-disagreement positives -> {OUT.relative_to(HERE)}")
+print("  (Step 4b's sitting list. Enriched for errors: repairs, does not estimate.)")
 #
 # TODO(ariel): the breadth diagnostic (§75 un-park trigger, R7_Scope Step 4). Report gate
 #     recall on the single-community stratum. If those events systematically SURVIVE, the
