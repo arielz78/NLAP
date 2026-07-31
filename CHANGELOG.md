@@ -5,6 +5,10 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-07-31
+- Tested whether the shortlist of items flagged for human review is a real finding or an artifact of one arbitrary model setting, by rebuilding it eight different ways before booking any of the client's time. The core of the list held; the result is recorded as diagnostic, not as a quality bar.
+- Made the two implementations of the routing rule share a single test fixture rather than two copied lists, so the pair can no longer drift apart unnoticed.
+- Built the blind review sheet for the next client sitting, then found and fixed three flaws in it before it was used — including one that would have collected rejections on a criterion the model is never asked to judge.
+
 - Turned the editor's rejection reasons into a single, tested rule for how each reason feeds the model, replacing a mapping that had been interpreted differently in two places and had quietly produced three inconsistent figures.
 - Fitted and evaluated the first version of the relevance filter, reporting its results as event counts across four separate populations rather than one headline number, and confirming the reviewer's own prediction about which audience segment is hardest to serve.
 - Restructured the release plan so every remaining piece of work is a named step with its own completion test, and flagged the results as diagnostic — the quality bar is deliberately set later, after a label-review pass.
