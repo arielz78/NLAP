@@ -42,6 +42,25 @@ const REASONS = Object.freeze({
 });
 
 const KNOWN_REASONS = new Set(Object.values(REASONS));
+
+// Every field this script reads. A rename here is silent corruption, not a crash:
+// a missing key reads as undefined and the row quietly drops out of a filter.
+// This is the failure that put `gate_step4a.py` on a field-id-keyed pull it could
+// no longer join — fail loud instead.
+const REQUIRED_FIELDS = Object.freeze([
+  "Row",
+  "Event",
+  "Section",
+  "Slice",
+  "Flag",
+  "Label",
+  "Details",
+  "NoneReason",
+  "NoneReasoning",
+  "LinkGave",
+  "PreMarked",
+  "OutsideGTA",
+]);
 const PERMANENT_NEGATIVES = new Set([
   REASONS.NON_GTA,
   REASONS.B2B,
@@ -245,6 +264,23 @@ function validateRows(rows) {
     throw new Error(
       `Unknown NoneReason option(s): ${JSON.stringify([...unknown])}`
     );
+  }
+
+  // Airtable omits empty cells, so presence is checked across the whole deck
+  // rather than per row. A field absent from all 456 rows has been renamed or
+  // deleted; the checks that read it would otherwise return silent zeroes.
+  const present = new Set(rows.flatMap((row) => Object.keys(row)));
+  const missing = REQUIRED_FIELDS.filter((field) => !present.has(field));
+  if (missing.length) {
+    throw new Error(
+      `Field(s) absent from every deck row — renamed or deleted: ${missing.join(", ")}`
+    );
+  }
+  const added = [...present].filter(
+    (field) => field !== "id" && !REQUIRED_FIELDS.includes(field)
+  );
+  if (added.length) {
+    console.log(`Note: ${added.length} field(s) present but unread: ${added.sort().join(", ")}`);
   }
 }
 

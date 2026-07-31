@@ -443,3 +443,21 @@ Big website session, resumed after the May gap — triggered by needing a credib
 * **The Roger outreach itself** (the reason for the session) — the give-first text is written and waits on the live page; **not sent**. Networking layer → `/checkout` + `contacts.md`, not this log.
 
 ---
+
+## 2026-07-30 4:27 PM — Two accuracy fixes found by reading the live site (`f088918`)
+
+Deploy from the Jul 23 session was confirmed live. Reading the actual pages surfaced two things the build session missed.
+
+**Pain points de-targeted (`Home.tsx`).** All three rows were field-service specific — quote retyping, quote follow-up by hand, job details re-entered into calendar/crew sheet/invoice — because they were written during White Shark prep. Same defect Ariel caught on Jul 23 in the CTA ("this now looks like it's fully custom built for White Shark"), one section over and missed at the time. The page is reusable across leads and the targeting belongs in the outreach message, so it's now one row per ICP: field service (row 01, unchanged), content/media (row 02 — the one the Vaughan Brief case study actually proves), back-office re-entry (row 03, de-specified).
+
+**Footer offer (`Footer.tsx`).** Still read "First build is free" — the last live instance of the old offer, missed in the Jul 23 sweep that replaced it everywhere else with the free workflow map. A public free-build promise contradicts steering leads into a paid engagement, which was the whole point of that change. Now "The workflow map is free." Grepped the rest of `src/`: no other instances (the one remaining hit is "our first build was for The Vaughan Brief," historical, not an offer).
+
+`npm run build` clean. Rebased over Nathan's `9a9db82` (README-only, no conflict) and pushed to `origin/master`.
+
+**Open**
+
+* **Vercel deploy is Nate's** — same as last session, no dashboard access here. **This is now time-boxed:** the Roger text is scheduled for Mon Aug 3, 9:42 AM and points at `builtbyna.com/nlap`. If the deploy hasn't landed by then, Roger reads a footer offering him a free build.
+* **`/nlap` overclaims the classifier** — the "What We Built" card says "a classifier trained on the editor's own past picks handles the rest," present tense, but R7 isn't shipped. Not fixed today (deliberately: don't touch the site between a lead reading it and the deploy). Surfaced while auditing outreach claims; the honest version is rules layer live, model trained and evaluated, not in production.
+* **Tech-stack chips list no Python** while listing Spring Boot / AWS / PostgreSQL / React — the company's combined stack (Nate's backend half included), not Ariel's. Fine as a company page; worth knowing before any technical conversation that comes from the outreach.
+
+---

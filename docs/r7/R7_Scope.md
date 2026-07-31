@@ -28,7 +28,7 @@ Single source of truth for "where are we." Supersedes the roadmap's R7 header an
 
 ⚠️ **The gate slice is too small to price a fine operating point.** 95 positives means keeper recall moves in 1.05-point steps — "0.95" is *keep 90, lose 5*, set by roughly **5 events**, worse than this doc's existing warning that 0.98 is set by ~4. Pooling to 328 rows buys resolution but §69 says gate and train are not comparable. That tension is pin 2 (`CURVE_MEASURED_ON`) and it is unresolved.
 
-**Editor self-agreement, complete-deck measurement: 82.5% on include/None, 75.0% on routing** (40 duplicate-title groups). Routing is *lower* because 6 of the 10 flips are the same event marked includable once and `outcompeted` the other time — either the label working as designed or noise, and nothing separates them. This is the ceiling on any gate metric.
+**Editor self-agreement, complete-deck measurement: 82.5% on include/None, 75.0% on routing** (40 duplicate-title groups). Routing is *lower* because 6 of the 10 flips are the same event marked includable once and `outcompeted` the other time — either the label working as designed or noise, and nothing separates them. **This is a ceiling on *agreement*, not on quality** — it bounds how closely any model can be expected to match this editor, not how well the gate can serve the business. A stable rule can outperform a noisy human while still "scoring" 80%. What it does bound is measurement: past ~80%, recall gains are fitting label noise, and any editor re-judgment instrument must clear a 15–25% null before its result means anything.
 
 ⚠️ **The instrument changed again on 2026-07-28 (§77):** the None-split is now **one 6-option multiselect** (`non-GTA` · `B2B / professional dev` · `civic` · `wrong fit / not our audience` · `outcompeted` · `can't tell`), with `NoneType` deleted and routing derived in code from a written priority order. §75's four-way *taxonomy* still describes how the editor rejects; it is no longer the *form he fills*. A new `Slice` field makes the gate/train split groupable in Airtable for the first time (gate 184 · train 210 · walkthrough 22 · not-in-model-set 40); only the 89 `Section=None` gate rows are representative, so every proportion must be read there rather than pooled across slices.
 
@@ -47,9 +47,9 @@ Single source of truth for "where are we." Supersedes the roadmap's R7 header an
 - **The transfer test / min-class-recall exit table (old §3) is moot** as the release gate. It measured section accuracy on a population that doesn't exist in production. Retired as the headline; kept only as an internal diagnostic. The unresolved 0.61 provenance and τ-calibration fork die with it.
 
 **The live decisions ("forks"):**
-- **Fork A — does the gate train on split labels?** ✅ **Answered in principle** (§75): yes, four ways, with permanent content rejections as gate negatives, `outcompeted` as gate-positive ranking material, and `can't tell` excluded. **Still executing** — 101 of 239 None rows are labelled, the representative gate slice is 25/89 resolved, and Sitting 1's conflicts must be adjudicated before the mapping is evaluated.
+- **Fork A — does the gate train on split labels?** ✅ **CLOSED (2026-07-30).** Yes, and the routing is §77's, not §75's: permanent content rejections (`wrong fit` / `B2B / professional dev` / `civic`) are the gate's negatives, `non-GTA` routes to Stage 0, `can't tell` is excluded, and **`outcompeted` is withheld from the gate entirely** — it is a property of the week, not the event, and belongs to R6's ranker. All 239 None rows are labelled (gate 89 · train 124 · walkthrough 12 · not-in-model-set 14) and every conflict row is adjudicated. ⚠️ Earlier versions of this line called `outcompeted` "gate-positive ranking material," which inverts §77 and inflates the removable rate — see the corrected-arithmetic note in the Status Snapshot.
 - **Fork B — threshold gate or *scoring* gate?** ✅ **DISSOLVED by architecture (§78): score and sort, never delete.** The gate deploys into R2 after R1 has already upserted the record, so "do not write it" was never available. Pin 1 is therefore a reporting/alarm commitment, not a kill threshold.
-- **Fork C — W6's scope (NEW, OPEN, Ariel's).** Given that a perfect gate still leaves ~335 events for 15 slots: keep the gate and change the sign-off bar / expand W6 to include ranking / merge W6 with R6.
+- **Fork C — W6's scope (NEW, OPEN, Ariel's).** Given that a perfect gate removes only the **29.9%** permanently-rejectable share and so still leaves **~505 of ~720** events for 15 slots (the ~335 this line used to quote came from the superseded ~46.5% eligibility figure, and the correction makes the fork *harder*, not easier): keep the gate and change the sign-off bar / expand W6 to include ranking / merge W6 with R6.
 
 **Blocking order for the remaining fork:** Fork C needs **Step 4a** to price the recall/junk-rejection curve. Step 4a arm 1 can bound filtering-vs-ranking on merged None, but the final release bar waits on Step 1's split labels.
 
@@ -86,13 +86,14 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 
 **Done when:** the two live errors (Golden-367, section-is-contextual) are corrected in this doc + `logs/R7_Log.md`; grouped CV is the fit's default splitter.
 
-### Step 1 — The None-split (IN PROGRESS; ~3–4 live sittings with the editor)
+### Step 1 — The None-split (✅ CLOSED 2026-07-30; two live sittings)
 
 **What it's for:** the single highest-information-per-minute move on the board. Splits the **239** None so the gate trains on the right negatives. Full plan: `R7_None_Split_Labelling_Plan.md`.
 
 - **Four-way `NoneType`** per §75 — `Rule-break` → Stage 0 · `Wrong fit` → the gate · `Outcompeted` → R6's ranker · `Ambiguous` → excluded from both. `NoneReason` (multi-select) applies to `Rule-break` rows only.
 - **Live, text-first sittings**, not solo async work. `NeededLink` is retired; free-text `LinkGave` records what the link added.
-- **Status: 12 of 239 done.** Those 12 are the **pilot** — the instrument is being respecced now, at row 12, rather than never; 10 of them carry reasoning clear enough to remap for a two-minute confirm rather than a redo.
+- **Status: 239 of 239 done** (gate 89 · train 124 · walkthrough 12 · not-in-model-set 14), across two live sittings on 07-29 and 07-30. The first 12 were the **pilot** — the instrument was respecced at row 12 rather than never, and those rows were remapped by confirm rather than redo. Verify any time with `node scripts/auditR7Labels.js`.
+- ⚠️ **Labelling is closed; the positive class is not validated.** All 239 rejections were checked against the breadth criterion; **zero of the 211 acceptances were.** That audit is carried into Step 4a — see the Status Snapshot and `Decision_Log` §82.
 - **Interpret:** mostly Wrong fit → the gate is the win. Mostly Outcompeted → filtering buys little and the problem is preference-ranking (weight moves to R6). *Pilot signal, n=11, not to be trusted as a rate:* Rule-break 3 / Wrong fit 6 / Outcompeted 1.
 
 **Done when:** 239 split four ways; the `Wrong fit` pile is the gate's negative set, the `Outcompeted` pile is reserved for R6's ranker, the `Rule-break` pile is a Stage-0 rule inventory.

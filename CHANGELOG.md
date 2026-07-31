@@ -5,6 +5,9 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-07-30
+- Ran a blind two-phase review session with the client's editor and found that one rejection category had been quietly absorbing two different kinds of decision — a temporary "lost out this week" verdict and a permanent "not for our readers" one. Caught before it reached the model.
+- Traced three separate wrong figures across docs and scripts to a single outdated mapping rule, so one fix now closes all three rather than three patches drifting apart.
+- Corrected several stale figures in the release plan and removed a claim the underlying data could not support.
 - Closed the labelling stage, then found that only the rejected half had ever been quality-checked — the accepted half had been read as answering a question it was never asked.
 - Cancelled a planned client review session after testing showed its expected result would be indistinguishable from the reviewer's own natural inconsistency; replaced it with a cheaper approach that lets the model identify which items are worth a human's time.
 - Corrected a recorded figure the release plan depended on: the share of listings an automated filter can remove is roughly a third, not half, which shifts weight from filtering toward ranking.
