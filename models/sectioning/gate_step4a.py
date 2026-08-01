@@ -1,9 +1,15 @@
 """
 gate_step4a.py — R7-W6 Step 4a: price the keeper-recall / junk-rejection curve.
 
-WHAT THIS IS FOR (R7_Scope.md Step 4a): this step SETS the release bar, it does not
-confirm one. The Step-4 operating point, Fork B and Fork C all wait on the number that
-comes out of the eval below. No new spend: labels and embeddings are already cached.
+WHAT THIS IS FOR (R7_Scope.md Steps 4a + 4c). Two runs, one script, selected by STEP:
+  STEP = "4a"  DIAGNOSTIC. Bounds whether the gate has signal and exports Step 4b's
+               disagreement sitting list. It sets no bar and prints no operating point.
+  STEP = "4c"  SETS THE BAR, and only after Steps 1c and 4b have repaired the labels.
+               Runs the section-safe operating-point search (Decision_Log §85) and
+               exports a FRESH disagreement set that excludes every CV group Step 4b
+               already audited.
+The Step-4 operating point and Fork C wait on 4c's number, never on 4a's. No new spend:
+labels and embeddings are already cached.
 
 AUTHORSHIP SPLIT (CLAUDE.md R7-W6). Everything ABOVE the ===== EVAL ===== banner is
 PLUMBING (Claude): load the cached deck matrices, re-join the current editor labels,
@@ -297,6 +303,13 @@ desc_len = np.array([len((raw_by_url.get(r["url"], {}).get("desc") or "")) for r
 has_cats = np.array([bool((raw_by_url.get(r["url"], {}).get("cats") or "").strip()) for r in rows])
 has_note = np.array([r["row"] in note_of for r in rows])        # editor wrote reasoning on this row
 
+# The prof-dev / B2B stratum (R7_Scope Step 4, second stratum). NOT invented vocabulary:
+# this is the editor's own §77 reason tick, so the stratum is defined by the label rather
+# than by a keyword list somebody wrote. These rows route to the gate as CONTENT
+# judgments (§76), so the question is whether the embedding already carries the rule.
+B2B_REASON = "B2B / professional dev"
+is_b2b_reason = np.array([B2B_REASON in reasons_of.get(r["row"], []) for r in rows])
+
 # Apply the routing mask to EVERYTHING at once, in one place, so row alignment cannot
 # drift between X and a column that was masked a few lines later. After this line the
 # fit set is the 328 rows the §77 contract scores; the 88 it declines are gone.
@@ -310,6 +323,7 @@ source = source[fit_mask]
 desc_len = desc_len[fit_mask]
 has_cats = has_cats[fit_mask]
 has_note = has_note[fit_mask]
+is_b2b_reason = is_b2b_reason[fit_mask]
 route_fit = route[fit_mask]
 rows_fit = [r for r, keep in zip(rows, fit_mask) if keep]
 assert X.shape[0] == len(y) == len(groups) == len(rows_fit), "mask misaligned X and y"
@@ -354,25 +368,46 @@ print("  -> the #108 AllEvents prose backfill is NOT applied to these vectors."
       " Re-embedding after that call lands will move every AllEvents row.")
 
 # -------------------------------------------------------------------------------------
-# DIAGNOSTIC STAMP (R7_Scope Step 4a). Step 4a is diagnostic-only: the positive class has
-# never been audited (0 of 211 acceptances checked), so no number below is a release bar.
-# Step 4c sets the bar, after Steps 1c and 4b repair the labels.
+# ARTIFACT PROVENANCE STAMP -- DERIVED FROM `STEP`, never hardcoded.
 #
-# This is printed rather than merely documented because numbers travel without their
-# surrounding prose -- that is precisely how 0.98 keeper recall and the 0.95->43% /
-# 0.90->55% anchors entered the Scope doc as bars with no measurement behind them.
-# Stamp every exported artifact with DIAGNOSTIC_STAMP too, not just the console run.
-DIAGNOSTIC_STAMP = "DIAGNOSTIC ONLY - UNAUDITED POSITIVE LABELS - NOT A RELEASE BAR"
+# Why derived: the stamp's entire job is to travel with the numbers, because numbers
+# travel without their surrounding prose. That is precisely how 0.98 keeper recall and
+# the 0.95->43% / 0.90->55% anchors entered the Scope doc as bars with no measurement
+# behind them. A hardcoded stamp fails that job in BOTH directions -- a 4c run wearing
+# "DIAGNOSTIC ONLY" understates a real bar exactly as badly as a 4a number quoted as one.
+#
+#   4a: the positive class has never been audited (0 of 211 acceptances checked), so no
+#       number the run produces is a release bar.
+#   4c: runs after Steps 1c and 4b repair the labels, under the pre-registered rules in
+#       Decision_Log §85. It is the run that prices the operating point.
+_STAMPS = {
+    "4a": ("DIAGNOSTIC ONLY - UNAUDITED POSITIVE LABELS - NOT A RELEASE BAR",
+           "R7-W6 Step 4a (diagnostic)"),
+    "4c": ("POST-AUDIT PRE-REGISTERED EVALUATION - OPERATING POINT PER Decision_Log §85",
+           "R7-W6 Step 4c (post-audit, pre-registered)"),
+}
+
+
+def _stamp():
+    """(warning, step-label) for the CURRENT run.
+
+    Resolved at CALL time, not import time, so that `STEP` can stay below the EVAL
+    banner where the authorship split puts it. Every caller (the exports here,
+    step4a_stability.py, make_4b_sheet.py) runs after `STEP` is bound.
+    """
+    step = globals().get("STEP")
+    if step not in _STAMPS:
+        raise RuntimeError(
+            f"STEP is {step!r}; expected one of {sorted(_STAMPS)}. An artifact cannot be "
+            "stamped before the run declares which step it is."
+        )
+    return _STAMPS[step]
 
 
 def stamped(payload: dict) -> dict:
-    """Wrap an export payload so the warning cannot be separated from the numbers."""
-    return {"_warning": DIAGNOSTIC_STAMP, "_step": "R7-W6 Step 4a (diagnostic)", **payload}
-
-
-print("\n" + "!" * 78)
-print(DIAGNOSTIC_STAMP.center(78))
-print("!" * 78)
+    """Wrap an export payload so the provenance cannot be separated from the numbers."""
+    warning, step_label = _stamp()
+    return {"_warning": warning, "_step": step_label, **payload}
 
 # =====================================================================================
 # ================================  EVAL — AUTHORED CORE  ==============================
@@ -391,13 +426,18 @@ print("!" * 78)
 #   STEP = "4c"  -> the guard fires: every pin must be set BEFORE the fit runs.
 STEP = "4a"
 
-# (1) WHICH RECALL IS THE DIAL -- one global keeper-recall number, or a per-section floor?
-#     R7_Scope Step 4 argues for a floor: "losing 67 events at random is survivable,
-#     losing 67 that are all Golden Age library programs is not."
-#     At 4a: report both. Positives per section are 79 / 57 / 55, so a per-section floor
-#     moves in ~1.8-point steps -- report that granularity alongside the number so the
-#     resolution is visible when you do pin it.
-RECALL_DIAL = None            # TODO(ariel) @4c: "global" | "per_section_floor"
+# (1) One GLOBAL reporting threshold; per-section recall is a veto on that threshold,
+#     never three separate thresholds. The floor is deliberately coarse because the
+#     representative gate positives are only 46 / 28 / 21 by section before repair.
+RECALL_DIAL = "global_with_per_section_veto"
+PER_SECTION_RECALL_FLOOR = 0.90
+
+# (1b) MODEL CONFIGURATION -- frozen for R7 by §85. Defined here with the other pins,
+#      above the precondition check that reads it, rather than beside the sklearn call.
+#      The Step-4a `C` grid is SENSITIVITY EVIDENCE ONLY: gate-slice AUC rose monotonically
+#      across it (0.834 -> 0.923), and selecting on that would tune against the very
+#      population the operating point is read from. Revisit only on genuinely new data.
+MODEL_C = 1.0
 
 # (2) WHICH ROWS THE CURVE IS MEASURED ON. §69 says gate and train are scored separately
 #     and never pooled -- train was drawn deliberately hard/low-margin, so a pooled number
@@ -406,7 +446,7 @@ RECALL_DIAL = None            # TODO(ariel) @4c: "global" | "per_section_floor"
 #     At 4a: report gate (95/54) and pooled (191/137) SEPARATELY, never as one number.
 #     At 4c: state which population the OPERATING POINT is read off, and if it is not
 #     "gate", say why pooling is legitimate here when §69 says it is not.
-CURVE_MEASURED_ON = None      # TODO(ariel) @4c: "gate" | "all_grouped_cv" | "both_reported"
+CURVE_MEASURED_ON = "gate"   # train and pooled are reported diagnostics, never substitutes
 
 # (3) RETIRED 2026-07-31 -- this pin's premise is gone.
 #     It asked whether a MERGED-None curve sets the bar or only bounds it pending the
@@ -418,30 +458,127 @@ CURVE_MEASURED_ON = None      # TODO(ariel) @4c: "gate" | "all_grouped_cv" | "bo
 #     door that had already shut while the open one was behind it.
 # MERGED_NONE_VERDICT = ...   # do not re-add; see R7_Scope Step 4b
 
-# (4) THE STOPPING RULE. If no threshold gives an acceptable recall/junk trade, what
-#     happens -- in order, committed before the number, so a bad curve does not become
-#     motivated tuning. (Fork C is one of the legitimate outcomes here: "the gate is not
-#     the win, ranking is" is a finding, not a failure.)
-ITERATION_LADDER = None       # TODO(ariel) @4c: list[str]
+# (4) THE STOPPING RULE. No invented minimum junk-rejection percentage: carry the point
+#     that rejects the most known junk while clearing the section veto into the shadow
+#     dry run. The dry run measures operational value; a failed run is localized before
+#     anything is changed, and C is never tuned against that one issue.
+#
+#     ⚠️ THIS IS A PROSE RECORD, NOT A MECHANISM. Nothing executes it, and its presence
+#     in the precondition check below proves only that somebody wrote it down. The steps
+#     it describes are enforced by `section_safe_point()` (step 1), by §78's demote-never-
+#     delete architecture (step 2), and by human discipline (steps 3-4). Do not read a
+#     populated ITERATION_LADDER as evidence the ladder was followed.
+ITERATION_LADDER = (
+    "choose max gate-slice junk rejection subject to every section recall >= the floor",
+    "carry that point into the shadow dry run; below-cutoff rows are demoted, never deleted",
+    "if dry run fails, localize gate vs sectioning vs ranking from swap positions",
+    "do not tune C on the dry-run issue; validate any changed system again",
+)
 
-# (5) THE ESCALATION TRIGGER (R7_Scope Step 4c saturation check). After 4b's corrections,
-#     4c exports a FRESH untouched disagreement set and reports how far the curve moved
-#     from 4a. Few flips + a curve that barely moves = the repair is saturating. Still
-#     flipping at the old rate = the contamination is too broad for targeted repair and
-#     the full 211 need auditing. Both numbers get written BEFORE 4c runs; a threshold
-#     set after seeing the output is a rationalisation, not a bar.
-ESCALATION_TRIGGER = None     # TODO(ariel) @4c: {"flip_rate": float, "curve_shift": float}
+# (5) THE FRESH-SET READINESS TRIGGER. The disagreement set is enriched, so its flip
+#     count estimates no population rate. It answers only whether targeted repair is
+#     still productive. Curve movement is descriptive: repair changes target/denominator,
+#     so it is not a clean escalation statistic.
+#
+#     ⚠️ THE TWO 6s ARE INTENTIONALLY THE SAME NUMBER AND MEAN DIFFERENT ACTIONS.
+#     The threshold does not escalate; the RESPONSE does, on the second occurrence:
+#         first batch at >= 6   -> repair the flips, run ONE more targeted batch
+#         second batch at >= 6  -> targeted sampling has stopped converging; stop
+#                                  sampling and audit the whole remaining positive class
+#     A single number with a state-dependent consequence is the point: a rate that stays
+#     high after one repair round is evidence about the STRATEGY, not about the batch.
+ESCALATION_TRIGGER = {
+    "fresh_batch_size": 30,
+    "proceed_max_consequential_flips": 5,
+    "second_batch_at_or_above": 6,
+    "full_audit_if_second_batch_at_or_above": 6,
+    "new_systematic_failure": "pause_and_investigate",
+    "curve_shift": "report_only",
+}
 
-_PINS = {"RECALL_DIAL": RECALL_DIAL, "CURVE_MEASURED_ON": CURVE_MEASURED_ON,
+# The §75 breadth stratum (R7_Scope Step 4, first stratum). The vocabulary that defines
+# "single-community" is an EDITORIAL judgment -- which religions, nationalities and
+# affinity groups count, and where the breadth line falls -- so it is authored, not
+# inferred here. The mechanism is live (`stratum_report`), the vocabulary is not filled.
+# At STEP="4c" the precondition check REFUSES TO RUN until it is, which is deliberate:
+# §75's un-park trigger has already survived three releases as a comment nobody executed.
+SINGLE_COMMUNITY_PATTERN = None   # TODO(ariel) @4c: regex over title + cleaned description
+
+_PINS = {"RECALL_DIAL": RECALL_DIAL, "PER_SECTION_RECALL_FLOOR": PER_SECTION_RECALL_FLOOR,
+         "CURVE_MEASURED_ON": CURVE_MEASURED_ON,
          "ITERATION_LADDER": ITERATION_LADDER, "ESCALATION_TRIGGER": ESCALATION_TRIGGER}
 
-if STEP == "4c" and any(v is None for v in _PINS.values()):
-    raise SystemExit(
-        "\nEVAL BLOCKED - Step 4c sets the release bar, so the rules are committed first.\n"
-        f"unset: {sorted(k for k, v in _PINS.items() if v is None)}\n"
-        "The plumbing ran; X / y / groups / aux columns are staged and row-aligned.\n"
-        "Pin these before the fit or the bar is just the number wearing a bar's clothes.\n"
-    )
+# Step 4b's answer key is the authoritative record of which events the editor has already
+# judged. Step 4c's fresh set is defined against it, so its absence is a hard stop.
+STEP4B_ANSWER_KEY = HERE / "eval" / "step4b_answer_key.json"
+
+_REQUIRED_ESCALATION_KEYS = {
+    "fresh_batch_size", "proceed_max_consequential_flips", "second_batch_at_or_above",
+    "full_audit_if_second_batch_at_or_above", "new_systematic_failure", "curve_shift",
+}
+
+
+def _verify_4c_preconditions():
+    """Behavioural check, not a None-check.
+
+    The previous version tested `any(v is None ...)`. Once the pins were filled in, that
+    condition became unsatisfiable -- the guard could never fire again and enforced
+    nothing while still reading as rigour. This is §84's own generalizable rule applied
+    to §84's own guard: a pre-commitment is a function of what the run is ALLOWED TO
+    DECIDE. So each check below is something that can actually be false at run time.
+    """
+    problems = []
+    if MODEL_C != 1.0:
+        problems.append(f"MODEL_C is {MODEL_C}; §85 freezes C=1.0 with no R7 tuning")
+    if RECALL_DIAL != "global_with_per_section_veto":
+        problems.append(f"RECALL_DIAL is {RECALL_DIAL!r}; §85 fixes one global threshold "
+                        "vetoed per section, never per-section thresholds")
+    if CURVE_MEASURED_ON != "gate":
+        problems.append(f"CURVE_MEASURED_ON is {CURVE_MEASURED_ON!r}; §85 gives the "
+                        "representative gate slice sole authority over the operating point")
+    if not (isinstance(PER_SECTION_RECALL_FLOOR, float)
+            and 0.0 < PER_SECTION_RECALL_FLOOR < 1.0):
+        problems.append(f"PER_SECTION_RECALL_FLOOR is {PER_SECTION_RECALL_FLOOR!r}; "
+                        "expected a fraction strictly between 0 and 1")
+    missing_keys = _REQUIRED_ESCALATION_KEYS - set(ESCALATION_TRIGGER or {})
+    if missing_keys:
+        problems.append(f"ESCALATION_TRIGGER is missing {sorted(missing_keys)}")
+    if ESCALATION_TRIGGER.get("curve_shift") != "report_only":
+        problems.append("ESCALATION_TRIGGER['curve_shift'] must stay 'report_only' -- §85 "
+                        "makes 4a->4c curve movement descriptive, never a numeric trigger")
+    if not ITERATION_LADDER:
+        problems.append("ITERATION_LADDER is empty (prose record; write it before the run)")
+    if SINGLE_COMMUNITY_PATTERN is None:
+        problems.append(
+            "SINGLE_COMMUNITY_PATTERN is unset -- R7_Scope Step 4 commits Step 4c to "
+            "report gate recall on the single-community stratum (§75's un-park trigger). "
+            "The vocabulary is editorial and must be authored, not inferred here."
+        )
+    if not STEP4B_ANSWER_KEY.exists():
+        problems.append(
+            f"Step 4b answer key not found at {STEP4B_ANSWER_KEY}. Step 4c's fresh set is "
+            "DEFINED as 'excludes every group 4b audited'; without the key it is not fresh."
+        )
+    if problems:
+        raise SystemExit(
+            "\nEVAL BLOCKED - Step 4c sets the release bar, so its preconditions are\n"
+            "verified before the fit rather than asserted afterwards.\n\n"
+            + "".join(f"  * {p}\n" for p in problems)
+            + "\nThe plumbing ran; X / y / groups / aux columns are staged and row-aligned.\n"
+        )
+
+
+if STEP not in _STAMPS:
+    raise SystemExit(f"\nSTEP is {STEP!r}; expected one of {sorted(_STAMPS)}.\n")
+
+if STEP == "4c":
+    _verify_4c_preconditions()
+
+_warning, _step_label = _stamp()
+print("\n" + "!" * 78)
+print(_warning.center(78))
+print(_step_label.center(78))
+print("!" * 78)
 
 if STEP == "4a":
     print("\nSTEP 4a -- diagnostic. Nothing below is pinned: report BOTH the global and"
@@ -454,10 +591,10 @@ from sklearn.linear_model import LogisticRegression      # noqa: E402
 from sklearn.model_selection import GroupKFold, cross_val_predict  # noqa: E402
 from sklearn.metrics import roc_auc_score                # noqa: E402
 
-clf = LogisticRegression(max_iter=2000, C=1.0)
+clf = LogisticRegression(max_iter=2000, C=MODEL_C)   # MODEL_C frozen with the pins above
 cv = GroupKFold(n_splits=5)
 p = cross_val_predict(clf, X, y, cv=cv, groups=groups, method="predict_proba")[:, 1]
-print(f"\nout-of-fold P(include) via grouped 5-fold CV  (arm 1: embeddings only, C=1.0)")
+print(f"\nout-of-fold P(include) via grouped 5-fold CV  (arm 1: embeddings only, C={MODEL_C})")
 
 
 def curve(mask, label):
@@ -497,6 +634,151 @@ curve(slice_ == "gate", "GATE SLICE — the only representative population")
 curve(slice_ == "train", "TRAIN SLICE — old 3-class low-margin stress test")
 curve(slice_ == "walkthrough", "WALKTHROUGH SLICE — criteria-elicitation rows")
 
+# =====================================================================================
+# THE SECTION-SAFE OPERATING POINT (Decision_Log §85). Step 4c only.
+# =====================================================================================
+# The frozen policy is ONE GLOBAL THRESHOLD, vetoed unless EVERY represented section
+# retains at least PER_SECTION_RECALL_FLOOR observed keeper recall. Among the thresholds
+# that survive that veto, take the one rejecting the most known junk.
+#
+# WHY THIS IS A SEARCH AND NOT A TABLE LOOKUP. `curve()` above reports six GLOBAL recall
+# targets. The section-safe point is a different object: junk rejection increases
+# monotonically with the threshold and per-section recall decreases monotonically with
+# it, so the answer is simply the HIGHEST threshold at which no section has yet dropped
+# below the floor -- and that threshold generally is not one of the six display rows.
+# Reading the operating point off that table would have been eyeballing.
+#
+# ⚠️ THIS POINT IS BOUNDARY-HUGGING BY CONSTRUCTION. It is deliberately the highest
+# threshold that still clears the floor, chosen on the same gate slice whose numbers are
+# then reported, so the binding section will sit just above the floor rather than
+# comfortably above it. That is not a bug in the search -- it is what "maximum junk
+# rejection subject to the veto" means -- but it is exactly why the shadow dry run is
+# INDEPENDENT validation rather than confirmation. See §85.
+def section_safe_point(mask, label, floor=None):
+    """Highest threshold at which every represented section still clears `floor`.
+
+    Reads PER_SECTION_RECALL_FLOOR by default; the parameter exists so the search can be
+    unit-tested on synthetic arrays without mutating the frozen pin.
+    """
+    floor = PER_SECTION_RECALL_FLOOR if floor is None else floor
+    pm, ym, sm = p[mask], y[mask], section[mask]
+    n_pos, n_neg = int(ym.sum()), int((1 - ym).sum())
+    if n_pos == 0 or n_neg == 0:
+        raise SystemExit(f"{label}: not scoreable (pos={n_pos}, neg={n_neg})")
+
+    present = [s for s in SECTIONS if ((ym == 1) & (sm == s)).sum()]
+    if not present:
+        raise SystemExit(f"{label}: no section has a positive denominator")
+
+    def recalls(t):
+        return {s: float((pm[(ym == 1) & (sm == s)] >= t).mean()) for s in present}
+
+    # Search ALL unique observed scores, not the six display rows. 0.0 is included so a
+    # "keep everything" fallback always exists and the search cannot come back empty.
+    candidates = sorted(set(np.unique(pm).tolist()) | {0.0})
+    survivors = [t for t in candidates if min(recalls(t).values()) >= floor]
+    if not survivors:
+        raise SystemExit(
+            f"{label}: no threshold clears a {floor:.0%} floor in every section. "
+            "That is a finding, not a crash to work around -- record it and stop."
+        )
+    t = max(survivors)
+    rec = recalls(t)
+    binding = [s for s in present if rec[s] == min(rec.values())]
+
+    # --- assertions: the chosen point is what the contract says it is ------------------
+    assert min(rec.values()) >= floor, "chosen point does not clear the section floor"
+    higher = [c for c in candidates if c > t]
+    assert all(min(recalls(c).values()) < floor for c in higher), \
+        "a higher threshold also clears the floor -- the search is not maximal"
+    for s in present:
+        assert ((ym == 1) & (sm == s)).sum() > 0, f"{s} has an empty denominator"
+    assert len(present) == len(SECTIONS), \
+        f"expected all of {SECTIONS} represented; got {present}"
+
+    lost = int((pm[ym == 1] < t).sum())
+    rejected = int((pm[ym == 0] < t).sum())
+    print(f"\n{'=' * 78}")
+    print(f"SECTION-SAFE OPERATING POINT — {label}".center(78))
+    print(f"{'=' * 78}")
+    print(f"  policy        one global threshold, vetoed below {floor:.0%} recall in ANY section")
+    print(f"  threshold     {t:.4f}")
+    print(f"  keepers       {n_pos} total, {lost} below cutoff (demoted, never deleted — §78)")
+    print(f"  known junk    {n_neg} total, {rejected} rejected ({rejected / n_neg:.1%})")
+    print(f"  global recall {(n_pos - lost) / n_pos:.3f}")
+    print("\n  section                    n   below cutoff   observed recall")
+    for s in present:
+        n_s = int(((ym == 1) & (sm == s)).sum())
+        below = int((pm[(ym == 1) & (sm == s)] < t).sum())
+        flag = "  <-- BINDING" if s in binding else ""
+        print(f"  {s:24} {n_s:4}   {below:12}   {rec[s]:15.3f}{flag}")
+    print(f"\n  binding section(s): {', '.join(binding)}")
+    print("  ⚠️ boundary-hugging by construction: this is the HIGHEST threshold that still")
+    print("     clears the floor on this same slice. The shadow dry run is the independent")
+    print("     check, not a confirmation of this number. (§85)")
+    return {"threshold": float(t), "n_pos": n_pos, "n_neg": n_neg,
+            "keepers_below_cutoff": lost, "junk_rejected": rejected,
+            "junk_rejection_rate": rejected / n_neg,
+            "global_recall": (n_pos - lost) / n_pos,
+            "per_section": {s: {"n": int(((ym == 1) & (sm == s)).sum()),
+                                "below_cutoff": int((pm[(ym == 1) & (sm == s)] < t).sum()),
+                                "recall": rec[s]} for s in present},
+            "binding_sections": binding, "floor": floor}
+
+
+# The two committed stratum diagnostics (R7_Scope Step 4). Both ask the SAME question --
+# does the representation already carry a rule, or does the rule need a hand-crafted
+# feature column? -- and both are reported AT the chosen operating point, which is why
+# they live at 4c rather than 4a.
+def stratum_report(stratum_mask, eval_mask, threshold, label, survive_means):
+    """Score behaviour of one stratum at the chosen threshold, vs the slice base rate."""
+    m = stratum_mask & eval_mask
+    pm, ym = p[m], y[m]
+    if m.sum() == 0:
+        print(f"\n  {label}: 0 rows in this slice — not evaluable.")
+        return None
+    base_pos = p[eval_mask & (y == 1)]
+    out = {"n": int(m.sum()), "n_pos": int(ym.sum()), "n_neg": int((1 - ym).sum()),
+           "mean_p": float(pm.mean()), "survival_rate": float((pm >= threshold).mean()),
+           "slice_positive_survival": float((base_pos >= threshold).mean())}
+    print(f"\n  {label}")
+    print(f"    n={out['n']} ({out['n_pos']} pos / {out['n_neg']} neg)   "
+          f"mean P(include) {out['mean_p']:.3f}")
+    print(f"    survive the cutoff: {out['survival_rate']:.1%}   "
+          f"(slice positives survive at {out['slice_positive_survival']:.1%})")
+    print(f"    read: {survive_means}")
+    return out
+
+
+if STEP == "4c":
+    _op = section_safe_point(slice_ == "gate", "GATE SLICE — the only representative population")
+
+    print(f"\n{'=' * 78}")
+    print("STRATUM DIAGNOSTICS AT THE CHOSEN POINT (R7_Scope Step 4)".center(78))
+    print("=" * 78)
+
+    # §75 breadth. Vocabulary is authored (the precondition check refuses to run without
+    # it); the mechanism is here. Applied to title + cleaned description, the serve text.
+    _text = np.array([
+        f"{raw_by_url.get(r['url'], {}).get('title', '')} "
+        f"{clean(raw_by_url.get(r['url'], {}).get('desc') or '')}"
+        for r in rows_fit], dtype=object)
+    _sc = re.compile(SINGLE_COMMUNITY_PATTERN, re.I)
+    _single_community = np.array([bool(_sc.search(t)) for t in _text])
+    _strata = {"single_community": stratum_report(
+        _single_community, slice_ == "gate", _op["threshold"],
+        "SINGLE-COMMUNITY STRATUM (§75 breadth un-park trigger)",
+        "systematic SURVIVAL => the embedding is not carrying breadth, the flag comes off "
+        "the shelf. Rejected at base rate or better => the flag stays parked, §75 confirmed.")}
+
+    # §76 prof-dev / B2B. Defined by the editor's own reason tick, so no invented
+    # vocabulary. These are gate NEGATIVES: low scores mean the embedding carries the rule.
+    _strata["b2b_profdev"] = stratum_report(
+        is_b2b_reason, slice_ == "gate", _op["threshold"],
+        "PROF-DEV / B2B STRATUM (§76 content-judgment rows)",
+        "systematically LOW P(include) => the embedding carries the rule and no hand-"
+        "crafted flag column is warranted. Survival => a column earns its place.")
+
 # Calibration. P(include) doubles as the interim ranking score (final = P(inc) x P(sec)),
 # so a miscalibrated probability breaks ranking as well as the threshold.
 print("\ncalibration (pooled, decile bins):")
@@ -528,16 +810,81 @@ def _evidence_key(i):
     return " ".join((clean(e.get("desc") or "")).lower().split())
 
 
-def top_disagreements(scores, n=N_DISAGREEMENTS):
-    """Lowest-scoring POSITIVES, one per CV group, with twins verified not assumed."""
+def audited_groups_from_4b():
+    """Every CV group Step 4b already put in front of the editor.
+
+    The answer key is the authoritative record. Groups are collected three ways because
+    a group can appear under any of them: the representative's own `cv_group`, and -- for
+    robustness against an older or hand-edited key that omits `cv_group` -- the group of
+    any row listed in `duplicate_rows` or `variant_rows`. Excluding the representative
+    alone would leave its twins selectable, which is the same "a CV group is not one
+    editorial event" trap that produced the 4-slots-on-2-events bug.
+    """
+    if not STEP4B_ANSWER_KEY.exists():
+        raise SystemExit(
+            f"\nStep 4b answer key not found at {STEP4B_ANSWER_KEY}.\n"
+            "Step 4c's disagreement set is DEFINED as 'excludes every group 4b audited'.\n"
+            "Without the key there is no way to know what is fresh, and a set that merely\n"
+            "looks fresh is worse than none: it would re-serve judged rows and read as\n"
+            "saturation while testing nothing.\n"
+        )
+    key = json.loads(STEP4B_ANSWER_KEY.read_text(encoding="utf-8"))
+    entries = key.get("key") or key.get("rows") or []
+    if not entries:
+        raise SystemExit(f"\n{STEP4B_ANSWER_KEY.name} carries no 'key'/'rows' entries.\n")
+
+    group_of_row = {}
+    for i in range(len(y)):
+        group_of_row.setdefault(rows_fit[i]["row"], int(groups[i]))
+
+    audited, unresolved = set(), []
+    for e in entries:
+        if e.get("cv_group") is not None:
+            audited.add(int(e["cv_group"]))
+        elif e.get("row") in group_of_row:
+            audited.add(group_of_row[e["row"]])
+        else:
+            unresolved.append(e.get("row"))
+        for extra in list(e.get("duplicate_rows") or []) + list(e.get("variant_rows") or []):
+            r = extra.get("row") if isinstance(extra, dict) else extra
+            if r in group_of_row:
+                audited.add(group_of_row[r])
+            else:
+                unresolved.append(r)
+    if unresolved:
+        print(f"  note: {len(unresolved)} audited row(s) are not in the current fit set "
+              f"(expected if 4b/1c moved labels): {unresolved[:10]}")
+    print(f"  Step 4b audited {len(entries)} representatives -> {len(audited)} excluded CV groups")
+    return audited
+
+
+def top_disagreements(scores, n=N_DISAGREEMENTS, exclude_groups=frozenset()):
+    """Lowest-scoring POSITIVES, one per CV group, with twins verified not assumed.
+
+    `exclude_groups` makes Step 4c's set genuinely FRESH. Rows that SURVIVED 4b's
+    re-judgment stay positive and stay low-scoring, so without this they would be
+    re-selected almost wholesale -- and a fresh-set flip count computed on already-judged
+    events flips at near-zero by construction and reads as saturation while testing
+    nothing. Exclusion is by GROUP, never by row.
+    """
+    exclude_groups = {int(g) for g in exclude_groups}
     reps, seen = [], set()
     for i in np.argsort(scores):                    # ascending: most disagreed-with first
-        if y[i] != 1 or int(groups[i]) in seen:
+        if y[i] != 1 or int(groups[i]) in seen or int(groups[i]) in exclude_groups:
             continue
         seen.add(int(groups[i]))
         reps.append(int(i))
         if len(reps) == n:
             break
+
+    if len(reps) < n:
+        raise SystemExit(
+            f"\nOnly {len(reps)} fresh unique CV groups available; {n} required.\n"
+            f"({len(exclude_groups)} groups excluded as already audited.)\n"
+            "The positive class has been exhausted by targeted sampling -- which is itself\n"
+            "the §85 finding that targeted repair is done. Record it; do not shrink n.\n"
+        )
+    assert not (set(seen) & exclude_groups), "fresh set overlaps Step 4b's audited groups"
 
     by_group = collections.defaultdict(list)        # pass 2: FULL scan, no early stop
     for i in range(len(y)):
@@ -557,50 +904,83 @@ def top_disagreements(scores, n=N_DISAGREEMENTS):
     return out
 
 
-picked = top_disagreements(p)
-disagreements = [{
-    "row": rows_fit[e["idx"]]["row"],
-    "p_include": round(float(p[e["idx"]]), 4),
-    "section": str(section[e["idx"]]),
-    "slice": str(slice_[e["idx"]]),
-    "cv_group": e["group"],
-    # Same group AND byte-identical serve text -> one ruling covers all of these.
-    "duplicate_rows": e["twins"],
-    # Same group, DIFFERENT text -> the editor must judge these separately. Do not
-    # apply the representative's ruling to them.
-    "variant_rows": e["variants"],
-    "title": raw_by_url.get(rows_fit[e["idx"]]["url"], {}).get("title", ""),
-    "url": rows_fit[e["idx"]]["url"],
-} for e in picked]
+# -------------------------------------------------------------------------------------
+# EXPORTS. Behind a __main__ guard, and on STEP-SPECIFIC paths.
+#
+# Two separate defects this closes:
+#   * step4a_stability.py and make_4b_sheet.py both `import gate_step4a`, and the module
+#     runs top-to-bottom on import (deliberately -- one loader, one routing contract, no
+#     drift). With the write at module level, merely importing the module rewrote the
+#     export. Reading a file must never be a side effect of importing the thing that
+#     produced it.
+#   * A single fixed path meant a 4c run would overwrite 4a's export -- destroying the
+#     record of WHICH 30 events went to the editor, which is the very thing 4c's fresh
+#     set is defined against. Provenance for a run cannot live in a file that the next
+#     run silently replaces.
+# -------------------------------------------------------------------------------------
+EXPORTS = {"4a": HERE / "eval" / "step4a_disagreements.json",
+           "4c": HERE / "eval" / "step4c_disagreements.json"}
 
-_collapsed = sum(len(e["twins"]) for e in picked)
-_variants = sum(len(e["variants"]) for e in picked)
-OUT = HERE / "eval" / "step4a_disagreements.json"
-OUT.parent.mkdir(exist_ok=True)
-OUT.write_text(json.dumps(stamped({
-    "generated": CURRENT_PULL.name,
-    "arm": "embeddings only, C=1.0, grouped 5-fold CV",
-    "n_fit": int(len(y)),
-    "deduplicated_by": "cv_group (normalised title), VERIFIED against cleaned serve text. "
-                       "duplicate_rows = same group AND identical text, one ruling covers "
-                       "all. variant_rows = same group, DIFFERENT text -- judge separately, "
-                       "do not inherit the representative's ruling.",
-    "note": "Editor called these includable; the model scores them lowest. Step 4b asks "
-            "the RULE question ('is there a permanent reason you would never run this?'), "
-            "never the preference question. Enriched for suspected errors -- it repairs, "
-            "it does not estimate contamination.",
-    "rows": disagreements,
-}), indent=2), encoding="utf-8")
-print(f"\nexported {len(disagreements)} unique-group disagreement positives -> {OUT.relative_to(HERE)}")
-print(f"  {_collapsed} duplicate row(s) collapsed (same group, identical serve text).")
-print(f"  {_variants} variant row(s) share a group but NOT the text -> judged separately.")
-print("  (Step 4b's sitting list. Enriched for errors: repairs, does not estimate.)")
-#
-# TODO(ariel): the breadth diagnostic (§75 un-park trigger, R7_Scope Step 4). Report gate
-#     recall on the single-community stratum. If those events systematically SURVIVE, the
-#     embedding is not carrying breadth and the flag comes off the shelf; if they are
-#     rejected at base rate or better, the flag stays parked and §75 is confirmed.
-#     Either result is a finding. This is the check, not a formality.
-#
+
+def export_disagreements():
+    """Build and write this STEP's disagreement set. Never called on import."""
+    # Step 4a is the FIRST pass: nothing has been audited, so nothing is excluded.
+    # Step 4c must exclude every group 4b already judged, or the set is not fresh.
+    exclude = audited_groups_from_4b() if STEP == "4c" else frozenset()
+    picked = top_disagreements(p, exclude_groups=exclude)
+    assert not ({e["group"] for e in picked} & set(exclude)), \
+        "Step 4c selected a group Step 4b already audited"
+
+    disagreements = [{
+        "row": rows_fit[e["idx"]]["row"],
+        "p_include": round(float(p[e["idx"]]), 4),
+        "section": str(section[e["idx"]]),
+        "slice": str(slice_[e["idx"]]),
+        "cv_group": e["group"],
+        # Same group AND byte-identical serve text -> one ruling covers all of these.
+        "duplicate_rows": e["twins"],
+        # Same group, DIFFERENT text -> the editor must judge these separately. Do not
+        # apply the representative's ruling to them.
+        "variant_rows": e["variants"],
+        "title": raw_by_url.get(rows_fit[e["idx"]]["url"], {}).get("title", ""),
+        "url": rows_fit[e["idx"]]["url"],
+    } for e in picked]
+
+    collapsed = sum(len(e["twins"]) for e in picked)
+    variants = sum(len(e["variants"]) for e in picked)
+    out = EXPORTS[STEP]
+    out.parent.mkdir(exist_ok=True)
+    out.write_text(json.dumps(stamped({
+        "generated": CURRENT_PULL.name,
+        "arm": f"embeddings only, C={MODEL_C}, grouped 5-fold CV",
+        "n_fit": int(len(y)),
+        "excluded_audited_groups": sorted(int(g) for g in exclude),
+        "deduplicated_by": "cv_group (normalised title), VERIFIED against cleaned serve text. "
+                           "duplicate_rows = same group AND identical text, one ruling covers "
+                           "all. variant_rows = same group, DIFFERENT text -- judge separately, "
+                           "do not inherit the representative's ruling.",
+        "note": "Editor called these includable; the model scores them lowest. The sitting "
+                "asks the RULE question ('is there a permanent reason you would never run "
+                "this?'), never the preference question. Enriched for suspected errors -- "
+                "it repairs, it does not estimate contamination.",
+        "rows": disagreements,
+    }), indent=2), encoding="utf-8")
+    print(f"\nexported {len(disagreements)} unique-group disagreement positives -> "
+          f"{out.relative_to(HERE)}")
+    if exclude:
+        print(f"  {len(exclude)} CV group(s) excluded as already audited in Step 4b "
+              "-> this set is FRESH.")
+    print(f"  {collapsed} duplicate row(s) collapsed (same group, identical serve text).")
+    print(f"  {variants} variant row(s) share a group but NOT the text -> judged separately.")
+    print("  (Enriched for errors: it repairs, it does not estimate.)")
+    return disagreements
+
+
+if __name__ == "__main__":
+    export_disagreements()
+
 # TODO(ariel): write the chosen operating point into R7_Scope.md as the bar, WITH its
 #     provenance tag. Until that is written, the doc names no recall target.
+#     (The §75 breadth diagnostic that used to sit here is now executable -- see
+#     `stratum_report` above. It needs SINGLE_COMMUNITY_PATTERN, and STEP="4c" refuses
+#     to run until that is authored.)

@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-08-01
+- Pre-registered and implemented a guarded final evaluation contract for the reject gate, including representative-slice selection, section-level protection, and provenance-safe exports.
+- Completed a blind 30-event editorial audit of the model’s highest-disagreement positive examples.
+
 ## 2026-07-31
 - Tested whether the shortlist of items flagged for human review is a real finding or an artifact of one arbitrary model setting, by rebuilding it eight different ways before booking any of the client's time. The core of the list held; the result is recorded as diagnostic, not as a quality bar.
 - Made the two implementations of the routing rule share a single test fixture rather than two copied lists, so the pair can no longer drift apart unnoticed.

@@ -45,7 +45,7 @@ Massive 2-day cards, comics & collectibles show with live signings, giveaways an
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. card expo comics are popular for families.
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -57,7 +57,7 @@ Join us in person for a laid-back workshop on handling grief and loss together.
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): NEVER. TOO NEGATIVE
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -69,7 +69,7 @@ _(no description in the pool — title only)_
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. people like it. it drives clicks. bc it was local, people like it
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -81,7 +81,7 @@ AllEvents Categories: fitness, Kids, Workshops AllEvents Organizer: York Region 
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. moms like it b/c it might help kids get their volunteer hours in
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -93,7 +93,7 @@ Join us for an engaging seminar designed to help you confidently transition into
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. it's relevant and money related for older people, there is interest for this.
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -105,7 +105,7 @@ This session will provide an overview of the downsizing process and provide a pr
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): NEVER. too niche.
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -117,7 +117,7 @@ Join acclaimed novelist, poet, and punk icon Richard Hell as he discusses his no
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. for seniors could be good, would only be for a very slow week
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -129,7 +129,7 @@ Audience: Adult, Older Adult Take Charge of Your Financial Fitness! This 60‑mi
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. bc financial literature can be relavant for seniors
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -141,7 +141,7 @@ Make it, take it and lift it like a champion. Your LEGO® FIFA mini trophy await
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. one of the best performing events, everyone loves legos and fifa
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -153,7 +153,7 @@ Join us for an exciting Business Networking Event in Vaughan, just north of Toro
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): NEVER. not entertainment.
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -165,7 +165,7 @@ Take action with Toronto and Region Conservation Authority and earn high school 
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. if it offers highschool volunteering hours thne it's good
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -177,7 +177,7 @@ When a distant relative from Kerala, India, arrives in Canada with plans for a g
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. people like film
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -189,7 +189,7 @@ Don’t just Spring Clean… Spring Clear!
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): NEVER. newsletter doens't do self help that muhc
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -201,7 +201,7 @@ Perfect for photographers who want reliable, repeatable results when shooting th
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. novelty event
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -213,7 +213,7 @@ Join us for International Yoga Day Fusion Flow with lululemon Ambassador Christi
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. yoga is done a lot, lululemon draws attention for consumers bc of hte brand
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -225,7 +225,7 @@ _(no description in the pool — title only)_
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. people like lemonade, it's a novelty event. wouldn't be done every week
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -237,7 +237,7 @@ AllEvents Categories: sports, workshops, meetups AllEvents Organizer: Alex Ngai 
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): not sure wihtout link. KEEP. racing in go kart type of thing. novelty event
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -249,7 +249,7 @@ Sunday Morning Sweat Series I Pilates Edition
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. poeple like yoga
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -261,7 +261,7 @@ Get ready to dance the night away at SECRET SATURDAYS. Each & Every Saturday vis
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): needed link. NEVER. seems more like a club scene, different age group than demographic.
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -273,7 +273,7 @@ Start your engines! The City of Markham is off to the races as the 2026 Ontario 
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. gathering people in unionville town centre!!
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -285,7 +285,7 @@ _(no description in the pool — title only)_
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. seniors like these sorts of events (they're cheap)
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -297,7 +297,7 @@ Audience: Adult, Older Adult Join us for an engaging conversation with author Sa
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): NEVER. it's a bit of a heavy topic potentially, not for newsletter audience
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -309,7 +309,7 @@ Elevate your brand at The Prelude.
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): needed link. NEVER, people don't like wedding, too niche.
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -321,7 +321,7 @@ Catch some fresh ideas and inspiring talks from Toronto’s brightest student vo
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): NEVER. this isn't entertainment, too niche.
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -333,7 +333,7 @@ Welcome to DLDA's 54th annual recital! Join us Thursday for an exciting evening 
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): needed link. KEEP, dance recital, seniors and families like these sorts of events.
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -345,7 +345,7 @@ Black Coffee Headlines a New Era of Event Experiences in the Port Lands of Toron
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): needed link. NEVER. not right fit for audience
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -357,7 +357,7 @@ Come and join award-winning author Tom Locke in a journey down memory lane, with
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. for seniors, music event and entertainment.
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -369,7 +369,7 @@ AllEvents Categories: art, theatre AllEvents Organizer: Karpov Ballet Academy Al
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): KEEP. entertainmnet could be good for old poeple
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -381,7 +381,7 @@ Brains and Barstools brings captivating professors to Toronto bars for vivid lec
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): NEVER. too niche
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
@@ -393,7 +393,7 @@ _(no description in the pool — title only)_
 
 **KEEP / NEVER / UNCLEAR:**
 
-**Reason (required — his words, not a paraphrase):**
+**Reason (required — his words, not a paraphrase): NEVER. too niche
 
 **Wanted the link? (y/n) — text-only answer first, then what the link changed:**
 
