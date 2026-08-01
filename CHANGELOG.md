@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-08-01
+- Added reconciliation and routing-state safeguards so final gate evaluation cannot silently run against unapplied editorial corrections.
+- Preserved the completed audit's raw judgments while turning its unresolved corrections into an explicit, human-owned reconciliation checklist.
 - Pre-registered and implemented a guarded final evaluation contract for the reject gate, including representative-slice selection, section-level protection, and provenance-safe exports.
 - Completed a blind 30-event editorial audit of the model’s highest-disagreement positive examples.
 

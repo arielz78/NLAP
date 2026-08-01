@@ -64,6 +64,7 @@ import sys
 sys.stdout.reconfigure(encoding="utf-8")   # Windows console is cp1252 -> chokes on em-dashes
 import json
 import re
+import hashlib
 import collections
 import urllib.parse as urlparse
 from pathlib import Path
@@ -257,19 +258,42 @@ print("\n§77 routing over the {} embedded rows:".format(len(rows)))
 for dest in ("positive", "negative", "withheld", "stage0", "excluded", "unlabelled"):
     print(f"  {dest:12} {routed.get(dest, 0):4}")
 
-# The pre-relabel baseline (R7_Scope Step 1b). Step 1c WILL move these -- that is the
-# point of it -- so this assertion is a tripwire on silent drift, not a permanent truth.
-# When 1c lands, update these numbers deliberately and say so in the Execution_Log.
-EXPECTED_PRE_RELABEL = {"positive": 191, "negative": 137, "withheld": 64,
-                        "stage0": 16, "excluded": 8, "unlabelled": 0}
-_actual = {k: routed.get(k, 0) for k in EXPECTED_PRE_RELABEL}
-if _actual != EXPECTED_PRE_RELABEL:
+# --------------------------------------------------------------------------------------
+# TWO ROUTING-COUNT CONSTANTS. They look alike and do opposite jobs; conflating them was
+# the defect. One is a FIXED HISTORICAL FACT, the other is a MAINTAINED EXPECTATION.
+#
+#   PRE_REPAIR_ROUTING_COUNTS   Immutable. What the §77 contract produced on 2026-07-31,
+#                               BEFORE Step 4b's 11 NEVER corrections and Step 1c's
+#                               relabel. NEVER EDIT THIS. Step 4c compares against it to
+#                               prove the corrections actually landed -- and a baseline
+#                               that gets "updated" can no longer prove anything, because
+#                               editing it to match reality is exactly the mistake the
+#                               guard is watching for.
+#
+#   EXPECTED_CURRENT_ROUTING_COUNTS  Deliberately maintained. The tripwire against SILENT
+#                               drift: any label that moves without somebody deciding to
+#                               move it. Updated by hand, on purpose, after Step 4b and
+#                               Step 1c land, with the change recorded in Execution_Log.
+#
+# They are equal today only because no correction has been applied yet. The moment 4b's
+# writes land they must diverge, and that divergence is the evidence Step 4c requires.
+# --------------------------------------------------------------------------------------
+PRE_REPAIR_ROUTING_COUNTS = {"positive": 191, "negative": 137, "withheld": 64,
+                             "stage0": 16, "excluded": 8, "unlabelled": 0}
+
+EXPECTED_CURRENT_ROUTING_COUNTS = {"positive": 191, "negative": 137, "withheld": 64,
+                                   "stage0": 16, "excluded": 8, "unlabelled": 0}
+
+_actual = {k: routed.get(k, 0) for k in EXPECTED_CURRENT_ROUTING_COUNTS}
+if _actual != EXPECTED_CURRENT_ROUTING_COUNTS:
     raise SystemExit(
         "\nROUTING COUNTS MOVED -- refusing to fit on a target nobody has looked at.\n"
-        f"  expected {EXPECTED_PRE_RELABEL}\n"
+        f"  expected {EXPECTED_CURRENT_ROUTING_COUNTS}\n"
         f"  actual   {_actual}\n"
-        "If this is Step 1c landing, that is expected: update EXPECTED_PRE_RELABEL and\n"
-        "record the change. If it is not, a label moved that nobody decided to move.\n"
+        "If this is Step 4b's corrections or Step 1c landing, that is expected: update\n"
+        "EXPECTED_CURRENT_ROUTING_COUNTS deliberately and record the change (#121).\n"
+        "Do NOT touch PRE_REPAIR_ROUTING_COUNTS -- Step 4c needs it fixed to detect that\n"
+        "the corrections were applied at all.\n"
     )
 
 # Only positives and negatives are fitted. The 88 others are not 'missing data' -- they
@@ -512,6 +536,191 @@ _PINS = {"RECALL_DIAL": RECALL_DIAL, "PER_SECTION_RECALL_FLOOR": PER_SECTION_REC
 # judged. Step 4c's fresh set is defined against it, so its absence is a hard stop.
 STEP4B_ANSWER_KEY = HERE / "eval" / "step4b_answer_key.json"
 
+# THE RECONCILIATION ARTIFACT (#121). The answer key existing proves the SITTING happened.
+# It proves nothing about whether the 11 NEVER corrections were mapped, written back to
+# Airtable, and reflected in the labels this script loads -- and those are different
+# events, separated by an editor mapping pass and a write.
+#
+# Why this guard exists: with SINGLE_COMMUNITY_PATTERN set (i.e. the moment #120 closes),
+# every other precondition already passes TODAY, on unreconciled labels, and the routing
+# tripwire does not fire either because EXPECTED_CURRENT_ROUTING_COUNTS still matches the
+# pre-correction state exactly. #120 is regex archaeology with no dependency on #121, so
+# it can easily land first. Without this check the only thing between an unreconciled run
+# and a "POST-AUDIT PRE-REGISTERED EVALUATION"-stamped operating point is remembering the
+# order -- which is the same class of failure as a stamp that says what it is not.
+STEP4B_RECONCILIATION = HERE / "eval" / "step4b_reconciliation.json"
+
+# Schema the artifact must satisfy. Presence is not enough: a hand-made stub that merely
+# unblocks the guard would reproduce the defect this closes, so the fields that require
+# the work to have ACTUALLY HAPPENED (the write-back row ids, the post-write counts, the
+# source hashes) are validated for shape and non-emptiness rather than merely for
+# existence. Written by the reconciliation step, never by this script.
+_RECON_REQUIRED = {
+    "sheet_path": str,           # which blind sheet was reconciled
+    "sheet_sha256": str,         # ...and its exact content, so a later edit is detectable
+    "answer_key_path": str,      # which sealed key it was reconciled against
+    "answer_key_sha256": str,
+    "audited_cv_groups": list,   # all 30, must match the key
+    "verdicts": dict,            # row/position -> final KEEP | NEVER | UNCLEAR, all 30
+    "applied_airtable_row_ids": list,   # the write-back actually performed
+    "post_write_routing_counts": dict,  # §77 destinations AFTER the write
+    "reconciled_at": str,        # ISO timestamp
+}
+
+
+# What the completed Step 4b sitting actually produced. These are FACTS about the
+# sitting, not targets: 30 rows, 19 KEEP, 11 NEVER, 0 UNCLEAR. An artifact that disagrees
+# is describing some other sitting.
+STEP4B_SHEET = HERE.parent.parent / "docs" / "r7" / "R7_4b_PositiveClass_Blind_Sheet.md"
+STEP4B_VERDICT_TOTALS = {"KEEP": 19, "NEVER": 11, "UNCLEAR": 0}
+_VALID_VERDICTS = set(STEP4B_VERDICT_TOTALS)
+
+
+def _verify_reconciliation_artifact():
+    """Validate #121's artifact. Returns a list of problems (empty == good).
+
+    Every check here is something a HAND-WRITTEN STUB would fail. That is the design
+    goal: presence of the file must not be enough, or the guard becomes a formality that
+    the person in a hurry satisfies with `{}` and a timestamp.
+    """
+    if not STEP4B_RECONCILIATION.exists():
+        return [
+            f"Step 4b reconciliation artifact not found at {STEP4B_RECONCILIATION}.\n"
+            "      The sitting is complete (19 KEEP / 11 NEVER / 0 unresolved) but its\n"
+            "      corrections have NOT been mapped to permanent reasons or written to\n"
+            "      Airtable. Step 4c must not price a bar on labels the audit already\n"
+            "      found wrong. Generate this artifact from the real reconciliation (#121)."
+        ]
+    try:
+        art = json.loads(STEP4B_RECONCILIATION.read_text(encoding="utf-8"))
+    except (ValueError, OSError) as exc:
+        return [f"{STEP4B_RECONCILIATION.name} is unreadable: {exc}"]
+    if not isinstance(art, dict):
+        return [f"{STEP4B_RECONCILIATION.name} must be a JSON object"]
+
+    problems = []
+    for field, kind in _RECON_REQUIRED.items():
+        if field not in art:
+            problems.append(f"reconciliation artifact is missing '{field}'")
+        elif not isinstance(art[field], kind):
+            problems.append(f"reconciliation '{field}' should be {kind.__name__}, "
+                            f"got {type(art[field]).__name__}")
+        elif not art[field]:
+            problems.append(f"reconciliation '{field}' is empty -- an empty value here "
+                            "means the step it records did not happen")
+    if problems:
+        return problems      # shape is wrong; cross-checks below would be noise
+
+    # --- source identity: the artifact must describe THESE artifacts, not some others ---
+    # Existence is checked BEFORE reading. A missing key used to skip its own hash check
+    # silently, which meant the strongest identity check was the one that could vanish.
+    if not STEP4B_ANSWER_KEY.exists():
+        problems.append(f"answer key {STEP4B_ANSWER_KEY.name} is missing, so the "
+                        "reconciliation cannot be verified against the sitting it claims")
+        return problems
+    key_sha = hashlib.sha256(STEP4B_ANSWER_KEY.read_bytes()).hexdigest()
+    if art["answer_key_sha256"] != key_sha:
+        problems.append("reconciliation was performed against a DIFFERENT answer key "
+                        f"({art['answer_key_sha256'][:12]}... vs {key_sha[:12]}...)")
+
+    if not STEP4B_SHEET.exists():
+        problems.append(f"blind sheet {STEP4B_SHEET.name} is missing; its hash cannot "
+                        "be verified")
+    else:
+        sheet_sha = hashlib.sha256(STEP4B_SHEET.read_bytes()).hexdigest()
+        if art["sheet_sha256"] != sheet_sha:
+            problems.append("reconciliation records a DIFFERENT blind sheet "
+                            f"({art['sheet_sha256'][:12]}... vs {sheet_sha[:12]}...). "
+                            "The sheet changed after reconciliation, or the wrong file "
+                            "was hashed.")
+
+    # --- the audited set must be EXACTLY the key's groups, not merely the right size ---
+    key_entries = json.loads(STEP4B_ANSWER_KEY.read_text(encoding="utf-8")).get("key", [])
+    want_groups = {int(e["cv_group"]) for e in key_entries if e.get("cv_group") is not None}
+    try:
+        got_groups = [int(g) for g in art["audited_cv_groups"]]
+    except (TypeError, ValueError):
+        got_groups = None
+        problems.append("reconciliation 'audited_cv_groups' contains non-integer entries")
+    if got_groups is not None:
+        if len(got_groups) != len(set(got_groups)):
+            dupes = sorted({g for g in got_groups if got_groups.count(g) > 1})
+            problems.append(f"reconciliation 'audited_cv_groups' has duplicates: {dupes}")
+        if set(got_groups) != want_groups:
+            missing = sorted(want_groups - set(got_groups))
+            extra = sorted(set(got_groups) - want_groups)
+            problems.append(
+                "reconciliation 'audited_cv_groups' is not the answer key's set"
+                + (f"; missing {missing}" if missing else "")
+                + (f"; unexpected {extra}" if extra else "")
+            )
+
+    # --- verdicts: valid tokens, right count, right totals -----------------------------
+    verdicts = art["verdicts"]
+    bad_tokens = sorted({v for v in verdicts.values()
+                         if not isinstance(v, str) or v.upper() not in _VALID_VERDICTS},
+                        key=str)
+    if bad_tokens:
+        problems.append(f"reconciliation 'verdicts' has invalid token(s): {bad_tokens[:5]}; "
+                        f"expected one of {sorted(_VALID_VERDICTS)}")
+    else:
+        if len(verdicts) != len(key_entries):
+            problems.append(f"reconciliation carries {len(verdicts)} verdicts; "
+                            f"the answer key has {len(key_entries)} rows")
+        tally = collections.Counter(v.upper() for v in verdicts.values())
+        got = {k: tally.get(k, 0) for k in STEP4B_VERDICT_TOTALS}
+        if got != STEP4B_VERDICT_TOTALS:
+            problems.append(f"reconciliation verdict totals are {got}; the completed "
+                            f"sitting was {STEP4B_VERDICT_TOTALS}")
+
+    # --- the write-back: one id per NEVER correction, unique and non-blank -------------
+    n_never = STEP4B_VERDICT_TOTALS["NEVER"]
+    ids = art["applied_airtable_row_ids"]
+    clean_ids = [i for i in ids if isinstance(i, str) and i.strip()]
+    if len(clean_ids) != len(ids):
+        problems.append("reconciliation 'applied_airtable_row_ids' contains blank or "
+                        "non-string ids")
+    elif len(set(clean_ids)) != len(clean_ids):
+        problems.append("reconciliation 'applied_airtable_row_ids' contains duplicates")
+    elif len(clean_ids) != n_never:
+        problems.append(f"reconciliation applied {len(clean_ids)} Airtable row id(s); the "
+                        f"sitting produced {n_never} NEVER corrections. A shorter list "
+                        "means the write-back is incomplete.")
+
+    # --- post-write routing counts -----------------------------------------------------
+    # NOTE: these are NOT required to equal the live counts this script just computed.
+    # Step 1c relabels `outcompeted` rows AFTER 4b's write, so the live counts move again
+    # and legitimately differ from what the artifact recorded at write time. What IS
+    # required is that they differ from the immutable pre-repair baseline -- otherwise the
+    # artifact is claiming a write that changed nothing.
+    counts = art["post_write_routing_counts"]
+    missing_dest = sorted(set(PRE_REPAIR_ROUTING_COUNTS) - set(counts))
+    extra_dest = sorted(set(counts) - set(PRE_REPAIR_ROUTING_COUNTS))
+    if missing_dest or extra_dest:
+        problems.append(
+            "reconciliation 'post_write_routing_counts' keys are wrong"
+            + (f"; missing {missing_dest}" if missing_dest else "")
+            + (f"; unexpected {extra_dest}" if extra_dest else ""))
+    elif any(not isinstance(v, int) or isinstance(v, bool) or v < 0
+             for v in counts.values()):
+        problems.append("reconciliation 'post_write_routing_counts' must be non-negative "
+                        f"integers; got {counts}")
+    else:
+        want_total = sum(PRE_REPAIR_ROUTING_COUNTS.values())
+        if sum(counts.values()) != want_total:
+            problems.append(f"reconciliation 'post_write_routing_counts' totals "
+                            f"{sum(counts.values())}; the embedded deck has {want_total} "
+                            "rows and routing moves rows between destinations, never "
+                            "creates or destroys them")
+        elif counts == PRE_REPAIR_ROUTING_COUNTS:
+            problems.append(
+                "reconciliation 'post_write_routing_counts' are IDENTICAL to the "
+                "pre-repair baseline. The sitting found 11 NEVER rows among current "
+                "gate-positives; applying them must move these counts. This artifact "
+                "records a write that changed nothing.")
+    return problems
+
+
 _REQUIRED_ESCALATION_KEYS = {
     "fresh_batch_size", "proceed_max_consequential_flips", "second_batch_at_or_above",
     "full_audit_if_second_batch_at_or_above", "new_systematic_failure", "curve_shift",
@@ -558,6 +767,27 @@ def _verify_4c_preconditions():
         problems.append(
             f"Step 4b answer key not found at {STEP4B_ANSWER_KEY}. Step 4c's fresh set is "
             "DEFINED as 'excludes every group 4b audited'; without the key it is not fresh."
+        )
+    problems.extend(_verify_reconciliation_artifact())
+
+    # BELT AND BRACES on the same failure. The artifact above records that a write
+    # happened; this checks the labels THIS SCRIPT JUST LOADED actually moved.
+    #
+    # Compared against the IMMUTABLE PRE_REPAIR_ROUTING_COUNTS, deliberately -- not
+    # against EXPECTED_CURRENT_ROUTING_COUNTS. Comparing against the maintained tripwire
+    # would make this guard vacuous: that constant is edited to match reality whenever
+    # labels move, so `_actual == EXPECTED_CURRENT` is true on every correct run and
+    # proves nothing. Only a fixed historical baseline can evidence that the corrections
+    # landed at all.
+    if _actual == PRE_REPAIR_ROUTING_COUNTS:
+        problems.append(
+            "routing counts still equal the immutable PRE-REPAIR baseline "
+            f"({PRE_REPAIR_ROUTING_COUNTS}).\n"
+            "      Step 4b found 11 NEVER rows among current gate-positives; applying them\n"
+            "      must move these counts. Unchanged counts at Step 4c mean the corrections\n"
+            "      are unapplied. Update EXPECTED_CURRENT_ROUTING_COUNTS after the labels\n"
+            "      move, deliberately, and record the change (#121). Never edit\n"
+            "      PRE_REPAIR_ROUTING_COUNTS -- this check depends on it staying fixed."
         )
     if problems:
         raise SystemExit(
@@ -673,15 +903,20 @@ def section_safe_point(mask, label, floor=None):
     def recalls(t):
         return {s: float((pm[(ym == 1) & (sm == s)] >= t).mean()) for s in present}
 
-    # Search ALL unique observed scores, not the six display rows. 0.0 is included so a
-    # "keep everything" fallback always exists and the search cannot come back empty.
+    # Search ALL unique observed scores, not the six display rows.
+    #
+    # WHY THERE IS NO "no threshold clears the floor" BRANCH. 0.0 is included as a
+    # candidate, and every score satisfies `p >= 0.0`, so recall is 1.0 in every section
+    # there and `survivors` can never be empty for any floor <= 1.0. A recall-safe
+    # threshold ALWAYS exists; what can fail to exist is a recall-safe threshold that
+    # rejects any junk. An earlier version raised SystemExit on an empty `survivors`,
+    # which was unreachable code reading as rigour -- the same defect class as a pin that
+    # can never fire. The real degenerate case is handled below, as a WARNING not a crash:
+    # §85 sets no minimum junk-rejection percentage, so a section-safe point that rejects
+    # zero junk is valid evidence and still advances to the shadow dry run.
     candidates = sorted(set(np.unique(pm).tolist()) | {0.0})
     survivors = [t for t in candidates if min(recalls(t).values()) >= floor]
-    if not survivors:
-        raise SystemExit(
-            f"{label}: no threshold clears a {floor:.0%} floor in every section. "
-            "That is a finding, not a crash to work around -- record it and stop."
-        )
+    assert survivors, "unreachable: t=0.0 gives recall 1.0 in every section"
     t = max(survivors)
     rec = recalls(t)
     binding = [s for s in present if rec[s] == min(rec.values())]
@@ -716,6 +951,22 @@ def section_safe_point(mask, label, floor=None):
     print("  ⚠️ boundary-hugging by construction: this is the HIGHEST threshold that still")
     print("     clears the floor on this same slice. The shadow dry run is the independent")
     print("     check, not a confirmation of this number. (§85)")
+
+    # THE DEGENERATE CASE, reported not enforced. §85 sets no minimum junk-rejection
+    # percentage on purpose, so this does NOT veto the point and does NOT crash: the
+    # point is preserved and the failure ladder still carries it to the shadow dry run,
+    # where swaps and editor time price operational value. What it does is refuse to let
+    # "an operating point was selected" read as "the gate filters something".
+    if rejected == 0:
+        print()
+        print("  " + "!" * 74)
+        print("  ⚠️ DEGENERATE OPERATING POINT — the section veto binds before the gate")
+        print("     rejects ANY known junk. This point provides no offline filtering value.")
+        print("     It is still a valid §85 outcome and still advances to the shadow dry")
+        print("     run (P(include) remains a ranking input; §78 demotes, never deletes).")
+        print("     Read it as evidence about Fork C: if the gate cannot remove junk within")
+        print("     the section floor, the load is on ranking, not filtering.")
+        print("  " + "!" * 74)
     return {"threshold": float(t), "n_pos": n_pos, "n_neg": n_neg,
             "keepers_below_cutoff": lost, "junk_rejected": rejected,
             "junk_rejection_rate": rejected / n_neg,

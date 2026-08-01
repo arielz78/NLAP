@@ -211,7 +211,12 @@ W6 delivers Steps 3–4 (the gate) and hands R6 a sectioned, gated pool. R6 owns
 
 **Done when:** the fresh-set readiness rule permits progression, the corrected gate/train/pooled curves and calibration read are reported, both stratum diagnostics are reported at the chosen point, the best gate-slice point satisfying the ≥90%-per-section veto is recorded in whole-event counts, and that point is handed to Step 5.
 
-**Implementation state (2026-08-01):** the rules above are implemented and guarded in `models/sectioning/gate_step4a.py` — `section_safe_point()` searches all unique thresholds (not the six display rows), the fresh set excludes every CV group Step 4b audited, exports are step-specific so 4c cannot overwrite 4a, and `STEP = "4c"` verifies its preconditions behaviourally before fitting. **Step 4c has not been run.** It still waits on Step 4b's sitting, Step 1c's relabel, and the authored `SINGLE_COMMUNITY_PATTERN`.
+**Implementation state (2026-08-01):** the rules above are implemented and guarded in `models/sectioning/gate_step4a.py` — `section_safe_point()` searches all unique thresholds (not the six display rows), the fresh set excludes every CV group Step 4b audited, exports are step-specific so 4c cannot overwrite 4a, and `STEP = "4c"` verifies its preconditions behaviourally before fitting. **Step 4c has not been run**, and four things stand between it and a run:
+
+- **Step 4b's sitting is COMPLETE** (19 KEEP / 11 NEVER / 0 unresolved) — but its **reconciliation and label writes are pending under #121**. All 11 NEVER rows still need a §77 permanent reason chosen (none of them used that vocabulary), and none has been written to Airtable.
+- **Step 1c** — the 38 model-relevant `outcompeted` rows — is still open, also under #121.
+- **`SINGLE_COMMUNITY_PATTERN`** is unset pending #120's recovery of the original §75 regex provenance.
+- The gate refuses to run without `eval/step4b_reconciliation.json`, and additionally refuses if the §77 routing counts still equal the pre-repair baseline — belt-and-braces evidence that the 11 NEVER corrections were actually applied rather than merely recorded.
 
 ### Step 5 — Validate: the one-week dry run (the real go/no-go)
 
@@ -288,7 +293,7 @@ W6 is done when:
 **Missingness (measured, post-R5):** description dropout ~47%, but true signal-dead (no desc AND no cats) only ~15% — concentrated in title-only single-venue sources (PinotsPalette 100%, RichmondHill 95%, Facebook 81%). ⚠️ **The ~47% describes what we FETCH, not what EXISTS** (measured pre-#108). On the label deck the same gap is 42.3% → **14.8%** once AllEvents detail pages are read. Still true of the corpus as it stands today; **wrong the moment R1 fetches descriptions**, which is open decision #1. Re-measure then rather than editing this line now. Include description *with* dropout so the model survives the ~half of production that lacks it.
 
 **Blind-pass catches (in scope regardless of architecture):**
-- **Self-reinforcing `NoSection` drift** — a wrong section is visible (editor moves it); a silently-dropped event never appears, never gets corrected, and retraining on published survivors narrows the newsletter irreversibly. Mitigation: never hard-drop; weekly reject-rate alarm; one-click editor rescue. **Directly relevant to the gate — the keeper-recall floor (value TBD, Step 4c) is this catch made quantitative.**
+- **Self-reinforcing `NoSection` drift** — a wrong section is visible (editor moves it); a silently-dropped event never appears, never gets corrected, and retraining on published survivors narrows the newsletter irreversibly. Mitigation: never hard-drop; weekly reject-rate alarm; one-click editor rescue. **Directly relevant to the gate — the keeper-recall floor is this catch made quantitative, and it is now set: ≥90% observed recall in EVERY section on the gate slice, as a veto on one global threshold (§85), expressed in whole-event counts (4 / 2 / 2 on the pre-repair 46 / 28 / 21 split). Per-section rather than global precisely because this catch is about a *class* going dark, not about average loss.**
 - **Calibration tripwire** — if editor-override inside the auto-accept band > ~10%, auto-downgrade to suggest-only until retrained.
 
 **Corpus freeze (07-15):** `published_titles.json` 1,126 rows (376/383/367); `raw_candidate_titles.json` 1,805 unique. Frozen once into serve-time text — do not re-stage mid-analysis (but dedup at fit, Step 0).
