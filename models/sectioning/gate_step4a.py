@@ -281,7 +281,7 @@ for dest in ("positive", "negative", "withheld", "stage0", "excluded", "unlabell
 PRE_REPAIR_ROUTING_COUNTS = {"positive": 191, "negative": 137, "withheld": 64,
                              "stage0": 16, "excluded": 8, "unlabelled": 0}
 
-EXPECTED_CURRENT_ROUTING_COUNTS = {"positive": 191, "negative": 137, "withheld": 64,
+EXPECTED_CURRENT_ROUTING_COUNTS = {"positive": 180, "negative": 148, "withheld": 64,
                                    "stage0": 16, "excluded": 8, "unlabelled": 0}
 
 _actual = {k: routed.get(k, 0) for k in EXPECTED_CURRENT_ROUTING_COUNTS}

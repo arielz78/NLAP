@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-08-01
+- Reconciled and safely applied the positive-class audit corrections, with an idempotent write path and machine-verifiable receipt.
+- Prepared the final blind eligibility review and measured whether richer Eventbrite descriptions justify additional ingestion work.
 - Added reconciliation and routing-state safeguards so final gate evaluation cannot silently run against unapplied editorial corrections.
 - Preserved the completed audit's raw judgments while turning its unresolved corrections into an explicit, human-owned reconciliation checklist.
 - Pre-registered and implemented a guarded final evaluation contract for the reject gate, including representative-slice selection, section-level protection, and provenance-safe exports.

@@ -440,63 +440,63 @@ The editor's wording below is verbatim. Do not rewrite it to fit a category.
 ### Row 2 — Free Workshop: Navigating Grief & Loss
 
 - **Editor's reason (verbatim):** NEVER. TOO NEGATIVE
-- `TODO(ariel): permanent reason = wrong fit | B2B/prof-dev | civic`
+- **Permanent reason (§77):** `wrong fit / not our audience`
 
 ### Row 6 — De-stressing The Downsizing Process
 
 - **Editor's reason (verbatim):** NEVER. too niche.
-- `TODO(ariel): permanent reason = wrong fit | B2B/prof-dev | civic`
+- **Permanent reason (§77):** `wrong fit / not our audience`
 
 ### Row 10 — Canadian Blood Services, Donor Centre
 
 - **Editor's reason (verbatim):** NEVER. not entertainment.
-- `TODO(ariel): permanent reason = wrong fit | B2B/prof-dev | civic`
+- **Permanent reason (§77):** `B2B / professional dev`
 
 ### Row 13 — Downsizing & Decluttering
 
 - **Editor's reason (verbatim):** NEVER. newsletter doens't do self help that muhc
-- `TODO(ariel): permanent reason = wrong fit | B2B/prof-dev | civic`
+- **Permanent reason (§77):** `wrong fit / not our audience`
 
 ### Row 19 — Secret Saturdays | Each & Every Saturday | Aurea Lounge
 
 - **Editor's reason (verbatim):** needed link. NEVER. seems more like a club scene, different age group than demographic.
 - ⚠️ **Link-assisted row.** The pre-link text-only answer was not captured, so
   this row cannot be classified as a label bug vs a feature bug from the record.
-- `TODO(ariel): permanent reason = wrong fit | B2B/prof-dev | civic`
+- **Permanent reason (§77):** `wrong fit / not our audience`
 
 ### Row 22 — Conversations with my Father: An Intergenerational Program
 
 - **Editor's reason (verbatim):** NEVER. it's a bit of a heavy topic potentially, not for newsletter audience
-- `TODO(ariel): permanent reason = wrong fit | B2B/prof-dev | civic`
+- **Permanent reason (§77):** `wrong fit / not our audience`
 
 ### Row 23 — Wedbiz Society Socials Cocktails & Conversations :"The Prelude"
 
 - **Editor's reason (verbatim):** needed link. NEVER, people don't like wedding, too niche.
 - ⚠️ **Link-assisted row.** The pre-link text-only answer was not captured, so
   this row cannot be classified as a label bug vs a feature bug from the record.
-- `TODO(ariel): permanent reason = wrong fit | B2B/prof-dev | civic`
+- **Permanent reason (§77):** `B2B / professional dev`
 
 ### Row 24 — Voices of Tomorrow: Toronto CASG TEDEd Student Talks Showcase
 
 - **Editor's reason (verbatim):** NEVER. this isn't entertainment, too niche.
-- `TODO(ariel): permanent reason = wrong fit | B2B/prof-dev | civic`
+- **Permanent reason (§77):** `wrong fit / not our audience`
 
 ### Row 26 — Black Coffee in Toronto
 
 - **Editor's reason (verbatim):** needed link. NEVER. not right fit for audience
 - ⚠️ **Link-assisted row.** The pre-link text-only answer was not captured, so
   this row cannot be classified as a label bug vs a feature bug from the record.
-- `TODO(ariel): permanent reason = wrong fit | B2B/prof-dev | civic`
+- **Permanent reason (§77):** `wrong fit / not our audience`
 
 ### Row 29 — NEW: Why Do People Fall in Love with ChatGPT?
 
 - **Editor's reason (verbatim):** NEVER. too niche
-- `TODO(ariel): permanent reason = wrong fit | B2B/prof-dev | civic`
+- **Permanent reason (§77):** `wrong fit / not our audience`
 
 ### Row 30 — YouTube AI Production Studio (Aug 10-14:AM)
 
 - **Editor's reason (verbatim):** NEVER. too niche
-- `TODO(ariel): permanent reason = wrong fit | B2B/prof-dev | civic`
+- **Permanent reason (§77):** `wrong fit / not our audience`
 
 **Done when:** all 11 carry a chosen permanent reason, the writes are applied in
 Airtable, and `eval/step4b_reconciliation.json` records the result. Step 4c stays
