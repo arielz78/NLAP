@@ -5,6 +5,11 @@ description: Bootstrap the session — read the logs + active release status sna
 Establish current project state before we start work. Do this:
 
 1. **Pull latest from remote** — run `git pull` via Bash to ensure we're working off current state before reading anything.
+1b. **Capture the session review boundary.** Immediately after the pull, run
+   `git rev-parse HEAD` and retain it as `SESSION_BASE_COMMIT`. Print
+   `Session base commit: <hash>` in the briefing so it can be passed to `/wrap`.
+   This is the left side of the later `/wrap-review` range even if the session
+   creates intermediate commits.
 2. Read the most recent entries of `Execution_Log.md` (the bottom of the file
    — entries are oldest-first, so the latest work is at the end).
 3. Read the **active release Scope doc's Status Snapshot** (currently
@@ -92,7 +97,9 @@ it matters more in zoom mode, not less.
 
 Slash commands (project — this repo only):
 - `/start` — session orientation (this command). NLAP build-session bootstrap: logs + active Scope snapshot.
-- `/wrap` — end-of-session log update. Fires when repo/NLAP state changed.
+- `/wrap` — end-of-session log update. Fires when repo/NLAP state changed. Ends by emitting a `REVIEW PACKET`.
+- `/wrap-review` — separate read-only reviewer of a `/wrap` packet + commit range. Proves only silent-and-plausible blockers; returns `READY`/`NOT READY` and one next action. Never edits.
+- `/wrap review-close` — the original wrapper mechanically persists the review's canonical-state corrections. Bookkeeping only; no code, no changelog, no second review.
 - `/recap` — active-recall session recap (quizzes you on logic/sequence first, then fills gaps)
 - `/brief` — morning brief: today's schedule + the full open board. Read-only renderer, day-level, any day. **Not interchangeable with `/start`.**
 - `/checkout` — end-of-day ledger for non-NLAP summer work (SQL, retrieval, networking, learning). Never holds NLAP build content.

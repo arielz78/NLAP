@@ -4,6 +4,16 @@ description: End-of-session wrap — append the journal + changelog, run the con
 
 Wrap up this session. Follow these steps in order:
 
+0. **Resolve the session boundary.** Use the `SESSION_BASE_COMMIT` emitted by
+   `/start` as the start of the review range; this includes any intermediate
+   commits made during the session. If it is unavailable, identify the parent of
+   the session's earliest commit from the conversation/log and state the
+   assumption. Use the current pre-wrap `HEAD` only when all session work is still
+   uncommitted. Wrap is bookkeeping, not a new investigation phase: do not start
+   audits, redesigns, historical studies, or new issue work while wrapping. If
+   the session surfaced an unresolved interpretation, preserve it as a hypothesis
+   — do not settle it.
+
 1. **Get the current local time first** — run via the Bash tool:
    `powershell -Command "Get-Date -Format 'yyyy-MM-dd h:mm tt'"`
    Do this BEFORE writing the entry, not after.
@@ -90,3 +100,58 @@ Wrap up this session. Follow these steps in order:
      changed in the repo this session (the diff, not the session narrative).
    - Run `git push`.
    - Report what was committed and confirm the push succeeded.
+
+8. **Emit the bounded `/wrap-review` packet.** This is the only handoff the
+   reviewer should need. Keep evidence separate from inference and use this exact
+   structure:
+
+   ```text
+   REVIEW PACKET
+   Session objective:
+   Commit range: <SESSION_BASE_COMMIT>..<final HEAD>
+   Changed/newly activated number-producing slices:
+   Evidence and tests:
+   Settled decisions (with source):
+   Hypotheses / unresolved choices:
+   Next number-changing or irreversible action:
+   ```
+
+   Use `None` where a section is empty. Do not add speculative review targets.
+   End with: `Reviewer: run /wrap-review on this packet.`
+
+9. **Stop after handoff.** Do not perform a self-review or begin repairing possible
+   reviewer findings during wrap. The separate reviewer gets one bounded pass.
+   A valid blocker becomes the next session's first task unless Ariel explicitly
+   chooses to continue the current session.
+
+---
+
+## `/wrap review-close` — persist the review disposition
+
+Run this mode only when the user returns a completed `/wrap-review` result to the
+original wrapper. This is a mechanical persistence step, not another wrap or
+review.
+
+1. Read only the review result's `Canonical-state corrections required` section.
+   Do not reinterpret findings, investigate further, repair code, relabel data,
+   file issues, or make architecture decisions.
+2. If all three homes say `None`, report that no persistence is required and
+   stop without editing or committing.
+3. **Execution Log:** when requested, get the current local time and append a
+   short dated review addendum above the final `---`. Preserve the original
+   session entry; state only the corrected blocker/status/next action and point
+   to the reviewed commit range.
+4. **Active Scope:** when requested, make only the exact current-status or
+   sequencing correction needed so the next `/start` cannot proceed from stale
+   state. Do not rewrite surrounding rationale or clean up adjacent prose.
+5. **Decision Log:** update only when the reviewer points to an explicit decision
+   Ariel already made during the reviewed session and the wrapper omitted it.
+   Never record a reviewer inference as a decision.
+6. Show the exact mechanical edits to Ariel before applying them, as required by
+   the repo editing rule.
+7. Do not update `CHANGELOG.md`; review-close changes internal bookkeeping, not
+   shipped behavior. Do not touch code, labels, issues, metrics, or source docs.
+8. If a tracked canonical file changed, stage only that file, commit, and push.
+   If only gitignored `Execution_Log.md` changed, do not create an empty commit.
+9. Report what was persisted and stop. Do not emit another review packet and do
+   not trigger another review.
