@@ -7,7 +7,10 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 ## 2026-08-02
 - Cleared both outstanding blockers to the model's final evaluation: one suspected data-integrity defect turned out to be a false alarm and was closed with evidence, and a measurement artifact thought lost was recovered intact and verified against three independently recorded figures.
 - Completed the first round of the final editorial eligibility review and recorded it verbatim, alongside the exact instrument the reviewer was shown.
-- Identified that the reviewer applies a single judgment where the system assumes two distinct ones — a design question raised deliberately rather than resolved by assumption, since it changes what the model's score means.
+- Found performance language on both sides of the eligibility question, then kept the boundary explicitly unresolved until the evidence supported a narrower decision rather than inferring one editor judgment from a handful of comments.
+- Set the V1 product direction as decision support: the current release supplies a reversible viability signal, while relative weekly ranking remains the next release's job.
+- Pressure-tested that boundary against primary industry architectures and an independent review, identifying a missing label-to-section contract before final evaluation rather than redesigning the model.
+- Unified the Claude session-wrap and bounded-review handoff into one protocol so canonical session state incorporates the review result without a second correction cycle.
 
 ## 2026-08-01
 - Reconciled and safely applied the positive-class audit corrections, with an idempotent write path and machine-verifiable receipt.
