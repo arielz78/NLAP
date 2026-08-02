@@ -37,8 +37,8 @@ Establish current project state before we start work. Do this:
    is the skill files, this is only the pointer):
    > **Session flow:** work (no notes — click-blurbs only) → `/recap` when learning
    > ends (quiz ×2 → full recap → queue seeds → you write blurbs) → `/wrap` if repo/
-   > NLAP state changed → `/checkout` at day end if an artifact moved. Each step
-   > skips when its trigger doesn't fire.
+   > NLAP state changed (it runs its own review; you don't call one) → `/checkout`
+   > at day end if an artifact moved. Each step skips when its trigger doesn't fire.
 
 Then give me a tight briefing — no preamble:
 
@@ -97,9 +97,9 @@ it matters more in zoom mode, not less.
 
 Slash commands (project — this repo only):
 - `/start` — session orientation (this command). NLAP build-session bootstrap: logs + active Scope snapshot.
-- `/wrap` — end-of-session log update. Fires when repo/NLAP state changed. Ends by emitting a `REVIEW PACKET`.
-- `/wrap-review` — separate read-only reviewer of a `/wrap` packet + commit range. Proves only silent-and-plausible blockers; returns `READY`/`NOT READY` and one next action. Never edits.
-- `/wrap review-close` — the original wrapper mechanically persists the review's canonical-state corrections. Bookkeeping only; no code, no changelog, no second review.
+- `/wrap` — end-of-session log update. Fires when repo/NLAP state changed. Commits, then **runs its own bounded review via a read-only subagent**, then writes the journal entry with the verdict folded in. You don't call a reviewer.
+- `/wrap-review` — the same reviewer, standalone. Only for a cold second read days later; `/wrap` already does this for you.
+- `/wrap review-close` — fallback, persists an out-of-band review's canonical corrections. Rarely needed now.
 - `/recap` — active-recall session recap (quizzes you on logic/sequence first, then fills gaps)
 - `/brief` — morning brief: today's schedule + the full open board. Read-only renderer, day-level, any day. **Not interchangeable with `/start`.**
 - `/checkout` — end-of-day ledger for non-NLAP summer work (SQL, retrieval, networking, learning). Never holds NLAP build content.

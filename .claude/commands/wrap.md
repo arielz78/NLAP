@@ -1,8 +1,13 @@
 ---
-description: End-of-session wrap — append the journal + changelog, run the conditional-homes update checklist (Decision_Log, source sheet, metrics log, issues) FOR the user, and commit
+description: End-of-session wrap — conditional-homes checklist, changelog, commit, an automatic bounded review, then the journal entry written with the verdict already known
 ---
 
-Wrap up this session. Follow these steps in order:
+Wrap up this session. Follow these steps in order.
+
+**Why this order:** the review needs a commit range, so the commit happens before
+the review; the Execution_Log entry is gitignored, so it is written *last* — after
+the verdict is known — and is therefore correct the first time. That is what
+removes the need for a separate correction pass.
 
 0. **Resolve the session boundary.** Use the `SESSION_BASE_COMMIT` emitted by
    `/start` as the start of the review range; this includes any intermediate
@@ -14,25 +19,9 @@ Wrap up this session. Follow these steps in order:
    the session surfaced an unresolved interpretation, preserve it as a hypothesis
    — do not settle it.
 
-1. **Get the current local time first** — run via the Bash tool:
-   `powershell -Command "Get-Date -Format 'yyyy-MM-dd h:mm tt'"`
-   Do this BEFORE writing the entry, not after.
-
-2. **Append a new entry to `Execution_Log.md`.** Rules:
-   - New entries go at the **bottom** of the file, **above** the final `---`
-     (entries are ordered oldest-first).
-   - Include the date and the local time to the minute from step 1.
-   - Cover: what was run, what broke, what was fixed, decisions made, and
-     next steps.
-   - **Decision pointer discipline:** if a decision was made, name it in one
-     line and point (`Decision: X — see Decision_Log §N`). Do NOT re-articulate
-     the rationale here — that's the Decision_Log's job (one home, journal points).
-   - Match the formatting of the existing recent entries in the file — read
-     the last entry first and mirror its structure.
-
-3. **Carry-forward gate — close the loop on last session's "Next."**
-   Before writing this session's next-steps, read the **previous** Execution_Log
-   entry's "Next" list. For each item, mark exactly one:
+1. **Carry-forward gate — close the loop on last session's "Next."**
+   Read the **previous** Execution_Log entry's "Next" list. For each item, mark
+   exactly one:
    - **Done** this session → reflect it in the entry, drop it.
    - **Still open** → it must have a GitHub issue. If it doesn't, propose
      opening one now. Do NOT re-copy the prose forward untracked — that's the
@@ -43,7 +32,7 @@ Wrap up this session. Follow these steps in order:
    trackable work becomes an issue; the log's "Next" names only the immediate
    next action, not a backlog.
 
-4. **Run the conditional-homes checklist FOR the user — do not make them scan.**
+2. **Run the conditional-homes checklist FOR the user — do not make them scan.**
    Review what actually happened this session and, for each maintained home
    below, either *propose* the update or report "no change → skip." Present it
    as a short checklist the user confirms with yes/no. The agent does the
@@ -78,9 +67,9 @@ Wrap up this session. Follow these steps in order:
      If the rule didn't change → skip.
    - Whatever changed goes to its one home only — never duplicate across homes.
 
-5. Show me every drafted entry before/after writing so I can eyeball it.
+3. Show me every drafted entry before/after writing so I can eyeball it.
 
-6. **Append a public summary to `CHANGELOG.md`.** Always do this, every session.
+4. **Append a public summary to `CHANGELOG.md`.** Always do this, every session.
    - Add a new dated entry at the **top** (newest first), under the header.
    - 2–3 lines max. Written for a public reader (recruiter / potential client):
      concise, clean, describes what the session accomplished. NO candid internal
@@ -91,7 +80,7 @@ Wrap up this session. Follow these steps in order:
    - This captures work that happened only in n8n/Airtable too — so the repo
      reflects the session even when no file on disk changed.
 
-7. **Git commit + push.** After the log entry and changelog are written:
+5. **Git commit + push.**
    - Run `git status` to see what's changed. Briefly review it — flag anything
      unexpected or stray before staging (don't blindly `git add .`).
    - Stage and commit the changed tracked files — `CHANGELOG.md` plus any
@@ -101,57 +90,96 @@ Wrap up this session. Follow these steps in order:
    - Run `git push`.
    - Report what was committed and confirm the push succeeded.
 
-8. **Emit the bounded `/wrap-review` packet.** This is the only handoff the
-   reviewer should need. Keep evidence separate from inference and use this exact
-   structure:
+6. **Run the bounded review automatically — do not ask whether to.**
+   Build the packet, then hand it to a **separate read-only subagent**. Do not
+   review your own work inline; the point is a reader with no memory of having
+   written the code.
 
-   ```text
-   REVIEW PACKET
-   Session objective:
-   Commit range: <SESSION_BASE_COMMIT>..<final HEAD>
-   Changed/newly activated number-producing slices:
-   Evidence and tests:
-   Settled decisions (with source):
-   Hypotheses / unresolved choices:
-   Next number-changing or irreversible action:
-   ```
+   a. Assemble the packet. Keep evidence separate from inference, use `None`
+      where a section is empty, and add no speculative review targets:
 
-   Use `None` where a section is empty. Do not add speculative review targets.
-   End with: `Reviewer: run /wrap-review on this packet.`
+      ```text
+      REVIEW PACKET
+      Session objective:
+      Commit range: <SESSION_BASE_COMMIT>..<final HEAD>
+      Changed/newly activated number-producing slices:
+      Evidence and tests:
+      Settled decisions (with source):
+      Hypotheses / unresolved choices:
+      Next number-changing or irreversible action:
+      ```
 
-9. **Stop after handoff.** Do not perform a self-review or begin repairing possible
-   reviewer findings during wrap. The separate reviewer gets one bounded pass.
-   A valid blocker becomes the next session's first task unless Ariel explicitly
-   chooses to continue the current session.
+   b. Spawn the reviewer with the `Agent` tool: `subagent_type: "Explore"`
+      (no Edit/Write/NotebookEdit), `run_in_background: false`. The prompt is
+      the full contents of `.claude/commands/wrap-review.md` followed by the
+      packet, plus: *"You are read-only. Do not modify files, commit, push, or
+      file issues. Return only the output contract block."*
+
+   c. Print the returned block verbatim. Do not argue with it, re-run it, or
+      repair its findings during wrap. One review, one pass.
+
+   If the subagent is unavailable, print the packet and tell me to run
+   `/wrap-review` myself. Do not substitute a self-review.
+
+7. **Now write the Execution_Log entry — with the verdict already known.**
+   - First get the current local time via the Bash tool:
+     `powershell -Command "Get-Date -Format 'yyyy-MM-dd h:mm tt'"`
+   - New entries go at the **bottom** of the file, **above** the final `---`
+     (entries are ordered oldest-first).
+   - Include the date and the local time to the minute.
+   - Cover: what was run, what broke, what was fixed, decisions made, and
+     next steps.
+   - **Fold the review in.** A proven blocker becomes the entry's "Next" (it is
+     the next session's first bounded task). Deferred findings get at most one
+     line each and do not become issues by default. Never record a reviewer
+     *inference* as a decision.
+   - **Decision pointer discipline:** if a decision was made, name it in one
+     line and point (`Decision: X — see Decision_Log §N`). Do NOT re-articulate
+     the rationale here — that's the Decision_Log's job (one home, journal points).
+   - Match the formatting of the existing recent entries — read the last entry
+     first and mirror its structure. Show me the draft before writing.
+   - `Execution_Log.md` is gitignored: writing it here needs no commit.
+
+8. **Only if the review named a correction to a *tracked* file** (active Scope
+   status/sequencing, or an explicit Ariel decision the checklist missed):
+   make that one edit, show it first, then stage only that file and commit.
+   Do not update `CHANGELOG.md` for it. If nothing tracked changed, make no
+   second commit.
+
+9. **Stop.** One wrap, one review. Do not repair findings, re-review, or emit
+   another packet. A proven blocker is the next session's first task unless
+   Ariel explicitly chooses to continue now.
 
 ---
 
-## `/wrap review-close` — persist the review disposition
+## `/wrap review-close` — fallback only
 
-Run this mode only when the user returns a completed `/wrap-review` result to the
-original wrapper. This is a mechanical persistence step, not another wrap or
-review.
+Step 7 normally makes this unnecessary: the journal entry is written *after* the
+verdict, so there is nothing to correct. Use this mode only when a review arrived
+out of band — a standalone `/wrap-review` run later, or a review from another
+agent against an already-written entry.
+
+It is mechanical persistence, not another wrap or review.
 
 1. Read only the review result's `Canonical-state corrections required` section.
    Do not reinterpret findings, investigate further, repair code, relabel data,
    file issues, or make architecture decisions.
 2. If all three homes say `None`, report that no persistence is required and
    stop without editing or committing.
-3. **Execution Log:** when requested, get the current local time and append a
-   short dated review addendum above the final `---`. Preserve the original
-   session entry; state only the corrected blocker/status/next action and point
-   to the reviewed commit range.
-4. **Active Scope:** when requested, make only the exact current-status or
-   sequencing correction needed so the next `/start` cannot proceed from stale
-   state. Do not rewrite surrounding rationale or clean up adjacent prose.
+3. **Execution Log:** get the current local time and append a short dated review
+   addendum above the final `---`. Preserve the original session entry; state
+   only the corrected blocker/status/next action and point to the reviewed
+   commit range.
+4. **Active Scope:** make only the exact current-status or sequencing correction
+   needed so the next `/start` cannot proceed from stale state. Do not rewrite
+   surrounding rationale or clean up adjacent prose.
 5. **Decision Log:** update only when the reviewer points to an explicit decision
    Ariel already made during the reviewed session and the wrapper omitted it.
    Never record a reviewer inference as a decision.
-6. Show the exact mechanical edits to Ariel before applying them, as required by
-   the repo editing rule.
-7. Do not update `CHANGELOG.md`; review-close changes internal bookkeeping, not
-   shipped behavior. Do not touch code, labels, issues, metrics, or source docs.
+6. Show the exact mechanical edits to Ariel before applying them.
+7. Do not update `CHANGELOG.md`. Do not touch code, labels, issues, metrics, or
+   source docs.
 8. If a tracked canonical file changed, stage only that file, commit, and push.
    If only gitignored `Execution_Log.md` changed, do not create an empty commit.
-9. Report what was persisted and stop. Do not emit another review packet and do
-   not trigger another review.
+9. Report what was persisted and stop. Do not emit another packet and do not
+   trigger another review.
