@@ -520,13 +520,40 @@ ESCALATION_TRIGGER = {
     "curve_shift": "report_only",
 }
 
-# The §75 breadth stratum (R7_Scope Step 4, first stratum). The vocabulary that defines
-# "single-community" is an EDITORIAL judgment -- which religions, nationalities and
-# affinity groups count, and where the breadth line falls -- so it is authored, not
-# inferred here. The mechanism is live (`stratum_report`), the vocabulary is not filled.
-# At STEP="4c" the precondition check REFUSES TO RUN until it is, which is deliberate:
-# §75's un-park trigger has already survived three releases as a comment nobody executed.
-SINGLE_COMMUNITY_PATTERN = None   # TODO(ariel) @4c: regex over title + cleaned description
+# The §75 breadth stratum (R7_Scope Step 4, first stratum).
+#
+# RECOVERED, NOT AUTHORED (#120, 2026-08-02). The vocabulary below is the ORIGINAL §75
+# pattern, recovered verbatim -- it is not a reconstruction and must not be "improved".
+# Writing a fresh word list would silently redefine the stratum and make the 4c result
+# unable to speak to §75's claim, which is the only thing this diagnostic exists to test.
+#
+# PROVENANCE. The regex never existed in a file: it was an inline argument to a
+# `py -3 -c "..."` Bash call on 2026-07-27, so it has no blob, path or git object, and a
+# full 190-revision repo search (incl. stashes, dangling objects, gitignored artifacts)
+# correctly came up empty. Recovered from the Claude Code session transcript
+# `~/.claude/projects/c--NA---Learning-NLAP/bd92a769-8345-4fef-a956-d822b3058c38.jsonl`,
+# lines 151 and 172 -- two independent tool calls carrying a byte-identical string.
+#
+# VERIFIED against all three counts Decision_Log §75 records, reproduced exactly:
+#     includables  10/182 (5.5%)   Nones  20/214 (9.3%)   raw pool  112/1805 (6.2%)
+# Named anchors present: Italian Festival, Vaughan Asian Festival, Soul Food Caribbean
+# Festival (flagged includables) and Shabbat Korach (flagged None).
+#
+# DIAGNOSTIC ONLY -- never a label, a feature, or a filter. It is applied AFTER scoring,
+# to split finished results into two groups for reporting. No P(include) changes if this
+# line is deleted. Its measured separation is only 1.7x and it flags keepers and rejects
+# alike; that weakness is WHY it may not become a feature, and is harmless to a report.
+# Applied to `title + ' ' + description`, case-insensitive (matching the §75 measurement).
+SINGLE_COMMUNITY_PATTERN = (
+    r"\b(jewish|judaism|hanukkah|chanukah|shabbat|kosher|synagogue|muslim|islam|islamic|"
+    r"ramadan|eid|halal|mosque|hindu|diwali|sikh|gurdwara|vaisakhi|buddhis|christian|"
+    r"church|catholic|baptist|gospel|parish|indigenous|first nations|metis|inuit|powwow|"
+    r"russian|ukrainian|polish|italian|portuguese|greek|persian|iranian|chinese|"
+    r"lunar new year|korean|japanese|filipino|vietnamese|tamil|punjabi|indian|pakistani|"
+    r"bangladesh|somali|nigerian|caribbean|jamaican|latino|latina|hispanic|mexican|"
+    r"colombian|brazilian|spanish|french|german|turkish|arab|armenian|afghan|"
+    r"black history|african)\b"
+)
 
 _PINS = {"RECALL_DIAL": RECALL_DIAL, "PER_SECTION_RECALL_FLOOR": PER_SECTION_RECALL_FLOOR,
          "CURVE_MEASURED_ON": CURVE_MEASURED_ON,

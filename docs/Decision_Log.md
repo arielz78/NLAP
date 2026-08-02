@@ -2045,3 +2045,19 @@ Both survive into the training set, so any fit can stratify on or exclude machin
 **Failure ladder:** if the best section-safe point buys little offline rejection, it still reaches the shadow dry run because `P(include)` is a reversible ranking input and the end-to-end top-eight shortlist is the actual product. If that run fails, swap positions localize the defect to gate, sectioning or ranking. The one issue is not a tuning set: `C` is not changed opportunistically, and any changed system requires another validation run.
 
 **Generalizable rule:** *pre-register the action attached to each result, not the result you hope to see.* Technical populations can diagnose one another without becoming interchangeable, enriched audits can govern repair without estimating prevalence, and a reversible shadow test may rationally carry more decision weight than marginal offline tuning.
+
+---
+
+## 86. The Recovered §75 Breadth Regex Is Frozen — Reuse, Never Reconstruct (2026-08-02)
+
+**Decision:** `SINGLE_COMMUNITY_PATTERN` is populated with the **original** §75 keyword pattern, recovered verbatim, and is **not to be edited, extended or "improved."** It is diagnostic-only — applied after scoring to split finished results for reporting — and may never become a label, a feature, or a filter (§75).
+
+**Why a bad regex is the correct one to ship.** The pattern is a poor separator by measurement: 1.7×, flagging *Italian Festival* and *Shabbat Korach* identically. That is not a defect to fix — **it is the finding §75 recorded**, and the reason breadth was routed to the gate as evidence rather than to Stage 0 as a rule. Improving the vocabulary would answer a question nobody asked while destroying the one it exists to answer.
+
+**What it is actually for.** Step 4c reports gate recall on the rows this pattern tags in order to test a claim about the **embedding**, not about the regex: §75 parked the breadth flag on the theory that the representation carries semantically what a keyword list cannot. If the tagged rows systematically survive the gate, the theory is wrong and the flag comes off the shelf; if they are rejected at or below base rate, it stays parked permanently. Either result is a finding.
+
+**Why reconstruction was refused even though it looked cheap.** A fresh word list would silently redefine the stratum, and the 4c result would then measure a different set of rows than §75 measured — leaving it unable to speak to the claim it was built to test. Worse, a vocabulary written *after* the scores are visible can be tuned, consciously or not, toward the preferred answer. Recovery was pursued precisely because the counts §75 recorded (10/182, 20/214, 112/1805) make a candidate pattern **falsifiable**: the recovered string reproduces all three exactly, which a reconstruction would have had to earn rather than assert.
+
+**Provenance is recorded because the artifact had none.** The regex never existed in a file — it was an inline argument to a `py -3 -c "..."` call, so a complete 190-revision repo search (stashes, unreachable objects, gitignored artifacts, notebooks) correctly found nothing. It was recovered from the Claude Code session transcript for 2026-07-27, and the pattern now carries its transcript location, its verification counts and its named anchors in the code comment, since a number without provenance may be quoted as context but never as a bar (§75 convention).
+
+**Generalizable rule:** *when an instrument defines a measurement's population, the instrument is part of the measurement.* Recreating it later is not a repair — it is a silent redefinition, and it is undetectable unless the original recorded enough counts to falsify a substitute. Record what makes an instrument checkable, not just what it concluded.

@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-08-02
+- Cleared both outstanding blockers to the model's final evaluation: one suspected data-integrity defect turned out to be a false alarm and was closed with evidence, and a measurement artifact thought lost was recovered intact and verified against three independently recorded figures.
+- Completed the first round of the final editorial eligibility review and recorded it verbatim, alongside the exact instrument the reviewer was shown.
+- Identified that the reviewer applies a single judgment where the system assumes two distinct ones — a design question raised deliberately rather than resolved by assumption, since it changes what the model's score means.
+
 ## 2026-08-01
 - Reconciled and safely applied the positive-class audit corrections, with an idempotent write path and machine-verifiable receipt.
 - Prepared the final blind eligibility review and measured whether richer Eventbrite descriptions justify additional ingestion work.
