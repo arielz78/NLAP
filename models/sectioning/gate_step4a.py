@@ -539,7 +539,7 @@ def stamped(payload: dict) -> dict:
 #   STEP = "4a"  -> report BOTH readings of every choice below. Nothing is pinned,
 #                   nothing is chosen, and no operating point may be taken from it.
 #   STEP = "4c"  -> the guard fires: every pin must be set BEFORE the fit runs.
-STEP = "4a"
+STEP = "4c"
 
 # (1) One GLOBAL reporting threshold; per-section recall is a veto on that threshold,
 #     never three separate thresholds. The floor is deliberately coarse because the

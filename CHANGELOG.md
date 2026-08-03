@@ -5,6 +5,9 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-08-03
+- Ran the reject gate's final pre-registered evaluation and priced its operating point, holding the conservative setting because the marginal trade collapses past it — seven more good events lost to remove seven more poor ones, concentrated in the weakest segment.
+- Built an evidence worksheet that traces every error at the chosen setting back to its cause — missing source text, model limitation, or a label that encodes weekly ranking rather than permanent rejection — leaving the judgments to a human rather than the model.
+- Established that enriching the thinnest source's text is the next thing to test offline, before any change reaches the live pipeline.
 - Closed the final label-reconciliation stage with an auditable answer key, verified external writes, explicit provenance, and a protected corrupt-input withhold.
 - Repaired the breadth diagnostic by separating keeper recall from reject rejection, and added preflight and artifact-safety guards ahead of the final model fit.
 
