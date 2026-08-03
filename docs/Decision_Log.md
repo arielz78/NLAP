@@ -2073,3 +2073,13 @@ Both survive into the training set, so any fit can stratify on or exclude machin
 **Why the industry pattern does not dictate the implementation.** Large recommenders separate retrieval, scoring and re-ranking partly for compute and latency; that rationale does not transfer to a weekly pool of roughly 720 candidates. What transfers is the separation of eligibility, relative utility and final-list constraints. Whether R7's viability signal adds value beside an R6 ranker is therefore an empirical R6 question—compare ranking with and without it—rather than a reason to merge or rebuild R7 now.
 
 **What this does not settle.** Step 1c still needs an explicit mapping and provenance rule for its 14 ELIGIBLE-but-unsectioned rows, the click-only and unclear rows remain unresolved unless confidently adjudicated, and the §75 mixed-class diagnostic must be split or dropped before Step 4c. Those are bounded target/instrument choices under the settled architecture, not reasons to reopen it.
+
+---
+
+## 88. The §75 Breadth Check Is Class-Separated and Exploratory (2026-08-03)
+
+**Decision:** Step 4c reports the frozen §75 keyword stratum in two cells: keyword-positive recall against gate-slice positive recall, and keyword-negative rejection against gate-slice negative rejection. Each is reported in whole-event counts and percentages. The pooled survival rate is invalid and removed. No automatic "un-park" verdict or decisive numeric gap is registered, and this diagnostic does not participate in operating-point selection. Ariel interprets it after the run as exploratory evidence.
+
+**Why:** the stratum contains both legitimate keepers and breadth-rule rejects, so pooling survival confounds two opposite successes. After splitting, the remaining cells are still small—roughly 10 positives and 20 negatives—so one event moves the result materially. Inventing a cutoff immediately before the first observation would add false precision and pressure later work to defend an arbitrary number.
+
+**Consequence:** §75 can indicate whether the embedding appears weak on breadth, but cannot alone authorize a hand-crafted feature in R7. Any feature decision motivated by this exploratory result requires validation on new evidence. The recovered regex remains frozen and diagnostic-only under §86.

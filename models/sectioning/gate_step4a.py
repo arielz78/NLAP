@@ -250,8 +250,95 @@ for _c in _CASES["throw_cases"]:
     else:
         raise AssertionError(f"§77 contract: expected a raise for {_c['reasons']} ({_c['why']})")
 
-route = np.array([route_s77(lab, reasons_of.get(r["row"], []))
-                  for lab, r in zip(labels, rows)], dtype=object)
+# ------------------------------------------------------------------------------------
+# CORRUPT-INPUT WITHHOLDS. Rows whose LABEL is sound but whose EMBEDDED TEXT is not the
+# event, so no target value is truthful. §77 routes from the editor's label and cannot
+# see this; the six NoneReason options have no value meaning "the input text is wrong",
+# so encoding it in Airtable would require writing a false label. It lives here instead.
+#
+# This is a GUARD, not a correction: each row below must ALREADY route out of the fit on
+# its Airtable label alone, and the assertion under the dict enforces that. If a row ever
+# starts arriving as positive/negative, the guard fires loudly rather than silently
+# changing a count -- which is the failure it exists to prevent, because the Step-1c
+# reconciliation leaves these rows carrying `outcompeted` and a later sweep of the
+# remaining outcompeted pile would otherwise pull them straight into the fit.
+#
+# Removing a row requires re-embedding it from corrected text, not a judgment call.
+#
+# THE SET IS NOT WRITTEN HERE. It is read from the Step-1c reconciliation artifact, which
+# is the same file that records why each row was withheld and what the editor actually
+# said about it. A hard-coded list here would be a second home for that fact, free to
+# drift from the artifact -- the exact failure the §77 shared fixture exists to prevent
+# on the routing side. One home, one loader, no local copy.
+# ------------------------------------------------------------------------------------
+STEP1C_RECONCILIATION = HERE / "eval" / "step1c_reconciliation.json"
+
+
+def _load_withheld_rows():
+    """Corrupt-input withholds, sourced from the Step-1c reconciliation artifact.
+
+    Fails loud on absence or a malformed entry. Silently returning {} would drop the
+    withhold and pull a corrupt row into the fit -- a count change nothing downstream
+    would flag, which is precisely what this guard exists to stop. Validated for shape
+    AND against the artifact's own declared count, so a hand-made stub cannot unblock it.
+    """
+    if not STEP1C_RECONCILIATION.exists():
+        raise SystemExit(
+            f"\nMISSING: {STEP1C_RECONCILIATION.name} is required to know which rows are\n"
+            "withheld for corrupt input.\n\n"
+            "DO NOT regenerate it with `--emit-artifact`. The Step-1c write is APPLIED, so\n"
+            "the live deck is now the POST-write state; regenerating would rebuild the\n"
+            "artifact's `before` values and `cleared_commentary` from it, destroying the\n"
+            "pre-write record and the cleared r175 Label string (which exists nowhere else,\n"
+            "since data/ is gitignored). The script refuses, but do not try.\n\n"
+            "RECOVER IT FROM GIT instead -- it is a committed artifact:\n"
+            "  git checkout -- models/sectioning/eval/step1c_reconciliation.json\n"
+        )
+    art = json.loads(STEP1C_RECONCILIATION.read_text(encoding="utf-8"))
+    entries = art.get("withheld_from_fit")
+    if not isinstance(entries, list):
+        raise SystemExit(f"\n{STEP1C_RECONCILIATION.name}: 'withheld_from_fit' must be a list\n")
+
+    withheld = {}
+    for entry in entries:
+        row, why = entry.get("row"), entry.get("reason_withheld")
+        if not isinstance(row, int) or isinstance(row, bool):
+            raise SystemExit(f"\n{STEP1C_RECONCILIATION.name}: bad 'row' in {entry!r}\n")
+        if not (isinstance(why, str) and why.strip()):
+            raise SystemExit(
+                f"\n{STEP1C_RECONCILIATION.name}: r{row} is withheld with no stated reason. "
+                "A withhold without a reason cannot be reviewed or ever safely removed.\n"
+            )
+        if row in withheld:
+            raise SystemExit(f"\n{STEP1C_RECONCILIATION.name}: r{row} listed twice\n")
+        withheld[row] = why.strip()
+
+    declared = art.get("counts", {}).get("withheld")
+    if declared != len(withheld):
+        raise SystemExit(
+            f"\n{STEP1C_RECONCILIATION.name}: counts.withheld says {declared} but "
+            f"'withheld_from_fit' carries {len(withheld)}. The artifact disagrees with "
+            "itself; regenerate it rather than editing one side.\n"
+        )
+    return withheld
+
+
+WITHHELD_ROWS = _load_withheld_rows()
+print(f"corrupt-input withholds (from {STEP1C_RECONCILIATION.name}): "
+      f"{sorted(WITHHELD_ROWS) or 'none'}")
+
+_raw_route = [route_s77(lab, reasons_of.get(r["row"], []))
+              for lab, r in zip(labels, rows)]
+for _i, _r in enumerate(rows):
+    if _r["row"] in WITHHELD_ROWS:
+        assert _raw_route[_i] not in ("positive", "negative"), (
+            f"WITHHELD_ROWS guard fired: r{_r['row']} now routes '{_raw_route[_i]}' from its "
+            f"Airtable label and would enter the fit. Reason it must not: "
+            f"{WITHHELD_ROWS[_r['row']]}"
+        )
+        _raw_route[_i] = "withheld"
+
+route = np.array(_raw_route, dtype=object)
 
 routed = collections.Counter(route.tolist())
 print("\n§77 routing over the {} embedded rows:".format(len(rows)))
@@ -281,7 +368,11 @@ for dest in ("positive", "negative", "withheld", "stage0", "excluded", "unlabell
 PRE_REPAIR_ROUTING_COUNTS = {"positive": 191, "negative": 137, "withheld": 64,
                              "stage0": 16, "excluded": 8, "unlabelled": 0}
 
-EXPECTED_CURRENT_ROUTING_COUNTS = {"positive": 180, "negative": 148, "withheld": 64,
+# Updated 2026-08-03, deliberately, after the Step-1c reconciliation wrote 37 rows
+# (25 -> positive, 12 -> negative; r342 held back as a corrupt-input withhold). Verified
+# against a post-write refetch and an all-fields diff of the full 456-record deck.
+# Previous value, post-4b: positive 180 / negative 148 / withheld 64.
+EXPECTED_CURRENT_ROUTING_COUNTS = {"positive": 205, "negative": 160, "withheld": 27,
                                    "stage0": 16, "excluded": 8, "unlabelled": 0}
 
 _actual = {k: routed.get(k, 0) for k in EXPECTED_CURRENT_ROUTING_COUNTS}
@@ -543,6 +634,11 @@ ESCALATION_TRIGGER = {
 # to split finished results into two groups for reporting. No P(include) changes if this
 # line is deleted. Its measured separation is only 1.7x and it flags keepers and rejects
 # alike; that weakness is WHY it may not become a feature, and is harmless to a report.
+#
+# MIXED-CLASS BY CONSTRUCTION -- 10 editor-includables and 20 editor-Nones. Anything this
+# pattern feeds must therefore report the two classes SEPARATELY. Pooling them produces a
+# number that confounds correct keeper-survival with correct reject-rejection; see the
+# block above stratum_report(). Frozen 2026-08-02 (#120), split 2026-08-03.
 # Applied to `title + ' ' + description`, case-insensitive (matching the §75 measurement).
 SINGLE_COMMUNITY_PATTERN = (
     r"\b(jewish|judaism|hanukkah|chanukah|shabbat|kosher|synagogue|muslim|islam|islamic|"
@@ -787,8 +883,9 @@ def _verify_4c_preconditions():
     if SINGLE_COMMUNITY_PATTERN is None:
         problems.append(
             "SINGLE_COMMUNITY_PATTERN is unset -- R7_Scope Step 4 commits Step 4c to "
-            "report gate recall on the single-community stratum (§75's un-park trigger). "
-            "The vocabulary is editorial and must be authored, not inferred here."
+            "report keyword_positive_recall AND keyword_negative_rejection on the single-"
+            "community stratum, reported separately (§75's un-park trigger is the negative "
+            "cell). The vocabulary is editorial and must be authored, not inferred here."
         )
     if not STEP4B_ANSWER_KEY.exists():
         problems.append(
@@ -828,8 +925,26 @@ def _verify_4c_preconditions():
 if STEP not in _STAMPS:
     raise SystemExit(f"\nSTEP is {STEP!r}; expected one of {sorted(_STAMPS)}.\n")
 
-if STEP == "4c":
+# --preflight: verify the STEP-4c CONTRACT, then stop without fitting.
+#
+# It runs _verify_4c_preconditions() REGARDLESS of the STEP pin, deliberately. Checking
+# only when STEP is already "4c" would make the flag useless for its actual job: telling
+# you whether 4c is ready to run on a day you are not setting the release bar. The
+# alternative is flipping the pin to find out, which leaves a stamped operating point in
+# the scrollback of a run that was never meant to produce one.
+#
+# The preconditions are the expensive-to-be-wrong part; the fit is cheap and repeatable.
+_PREFLIGHT = "--preflight" in sys.argv
+if STEP == "4c" or _PREFLIGHT:
     _verify_4c_preconditions()
+
+if _PREFLIGHT:
+    print("\n" + "=" * 78)
+    print("PREFLIGHT ONLY — the Step-4c contract was verified in full.".center(78))
+    print(f"(checked against STEP = {STEP!r}; the pin was not changed)".center(78))
+    print("No fit ran; no scores, no threshold, no operating point exist.".center(78))
+    print("=" * 78)
+    raise SystemExit(0)
 
 _warning, _step_label = _stamp()
 print("\n" + "!" * 78)
@@ -1008,23 +1123,160 @@ def section_safe_point(mask, label, floor=None):
 # does the representation already carry a rule, or does the rule need a hand-crafted
 # feature column? -- and both are reported AT the chosen operating point, which is why
 # they live at 4c rather than 4a.
-def stratum_report(stratum_mask, eval_mask, threshold, label, survive_means):
-    """Score behaviour of one stratum at the chosen threshold, vs the slice base rate."""
+#
+# ⚠️ THE POOLED SURVIVAL RATE IS GONE, AND MUST NOT COME BACK. Until 2026-08-03 this
+# function returned one `survival_rate` over the whole stratum. That number is INVALID
+# for §75 and was caught before it was ever read.
+#
+# Why: the §75 stratum is MIXED-CLASS BY CONSTRUCTION. The regex flags 10 editor-
+# includables and 20 editor-Nones, so *Italian Festival* and *Shabbat Korach* are both
+# in it. A pooled "how many survive" confounds two OPPOSITE successes -- keepers
+# correctly surviving and rejects correctly failing -- and moves in the same direction
+# for both. It therefore cannot distinguish "the embedding is missing single-community
+# rejects" (the thing §75 parked the flag on) from "the stratum's keepers are behaving
+# exactly as they should." One number, two questions, no way to tell them apart.
+#
+# The split, per Ariel's 2026-08-03 decision:
+#   keyword_positive_recall     share of regex-tagged EDITOR-POSITIVE rows surviving.
+#   keyword_negative_rejection  share of regex-tagged EDITOR-NEGATIVE rows falling below
+#                               the cutoff, read AGAINST the gate slice's overall
+#                               negative-rejection rate.
+#
+# ONLY THE SECOND IS THE UN-PARK TEST. The first is the guard on the fix: §75 parked the
+# flag precisely because the regex separates the two cases at only 1.7x and a filter
+# built on it would delete measured keepers. If tagged negatives are under-rejected but
+# tagged positives are surviving fine, a flag might earn its place; if BOTH sag, the
+# regex is just finding hard rows and a flag would cost keepers.
+#
+# The B2B stratum is unaffected by the original defect -- being defined by the editor's
+# own §77 reason tick it is ~all-negative, so its old pooled rate was already a negative-
+# rejection rate. It reports through the same function; its positive cell is simply thin
+# or empty, and prints as n/a rather than as a number nobody should read.
+#
+# Counts are printed alongside every percentage. At n_pos≈10 one event moves the recall
+# figure ~10 points, which is the same reason §85 evaluates the veto in whole events.
+def stratum_cells(scores, truth, stratum_mask, eval_mask, threshold):
+    """The pure arithmetic of the split. No printing, no globals -- so it is testable.
+
+    Returns None when the stratum is empty in this slice. Each cell is either None
+    (no rows of that class) or (rate, hits, total) in WHOLE EVENTS as well as a rate.
+    """
     m = stratum_mask & eval_mask
-    pm, ym = p[m], y[m]
     if m.sum() == 0:
+        return None
+    pos_m, neg_m = m & (truth == 1), m & (truth == 0)
+    base_pos, base_neg = eval_mask & (truth == 1), eval_mask & (truth == 0)
+
+    def _rate(mask, survives):
+        """Fraction of `mask` on the wanted side of the cutoff, or None when empty."""
+        if mask.sum() == 0:
+            return None
+        hits = (scores[mask] >= threshold) if survives else (scores[mask] < threshold)
+        return float(hits.mean()), int(hits.sum()), int(mask.sum())
+
+    return {
+        "n": int(m.sum()), "n_pos": int(pos_m.sum()), "n_neg": int(neg_m.sum()),
+        "mean_p": float(scores[m].mean()),
+        "kpr": _rate(pos_m, True),           # keyword_positive_recall
+        "knr": _rate(neg_m, False),          # keyword_negative_rejection
+        "slice_recall": _rate(base_pos, True),
+        "slice_rejection": _rate(base_neg, False),
+    }
+
+
+# ------------------------------------------------------------------------------------
+# THE REGRESSION CASE, asserted at import. This encodes the exact defect that was caught
+# on 2026-08-03, so it cannot be reintroduced by someone "simplifying" the two cells back
+# into one number.
+#
+# The fixture is a stratum behaving PERFECTLY: every tagged keeper survives, every tagged
+# reject falls. The old pooled survival rate reports 10/30 = 33.3% -- which reads as a
+# stratum being crushed, and is indistinguishable from the genuinely bad case where the
+# embedding drops keepers. The split reports 100% / 100% and is unambiguous.
+# ------------------------------------------------------------------------------------
+_t_scores = np.array([0.9] * 10 + [0.1] * 20 + [0.8] * 5 + [0.2] * 15)
+_t_truth = np.array([1] * 10 + [0] * 20 + [1] * 5 + [0] * 15)
+_t_stratum = np.array([True] * 30 + [False] * 20)
+_t_eval = np.ones(50, dtype=bool)
+_t = stratum_cells(_t_scores, _t_truth, _t_stratum, _t_eval, 0.5)
+
+assert _t["n"] == 30 and _t["n_pos"] == 10 and _t["n_neg"] == 20, _t
+assert _t["kpr"] == (1.0, 10, 10), f"keyword_positive_recall broken: {_t['kpr']}"
+assert _t["knr"] == (1.0, 20, 20), f"keyword_negative_rejection broken: {_t['knr']}"
+# The whole point: the pooled number this replaced would have been 33.3% on this input.
+assert abs(float((_t_scores[_t_stratum] >= 0.5).mean()) - 10 / 30) < 1e-9, (
+    "the pooled survival rate on a PERFECTLY behaving mixed-class stratum is 33.3% -- "
+    "that is why it was removed; never reintroduce it as the headline")
+# An all-negative stratum (the B2B shape) must report n/a for recall, not 0.0.
+_t_b2b = stratum_cells(_t_scores, _t_truth, np.array([False] * 10 + [True] * 20 + [False] * 20),
+                       _t_eval, 0.5)
+assert _t_b2b["kpr"] is None, "empty positive cell must be n/a, not a rate"
+assert _t_b2b["knr"] == (1.0, 20, 20), _t_b2b["knr"]
+del _t_scores, _t_truth, _t_stratum, _t_eval, _t, _t_b2b
+
+
+def stratum_report(stratum_mask, eval_mask, threshold, label, reads):
+    """Class-SEPARATED behaviour of one stratum at the chosen threshold.
+
+    Never returns a pooled survival rate; see the comment block above for why.
+    `reads` is {'positive': str, 'negative': str} -- the interpretation of each cell.
+    """
+    cells = stratum_cells(p, y, stratum_mask, eval_mask, threshold)
+    if cells is None:
         print(f"\n  {label}: 0 rows in this slice — not evaluable.")
         return None
-    base_pos = p[eval_mask & (y == 1)]
-    out = {"n": int(m.sum()), "n_pos": int(ym.sum()), "n_neg": int((1 - ym).sum()),
-           "mean_p": float(pm.mean()), "survival_rate": float((pm >= threshold).mean()),
-           "slice_positive_survival": float((base_pos >= threshold).mean())}
+
+    kpr, knr = cells["kpr"], cells["knr"]
+    slice_recall, slice_rejection = cells["slice_recall"], cells["slice_rejection"]
+
+    out = {
+        "n": cells["n"], "n_pos": cells["n_pos"], "n_neg": cells["n_neg"],
+        "mean_p": cells["mean_p"],
+        "keyword_positive_recall": kpr[0] if kpr else None,
+        "keyword_positive_recall_counts": [kpr[1], kpr[2]] if kpr else None,
+        "keyword_negative_rejection": knr[0] if knr else None,
+        "keyword_negative_rejection_counts": [knr[1], knr[2]] if knr else None,
+        "slice_positive_recall": slice_recall[0] if slice_recall else None,
+        "slice_negative_rejection": slice_rejection[0] if slice_rejection else None,
+    }
+    # The un-park signal, pre-computed so nobody has to subtract two percentages by eye.
+    out["negative_rejection_gap"] = (
+        None if (knr is None or slice_rejection is None)
+        else out["keyword_negative_rejection"] - out["slice_negative_rejection"]
+    )
+
+    def _fmt(cell, base, base_label):
+        if cell is None:
+            return "n/a (0 rows in this cell)"
+        rate, hits, total = cell
+        tail = "" if base is None else f"   (slice {base_label} {base[0]:.1%})"
+        return f"{rate:.1%}  [{hits} of {total} events]{tail}"
+
     print(f"\n  {label}")
-    print(f"    n={out['n']} ({out['n_pos']} pos / {out['n_neg']} neg)   "
-          f"mean P(include) {out['mean_p']:.3f}")
-    print(f"    survive the cutoff: {out['survival_rate']:.1%}   "
-          f"(slice positives survive at {out['slice_positive_survival']:.1%})")
-    print(f"    read: {survive_means}")
+    print(f"    n={cells['n']} ({cells['n_pos']} pos / {cells['n_neg']} neg)   "
+          f"mean P(include) {cells['mean_p']:.3f}")
+    print(f"    keyword_positive_recall    : {_fmt(kpr, slice_recall, 'recall')}")
+    print(f"      read: {reads['positive']}")
+    print(f"    keyword_negative_rejection : {_fmt(knr, slice_rejection, 'rejection')}")
+    print(f"      read: {reads['negative']}")
+    if out["negative_rejection_gap"] is not None:
+        gap = out["negative_rejection_gap"]
+        n_neg = cells["n_neg"]
+        # NO VERDICT IS PRINTED, DELIBERATELY. An earlier version of this line called any
+        # gap < 0 "the un-park condition". That is a decision rule, and it was never made:
+        # §85 pre-registers the recall veto BEFORE the numbers are seen, and nothing
+        # equivalent has been pre-registered for this gap. Declaring a threshold here --
+        # in the same run that first shows the number -- is exactly the post-hoc choosing
+        # the pin discipline exists to prevent.
+        #
+        # It also cannot support one. At n_neg on the order of 20, one event moves the gap
+        # ~5 points; at n_pos ~10, ~10 points. A small negative gap is indistinguishable
+        # from noise, so "not evaluable at this n" is a live reading, not a fallback.
+        step = 1.0 / n_neg if n_neg else float("nan")
+        print(f"    gap vs slice negative-rejection: {gap:+.1%}   "
+              f"(1 event = {step:.1%} at n_neg={n_neg})")
+        print("      NO un-park verdict is asserted: the decisive gap was never "
+              "pre-registered (§85 pattern). Decide the rule before reading the number.")
     return out
 
 
@@ -1046,16 +1298,24 @@ if STEP == "4c":
     _strata = {"single_community": stratum_report(
         _single_community, slice_ == "gate", _op["threshold"],
         "SINGLE-COMMUNITY STRATUM (§75 breadth un-park trigger)",
-        "systematic SURVIVAL => the embedding is not carrying breadth, the flag comes off "
-        "the shelf. Rejected at base rate or better => the flag stays parked, §75 confirmed.")}
+        {"positive":
+            "guard on the fix, not the trigger. Near slice recall => a flag could be added "
+            "without deleting keepers. Well below => a flag would cost measured keepers.",
+         "negative":
+            "THE UN-PARK TEST. Below the slice rate => the embedding misses single-community "
+            "rejects, flag comes off the shelf. At or above => stays parked, §75 confirmed."})}
 
     # §76 prof-dev / B2B. Defined by the editor's own reason tick, so no invented
     # vocabulary. These are gate NEGATIVES: low scores mean the embedding carries the rule.
     _strata["b2b_profdev"] = stratum_report(
         is_b2b_reason, slice_ == "gate", _op["threshold"],
         "PROF-DEV / B2B STRATUM (§76 content-judgment rows)",
-        "systematically LOW P(include) => the embedding carries the rule and no hand-"
-        "crafted flag column is warranted. Survival => a column earns its place.")
+        {"positive":
+            "expected empty — the §77 B2B tick routes to gate-negative. Populated => a row "
+            "carries the tick AND a section; check the routing before reading this line.",
+         "negative":
+            "the live question here. At or above the slice rate => the embedding carries "
+            "the rule, no flag column warranted. Under-rejected => a column earns its place."})
 
 # Calibration. P(include) doubles as the interim ranking score (final = P(inc) x P(sec)),
 # so a miscalibrated probability breaks ranking as well as the threshold.

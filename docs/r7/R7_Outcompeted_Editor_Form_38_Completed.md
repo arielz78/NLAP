@@ -61,9 +61,15 @@ order (rows follow the source sheet, not model score).
 | PERMANENT REJECT | **15** | r351 · r158 · r231 · r156 · r205 · r398 · r297 · r93 · r260 · r186 · r250 · r365 · r354 · r206 · r109 |
 | UNCLEAR | **9** | r337 · r180 · r312 · r138 · r204 · r141 · r280 · r133 · r203 |
 
-**Round 1 is not the final state.** 12 rows are queued for a second pass and their verdicts below
-are provisional — see *Open at round 1* at the foot of this file. **Do not apply these labels to
-Airtable until round 2 closes.**
+**Round 1 was the only sitting.** Round 2 was proposed but **cancelled and never issued**
+(2026-08-03) — see the foot of this file. The verdicts below are the editor's final word.
+
+**These labels are APPLIED.** The Step-1c reconciliation wrote 37 of the 38 rows to Airtable on
+2026-08-03 (25 gate-positive, 12 gate-negative; r342 withheld as corrupt input). Settled
+dispositions, canonical sections, per-row provenance and Ariel's adjudications live in
+`models/sectioning/eval/step1c_reconciliation.json` — **that artifact, not this file, is the
+source of truth for what a row's disposition now is.** This file is the frozen record of what
+the editor was shown and what he said.
 
 ---
 
@@ -335,16 +341,35 @@ Airtable until round 2 closes.**
 
 ---
 
-## Open at round 1 — 12 rows queued for a second pass
+## Round 2 — CANCELLED, 2026-08-03. Never issued.
 
-**Group A — re-asked for a sharper answer (6 rows):** r351 · r158 · r231 · r156 · r205 · r312.
+The 12-row queue below was a **proposal**, never sent to the editor. It is cancelled because
+all nine UNCLEAR rows were adjudicated by Ariel on 2026-08-03 and the reconciliation is
+applied — a second sitting would now be asking the editor to re-answer questions that have
+settled answers, at the cost of editor time the release does not have to spend.
 
-**Group B — insufficient information, re-issued with links (6 rows):** r337 · r180 · r133 ·
-r204 · r141 · r280.
+The queue as proposed, kept because the *grouping* is the record of what round 1 failed to
+resolve and why:
 
-**Not re-asked:** r138.
+- **Group A — re-asked for a sharper answer (6 rows):** r351 · r158 · r231 · r156 · r205 · r312.
+- **Group B — insufficient information, re-issued with links (6 rows):** r337 · r180 · r133 ·
+  r204 · r141 · r280.
+- **Not re-asked:** r138.
 
-Round-2 responses append below when they arrive.
+**How each was settled instead** — all 38 dispositions, their provenance and Ariel's
+annotations are in `models/sectioning/eval/step1c_reconciliation.json`. Of the 12: 10 became
+gate-positive, 2 gate-negative (r231 B2B/civic, r204 wrong fit). Fifteen of the 38 carry
+`disposition_provenance: "ariel"` rather than the editor's round-1 verdict.
+
+**What this costs, stated plainly:** 16 of the 38 dispositions are now Ariel-adjudicated and
+22 carry the editor's round-1 verdict. That is a real change in label provenance, recorded per
+row in the artifact so any later analysis can separate the two populations. It is not hidden
+inside an aggregate. (The 16th is r175, whose round-1 ELIGIBLE stood but where Ariel ruled over
+a conflicting first-sitting `Label`; an earlier draft of this line said 15 and was wrong.)
+
+⚠️ **The round-1 verdicts above are the editor's own and remain verbatim.** They are no longer
+"provisional pending round 2" — the reconciliation superseded that status. Read the artifact,
+not this file, for what any row's settled disposition actually is.
 
 ---
 

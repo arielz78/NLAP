@@ -1,0 +1,1386 @@
+{
+  "step": "R7-W6 Step 1c",
+  "source_sheet_path": "docs/r7/R7_Outcompeted_Editor_Form_38_Completed.md",
+  "source_sheet_sha256": "24840c413bcda5ef0f50a514b210a556b75844aa29e55cd18b5519992655baf9",
+  "source_sheet_sha256_note": "RECONCILIATION-TIME hash, deliberately NOT updated to track the live file — updating it would defeat the only check it exists to support. EXPECT IT TO MISMATCH: the sheet is annotated after the fact (2026-08-03: marked labels-applied, cancelled round 2, corrected a provenance count) and every such edit changes its digest. No current-hash is recorded here on purpose; a snapshot value would go stale on the next annotation, which is exactly what happened to an earlier draft of this note. What matters is not the digest but whether the ROW CONTENT drifted, which is verifiable on demand: parse the sheet at both revisions and compare the 38 (row, Verdict, Editor's-reason-verbatim) triples. Done for every edit through 2026-08-03 — identical row set, zero verdict or reason changes, header and round-2 footer only. A mismatch that has NOT been checked this way must be treated as real drift from what was reconciled.",
+  "answer_key": {
+    "settled_by": "Ariel",
+    "settled_on": "2026-08-03",
+    "frozen_in": "scripts/reconcileR7Step1c.js (const KEY)",
+    "basis": "Round-1 blind editor sitting (38 rows) plus Ariel's adjudication of the 9 UNCLEAR rows, the click-only PERMANENT rejections, and the sections the editor did not name."
+  },
+  "policy": {
+    "write_mode": "additive",
+    "outcompeted_tick": "preserved on all 38 rows; retained as R6 ranking evidence per Decision_Log §87",
+    "none_reasoning": "never written; 14 of 38 already carry first-sitting text",
+    "click_language": "never a gate-negative reason; R6 ranking evidence only",
+    "section_vocabulary": "Airtable short names (Families / Couples / Golden)"
+  },
+  "counts": {
+    "unique_rows": 38,
+    "positive": 25,
+    "negative": 12,
+    "withheld": 1,
+    "positive_by_section": {
+      "Families": 8,
+      "Couples": 10,
+      "Golden": 7
+    },
+    "round1_verdicts": {
+      "ELIGIBLE": 14,
+      "UNCLEAR": 9,
+      "PERMANENT": 15
+    },
+    "disposition_provenance": {
+      "editor-round1": 22,
+      "ariel": 16
+    }
+  },
+  "withheld_from_fit": [
+    {
+      "row": 342,
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "it's a good seasonal family event",
+      "editor_implied_section": "Families",
+      "reason_withheld": "The editor judged the underlying EVENT eligible / For Families, but the model input text explicitly opens 'Event Cancelled (Extreme Weather)'. Training or evaluating on that text teaches the gate from a cancellation notice, not from the event. Preserve the evidence; do not represent it as positive or negative.",
+      "airtable_representation": "unchanged (Section=None, NoneReason=['outcompeted']) -> routes 'withheld' by §77. No option in the 6-value vocabulary truthfully means 'input text is a cancellation notice', so the truthful record is this artifact plus WITHHELD_ROWS in gate_step4a.py; no false label is written."
+    }
+  ],
+  "rows": [
+    {
+      "row": 364,
+      "record_id": "recZVXMLjMwFG5Wrw",
+      "title": "K-pop Dance",
+      "slice": "train",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "it's a family event",
+      "settled_disposition": "positive",
+      "canonical_section": "Families",
+      "negative_reason": null,
+      "section_provenance": "editor-prose",
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": {
+        "NoneReasoning": "dancing could be fun"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Families",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Families"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 267,
+      "record_id": "recxkXgdQ8sZjdKH6",
+      "title": "Festival of Praise",
+      "slice": "gate",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "a good family event",
+      "settled_disposition": "positive",
+      "canonical_section": "Families",
+      "negative_reason": null,
+      "section_provenance": "editor-prose",
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Families",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Families"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 175,
+      "record_id": "rec9fizQSzUlGRUst",
+      "title": "Pokemon Weekly Casual League",
+      "slice": "train",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "families  would like this event",
+      "settled_disposition": "positive",
+      "canonical_section": "Families",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": "Explicit Ariel adjudication (2026-08-03): ELIGIBLE / For Families.",
+      "retained_commentary": {
+        "NoneReasoning": "pokeman is popular, people like it"
+      },
+      "cleared_commentary": {
+        "Label": "no fit to the VB from the experience "
+      },
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Families",
+        "NoneReason": [
+          "outcompeted"
+        ],
+        "Label": ""
+      },
+      "patch": {
+        "Section": "Families",
+        "Label": ""
+      },
+      "state": "pending"
+    },
+    {
+      "row": 337,
+      "record_id": "recKUYdIkSWrR1D12",
+      "title": "Super Simple Songs",
+      "slice": "train",
+      "editor_verdict_round1": "UNCLEAR",
+      "editor_reason_verbatim": "UNCLEAR what this event is",
+      "settled_disposition": "positive",
+      "canonical_section": "Families",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Families",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Families"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 312,
+      "record_id": "recvhZF7PXr8kFNaH",
+      "title": "Conservation Youth Corps | Thornhill Garden Maintenance",
+      "slice": "gate",
+      "editor_verdict_round1": "UNCLEAR",
+      "editor_reason_verbatim": "UNCLEAR if the geo location is sutiable",
+      "settled_disposition": "positive",
+      "canonical_section": "Families",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Families",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Families"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 351,
+      "record_id": "recrfJ1Lie16o14uX",
+      "title": "Stories for Beginners",
+      "slice": "gate",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "doesn't get clicks",
+      "settled_disposition": "positive",
+      "canonical_section": "Families",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Families",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Families"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 156,
+      "record_id": "recS1gFV3a9ysg0vw",
+      "title": "Wiz Future Pathways Day",
+      "slice": "train",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "doesn't get clicks",
+      "settled_disposition": "positive",
+      "canonical_section": "Families",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": "Families, expected low R6 rank.",
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Families",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Families"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 205,
+      "record_id": "recNyUWm7JsmeiD0z",
+      "title": "Puppy Yoga by Yoga Kawa Vaughan Cavalier King Charles Spaniel",
+      "slice": "train",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "from the previous times – it's expensive, and doesn't get clicks",
+      "settled_disposition": "positive",
+      "canonical_section": "Families",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": "Families and considered good; do NOT annotate as low-ranked.",
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Families",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Families"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 380,
+      "record_id": "recTRGYz0aJtXK7Wo",
+      "title": "Latte Art - 1",
+      "slice": "train",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "good event people like it.",
+      "settled_disposition": "positive",
+      "canonical_section": "Couples",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "editor-round1",
+      "annotation": "Couples primary, genuinely multi-fit.",
+      "retained_commentary": {
+        "NoneReasoning": "latte art seems fun"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Couples",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Couples"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 245,
+      "record_id": "recP4dSCGl74Y0ElZ",
+      "title": "Thursday Nights at the Bandstand – Cleopatra",
+      "slice": "gate",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "popular summer event",
+      "settled_disposition": "positive",
+      "canonical_section": "Couples",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": {
+        "LinkGave": "had to go and see bc no description, it's unionville festival"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Couples",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Couples"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 243,
+      "record_id": "reckvBZm7rM0JKTQu",
+      "title": "BIAYR Dragon Boating",
+      "slice": "train",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "good novelty event for couples",
+      "settled_disposition": "positive",
+      "canonical_section": "Couples",
+      "negative_reason": null,
+      "section_provenance": "editor-prose",
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": {
+        "NoneReasoning": "could be fun boating experience\n"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Couples",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Couples"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 143,
+      "record_id": "recfTGKLSWJVfY1Sb",
+      "title": "Catering for a Cause",
+      "slice": "gate",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "couples would like this event",
+      "settled_disposition": "positive",
+      "canonical_section": "Couples",
+      "negative_reason": null,
+      "section_provenance": "editor-prose",
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Couples",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Couples"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 89,
+      "record_id": "recZ581UMF87AmwIv",
+      "title": "lululemon Summer Series | Sculpt class at lululemon Hillcrest Mall",
+      "slice": "train",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "might be a good event for couples (women with friends)",
+      "settled_disposition": "positive",
+      "canonical_section": "Couples",
+      "negative_reason": null,
+      "section_provenance": "editor-prose",
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Couples",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Couples"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 180,
+      "record_id": "recWuChzXYoXs0DNk",
+      "title": "SOBA CANADA GRAND LAUNCH/CONVENTION",
+      "slice": "train",
+      "editor_verdict_round1": "UNCLEAR",
+      "editor_reason_verbatim": "UNCLEAR what this event is",
+      "settled_disposition": "positive",
+      "canonical_section": "Couples",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": null,
+      "retained_commentary": {
+        "NoneReasoning": "this is a party and dress up, could be good"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Couples",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Couples"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 138,
+      "record_id": "rec0Ina2QwtT1lASf",
+      "title": "Ramblin'Soul @Woodbridge Ribfest X",
+      "slice": "gate",
+      "editor_verdict_round1": "UNCLEAR",
+      "editor_reason_verbatim": "I would take this event by itself, but from the description it looks like this event takes place at Woodbridge Ribfest X that I promote as a separate event, so I would avoid duplication",
+      "settled_disposition": "positive",
+      "canonical_section": "Couples",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": "Eligible Couples; the parent-event/Ribfest overlap is a DOWNSTREAM duplication constraint (allocator), not a gate-negative.",
+      "retained_commentary": {
+        "Label": "this is a duplicate for ribfest",
+        "LinkGave": "ribfest is a big event. they bring lots of people and it's a good event"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Couples",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Couples"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 141,
+      "record_id": "recQkxK0ABZ2cBoom",
+      "title": "Maker Space on the Go: Mosaic Tiles",
+      "slice": "train",
+      "editor_verdict_round1": "UNCLEAR",
+      "editor_reason_verbatim": "depends on a week and more detailed description",
+      "settled_disposition": "positive",
+      "canonical_section": "Couples",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": "Couples; Georgina remains within the current GTA rule.",
+      "retained_commentary": {
+        "NoneReasoning": "creating tiles could be fun"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Couples",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Couples"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 133,
+      "record_id": "recHmjZx5FooS6Q52",
+      "title": "Germinate - Art That Grows on You",
+      "slice": "train",
+      "editor_verdict_round1": "UNCLEAR",
+      "editor_reason_verbatim": "needs more information",
+      "settled_disposition": "positive",
+      "canonical_section": "Couples",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": "Couples primary; Golden Age alternate/flex.",
+      "retained_commentary": {
+        "LinkGave": "art exhibit, could be a fun time"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Couples",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Couples"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 158,
+      "record_id": "recfILMjyc7MPtq4x",
+      "title": "Mama$ita -- Gemini Affair 2026",
+      "slice": "gate",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "doesn't get clicks",
+      "settled_disposition": "positive",
+      "canonical_section": "Couples",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": "Couples; nightlife evidence came from the description/link, not title alone.",
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Couples",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Couples"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 236,
+      "record_id": "recAnSaxqFbqR77bp",
+      "title": "Weaving Apprenticeships",
+      "slice": "train",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "workshop for seniors",
+      "settled_disposition": "positive",
+      "canonical_section": "Golden",
+      "negative_reason": null,
+      "section_provenance": "editor-prose",
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": {
+        "NoneReasoning": "making a rug can be fun"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Golden",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Golden"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 278,
+      "record_id": "recUjt2doUmt32CUL",
+      "title": "Small Towns and Big Secrets: In Conversation with Bestselling Author Karin Slaughter",
+      "slice": "train",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "seniors",
+      "settled_disposition": "positive",
+      "canonical_section": "Golden",
+      "negative_reason": null,
+      "section_provenance": "editor-prose",
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Golden",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Golden"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 122,
+      "record_id": "recNxcOjHGckqb65l",
+      "title": "Book Club Discussion - Yellowface",
+      "slice": "gate",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "it's a good seniors' event",
+      "settled_disposition": "positive",
+      "canonical_section": "Golden",
+      "negative_reason": null,
+      "section_provenance": "editor-prose",
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Golden",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Golden"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 131,
+      "record_id": "recI9Bsd1vzJp6txx",
+      "title": "How to Laser Engrave a Custom Cutting Board with Epilog",
+      "slice": "train",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "it's a good seniors' event",
+      "settled_disposition": "positive",
+      "canonical_section": "Golden",
+      "negative_reason": null,
+      "section_provenance": "editor-prose",
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Golden",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Golden"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 383,
+      "record_id": "recOZEe7Ezjxvz58c",
+      "title": "Bedazzle a Book (For Adults)",
+      "slice": "gate",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "might be a good event for seniors",
+      "settled_disposition": "positive",
+      "canonical_section": "Golden",
+      "negative_reason": null,
+      "section_provenance": "editor-prose",
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Golden",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Golden"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 280,
+      "record_id": "recjfuVpIFbkngUEa",
+      "title": "Creative Age: Suminagashi",
+      "slice": "gate",
+      "editor_verdict_round1": "UNCLEAR",
+      "editor_reason_verbatim": "depends on a week and more detailed description and age category",
+      "settled_disposition": "positive",
+      "canonical_section": "Golden",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Golden",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Golden"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 203,
+      "record_id": "recRCZ5BSvTrrWUUu",
+      "title": "Sci-Fi Book Club",
+      "slice": "gate",
+      "editor_verdict_round1": "UNCLEAR",
+      "editor_reason_verbatim": "depends on a age category",
+      "settled_disposition": "positive",
+      "canonical_section": "Golden",
+      "negative_reason": null,
+      "section_provenance": "ariel",
+      "disposition_provenance": "ariel",
+      "annotation": "Golden Age, expected low R6 rank.",
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "Golden",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": {
+        "Section": "Golden"
+      },
+      "state": "pending"
+    },
+    {
+      "row": 398,
+      "record_id": "recyCmpvV1zHJVQD8",
+      "title": "AI Image Keychain Maker",
+      "slice": "train",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "too niche",
+      "settled_disposition": "negative",
+      "canonical_section": null,
+      "negative_reason": "wrong fit / not our audience",
+      "section_provenance": null,
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": {
+        "NoneReasoning": "creating 3d keychains with computer images and ai could be fun"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "patch": {
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "state": "pending"
+    },
+    {
+      "row": 297,
+      "record_id": "recDWQZ2QCxiWRHiC",
+      "title": "How to Monogram a Towel with Brother Digital Embroidery Machine",
+      "slice": "gate",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "too niche",
+      "settled_disposition": "negative",
+      "canonical_section": null,
+      "negative_reason": "wrong fit / not our audience",
+      "section_provenance": null,
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "patch": {
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "state": "pending"
+    },
+    {
+      "row": 93,
+      "record_id": "recb6ctRKKZmj6Py9",
+      "title": "Nextgen",
+      "slice": "train",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "too niche, not my age group",
+      "settled_disposition": "negative",
+      "canonical_section": null,
+      "negative_reason": "wrong fit / not our audience",
+      "section_provenance": null,
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "patch": {
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "state": "pending"
+    },
+    {
+      "row": 260,
+      "record_id": "rec5dTXSB40gDI8LQ",
+      "title": "JR Engineering (June 29-July 3:AM)",
+      "slice": "train",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "too niche, this type of events gets a little clicks",
+      "settled_disposition": "negative",
+      "canonical_section": null,
+      "negative_reason": "wrong fit / not our audience",
+      "section_provenance": null,
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "patch": {
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "state": "pending"
+    },
+    {
+      "row": 186,
+      "record_id": "recGFzRjHpvWjsE3c",
+      "title": "Youth Public Speaking Championship - One Canada, Many Voices",
+      "slice": "train",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "people might enjoy learning to imporve their speaking",
+      "settled_disposition": "negative",
+      "canonical_section": null,
+      "negative_reason": "wrong fit / not our audience",
+      "section_provenance": null,
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": {
+        "NoneReasoning": "people might enjoy learning to imporve their speaking"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "patch": {
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "state": "pending"
+    },
+    {
+      "row": 250,
+      "record_id": "recmaMrd6DtkFOg6K",
+      "title": "Dive into Reading",
+      "slice": "train",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "too niche",
+      "settled_disposition": "negative",
+      "canonical_section": null,
+      "negative_reason": "wrong fit / not our audience",
+      "section_provenance": null,
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": {
+        "NoneReasoning": "could be for kids"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "patch": {
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "state": "pending"
+    },
+    {
+      "row": 365,
+      "record_id": "receSLs7dedWSF6U6",
+      "title": "Future FIFA Stars: Girls Rising to 2026",
+      "slice": "gate",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "too niche",
+      "settled_disposition": "negative",
+      "canonical_section": null,
+      "negative_reason": "wrong fit / not our audience",
+      "section_provenance": null,
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "patch": {
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "state": "pending"
+    },
+    {
+      "row": 354,
+      "record_id": "recW4XDjZ5MFrtKPe",
+      "title": "YouTube AI Production Studio (Aug 10-14:AM)",
+      "slice": "gate",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "too niche",
+      "settled_disposition": "negative",
+      "canonical_section": null,
+      "negative_reason": "wrong fit / not our audience",
+      "section_provenance": null,
+      "disposition_provenance": "editor-round1",
+      "annotation": "Blind-sitting twin of r62, whose Step-4b verdict was also NEVER 'too niche'. Independent reproduction.",
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "patch": {
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "state": "pending"
+    },
+    {
+      "row": 206,
+      "record_id": "recSVtPlJyMaCkX3E",
+      "title": "NOCHE LOCA | CASABLANCA & VIVO CLUB",
+      "slice": "train",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "too niche, wrong age group",
+      "settled_disposition": "negative",
+      "canonical_section": null,
+      "negative_reason": "wrong fit / not our audience",
+      "section_provenance": null,
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "patch": {
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "state": "pending"
+    },
+    {
+      "row": 109,
+      "record_id": "rec9KcBKyWxBraPVl",
+      "title": "HOOKAHMANIA",
+      "slice": "train",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "too niche",
+      "settled_disposition": "negative",
+      "canonical_section": null,
+      "negative_reason": "wrong fit / not our audience",
+      "section_provenance": null,
+      "disposition_provenance": "editor-round1",
+      "annotation": null,
+      "retained_commentary": {
+        "NoneReasoning": "could be fun for adults/couples"
+      },
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "patch": {
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "state": "pending"
+    },
+    {
+      "row": 204,
+      "record_id": "recLAvQdfADMOzUdb",
+      "title": "Pulsars GYM FEST 2026",
+      "slice": "gate",
+      "editor_verdict_round1": "UNCLEAR",
+      "editor_reason_verbatim": "too niche, depends on a week and more detailed description",
+      "settled_disposition": "negative",
+      "canonical_section": null,
+      "negative_reason": "wrong fit / not our audience",
+      "section_provenance": null,
+      "disposition_provenance": "ariel",
+      "annotation": null,
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "patch": {
+        "NoneReason": [
+          "outcompeted",
+          "wrong fit / not our audience"
+        ]
+      },
+      "state": "pending"
+    },
+    {
+      "row": 231,
+      "record_id": "recZNWADZ4WPB47if",
+      "title": "Beyond the Lease",
+      "slice": "gate",
+      "editor_verdict_round1": "PERMANENT",
+      "editor_reason_verbatim": "doesn't get clicks",
+      "settled_disposition": "negative",
+      "canonical_section": null,
+      "negative_reason": "B2B / professional dev",
+      "section_provenance": null,
+      "disposition_provenance": "ariel",
+      "annotation": "Adjudicated on event content (B2B/professional or civic housing event), NOT on the verbatim click reason. Click language is never a gate-negative reason (§87).",
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted",
+          "B2B / professional dev"
+        ]
+      },
+      "patch": {
+        "NoneReason": [
+          "outcompeted",
+          "B2B / professional dev"
+        ]
+      },
+      "state": "pending"
+    },
+    {
+      "row": 342,
+      "record_id": "recexlhz9L4ueucJh",
+      "title": "Bike Bonanza 2026!",
+      "slice": "gate",
+      "editor_verdict_round1": "ELIGIBLE",
+      "editor_reason_verbatim": "it's a good seasonal family event",
+      "settled_disposition": "withheld",
+      "canonical_section": null,
+      "negative_reason": null,
+      "section_provenance": null,
+      "disposition_provenance": "ariel",
+      "annotation": "The editor judged the underlying EVENT eligible / For Families, but the model input text explicitly opens 'Event Cancelled (Extreme Weather)'. Training or evaluating on that text teaches the gate from a cancellation notice, not from the event. Preserve the evidence; do not represent it as positive or negative.",
+      "retained_commentary": null,
+      "cleared_commentary": null,
+      "before": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "after": {
+        "Section": "None",
+        "NoneReason": [
+          "outcompeted"
+        ]
+      },
+      "patch": null,
+      "state": "no-write"
+    }
+  ],
+  "applied_airtable_row_ids": [
+    "recZVXMLjMwFG5Wrw",
+    "recxkXgdQ8sZjdKH6",
+    "rec9fizQSzUlGRUst",
+    "recKUYdIkSWrR1D12",
+    "recvhZF7PXr8kFNaH",
+    "recrfJ1Lie16o14uX",
+    "recS1gFV3a9ysg0vw",
+    "recNyUWm7JsmeiD0z",
+    "recTRGYz0aJtXK7Wo",
+    "recP4dSCGl74Y0ElZ",
+    "reckvBZm7rM0JKTQu",
+    "recfTGKLSWJVfY1Sb",
+    "recZ581UMF87AmwIv",
+    "recWuChzXYoXs0DNk",
+    "rec0Ina2QwtT1lASf",
+    "recQkxK0ABZ2cBoom",
+    "recHmjZx5FooS6Q52",
+    "recfILMjyc7MPtq4x",
+    "recAnSaxqFbqR77bp",
+    "recUjt2doUmt32CUL",
+    "recNxcOjHGckqb65l",
+    "recI9Bsd1vzJp6txx",
+    "recOZEe7Ezjxvz58c",
+    "recjfuVpIFbkngUEa",
+    "recRCZ5BSvTrrWUUu",
+    "recyCmpvV1zHJVQD8",
+    "recDWQZ2QCxiWRHiC",
+    "recb6ctRKKZmj6Py9",
+    "rec5dTXSB40gDI8LQ",
+    "recGFzRjHpvWjsE3c",
+    "recmaMrd6DtkFOg6K",
+    "receSLs7dedWSF6U6",
+    "recW4XDjZ5MFrtKPe",
+    "recSVtPlJyMaCkX3E",
+    "rec9KcBKyWxBraPVl",
+    "recLAvQdfADMOzUdb",
+    "recZNWADZ4WPB47if"
+  ],
+  "applied_at": "2026-08-03T16:07:23.948Z"
+}
