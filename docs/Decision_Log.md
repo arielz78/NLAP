@@ -2083,3 +2083,15 @@ Both survive into the training set, so any fit can stratify on or exclude machin
 **Why:** the stratum contains both legitimate keepers and breadth-rule rejects, so pooling survival confounds two opposite successes. After splitting, the remaining cells are still small—roughly 10 positives and 20 negatives—so one event moves the result materially. Inventing a cutoff immediately before the first observation would add false precision and pressure later work to defend an arbitrary number.
 
 **Consequence:** §75 can indicate whether the embedding appears weak on breadth, but cannot alone authorize a hand-crafted feature in R7. Any feature decision motivated by this exploratory result requires validation on new evidence. The recovered regex remains frozen and diagnostic-only under §86.
+
+---
+
+## 89. Baseline Shadow Precedes Isolated Text-Enrichment Arms (2026-08-04)
+
+**Decision:** run the first end-to-end shadow packet on the current frozen representation before further gate-model changes. Then run #108 as an isolated AllEvents-backfill arm while holding the existing 300-character description cap fixed; test any higher-cap representation as a separate arm. Only an offline arm that clears its frozen comparison rule without weakening section safety earns a second shadow run. The fresh-30 audit, the four unresolved error-table adjudications and #123 do not block the baseline shadow; they remain open and are revisited from the shadow's localized failures rather than ahead of product evidence.
+
+**Why:** the current gate already supplies a reversible viability signal, while ranking remains load-bearing even under a perfect gate. The first shadow therefore measures the editor-facing product that the release exists to improve. Running backfill and a higher cap as one arm would change two inputs at once: the staged inventory shows that raising the cap also changes 50 non-AllEvents model rows, so any movement would be unattributable. A frozen current-system baseline followed by isolated arms preserves the counterfactual and prevents later results from redefining what the baseline was.
+
+**What this does not decide:** #123's feature-versus-label-versus-ranking interpretation remains unresolved; no audience-breadth feature, nonlinear classifier, threshold change or relabelling is authorized. Synthetic or weak-label augmentation remains a Future spike under #118 and activates only if end-to-end evidence makes the blind spot material. The #108 pass/fail rule still must be frozen before its embeddings are built.
+
+**Generalizable rule:** *establish the thinnest end-to-end baseline before improving a component, and change one representation input per comparison.* A component experiment earns production attention by improving the final decision surface, not merely its own offline metric.
