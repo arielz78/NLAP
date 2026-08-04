@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-08-03
+- Diagnosed the reject filter's remaining errors by grouping them by the editor's own stated reason, which turned a set of individual judgment calls into one measurable pattern.
+- Found the filter performs at its normal rate on most rejection types but has a complete blind spot on one — a result that redirects the next work from tuning settings to addressing a capability gap.
 - Ran the reject gate's final pre-registered evaluation and priced its operating point, holding the conservative setting because the marginal trade collapses past it — seven more good events lost to remove seven more poor ones, concentrated in the weakest segment.
 - Built an evidence worksheet that traces every error at the chosen setting back to its cause — missing source text, model limitation, or a label that encodes weekly ranking rather than permanent rejection — leaving the judgments to a human rather than the model.
 - Established that enriching the thinnest source's text is the next thing to test offline, before any change reaches the live pipeline.
