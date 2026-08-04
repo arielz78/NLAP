@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-08-04
+- Quantified how much of the reject filter's evaluation set a pending text-enrichment change would actually affect, establishing that its reach on current data is small.
+- Identified a dependency between that enrichment and an upstream pipeline capability, so the model is not trained on inputs production cannot yet supply.
 - Preserved the reject gate’s pre-adjudication evidence in a versioned, hash-verified seal before human rulings.
 - Audited staged source descriptions, isolated cross-event page contamination, and established the boundary for a controlled offline enrichment test without changing the live pipeline.
 
