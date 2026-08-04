@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-08-04
+- Preserved the reject gate’s pre-adjudication evidence in a versioned, hash-verified seal before human rulings.
+- Audited staged source descriptions, isolated cross-event page contamination, and established the boundary for a controlled offline enrichment test without changing the live pipeline.
+
 ## 2026-08-03
 - Diagnosed the reject filter's remaining errors by grouping them by the editor's own stated reason, which turned a set of individual judgment calls into one measurable pattern.
 - Found the filter performs at its normal rate on most rejection types but has a complete blind spot on one — a result that redirects the next work from tuning settings to addressing a capability gap.
