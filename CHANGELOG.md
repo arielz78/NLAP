@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-08-04
+- Audited the project's documentation end to end for accuracy, duplication, and drift, then applied the corrections that were verifiable by inspection — completing the script and module inventories, repairing stale cross-references, and clarifying which document owns which fact.
+- Reorganized two reference documents so the fastest-to-need material comes first, and reverted two earlier edits that overstepped into unsettled project decisions rather than leaving them recorded as settled.
 - Pressure-tested the reject gate's audience-narrowness blind spot against accepted cultural and youth events, preserving the result as exploratory and redirecting the next decision toward end-to-end shortlist value.
 - Quantified how much of the reject filter's evaluation set a pending text-enrichment change would actually affect, establishing that its reach on current data is small.
 - Identified a dependency between that enrichment and an upstream pipeline capability, so the model is not trained on inputs production cannot yet supply.

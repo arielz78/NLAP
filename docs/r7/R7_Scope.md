@@ -4,9 +4,9 @@
 **Deadline (self-imposed):** R7-W6 done by ~2026-08-02 (end of next week). R6 the week after (~2026-08-09).
 **Roadmap:** `docs/NLAP_PostMVP_Roadmap_v3.md` (frozen intent — read only for original release intent).
 
-**Read order:** this doc → `docs/r6/R6_Scope.md` (the ranker half; they feed each other, see the seam note in §3) → `docs/Decision_Log.md` §61–72 → `logs/R7_Log.md` (build history) only if you need the empirical record.
+**Read order:** this doc → `docs/r6/R6_Scope.md` (the ranker half; they feed each other, see the seam note in §3) → `docs/Decision_Log.md` §61–89 → `logs/R7_Log.md` (build history) only if you need the empirical record.
 
-**Type: Release-working.** Current truth + the one-week plan. Build history (probe numbers, confusion matrices, the dead investigation sequence) is in `logs/R7_Log.md`; decisions in `docs/Decision_Log.md` §61–72; chronological recaps in `Execution_Log.md`. Verbatim prior version (the pre-reframe 261-line doc) is in git (`2fcb5f5`).
+**Type: Release-working.** Current truth + the one-week plan. Build history (probe numbers, confusion matrices, the dead investigation sequence) is in `logs/R7_Log.md`; decisions in `docs/Decision_Log.md` §61–89; chronological recaps in `Execution_Log.md`. Verbatim prior version (the pre-reframe 261-line doc) is in git (`2fcb5f5`).
 
 **Key data input:** the editor-labeled deck (`R7 Label Deck`, Airtable `tblOxYHuAl2yp9Znl`). Airtable holds **456 rows** (239 None / 211 includable / 6 blank); the current modeling set uses **416**. **#107 accounts for all 40 omitted rows:** 30 Batch-5 rows post-date the embedding pull, 4 walkthrough rows were omitted at staging, 4 have blank `Section`, and 2 have no URL. Use 456 when talking about what the editor has ruled on, 416 only when describing a fit actually run on the cached model set.
 
@@ -329,4 +329,4 @@ W6 is done when:
 ---
 
 ## Build history + frozen background → `logs/R7_Log.md`
-The 07-09 feasibility capture, the dead representation gates, the 07-15→07-22 results log (probe numbers, confusion matrices, per-source None rates, self-consistency decomposition), and the now-superseded transfer-test / τ-fork investigation live there. Decisions in `docs/Decision_Log.md` §61–72.
+The 07-09 feasibility capture, the dead representation gates, the 07-15→07-22 results log (probe numbers, confusion matrices, per-source None rates, self-consistency decomposition), and the now-superseded transfer-test / τ-fork investigation live there. Decisions in `docs/Decision_Log.md` §61–89.

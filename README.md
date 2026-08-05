@@ -25,14 +25,14 @@ Top-level folders (the durable map — update this table when a top-level folder
 | `workflows/` | n8n workflow JSON (R1, R2) |
 | `models/` | Offline model building + evaluation (Python). `sectioning/` = R7 section classifier, `ranking/` = R6 scorer harness. Shared venv at `models/.venv`. |
 | `docs/` | Documentation. Subfolders: `r5\|r6\|r7/` (per-release scope), `archive/`, `client_prompts/` |
-| `data/` | Data artifacts — Beehiiv issue history, tracking output |
-| `output/` | Exported Beehiiv HTML snippets per issue |
-| `test_runs/` | Prompt A/B test output captures |
+| `data/` | Data artifacts — Beehiiv issue history, tracking output (gitignored) |
+| `output/` | Exported Beehiiv HTML snippets per issue (gitignored) |
+| `test_runs/` | Prompt A/B test output captures (gitignored) |
 | `logs/` | Frozen per-release build history + Website_Log |
 | `meetings/` | Dated client meeting notes (gitignored / private) |
-| `NA/` | Business / portfolio docs — not pipeline code |
+| `NA/` | Business / portfolio docs — not pipeline code (gitignored / private) |
 | `summer/` | Summer 2026 personal layer — plan + learning positions (gitignored / private) |
-| `bwna-web/` | Website build — separate sub-project |
+| `bwna-web/` | Website build — separate sub-project (gitignored) |
 
 **Naming rule:** `models/` subfolders are named for the **problem** they solve (`sectioning`, `ranking`), never the technique or the release — code outlives releases, and the technique changes (R7 went TF-IDF → embeddings on 2026-07-20 with no folder rename). Release numbers live on `docs/r{N}/`, milestones, and branches. *(Superseded 2026-07-20: the old `eval/` + `r6_eval/` split was by creation date, not function — see issue #89.)*
 

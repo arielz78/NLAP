@@ -1,5 +1,10 @@
 # NLAP Script Runbook
 
+**Type: Living reference.** How to operate the pipeline day-to-day — script order, the Airtable
+data model, the glossary, and the error reference. Update it when a script, field, view, command,
+or error message changes. Release status lives in the active Scope doc; decisions live in
+`Decision_Log.md`; neither belongs here.
+
 This document explains how the newsletter automation pipeline works, the order scripts run in, and what to do when something goes wrong.
 
 ---
@@ -34,6 +39,28 @@ generateBlurbs.js      ← for a given issue date, calls GPT to write
  pushToBeehiiv.js      ← fetches IssueItems with blurbs, renders HTML,
                           outputs one file with 5 sections for Beehiiv
 ```
+
+---
+
+## Glossary
+
+Terms used throughout this document and in Airtable. Read this first if any word below is unfamiliar.
+
+| Term | Meaning |
+|------|---------|
+| **Candidate** | One event from one source. Lives in the Candidates table. Every ingested event becomes one Candidate. |
+| **IssueItem** | One allocated slot in one issue. Lives in the IssueItems table. Has a section, slot number, links to a Candidate and an Issue, and holds the DisplayTitle, Description, and CTA. |
+| **Issue** | One newsletter date. Lives in the Issues table. Created manually before each R3 run. |
+| **IssueDate** | The Thursday publish date. The date window for events is IssueDate+1 through IssueDate+10. |
+| **Section** | One of the 5 newsletter segments: For Families, For Couples, For Golden Age Readers, Local Aroma, Trust Me Recipe. |
+| **Slot** | The numbered position within a section (1–5). Trust Me Recipe is 1–2. |
+| **Lock** | A checkbox on IssueItems. When checked, the slot and blurb are protected — R3 won't reassign the slot and R4 won't regenerate the blurb on the next run. |
+| **SegmentSuggested** | The section R2 (classification) assigned to a Candidate. |
+| **NeedsReview** | A flag on Candidates. If true, the event is excluded from allocation — it needs a human to look at it first. |
+| **Score_Final** | A ranking score on Candidates used by R3 to decide which events get placed first. Higher score = placed first. |
+| **R2Status** | Lifecycle field on Candidates: Pending (not yet classified) / Enriched (classified) / NeedsReview (low confidence) / Failed. |
+| **UniqueEventID** | The deduplication key for events: `lowercase(title)\|YYYY-MM-DD`. Prevents the same event from being ingested twice. |
+| **R1 / R2 / R3 / R4** | The four pipeline stages: ingestion / classification / allocation / copywriting + export. |
 
 ---
 
@@ -94,28 +121,6 @@ Add `--dry-run` to print the HTML to the terminal without saving a file.
 
 **Input:** IssueItems with blurbs for a specific date (must already exist from R3 + R4a)  
 **Output:** `output/YYYY-MM-DD_beehiiv.html` — 5 sections, one per Beehiiv HTML block
-
----
-
-## Glossary
-
-Terms used throughout this document and in Airtable.
-
-| Term | Meaning |
-|------|---------|
-| **Candidate** | One event from one source. Lives in the Candidates table. Every ingested event becomes one Candidate. |
-| **IssueItem** | One allocated slot in one issue. Lives in the IssueItems table. Has a section, slot number, links to a Candidate and an Issue, and holds the DisplayTitle, Description, and CTA. |
-| **Issue** | One newsletter date. Lives in the Issues table. Created manually before each R3 run. |
-| **IssueDate** | The Thursday publish date. The date window for events is IssueDate+1 through IssueDate+10. |
-| **Section** | One of the 5 newsletter segments: For Families, For Couples, For Golden Age Readers, Local Aroma, Trust Me Recipe. |
-| **Slot** | The numbered position within a section (1–5). Trust Me Recipe is 1–2. |
-| **Lock** | A checkbox on IssueItems. When checked, the slot and blurb are protected — R3 won't reassign the slot and R4 won't regenerate the blurb on the next run. |
-| **SegmentSuggested** | The section R2 (classification) assigned to a Candidate. |
-| **NeedsReview** | A flag on Candidates. If true, the event is excluded from allocation — it needs a human to look at it first. |
-| **Score_Final** | A ranking score on Candidates used by R3 to decide which events get placed first. Higher score = placed first. |
-| **R2Status** | Lifecycle field on Candidates: Pending (not yet classified) / Enriched (classified) / NeedsReview (low confidence) / Failed. |
-| **UniqueEventID** | The deduplication key for events: `lowercase(title)\|YYYY-MM-DD`. Prevents the same event from being ingested twice. |
-| **R1 / R2 / R3 / R4** | The four pipeline stages: ingestion / classification / allocation / copywriting + export. |
 
 ---
 

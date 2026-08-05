@@ -29,7 +29,7 @@ never changes, whereas type (working → frozen) does.
 | Session journal (what happened, next step) | `Execution_Log.md` (root) | Living (journal) | **Every session** |
 | Public repo changelog | `CHANGELOG.md` (root) | Derived from Execution_Log | Every session (auto — derived, not authored twice) |
 | Architectural / editorial decisions + rationale | `docs/Decision_Log.md` | Living reference | **Only** when a real decision is made |
-| Active release status ("where are we") | active Scope doc's Status Snapshot (e.g. `docs/r6/R6_Scope.md`) | Release-working | When release status changes |
+| Active release status ("where are we") | active Scope doc's Status Snapshot (e.g. `docs/r7/R7_Scope.md`) | Release-working | When release status changes |
 | Per-source method / status / field inventory / verdict | `docs/source_decision_sheet.md` | Living reference | When a source's state changes |
 | Scrape / source-probe methodology | `docs/scrape_blueprint.md` | Living reference | When the method or standard changes |
 | Release plan (original intent, **not** status) | `docs/NLAP_PostMVP_Roadmap_v3.md` | Frozen *per-section* (see below) | A section freezes when its release opens; otherwise never |
@@ -49,9 +49,9 @@ never changes, whereas type (working → frozen) does.
 
 `NLAP_PostMVP_Roadmap_v3.md` is a **mixed-maturity** doc, so it isn't frozen all at once:
 
-- **Started releases** (R5) → that section is **frozen intent**. Read the release's Scope doc for status; read the roadmap only for the *original* plan. The plan-vs-actual gap is intentional writeup material — never sync the roadmap to reality.
-- **Not-yet-started releases** (R6–R8) → the roadmap **is** their live source of truth. There's no Scope doc yet.
-- A section freezes **the moment its release gets a Scope doc.** When you open R6, seed `docs/r6/R6_Scope.md` from the roadmap's R6 section; from then on R6 status lives in the Scope doc. **Every Scope doc carries two standing sign-off gates (copy R5_Scope's):** (1) a **milestone-completeness gate** — the release closes only when no open issue is unmilestoned *and* every issue in that release's GitHub milestone is closed or deferred-with-disposition; (2) a **reusability / config gate** — the release closes only after confirming nothing new is Vaughan-hardcoded outside config, i.e. the pipeline stays city-swappable (base-per-newsletter): **R6** = scoring weights/venue logic config-driven; **R7** = per-base models; **R8** = onboard-via-config verified. Both gates are status, so they live in the Scope doc, never the roadmap. When you seed a new Scope doc from the roadmap, both gates come with it — they cannot be skipped.
+- **Started releases** (R5, R6, R7) → that section is **frozen intent**. Read the release's Scope doc for status; read the roadmap only for the *original* plan. The plan-vs-actual gap is intentional writeup material — never sync the roadmap to reality.
+- **Not-yet-started releases** (R8) → the roadmap **is** its live source of truth. There's no Scope doc yet.
+- A section freezes **the moment its release gets a Scope doc.** When you open R8, seed `docs/r8/R8_Scope.md` from the roadmap's R8 section; from then on R8 status lives in the Scope doc. **Every Scope doc carries two standing sign-off gates (copy R5_Scope's):** (1) a **milestone-completeness gate** — the release closes only when no open issue is unmilestoned *and* every issue in that release's GitHub milestone is closed or deferred-with-disposition; (2) a **reusability / config gate** — the release closes only after confirming nothing new is Vaughan-hardcoded outside config, i.e. the pipeline stays city-swappable (base-per-newsletter): **R6** = scoring weights/venue logic config-driven; **R7** = per-base models; **R8** = onboard-via-config verified. Both gates are status, so they live in the Scope doc, never the roadmap. When you seed a new Scope doc from the roadmap, both gates come with it — they cannot be skipped.
 - Post-R8, when every section has been consumed, the whole roadmap retires to `docs/archive/`.
 
 ## Two patterns that prevent "writing the same thing twice"

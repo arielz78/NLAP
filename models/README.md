@@ -33,6 +33,10 @@ models/.venv/Scripts/python.exe -m models.ranking.generate_pairs <snapshot.json>
 Python package using relative imports, so it must be run with `-m` and the
 dotted module path, not by file path.
 
+⚠️ **Always invoke the venv's interpreter explicitly** — `models/.venv/Scripts/python.exe`, never
+a bare `python` or `py -3`. A system interpreter is not guaranteed to exist, and if one does it
+will not have the pinned deps. This is why every command above spells out the full venv path.
+
 Deps are pinned in `requirements.txt` to the versions R6 was built against.
 `.venv/` is gitignored — recreate it with the two commands above on a new
 machine.
@@ -48,13 +52,15 @@ in `corpora/` are the language-neutral handoff between them.
 
 | File | What it does | Reads → Writes |
 |---|---|---|
-| `embed_corpus.py` | Embeds the 3-class corpus with OpenAI (run once, cached). | `issue_history.json` → `corpora/*.npy` + `embeddings_labels.json` |
+| `embed_corpus.py` | Embeds the 3-class corpus with `voyage-4-large` (run once, cached). Provider-agnostic — `--model text-embedding-3-*` restores the OpenAI path, and those OpenAI matrices are still cached on disk. | `issue_history.json` → `corpora/*.npy` + `embeddings_labels.json` |
 | `cv_embeddings.py` | The 3-class embeddings CV + fit (the live representation path). | `corpora/*.npy` → prints |
 | `fit_tfidf.py` | The 3-class TF-IDF fit on published history. Killed by Gate 1 (Decision_Log §67); kept as the frozen baseline. | `issue_history.json` → in-memory `vec`, `clf` (+ prints) |
 | `probe_b_coverage.py` | Probe B — Gate 1 weighted token coverage + Gate 2 event blindness. | imports `fit_tfidf` + `corpora/raw_candidate_events.json` → prints |
 | `classifier2give2editor.py` | Built the 400-row deck: filter → predict → stratify → export. | candidates + `fit_tfidf` → `deck/editor_deck_*` |
 | `build_ambiguous_sections.py` | Pulls the tightest Couples/Golden boundary cases for editor re-ruling. | `issue_history.json` → `rulings/*` |
 | `score_deck_pre_post_call.py` | Scores the editor's 400-row label deck, pre- vs post-walkthrough-call slices. | `deck/` labels → prints |
+| `gate_step4a.py` | The reject gate — include-vs-None fit, the `route_s77()` label-routing contract, and out-of-fold scoring of the deck. | cached `corpora/transfer_*.npy` + the latest `data/tracking/r7_label_audits/` pull → `eval/step4*_disagreements.json` |
+| `text_recipe.py` | The single serve-time text recipe — import it, never copy it. Score-time recipe must equal serve-time recipe (Decision_Log §70, §79). | imported by the scripts that build text → writes nothing |
 | `corpora/stage_corpora.js` | (JS) Assembles the raw-candidate corpus — dedupes snapshots, builds serve-time text. | `issue_history.json` + snapshots → `corpora/raw_candidate_*.json` |
 
 | Folder | Contents |
@@ -62,6 +68,7 @@ in `corpora/` are the language-neutral handoff between them.
 | `corpora/` | Staged inputs — published titles, raw candidate events, `stage_corpora.js` that builds them. |
 | `deck/` | The 400-row editor deck, its answer key, and the labeled pull-back from Airtable. |
 | `rulings/` | The 07-09 Couples/Golden ambiguous cases sent to the editor + his rulings. |
+| `eval/` | Label-reconciliation artifacts and error-mechanism outputs from the gate steps. |
 
 ## ranking/ — R6 scorer eval harness
 
