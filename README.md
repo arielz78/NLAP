@@ -47,12 +47,12 @@ Top-level folders (the durable map — update this table when a top-level folder
 | Stage | Tool | What it does |
 |-------|------|--------------|
 | R1 | n8n | Ingests events from RSS + Eventbrite. Deduplicates. Writes to Candidates table. |
-| R2 | n8n | *(dead)* Was meant to classify each candidate into a section via GPT. Unreliable / effectively unused — the reason **R7** (a trained section classifier) exists. |
+| R2 | n8n | Retired classifier workflow; it is not operated. Its legacy `SegmentSuggested` and `NeedsReview` field contract remains consumed by R3 pending the R6/R7 production-integration pass. |
 | R3 | Node.js | Allocates approved candidates to newsletter issues. Enforces quotas, date windows, venue diversity. |
 | R4 | Node.js | Generates blurbs per IssueItem. Exports 5 HTML snippets for Beehiiv. |
 | R5+ | Node.js & n8n | Post-MVP: source expansion (R5, done), scoring (R6), section classifier (R7, active), handoff (R8). |
 
-R1, R3, R4 are complete and stable. R2 is dead (see R7). R5 is closed. R6–R8 are the active roadmap.
+R1, R3, R4 are complete and stable. R2 is retired; its replacement is planned through the R6/R7 integration work. R5 is closed. R6–R8 are the active roadmap.
 
 ---
 

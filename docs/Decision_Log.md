@@ -14,7 +14,7 @@ The automation pipeline handles the full process from event discovery to draft n
 | Stage | Tool | What it does |
 |-------|------|--------------|
 | **R1** | n8n | Ingests events from RSS feeds and Eventbrite. Deduplicates. Writes to Candidates table. |
-| **R2** | n8n | Classifies each candidate into a segment using GPT-4o. Flags low-confidence records for human review. |
+| **R2** | n8n | Retired and not operated. R3 still consumes its legacy field interface. The replacement producer contract is deferred to the R7-W7 integration pass after R6 and R7 are finalized; current status lives in `docs/r7/R7_Scope.md`. |
 | **R3** | Node.js | Allocates approved candidates to newsletter issues. Enforces quotas, date windows, venue diversity. Writes IssueItems. |
 | **R4** | Node.js | Generates blurbs (DisplayTitle, Description, CTA) per IssueItem using gpt-5.4-nano. Exports 5 HTML snippets for paste into Beehiiv. |
 | **R5–R8** | Node.js | Post-MVP: source expansion, scoring, classification quality, handoff. See NLAP_PostMVP_Roadmap.txt. |
