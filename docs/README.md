@@ -58,6 +58,7 @@ never changes, whereas type (working → frozen) does.
 
 - **Decision → home in Decision_Log; journal points.** Write the rationale once in `Decision_Log.md`; the `Execution_Log.md` entry mentions the decision in one line and links it (`see Decision_Log §N`) — it does **not** re-articulate the why.
 - **Metric → home in the metrics log; narrative renders.** A number is originated only in `Vaughan_Metrics_Log.md`. The case study quotes it but never authors or revises it. If they disagree, the log wins.
+- **Issue → home in the body; comments are the audit trail.** The **body states current truth**; comments record how it got there. When a comment supersedes, re-scopes, or settles something in the body, **edit the body in the same action** and leave the comment as evidence. A long comment thread is not a smell; a body that contradicts its own thread is. Corollary for agents: read issues with `gh issue view N --comments` — the body alone can be stale (enforced by a `PreToolUse` hook in `.claude/settings.local.json`). Same rule as the two above: one maintained home, everything else points at it.
 
 ## Open-work lifecycle (no silent drops)
 

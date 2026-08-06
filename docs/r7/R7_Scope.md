@@ -14,6 +14,22 @@ Plus the **cached embeddings** (current representation `voyage-4-large` @2048d, 
 
 ---
 
+## The Closing Sequence (set 2026-08-06)
+
+Execution order only — **no status lives here.** State is the Status Snapshot below; rationale is `Decision_Log` §89. Ordering rule: the baseline shadow runs first, and the open adjudications are revisited *from* its failures, not ahead of them.
+
+1. **Baseline shadow** — current frozen representation, read-only, `models/.venv/Scripts/python.exe`.
+2. **Read the shadow's failures** — they select which error rows are consequential.
+3. **Adjudicate Step 4c** on that filtered set → `R7_Step4c_Error_Mechanism_Table.md`.
+4. **Answer Fork C** — Ariel's call, priced by the shadow.
+5. **#108 offline arm** — pass/fail frozen before embeddings (§89).
+6. **Step 3 cleanup** — Eventbrite TLD allowlist re-import. Independent; land anytime.
+7. **Close W6.**
+
+Steps 2–4 are the work. ⚠️ Not a one-session sequence: 4 is strategic, 5 needs an embedding run.
+
+---
+
 ## Status Snapshot (2026-08-01)
 
 Single source of truth for "where are we." Supersedes the roadmap's R7 header and the pre-reframe body of this doc.
@@ -47,6 +63,12 @@ Single source of truth for "where are we." Supersedes the roadmap's R7 header an
 ⚠️ **Stage 0's deletable set has shrunk three times, each time on measurement** — §75 (facts only) → §76 (content rules route to the gate) → §76 amendment (not-English and not-an-event removed). **The direction is the finding:** every time this step is measured it gets smaller. Treat any un-measured Stage-0 sizing as an over-estimate.
 
 **The reframe (validated 3 independent ways, then confirmed by 3 outside LLM reviews):** this is a **top-k selection problem, not a classification problem.** The pipeline ships 5 events/section from ~720 raw candidates/week. The section classifier — the thing W6 spent the release building — **owns only ~3 of ~19 failures.** The filter owns ~12, ranking ~4. The classifier was trained on 1,126 *published* events (all winners); in production it sees raw scraped candidates it has never seen a negative example of, and confidently sections the junk. **The missing stage is a binary include/None gate** — the reject decision the system has never had.
+
+**⚠️ The `~720 raw candidates/week` denominator does not reconcile with measured pool depth (2026-08-06). Every `~505 of ~720` figure in this doc inherits the gap — `TODO(ariel)`, because it is Fork C's arithmetic.**
+
+**Numbers home in `NA/Vaughan_Metrics_Log.md` § "In-window candidate depth" (measured 2026-08-06) — do not re-author them here.** In short: **~359** eligible candidates in the upcoming issue's window on any run day, **~310** on a Sunday run (the editor's actual workflow), **287** for the following issue. The three caveats that travel with those figures — standing pool depth is not weekly arrivals, windows overlap so W1 and W2 must never be summed, and depth grows with lead time — are stated in the metrics log and apply to every use below.
+
+**What this does not settle.** 720 may have been measured on a different denominator (pre-dedup, pre-`Clean/Filter`, or all four windows pooled) rather than being wrong. Either way the direction is the same: if the real in-window population is ~310–360, then a perfect gate removing the 29.9% permanently-rejectable share leaves **~220–250 events for 15 slots**, not ~505 — the ratio Fork C turns on drops from ~34:1 to ~15:1. **That is still ~10:1 after the gate does its best work, so Fork C's premise survives; only its magnitude changes.** Do not propagate a replacement number into the Fork C lines below until Ariel re-derives them — this note points at the measurement, it does not settle the conclusion.
 
 **⚠️ Population correction (2026-07-26, Decision_Log §74 amendment) — the arithmetic this doc used to run on was wrong.** The old snapshot cited a "~2% keep rate / ~98% junk." **That 2% is a *slot* rate, not a junk rate:** 15 published ÷ ~720 in window conflates *ineligible* events with *eligible-but-outcompeted* ones, because 5-per-section is a hard quota. The later **~46.5% pre-split eligibility estimate is now also superseded**: it treated every `Section=None` as ineligible, while the completed split identifies a material `outcompeted` pile that belongs with the gate's positives. Do not quote a replacement until Step 1 QC closes and the metrics log records it. The conclusion only strengthens: ranking is load-bearing inside W6, and §78 resolves the gate as score-and-sort, never delete.
 

@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-08-06
+- Ran the full post-ingestion health-check suite and investigated the two alarms it raised: a recurring source-level ingestion drop, now filed with a reproduction and two competing explanations, and a data-quality gap that was confirmed closed and non-growing rather than ongoing.
+- Measured candidate supply depth per issue from historical snapshots, normalizing for the day of the week the check was run, and recorded it as a first-class metric — surfacing a discrepancy with a planning figure the current release's scoping arithmetic rests on.
+- Adopted a convention for issue hygiene (the issue body states current truth; comments are the audit trail), documented it alongside the project's other source-of-truth rules, and enforced the reading half of it automatically.
+
 ## 2026-08-05
 - Settled how the pipeline's classification stage is described across the project's reference docs, replacing three inconsistent characterizations with one accurate statement of what the stage does and does not do today.
 - Produced a set of draft portfolio and repository-readiness materials — architecture and data-model diagrams, an artifact inventory, and a claim-by-claim audit of the case study against its source documents.

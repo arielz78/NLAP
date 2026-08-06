@@ -38,7 +38,7 @@ Single source of truth for "where are we."
 
 **Inherited obligations (from R5 close):**
 - **#82** — health-check suite + FIELD_MAP walkthrough *before* R6 edits those same nodes.
-- **#69** — blank-`Source` backfill (407 pre-R5 legacy blanks), lands in R6 build.
+- **#92** — blank-`Source` backfill (**513** pre-R5 legacy blanks), lands in R6 build. Confirmed 2026-08-06 to be a **closed, non-growing set**: zero blanks across the 1,442 records ingested in July–August, so the R5 write path is already correct and a one-time backfill suffices (no write-path repair). Earlier drafts of this line cited **#69**, which is the Facebook keep/kill retrospective — wrong issue.
 - **Geo/city config extraction** (R5 reusability disposition) — bundles into the R6 build pass: scoring config + city constants extracted together, one careful pass per node, not two.
 - GPT-5-mini eval (roadmap W4 step 5 / Debt #13) — carried; pairs with the LLM cost measurement in §7.
 
