@@ -2107,3 +2107,15 @@ Both survive into the training set, so any fit can stratify on or exclude machin
 **What this does not decide:** no pass bar is set. At n=100 stratified, recall cannot distinguish 88% from 95%, so the contract is an alarm band and a transfer delta against the offline 97.1% — which is itself optimistic, because 0.4530 was selected using that same offline evidence. Junk rejection is reported, not gating. Section agreement is directional only at 75.0% editor routing self-agreement. Calibration anchors are diagnostic, not an invalidation rule. #123, #108 and any operating-point retuning remain out of scope for this pass.
 
 **Generalizable rule:** *an instrument that only observes the accepted set cannot measure what was wrongly rejected.* Validate a filter over the population it filtered, not over the output it produced.
+
+---
+
+## 91. Live Scores Rank; 0.4530 Does Not Classify Them (2026-08-06)
+
+**Decision:** the live runner fits the frozen-specified gate on the complete frozen training set and uses the resulting scores for **ranking and quintile sampling only**. `0.4530` remains the historical Step-4c out-of-fold reference point and is **not** assumed to be calibrated on the live population; it must not filter, classify, or exclude any live row. The live audit therefore primarily tests **ranking transfer** — whether the ordering the gate induces on live survivors agrees with the editor — rather than the transfer of an absolute operating point.
+
+**Why:** `0.4530` was selected on grouped-CV out-of-fold scores over the 165-row gate slice. The live runner fits on the full training set, which is a deliberately different estimator population: a full-fit model sees more data and its score distribution shifts, so the same numeric cutoff no longer denotes the same decision. Carrying the number across anyway would silently redefine what "the operating point" means, and the resulting keeper-recall figure would look comparable to the offline 97.1% while measuring something else. Ranking is the weaker claim the evidence actually supports, and §90's stratified draw needs only an ordering to build its quintiles.
+
+**Consequence:** the quintile strata in Instrument A are defined by rank position within the live pool, not by fixed score bands, so the sample composition does not depend on calibration. A live-versus-offline recall delta remains reportable as a directional alarm but is not a pass/fail bar. Any future decision to deploy a threshold requires calibrating on the live population first — that is a separate authorization, not an inference from this audit.
+
+**Generalizable rule:** *a threshold is a property of the fit that produced it, not a portable constant.* Change the estimator population and the cutoff must be re-derived or demoted to a ranking signal.
