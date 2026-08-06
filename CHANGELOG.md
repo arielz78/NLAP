@@ -5,6 +5,9 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-08-06
+- Redesigned the current release's validation plan after identifying a blind spot in the original approach: reviewing only the system's top-ranked output cannot reveal good items the filter wrongly discarded, so a plausible-looking result would have hidden a real failure. Added a stratified audit over the full candidate pool, sampled toward the low-scoring end where that failure would live.
+- Froze the interpretation contract before collecting any data — sample allocation, what result triggers investigation, and an explicit rule that the audit cannot be used to retune the model it is testing.
+- Recorded the amendment as a numbered architectural decision and re-sequenced the release's closing plan to match.
 - Ran the full post-ingestion health-check suite and investigated the two alarms it raised: a recurring source-level ingestion drop, now filed with a reproduction and two competing explanations, and a data-quality gap that was confirmed closed and non-growing rather than ongoing.
 - Measured candidate supply depth per issue from historical snapshots, normalizing for the day of the week the check was run, and recorded it as a first-class metric — surfacing a discrepancy with a planning figure the current release's scoping arithmetic rests on.
 - Adopted a convention for issue hygiene (the issue body states current truth; comments are the audit trail), documented it alongside the project's other source-of-truth rules, and enforced the reading half of it automatically.

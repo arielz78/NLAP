@@ -495,6 +495,8 @@ formula until that list is in hand.
 - Runbook + failure protocol written and signed off.
 - Execution interface decision made: assess whether client should be running scripts manually (VS Code + terminal) or whether a lower-friction path (scheduled automation, webhook trigger, simple UI) is warranted before handoff. Pick and scope the approach — don't hand off a terminal workflow to a non-technical client without a deliberate decision.
 
+> **Candidate path:** a thin operator control panel over the existing scripts/workflows. Airtable remains the database and editorial-review surface; the control panel exposes business actions, run status, previews, and write confirmations. It does not replace Airtable or recreate pipeline logic. This keeps the handoff improvement bounded to a few-day build rather than a standalone application.
+
 #### R8 Airtable human + analytics layer — design addendum (captured 2026-06-26)
 
 > Output of a design session that surveyed Airtable's feature surface (Interfaces, Omni, automations, AI fields, dashboards) against this pipeline. The survey is **done** — do not re-run it cold at R8. Two halves below: **settled priors** (architectural, won't change with R6/R7 — apply them) and **open decisions** (depend on the finished R7 pipeline — re-decide then with full information, don't pre-commit).

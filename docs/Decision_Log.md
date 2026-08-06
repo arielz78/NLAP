@@ -2095,3 +2095,15 @@ Both survive into the training set, so any fit can stratify on or exclude machin
 **What this does not decide:** #123's feature-versus-label-versus-ranking interpretation remains unresolved; no audience-breadth feature, nonlinear classifier, threshold change or relabelling is authorized. Synthetic or weak-label augmentation remains a Future spike under #118 and activates only if end-to-end evidence makes the blind spot material. The #108 pass/fail rule still must be frozen before its embeddings are built.
 
 **Generalizable rule:** *establish the thinnest end-to-end baseline before improving a component, and change one representation input per comparison.* A component experiment earns production attention by improving the final decision surface, not merely its own offline metric.
+
+---
+
+## 90. Live Stratified Gate Validation Precedes the Product Shadow (2026-08-06)
+
+**Decision:** amend §89's ordering. A stratified validity audit over the full live survivor pool runs before, not after, the product shadow. One live pull and one editor sitting carry both instruments: Instrument A draws 100 blinded events stratified by `P(include)` quintile at 25/25/20/15/15, deliberately bottom-weighted, and Instrument B presents the top 8 per section for the three automated sections. Instrument B runs first to protect the product read from fatigue; Instrument A follows in randomized blocks. Readouts are hierarchical — live gate transfer is read first, and Fork C is interpreted only if transfer holds. The audit is read-only with respect to the 0.4530 operating point.
+
+**Why:** §89 assumed the product shadow could surface gate failures. It cannot. The shadow shows the editor only the top of the ranked list, so a genuinely eligible event the gate scored low is never surfaced, the shortlist still looks plausible, and the failure stays invisible. That is silent-and-plausible corruption of the release conclusion, which makes whole-pool sampling validity work rather than optional curiosity. The section classifier's failure to transfer from offline numbers to live behaviour is the project's own precedent that this risk is concrete, not hypothetical.
+
+**What this does not decide:** no pass bar is set. At n=100 stratified, recall cannot distinguish 88% from 95%, so the contract is an alarm band and a transfer delta against the offline 97.1% — which is itself optimistic, because 0.4530 was selected using that same offline evidence. Junk rejection is reported, not gating. Section agreement is directional only at 75.0% editor routing self-agreement. Calibration anchors are diagnostic, not an invalidation rule. #123, #108 and any operating-point retuning remain out of scope for this pass.
+
+**Generalizable rule:** *an instrument that only observes the accepted set cannot measure what was wrongly rejected.* Validate a filter over the population it filtered, not over the output it produced.
