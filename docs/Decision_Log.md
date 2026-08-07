@@ -2133,3 +2133,39 @@ Both survive into the training set, so any fit can stratify on or exclude machin
 **Consequence:** depth figures recorded as candidate counts are **listing** counts, not event counts. Any arithmetic that treats them as distinct opportunities — including the `~505 of ~720` line Fork C turns on — inherits that inflation. This entry does not re-derive Fork C; it records that the denominator has a second known source of softness beyond the one noted on 2026-08-06.
 
 **Generalizable rule:** *the sampling unit and the stratum unit must be the same object, and that object is whatever the instrument's question is about.* Two instruments answering different questions may legitimately count different things from one pool.
+
+---
+
+## 93. The Two Instruments Ask Different Questions, and Instrument B Is Quota-Aware (2026-08-07)
+
+**Amends §90. Recorded 2026-08-07 11:33 AM — BEFORE the sitting and before any editor response exists.** §90 froze its design ahead of data collection precisely so the instruments could not be tuned to a result; this entry is written under that same condition, with zero rows of A or B collected. It is a pre-registration amendment, not a post-hoc reinterpretation.
+
+**Decision:** the two instruments ask deliberately different questions and their answers are never pooled or compared as though they shared a target.
+
+**Instrument A — gate validity, independent of competition.** The editor is asked: *"Ignoring this week's space limit and stronger competing events, could this event ever be suitable for Vaughan Brief?"* Answers are `Eligible` / `Not eligible` / `Can't tell`. The explicit instruction to ignore competition is load-bearing: §77 withholds `outcompeted` from the gate's target entirely, so without it an editor answering "wouldn't make this week's cut" would register as a gate false-negative and make the gate look better than it is. Reject reasons, if collected, are shown only after `Not eligible`. No fourth "outcompeted" option is offered — that verdict is outside the gate's target by construction, and adding it as a peer would reimport the 75.0% routing self-agreement noise.
+
+**Instrument B — quota-constrained shortlist quality, end to end.** B remains the **listing-level** top eight per section, exactly as the pipeline would surface it (§92). The editor is asked: *"Select up to five distinct events you would run. Choose at most one listing from any recurring series."* Where fewer than five are selectable, the deficit is recorded as **required below-cutoff replacements**. B is scored at **section level** on four quantities — distinct editor-approved events retained from the presented eight, required replacements to fill five slots, duplicate slots wasted, and the resulting per-section shortfall — **not** as tie-broken listing agreement against a "model top five."
+
+**Duplicate-induced shortages are product findings, not instrument defects.** Where a section's presented eight collapse to fewer than five distinct events, that section cannot fill its slots from its own shortlist — and that is the measurement, not a flaw in the instrument. The shortfall is reported as a product result about the shortlist and the upstream duplication, never as gate error. Observed packet composition — distinct events per section, repeat counts, tied scores and the resulting shortage — is measured in `NA/Vaughan_Metrics_Log.md` § "§90/§93 editor packet composition"; do not re-author those numbers here.
+
+**Why not deduplicate B before presentation.** Collapsing repeat listings would have made "pick five" well-posed and produced a cleaner number, but it would measure a hypothetical improved pipeline rather than the one that exists, and would hide inside the instrument exactly the duplication §92 deliberately preserved. An instrument that repairs the defect it is meant to detect reports on nothing. The proposal to dedup was raised and rejected on this ground.
+
+**Why there is no "sealed top five" for B.** Repeat listings of one series carry near-identical scores, so in at least one section the listings tie at the fifth-place position and the model's top five is not uniquely determined. Any overlap metric against it would partly measure tie-break order — an artifact of sort stability, not of model quality. §91 already demotes live scores to ranking, and a rank with ties does not support a top-*k* set comparison at k=5. The four section-level quantities above are computable without breaking a single tie.
+
+**What this does not decide:** no pass bar. §90's "no pass bar at n=100" stands for A, and B's four quantities are descriptive at 8 listings × 3 sections. Nothing here changes the gate, the fit, the section head, `0.4530`, the frozen pool, or the packets on disk — B's presented rows are untouched, only the question asked over them and the readout computed from them. The upstream duplication remains unrepaired and unauthorized for repair (§92).
+
+**Consequence:** A's and B's results must be reported as two separate readouts. A shortfall in B is evidence about the shortlist and the duplication, never about gate validity; an eligibility miss in A is evidence about the gate, never about whether the week's issue could be filled. Combining them into a single "accuracy" figure would be a category error.
+
+**Instrument A is read in two layers, because the editor can see what the gate could not.** *(Added 2026-08-07 11:39 AM — still before the sitting, still zero rows collected.)* A material share of A's rows are **title-only** — the serve text carries no description at all — while the editor's sheet carries the `Link`, so on those rows he can recover information the fitted gate provably never had. Counts and their per-source breakdown are in `NA/Vaughan_Metrics_Log.md` § "§90/§93 editor packet composition". Instructing him not to click is not reliably verifiable, so the instruction is instead: *judge from the displayed information first; if that isn't enough, open the link and write `LINK` in Notes before ruling.*
+
+A is therefore reported as:
+1. **Primary, gate-comparable read** — rows ruled *without* opening the link. This is the only layer that speaks to whether the gate misranked information it possessed.
+2. **Diagnostic, feature-gap read** — rows marked `LINK`, split again by whether `Details` was originally empty.
+
+`has-description` alone is **not** sufficient to make this split: it records what the model had, not what the editor actually consumed. Only the `LINK` marker identifies the latter, and the two must both be present to separate the cases. "Originally empty" is determined from the frozen `instrument_a_editor_sheet.jsonl`, never from the Airtable table, so no later edit can move the boundary.
+
+**A buried eligible event discovered only after opening the link is an end-to-end missing-information failure, not evidence that the gate misranked.** The two must never be combined into one transfer number: doing so would charge the gate for a description the pipeline never fetched, and would make #108's text-enrichment arm look like a gate defect.
+
+**Generalizable rule:** *never let an instrument silently repair the defect it exists to detect.* If cleaning the input makes the question easier to score, the difficulty was the finding.
+
+**Second generalizable rule:** *when a human rater can access information the model could not, record what the rater actually consumed, not what was available to them.* Availability is a property of the sheet; consumption is the confound.
