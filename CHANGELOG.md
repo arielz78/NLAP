@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-08-07
+- Retired a planned cost-measurement task after estimating the number offline from the existing prompt structure and real payload sizes: the measurement would have cost roughly what it was measuring, and the project's headline metric is editorial time saved, not API spend. Recorded the estimate and the reasoning, then closed the issue.
+- Restructured the metrics document so its sections match their contents — separating one-time baselines from in-progress release measurements — and flagged a time-sensitive baseline that would otherwise have become unrecoverable.
+
 ## 2026-08-06
 - Redesigned the current release's validation plan after identifying a blind spot in the original approach: reviewing only the system's top-ranked output cannot reveal good items the filter wrongly discarded, so a plausible-looking result would have hidden a real failure. Added a stratified audit over the full candidate pool, sampled toward the low-scoring end where that failure would live.
 - Froze the interpretation contract before collecting any data — sample allocation, what result triggers investigation, and an explicit rule that the audit cannot be used to retune the model it is testing.
