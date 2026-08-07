@@ -63,3 +63,9 @@ def clean(s):
     lines = [ln.strip() for ln in s.splitlines()]
     lines = [ln for ln in lines if ln and not BOILER.match(ln)]
     return re.sub(r"\s+", " ", " ".join(lines)).strip()[:DESC_CHAR_CAP]
+
+
+def serve_text(title, description):
+    """§70 score/serve text: title + cleaned description, whitespace-normalized."""
+    text = str(title or "").strip() + " " + clean(description)
+    return re.sub(r"\s+", " ", text).strip()

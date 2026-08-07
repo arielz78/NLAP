@@ -2119,3 +2119,17 @@ Both survive into the training set, so any fit can stratify on or exclude machin
 **Consequence:** the quintile strata in Instrument A are defined by rank position within the live pool, not by fixed score bands, so the sample composition does not depend on calibration. A live-versus-offline recall delta remains reportable as a directional alarm but is not a pass/fail bar. Any future decision to deploy a threshold requires calibrating on the live population first — that is a separate authorization, not an inference from this audit.
 
 **Generalizable rule:** *a threshold is a property of the fit that produced it, not a portable constant.* Change the estimator population and the cutoff must be re-derived or demoted to a ranking signal.
+
+---
+
+## 92. Instrument A Samples Series; Instrument B Samples Listings (2026-08-06)
+
+**Decision:** amend §90's sampling unit. Instrument A draws **one row per recurring series**, and its rank-position quintiles are cut over the **series population**, so the sampling unit and the stratum unit are the same object. Instrument B is unchanged: it remains a draw over **listings**, and repeat listings of one series are deliberately retained in its section shortlists. A series with any listing in B is excluded from A in full, so no event is judged in both instruments. The series key is `gate_step4a.norm_title`'s convention — whitespace-collapsed lowercase title — so the packets and the gate's leak-free CV folds agree on what one event is.
+
+**Why:** measured on the frozen 2026-08-13 pool, 321 in-window listings collapse to 225 distinct events. 41 groups are byte-identical in serve text and cover 134 of the 321 listings; within those groups `p_include` varies by at most 1.2e-7 and the section argmax never differs. The four groups that share a title but differ in text span at most 0.025 and also never disagree on section. A repeat is therefore a duplicated question with a predetermined answer. Instrument A asks whether the gate's *ordering* agrees with the editor, so a duplicate buys no information while consuming sample budget — as first built, A held 100 rows but only ~80 distinct events, and one series appeared in both instruments, making that ruling non-independent. Instrument B asks what the *product* surfaces, and in production nothing collapses a series before the editor sees it, so the repetition there is the finding rather than a defect to sand off.
+
+**What this does not decide:** the upstream duplication itself is untouched. `UniqueEventID = title|date` cannot collapse a recurring program by construction, so ~30% of the in-window pool is redundant listings; whether that is repaired, and where, is unresolved and is not authorized by this entry. No change is made to the gate, the fit, the section head, or `0.4530`. Whether the series/listing ratio is stable across windows is unmeasured — it rests on one pull.
+
+**Consequence:** depth figures recorded as candidate counts are **listing** counts, not event counts. Any arithmetic that treats them as distinct opportunities — including the `~505 of ~720` line Fork C turns on — inherits that inflation. This entry does not re-derive Fork C; it records that the denominator has a second known source of softness beyond the one noted on 2026-08-06.
+
+**Generalizable rule:** *the sampling unit and the stratum unit must be the same object, and that object is whatever the instrument's question is about.* Two instruments answering different questions may legitimately count different things from one pool.

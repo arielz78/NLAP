@@ -15,6 +15,10 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 - Froze the validation dataset for the release's upcoming audit and established, on measurement, that it needed no retroactive correction: the leak the new rule guards against had already been closed by a different mechanism, making the rule defence-in-depth rather than a repair.
 - Settled how model scores are used in that audit — as a ranking signal rather than an accept/reject threshold — on the grounds that a cutoff chosen under one fitting procedure does not carry over to another. Recorded as a numbered architectural decision.
 
+- Completed the release's live scoring path. The serve-time text recipe is now a single shared definition used by both the training and live paths, proven byte-identical across the full historical corpus before any embedding spend was authorized — a mismatch there would have produced well-formed but silently wrong results.
+- Built the blinded reviewer packets for the upcoming validation sitting: two instruments drawn from one scored pool, joined to a sealed answer key by opaque row IDs so the reviewer never sees model output, and reproducible end to end from the frozen dataset's checksum alone.
+- Caught and corrected a sampling flaw before the sitting. Recurring weekly programs appear many times in a single candidate window and receive effectively identical scores, so the validity sample was measuring materially fewer distinct events than its size implied. Re-cut it to sample distinct events, while deliberately leaving the repetition visible in the product-facing instrument, where it is a real finding rather than a defect.
+
 ## 2026-08-05
 - Settled how the pipeline's classification stage is described across the project's reference docs, replacing three inconsistent characterizations with one accurate statement of what the stage does and does not do today.
 - Produced a set of draft portfolio and repository-readiness materials — architecture and data-model diagrams, an artifact inventory, and a claim-by-claim audit of the case study against its source documents.

@@ -10,6 +10,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import numpy as np
+
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
@@ -85,6 +87,18 @@ class LiveRunnerAcceptanceTests(unittest.TestCase):
         candidate = record("recipe", **base_fields(DescriptionRaw=raw))
         item = live_runner.scoring_input(candidate)
         self.assertEqual("A local event " + ("x" * 300), item["text"])
+        self.assertEqual("x" * 300, item["description"])
+        self.assertEqual(hashlib.sha256(item["text"].encode("utf-8")).hexdigest(), item["text_sha256"])
+
+    def test_text_matches_frozen_recipe_for_dirty_title_whitespace(self):
+        candidate = record("dirty-title", **base_fields(
+            **{
+                "Event Title": "  Summer\t Festival\n  Night  ",
+                "DescriptionRaw": "Overview\nLive   music",
+            }
+        ))
+        item = live_runner.scoring_input(candidate)
+        self.assertEqual("Summer Festival Night Live music", item["text"])
         self.assertEqual(hashlib.sha256(item["text"].encode("utf-8")).hexdigest(), item["text_sha256"])
 
     def test_dedup_happens_after_stage0_and_every_loser_stays_in_the_ledger(self):
@@ -170,9 +184,25 @@ class LiveRunnerAcceptanceTests(unittest.TestCase):
         with self.assertRaises(live_runner.NetworkEmbeddingDisabled):
             live_runner.materialize_embedding_cache(result.scoring_inputs, Path(tempfile.gettempdir()) / "missing-nlap-cache")
 
-    def test_ariel_owned_fit_and_score_seam_fails_loud_before_any_scoring(self):
-        with self.assertRaisesRegex(live_runner.ArielAuthoredCoreRequired, "TODO\\(ariel\\)"):
-            live_runner.fit_and_score_live_survivors([], {})
+    def test_fit_and_score_rejects_misaligned_embeddings_before_fitting(self):
+        with self.assertRaisesRegex(ValueError, "embedding shape"):
+            live_runner.fit_and_score_live_survivors(
+                [{"record_id": "r1"}],
+                np.zeros((2, live_runner.OUTPUT_DIMENSION), dtype=np.float32),
+            )
+
+    def test_gate_fit_overlap_matches_url_then_normalized_title(self):
+        rows = [
+            {"url": "https://same.test/event", "title": "Different"},
+            {"url": "https://new.test/event", "title": "  Baby\tSocial  "},
+            {"url": "https://new.test/other", "title": "Actually new"},
+        ]
+        flags = live_runner.live_gate_fit_overlap(
+            rows,
+            {"https://same.test/event"},
+            {"baby social"},
+        )
+        self.assertEqual([True, True, False], flags)
 
 
 if __name__ == "__main__":

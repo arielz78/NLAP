@@ -75,13 +75,13 @@ KEEP = ("For Families", "For Couples", "For Golden Age Readers")   # the 3 inclu
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from text_recipe import DESC_CHAR_CAP, BOILER, clean          # noqa: E402  (the ONE definition)
+from text_recipe import DESC_CHAR_CAP, BOILER, serve_text as base_serve_text  # noqa: E402
 
 def serve_text(ev, with_cats):
     """§70 recipe. Default arm (with_cats=False) does NOT widen the train/serve gap; the
     with_cats arm is the pre-registered ablation. Cats are appended as raw tag-soup (the
     embedding reads them as text — the whole point of the ablation, per §70)."""
-    t = (ev.get("title") or "").strip() + " " + clean(ev.get("desc"))
+    t = base_serve_text(ev.get("title"), ev.get("desc"))
     if with_cats:
         t = t + " " + (ev.get("cats") or "")
     return re.sub(r"\s+", " ", t).strip()

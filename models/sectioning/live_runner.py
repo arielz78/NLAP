@@ -7,8 +7,8 @@ Eventbrite canonical city.  AllEvents address geography was applied upstream and
 be replayed because Candidate snapshots do not retain ``venue.full_address``.
 
 Default execution is local-only: it stages rows and writes no embeddings or scores.
-``--materialize-embeddings --allow-network`` is an explicit future path; it is not used
-by this task and remains separate from Ariel's fit-and-score seam.
+``--materialize-embeddings --allow-network`` explicitly materializes (or validates a
+cache of) live embeddings, fits the two frozen heads, and writes raw ranking scores.
 """
 from __future__ import annotations
 
@@ -26,11 +26,12 @@ from typing import Any, Callable, Iterable
 
 import numpy as np
 
-from text_recipe import clean
+from text_recipe import clean, serve_text
 
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent
+CORPORA = HERE / "corpora"
 DEFAULT_SNAPSHOT = ROOT / "data/tracking/snapshots/candidates_2026-08-06_0944.json"
 DEFAULT_SNAPSHOT_SHA256 = "e46da19f654adc94c908f63e31ea6aa58bd58a0a9a23cc3f796a34b5a89efe53"
 DEFAULT_OUTPUT = ROOT / "data/tracking/r7_live_runner/issue_2026-08-13"
@@ -89,10 +90,6 @@ class EmbeddingCacheResult:
     matrix: np.ndarray
     status: str  # cache_hit | materialized
     provider_calls: int
-
-
-class ArielAuthoredCoreRequired(RuntimeError):
-    """Raised rather than silently inventing number-changing scorer behaviour."""
 
 
 class NetworkEmbeddingDisabled(RuntimeError):
@@ -202,8 +199,7 @@ def dedup_rule(winner: dict[str, Any], loser: dict[str, Any]) -> str:
 def scoring_input(record: dict[str, Any]) -> dict[str, Any]:
     fields = fields_of(record)
     title = str(fields.get("Event Title") or "").strip()
-    description = clean(fields.get("DescriptionRaw"))
-    text = f"{title} {description}".strip()
+    text = serve_text(title, fields.get("DescriptionRaw"))
     return {
         "record_id": record.get("id", ""),
         "unique_event_id": fields.get("UniqueEventID", ""),
@@ -212,6 +208,9 @@ def scoring_input(record: dict[str, Any]) -> dict[str, Any]:
         "city": fields.get("City", ""),
         "start_date": str(fields.get("Start Date") or "")[:10],
         "url": fields.get("URL", ""),
+        # Editor-facing copy only. The model still consumes `text` below, built by the
+        # frozen serve_text recipe; exposing this field cannot change its embedding.
+        "description": clean(fields.get("DescriptionRaw")),
         "text": text,
         "text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
     }
@@ -351,8 +350,11 @@ def valid_cache(scoring_inputs: list[dict[str, Any]], matrix_path: Path, manifes
 
 def voyage_embed(batch: list[dict[str, Any]]) -> list[list[float]]:
     """The explicit future provider call; reached only with --allow-network."""
+    from dotenv import load_dotenv
     import voyageai
 
+    # Load credentials into the process without reading or exposing the env file here.
+    load_dotenv(ROOT / "NLAP_Airtable.env")
     client = voyageai.Client()
     response = client.embed(
         [row["text"] for row in batch],
@@ -446,11 +448,98 @@ def materialize_embedding_cache(
 def fit_and_score_live_survivors(
     scoring_inputs: list[dict[str, Any]], live_embeddings: np.ndarray
 ) -> list[dict[str, Any]]:
-    """TODO(ariel): fit frozen training data and emit raw gate/section probabilities."""
-    raise ArielAuthoredCoreRequired(
-        "TODO(ariel): implement the frozen full-training-set fit and live scoring seam; "
-        "this runner will not invent target mapping, fit behaviour, or live score use."
-    )
+    """Fit the two frozen heads and emit raw probabilities for each live survivor.
+
+    The historical 0.4530 cutoff belongs to grouped-CV out-of-fold scores. This function
+    fits on all labelled rows, so its probabilities are used for ranking only and are
+    never treated as threshold-calibrated keep/reject decisions.
+    """
+    from sklearn.linear_model import LogisticRegression
+
+    # Every score must stay aligned with the record and text that produced its embedding.
+    expected_shape = (len(scoring_inputs), OUTPUT_DIMENSION)
+    if not isinstance(live_embeddings, np.ndarray) or live_embeddings.shape != expected_shape:
+        got = getattr(live_embeddings, "shape", None)
+        raise ValueError(f"live embedding shape {got} != expected {expected_shape}")
+    if not np.isfinite(live_embeddings).all():
+        raise ValueError("live embeddings contain non-finite values")
+    record_ids = [str(row.get("record_id") or "") for row in scoring_inputs]
+    if not all(record_ids) or len(set(record_ids)) != len(record_ids):
+        raise ValueError("scoring inputs require unique, non-blank record_id values")
+
+    # Reuse Step 4c's existing loader rather than copying its §77 target mapping. Importing
+    # it verifies the current label pull, reconciliation artifacts, routing-count tripwire,
+    # and cached-matrix alignment before exposing the frozen fit matrix and binary target.
+    import gate_step4a as gate
+
+    if gate.X.shape != (365, OUTPUT_DIMENSION) or gate.y.shape != (365,):
+        raise ValueError(f"unexpected gate fit population: X={gate.X.shape}, y={gate.y.shape}")
+    if set(np.unique(gate.y).tolist()) != {0, 1}:
+        raise ValueError("gate targets must contain exactly classes 0 and 1")
+
+    # Fit the already-frozen gate head once on the complete labelled population. Unlike
+    # Step 4c's grouped CV, this full fit exists only to rank the live pool for the audit.
+    gate_head = LogisticRegression(max_iter=2000, C=1.0)
+    gate_head.fit(gate.X, gate.y)
+    if gate_head.classes_.tolist() != [0, 1]:
+        raise ValueError(f"unexpected gate class order: {gate_head.classes_.tolist()}")
+    p_include = gate_head.predict_proba(live_embeddings)[:, 1]
+
+    # The section classifier learns from the same 1,126 published examples and cached
+    # Voyage vectors as the frozen R7 classifier. Assert the exact class vocabulary before
+    # assigning predict_proba columns to human-readable section names.
+    train_x = np.load(CORPORA / f"embeddings_{MODEL}.npy", allow_pickle=False)
+    train_y = json.loads((CORPORA / "embeddings_labels.json").read_text(encoding="utf-8"))
+    expected_sections = ["For Couples", "For Families", "For Golden Age Readers"]
+    if train_x.shape != (1126, OUTPUT_DIMENSION) or len(train_y) != train_x.shape[0]:
+        raise ValueError(f"unexpected section fit population: X={train_x.shape}, labels={len(train_y)}")
+    if sorted(set(train_y)) != expected_sections:
+        raise ValueError(f"unexpected section labels: {sorted(set(train_y))}")
+
+    section_head = LogisticRegression(max_iter=1000, C=1, class_weight=None)
+    section_head.fit(train_x, train_y)
+    if section_head.classes_.tolist() != expected_sections:
+        raise ValueError(f"unexpected section class order: {section_head.classes_.tolist()}")
+    section_scores = section_head.predict_proba(live_embeddings)
+    if (
+        not np.isfinite(p_include).all()
+        or not np.isfinite(section_scores).all()
+        or np.any((p_include < 0) | (p_include > 1))
+        or np.any((section_scores < 0) | (section_scores > 1))
+        or not np.allclose(section_scores.sum(axis=1), 1.0, atol=1e-6)
+    ):
+        raise ValueError("model emitted invalid probabilities")
+
+    # A recurring program can reappear in the live week with the same URL or title as a
+    # labelled fit row. Keep its score, but mark it so the editor readout can report true
+    # unseen transfer separately from in-sample recurring-series rows.
+    fit_urls = {str(row.get("url") or "").strip() for row in gate.rows_fit} - {""}
+    fit_titles = {gate.norm_title(row["url"]) for row in gate.rows_fit} - {""}
+    overlap_flags = live_gate_fit_overlap(scoring_inputs, fit_urls, fit_titles)
+
+    # Emit raw probabilities without filtering any event. Instrument B ranks with their
+    # product; Instrument A forms rank-position quintiles from p_include.
+    return [{
+        **row,
+        "p_include": float(p_include[index]),
+        "gate_fit_overlap": overlap_flags[index],
+        "section_probabilities": {
+            str(section): float(section_scores[index, class_index])
+            for class_index, section in enumerate(section_head.classes_)
+        },
+    } for index, row in enumerate(scoring_inputs)]
+
+
+def live_gate_fit_overlap(
+    scoring_inputs: list[dict[str, Any]], fit_urls: set[str], fit_titles: set[str]
+) -> list[bool]:
+    """Flag live rows seen by the gate fit, matching URL then normalized title."""
+    flags = []
+    for row in scoring_inputs:
+        url = str(row.get("url") or "").strip()
+        title = re.sub(r"\s+", " ", str(row.get("title") or "").strip().lower())
+        flags.append(bool((url and url in fit_urls) or (title and title in fit_titles)))
+    return flags
 
 
 def write_jsonl(path: Path, rows: Iterable[dict[str, Any]]) -> None:
@@ -465,6 +554,7 @@ def write_output_scaffold(
     *,
     embedding_status: str = "not_requested",
     provider_calls: int = 0,
+    scored_survivors: list[dict[str, Any]] | None = None,
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     write_jsonl(output_dir / "survivor_rejection_ledger.jsonl", result.ledger)
@@ -474,10 +564,11 @@ def write_output_scaffold(
     )
     score_schema = {
         "schema_version": 1,
-        "purpose": "Ariel-authored scoring seam output only; this scaffold emits no scores.",
+        "purpose": "Raw ranking probabilities; no live threshold or automatic rejection.",
         "required_per_record": {
             "record_id": "Airtable Candidate record id",
             "p_include": "raw gate probability; no cutoff action in this runner",
+            "gate_fit_overlap": "true when URL or normalized title occurs in the 365-row gate fit set",
             "section_probabilities": {
                 "For Families": "raw probability",
                 "For Couples": "raw probability",
@@ -488,6 +579,8 @@ def write_output_scaffold(
     (output_dir / "scored_survivors.schema.json").write_text(
         json.dumps(score_schema, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+    if scored_survivors is not None:
+        write_jsonl(output_dir / "scored_survivors.jsonl", scored_survivors)
     summary = {
         "issue_date": result.config.issue_date,
         "window": [result.config.window_start.isoformat(), result.config.window_end.isoformat()],
@@ -499,8 +592,13 @@ def write_output_scaffold(
         "embedding_status": embedding_status,
         "network_calls": provider_calls,
         "embedding_calls": provider_calls,
-        "scoring_calls": 0,
-        "next_seam": "TODO(ariel): fit_and_score_live_survivors",
+        "scoring_calls": 1 if scored_survivors is not None else 0,
+        "gate_fit_overlap_count": (
+            sum(bool(row.get("gate_fit_overlap")) for row in scored_survivors)
+            if scored_survivors is not None else None
+        ),
+        "next_seam": "build disjoint Instrument A/B packets" if scored_survivors is not None
+        else "materialize embeddings and score survivors",
     }
     (output_dir / "run_summary.json").write_text(
         json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -551,14 +649,17 @@ def main() -> None:
     )
     embedding_status = "not_requested"
     provider_calls = 0
+    scored_survivors = None
     if args.materialize_embeddings:
         embedding_result = materialize_embedding_cache(
             result.scoring_inputs, args.output, allow_network=args.allow_network
         )
         embedding_status = embedding_result.status
         provider_calls = embedding_result.provider_calls
+        scored_survivors = fit_and_score_live_survivors(result.scoring_inputs, embedding_result.matrix)
     write_output_scaffold(
-        result, args.output, embedding_status=embedding_status, provider_calls=provider_calls
+        result, args.output, embedding_status=embedding_status, provider_calls=provider_calls,
+        scored_survivors=scored_survivors
     )
     embedding_message = (
         "no embedding requested"
@@ -568,7 +669,8 @@ def main() -> None:
     print(
         f"certified {result.certified_eligible_count} snapshot-eligible -> "
         f"{result.stage0_survivor_count} Stage-0 recheck survivors -> {len(result.survivors)} after dedup; "
-        f"{embedding_message}; no scores: {args.output}"
+        f"{embedding_message}; "
+        f"{'scores written' if scored_survivors is not None else 'no scores'}: {args.output}"
     )
 
 
