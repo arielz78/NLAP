@@ -141,9 +141,9 @@ class EditorPacketTests(unittest.TestCase):
         self.assertEqual({section: 8 for section in ep.SECTIONS}, dict(counts))
         self.assertEqual(24, len({entry["row"].record_id for entry in self.packets.instrument_b}))
 
-    def test_instrument_b_deliberately_keeps_repeat_listings_of_one_series(self):
-        """The repetition is the product finding, so B must not collapse it."""
-        # One series with the ten highest scores: B should show eight of them, not one.
+    def test_instrument_b_collapses_repeat_listings_of_one_series(self):
+        """Production permits one recurring series per section/week."""
+        # One series with the ten highest scores: B should show one, then fill down.
         pool = fixture_pool(n_series=224, extra_listings=0)
         for row in pool[:10]:
             row["title"] = "Mini Camp"
@@ -153,12 +153,14 @@ class EditorPacketTests(unittest.TestCase):
         packets = ep.build_packets(pool, SNAPSHOT_SHA)
         families = [e for e in packets.instrument_b if e["presented_section"] == "For Families"]
         self.assertEqual(8, len(families))
-        self.assertEqual(8, sum(1 for e in families if e["series"].key == "mini camp"))
+        self.assertEqual(1, sum(1 for e in families if e["series"].key == "mini camp"))
+        self.assertEqual(8, len({e["series"].key for e in families}))
         # ...and that series is then wholly barred from Instrument A.
         self.assertEqual(0, sum(1 for e in packets.instrument_a if e["series"].key == "mini camp"))
 
     def test_instrument_b_picks_the_highest_p_include_times_section_probability(self):
         chosen = {entry["row"].record_id for entry in self.packets.instrument_b}
+        chosen_series = {entry["series"].key for entry in self.packets.instrument_b}
         by_record = {row.record_id: row for row in ep.normalize_pool(self.pool)}
         for entry in self.packets.instrument_b:
             section = entry["presented_section"]
@@ -166,7 +168,9 @@ class EditorPacketTests(unittest.TestCase):
             displaced = [
                 other.record_id
                 for other in by_record.values()
-                if other.record_id not in chosen and other.section_score(section) > floor
+                if other.record_id not in chosen
+                and ep.series_key(other) not in chosen_series
+                and other.section_score(section) > floor
             ]
             self.assertEqual([], displaced, f"{section} kept a lower-scoring row over {displaced[:3]}")
 

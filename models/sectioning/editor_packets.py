@@ -4,22 +4,21 @@ Consumes ``live_runner``'s scored-survivor schema (``record_id``, identity/displ
 fields, ``p_include``, ``section_probabilities``) and emits the two instruments
 `Decision_Log` §90 froze:
 
-* **Instrument B** — the product read: the top 8 events per automated section, ranked by
-  ``p_include * P(section)``, drawn over **listings**. Repeats are deliberately allowed
-  here: in production nothing collapses a recurring series, so if a section's shortlist
-  is four dates of one program, that is the product surface and the editor should see it.
+* **Instrument B** — the product read: the top 8 unique recurring series per automated
+  section, ranked by ``p_include * P(section)``. Production permits at most one listing
+  from a recurring series in a section/week, so lower-ranked unique series fill gaps.
 * **Instrument A** — the validity read: 100 events drawn from the B-unused pool,
   stratified by *rank-position* quintile at 25/25/20/15/15 lowest→highest, then
   randomized into five blocks of 20. Drawn over **series**, one row per series.
 
-**The two instruments use different units, on purpose.** Measured on the 2026-08-13 pool,
-321 in-window listings collapse to 224 distinct events: 41 groups are byte-identical in
+**Both instruments use recurring series as their event unit.** Measured on the 2026-08-13 pool,
+321 in-window listings collapse to 225 distinct events: 41 groups are byte-identical in
 serve text and score within 1.2e-7 of each other, so a repeat is a duplicated question
 with a predetermined answer. Instrument A measures whether the gate's ordering agrees
 with the editor, and a duplicated question buys no information while consuming sample
 budget — so A deduplicates and its strata are cut over the series population, keeping the
-sampling unit and the stratum unit the same. Instrument B measures the product, where the
-repetition is the finding, so B is left alone.
+sampling unit and the stratum unit the same. Instrument B mirrors the production
+one-series-per-section/week constraint and therefore also collapses repeats.
 
 Three properties this module exists to guarantee, each with a named failure:
 
@@ -286,16 +285,16 @@ def live_ranking(rows: list[ScoredRow]) -> dict[str, dict[str, Any]]:
 
 
 # --------------------------------------------------------------------------------------
-# Instrument B — the product read, over listings
+# Instrument B — the product read, over unique recurring series
 # --------------------------------------------------------------------------------------
 
 def build_instrument_b(rows: list[ScoredRow], rng: random.Random) -> list[dict[str, Any]]:
-    """Assign the top 8 listings per section by ``p_include * P(section)``.
+    """Assign the top 8 unique recurring series per section by ``p_include * P(section)``.
 
     Global greedy over every (listing, section) pair: a listing can be claimed by at most
     one section, and a section stops at eight. Ordering is fully determined by
     ``(-score, record_id, section index)``, so the greedy is not sensitive to input order.
-    Repeat listings of one series are NOT collapsed — see the module docstring.
+    A recurring series can appear only once, matching the production section/week rule.
     """
     pairs = [
         (-row.section_score(section), row.record_id, index, section, row)
@@ -305,11 +304,14 @@ def build_instrument_b(rows: list[ScoredRow], rng: random.Random) -> list[dict[s
     pairs.sort(key=lambda pair: (pair[0], pair[1], pair[2]))
 
     claimed: set[str] = set()
+    claimed_series: set[str] = set()
     by_section: dict[str, list[ScoredRow]] = {section: [] for section in SECTIONS}
     for _negative_score, record_id, _index, section, row in pairs:
-        if record_id in claimed or len(by_section[section]) >= INSTRUMENT_B_PER_SECTION:
+        key = series_key(row)
+        if record_id in claimed or key in claimed_series or len(by_section[section]) >= INSTRUMENT_B_PER_SECTION:
             continue
         claimed.add(record_id)
+        claimed_series.add(key)
         by_section[section].append(row)
 
     short = {
@@ -319,7 +321,7 @@ def build_instrument_b(rows: list[ScoredRow], rng: random.Random) -> list[dict[s
     }
     if short:
         raise PacketBuildError(
-            f"Instrument B needs {INSTRUMENT_B_PER_SECTION} listings per section; "
+            f"Instrument B needs {INSTRUMENT_B_PER_SECTION} unique series per section; "
             f"the pool of {len(rows)} could only fill {short} — packet not built"
         )
 
@@ -402,7 +404,7 @@ def build_packets(raw_rows: Iterable[dict[str, Any]], snapshot_sha256: str) -> P
     seed_a = derive_seed(snapshot_sha256, "instrument_a")
     seed_s = derive_seed(snapshot_sha256, "series_representative")
 
-    # B is built over listings, A over series; the series population defines A's strata.
+    # Both instruments use series as the editorial event unit; A's strata use the full series population.
     instrument_b = build_instrument_b(rows, random.Random(seed_b))
     series = collapse_to_series(rows, random.Random(seed_s))
     ranking = live_ranking([item.representative for item in series])
@@ -462,9 +464,7 @@ def _reject_cross_packet_overlap(
             raise PacketBuildError(f"instruments A and B share {label} {overlap} — packets must be disjoint")
         if len(set(a_values)) != len(a_values):
             raise PacketBuildError(f"Instrument A repeats {label} — it is drawn one row per series")
-        # Instrument B deliberately allows repeat listings of one series; only its own
-        # record identity must be unique.
-        if label != "series_key" and len(set(b_values)) != len(b_values):
+        if len(set(b_values)) != len(b_values):
             raise PacketBuildError(f"Instrument B repeats {label}")
 
 
@@ -527,13 +527,13 @@ def sealed_answer_key(packets: Packets) -> dict[str, Any]:
     return {
         "schema_version": 2,
         "purpose": "Sealed §90 answer key — open only after the editor sitting is complete.",
-        "decision_provenance": ["Decision_Log §90", "Decision_Log §91"],
+        "decision_provenance": ["Decision_Log §90", "Decision_Log §91", "Decision_Log §92", "Decision_Log §93"],
         "calibration_anchors": "omitted by protocol (§90 records them as diagnostic; out of scope this pass)",
         "operating_point_applied": None,
         "pool_size": packets.pool_size,
         "series_count": packets.series_count,
         "sampling_units": {
-            "instrument_b": "listings — repeats retained, because the repetition is the product finding",
+            "instrument_b": "series — one listing per recurring series, matching the production section/week constraint",
             "instrument_a": "series — one row per series, strata cut over the series population",
             "series_key": "gate_step4a.norm_title convention: whitespace-collapsed lowercase title",
         },
@@ -597,7 +597,7 @@ def main() -> None:
     b_series = len({entry["series"].key for entry in packets.instrument_b})
     print(
         f"pool {packets.pool_size} listings -> {packets.series_count} series; "
-        f"Instrument B {len(packets.instrument_b)} listings ({b_series} distinct series, "
+        f"Instrument B {len(packets.instrument_b)} unique series ({b_series} distinct series, "
         f"{INSTRUMENT_B_PER_SECTION} x {len(SECTIONS)} sections), "
         f"Instrument A {len(packets.instrument_a)} series in "
         f"{len(packets.instrument_a) // INSTRUMENT_A_BLOCK_SIZE} blocks; no anchors; sealed key: {args.output}"

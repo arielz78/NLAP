@@ -23,11 +23,11 @@ file itself remains permanently in git.
 | | |
 |---|---|
 | Deleted file | `docs/r7/R7_Outcompeted_Editor_Form_38.md` |
-| Last commit containing it | `e54024a` — *Reconcile R7 gate labels and prepare Step 1c review* |
+| Last commit containing it | `62fdfc5` — *Reconcile R7 gate labels and prepare Step 1c review* |
 | Git blob | `05f3f2af195844920ee7a486310d07f22f4f201d` |
 | SHA-256 (computed before deletion) | `0a449b86ea03d6c04349773d8839929deee1dde016ccf5b96af57dad7cbfda97` |
 
-Recover with `git show 05f3f2a` or `git show e54024a:docs/r7/R7_Outcompeted_Editor_Form_38.md`.
+Recover with `git show 05f3f2a` or `git show 62fdfc5:docs/r7/R7_Outcompeted_Editor_Form_38.md`.
 
 **The question, verbatim as issued:**
 

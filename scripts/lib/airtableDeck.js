@@ -85,6 +85,25 @@ async function createRecords(tableId, records, { onProgress } = {}) {
   return done;
 }
 
+/** Patch existing records in Airtable's 10-record chunks. */
+async function updateRecords(tableId, records, { onProgress } = {}) {
+  const { key, base } = auth();
+  let done = 0;
+  for (let i = 0; i < records.length; i += CHUNK) {
+    const chunk = records.slice(i, i + CHUNK);
+    const res = await fetch(`https://api.airtable.com/v0/${base}/${tableId}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ records: chunk, typecast: true }),
+    });
+    if (!res.ok) throw new Error(`update at row ${i + 1} failed: ${res.status} ${await res.text()}`);
+    done += chunk.length;
+    if (onProgress) onProgress(done, records.length);
+    await sleep(PACE_MS);
+  }
+  return done;
+}
+
 /**
  * The guard both push scripts carried by hand: refuse to delete rows the editor
  * has already ruled on. `ruledField` is whatever field means "he answered this"
@@ -100,4 +119,4 @@ function assertUnruled(records, ruledField, context) {
   }
 }
 
-module.exports = { CHUNK, PACE_MS, sleep, selectName, fetchAll, deleteRecords, createRecords, assertUnruled };
+module.exports = { CHUNK, PACE_MS, sleep, selectName, fetchAll, deleteRecords, createRecords, updateRecords, assertUnruled };

@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-08-07
+- Began the blinded live-editor validation and corrected its shortlist instrument when the sitting exposed a mismatch with a production uniqueness constraint. Regenerated the reproducible packets, safely replaced unruled Airtable batches, and preserved all subsequent human judgments through guarded, field-specific updates.
+- Added acceptance coverage for unique-event shortlists and retained a clean separation between model-validity judgments and weekly editorial constraints.
 - Consolidated three near-duplicate data-loading scripts into one reusable, parameterized tool with a dry-run default. An outside review of the destructive write path caught two defects before any live run: records were deleted before their replacements were confirmed written, and the safeguard protecting existing human-entered answers was configured to watch a field the new dataset does not use.
 - Finalized and recorded the design of a two-part editor evaluation before collecting any responses, keeping the pre-registration intact. The two parts deliberately ask different questions and their results are scored separately, because combining them would credit or blame the model for effects it cannot cause.
 - Declined to clean duplicate entries out of one instrument after measuring that a section could not fill its slots from its own shortlist — removing them would have measured a system that does not exist and concealed the very defect the instrument was built to surface.
