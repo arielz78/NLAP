@@ -29,10 +29,6 @@ Top-level folders (the durable map — update this table when a top-level folder
 | `output/` | Exported Beehiiv HTML snippets per issue (gitignored) |
 | `test_runs/` | Prompt A/B test output captures (gitignored) |
 | `logs/` | Frozen per-release build history + Website_Log |
-| `meetings/` | Dated client meeting notes (gitignored / private) |
-| `NA/` | Business / portfolio docs — not pipeline code (gitignored / private) |
-| `summer/` | Summer 2026 personal layer — plan + learning positions (gitignored / private) |
-| `bwna-web/` | Website build — separate sub-project (gitignored) |
 
 **Naming rule:** `models/` subfolders are named for the **problem** they solve (`sectioning`, `ranking`), never the technique or the release — code outlives releases, and the technique changes (R7 went TF-IDF → embeddings on 2026-07-20 with no folder rename). Release numbers live on `docs/r{N}/`, milestones, and branches. *(Superseded 2026-07-20: the old `eval/` + `r6_eval/` split was by creation date, not function — see issue #89.)*
 
@@ -84,7 +80,6 @@ R1, R3, R4 are complete and stable. R2 is retired; its replacement is planned th
 | Open debt / experiments | GitHub Issues — [arielz78/NLAP](https://github.com/arielz78/NLAP/issues) |
 | Release planning (frozen intent) | `docs/NLAP_PostMVP_Roadmap_v3.md` |
 | Past release history | `logs/` |
-| Client meeting notes | `meetings/` |
 | Which doc is the home for what | `docs/README.md` (the fact map) |
 
 ---
