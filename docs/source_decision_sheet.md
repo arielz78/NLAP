@@ -20,11 +20,11 @@ Status legend: **Live** (in R1) · **Ready** (probed, build-ready) · **Backlog*
 |---|---|---|---|---|---|---|
 | **Eventbrite** | Live (pre-R5) | `city-browse` internal API (T1) | York Region `place_id=101740741` | PASS | ✅ 2026-07-03 | §2 |
 | **AllEvents** (Vaughan / RHill / Markham) | Live | Direct JSON API (T1) | `POST allevents.in/api/events/list` | PASS | ✅ 2026-06-12 | §2 |
-| **McMichael** | Live | Tribe REST API (T1) | `wp-json/tribe/events/v1/events` | PASS | ✅ 2026-07-03 | §2 · DL§39 |
+| **McMichael** | Live ⚠️ **silent since 2026-07-15** (#128) | Tribe REST API (T1) | `wp-json/tribe/events/v1/events` | PASS | ✅ 2026-07-03 | §2 · DL§39 |
 | **TRCA — Kortright** | Live | WP Event Manager RSS (T1) | `calendar.trca.ca/?feed=event_feed&search_categories=trca` | PASS | ✅ 2026-07-03 | §2 |
 | **TRCA — Black Creek** | Live (in TRCA RSS branch) | `Murray Ross` filter in Kortright RSS (T1) | (same feed as Kortright) | events ingest here; only the standalone JSON-LD scrape was retired 2026-06-12 | ✅ 2026-07-03 (same feed as Kortright) | §2 |
 | **BiblioCommons** (Markham) | Live | Public RSS (T1) | `markham.bibliocommons.com/events/rss/all` | PASS | ✅ 2026-07-03 | §2 |
-| **B4 — visitvaughan.ca** | **Live 2026-06-17** | `admin-ajax` direct JSON (T1) | `POST admin-ajax.php?action=haven_calendar` | PASS | ✅ 2026-06-16 | §2 |
+| **B4 — visitvaughan.ca** | **Live 2026-06-17** ⚠️ **silent since 2026-06-18** (#128) | `admin-ajax` direct JSON (T1) | `POST admin-ajax.php?action=haven_calendar` | PASS | ✅ 2026-06-16 | §2 |
 | **B5 — unionville.ca** | **Live 2026-06-20** | `admin-ajax` HTML cards (T4) | `POST admin-ajax.php?action=load_upcoming_events` | PASS | ✅ 2026-06-20 | §2 |
 | **Facebook** | **Built 2026-06-21** (intake live; E2E test pending) | Manual: screenshot → ChatGPT extract (`VB_FACEBOOK_INTAKE`) → Airtable form (`FacebookIntake`) → n8n adapter (10th Merge input) | events feed — no public API (deprecated); manual by design | **KEEP** — 58% of clicks (§18); linkless-through (`Source=Facebook` validity exception), link added at selection; DOM-extractor deferred (#67) | manual | DL§49 · #35 |
 | **Meetup** | Backlog (deferred) | `__NEXT_DATA__` (T3) | `meetup.com/find/ca--on--vaughan/` | **PASS** — not built for R5 (low yield); revisit if pool short; events via Facebook (W3) meanwhile. **Inoreader-only, never in R1** (#73) | n/a | §2b |

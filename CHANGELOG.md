@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-08-14
+- Measured how much of the editor's published newsletter is recoverable from the automated candidate pool, across eleven past issues, and documented the matching method together with its limits and provenance.
+- Added a per-source liveness gap to the backlog after finding two ingestion sources had gone quiet for weeks with no alarm covering them.
+
 ## 2026-08-07
 - Began the blinded live-editor validation and corrected its shortlist instrument when the sitting exposed a mismatch with a production uniqueness constraint. Regenerated the reproducible packets, safely replaced unruled Airtable batches, and preserved all subsequent human judgments through guarded, field-specific updates.
 - Added acceptance coverage for unique-event shortlists and retained a clean separation between model-validity judgments and weekly editorial constraints.
