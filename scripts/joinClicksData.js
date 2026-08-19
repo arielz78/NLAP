@@ -8,8 +8,7 @@
  * SCOPE: this grades the ORDERING of events that were already picked — not SELECTION.
  * No historical reject pool exists, so this backtest catches a grossly wrong formula
  * but does not validate which events should have been chosen. Selection is validated
- * forward via swap-rate. See docs: data/beehiiv/clicks_analysis_2026-05-13.md and the
- * plan at ~/.claude/plans/proud-dancing-origami.md.
+ * forward via swap-rate. See docs: data/beehiiv/clicks_analysis_2026-05-13.md.
  *
  * Reads only local files under data/ (all gitignored — the CSV carries _bhlid
  * subscriber tokens). No Airtable/API/secrets needed. Read-only except its own output.

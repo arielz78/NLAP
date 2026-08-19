@@ -60,7 +60,7 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 - Found performance language on both sides of the eligibility question, then kept the boundary explicitly unresolved until the evidence supported a narrower decision rather than inferring one editor judgment from a handful of comments.
 - Set the V1 product direction as decision support: the current release supplies a reversible viability signal, while relative weekly ranking remains the next release's job.
 - Pressure-tested that boundary against primary industry architectures and an independent review, identifying a missing label-to-section contract before final evaluation rather than redesigning the model.
-- Unified the Claude session-wrap and bounded-review handoff into one protocol so canonical session state incorporates the review result without a second correction cycle.
+- Unified the session-wrap and bounded-review handoff into one protocol so canonical session state incorporates the review result without a second correction cycle.
 
 ## 2026-08-01
 - Reconciled and safely applied the positive-class audit corrections, with an idempotent write path and machine-verifiable receipt.

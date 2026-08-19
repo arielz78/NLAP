@@ -1,14 +1,19 @@
 {
   "name": "nlap",
   "version": "1.0.0",
-  "description": "",
-  "main": "buildIssues.js",
+  "description": "Production workflow for a weekly local-events newsletter: ingestion, deduplication, constrained editorial allocation, copy generation, and Beehiiv export.",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node scripts/buildIssues.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "newsletter",
+    "airtable",
+    "n8n",
+    "beehiiv",
+    "content-pipeline"
+  ],
+  "author": "Ariel Zaslaver",
+  "private": true,
   "type": "commonjs",
   "dependencies": {
     "dotenv": "^17.3.1",

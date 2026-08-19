@@ -354,6 +354,8 @@ function runTests() {
   } else {
     console.error("Test failures:");
     errors.forEach((e) => console.error(" ", e));
+    // Non-zero exit so `npm test` and CI fail loudly instead of reporting success.
+    process.exitCode = 1;
   }
 
   console.log("\nGenerated IssueItems:");

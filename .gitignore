@@ -20,6 +20,7 @@ __pycache__/
 # Local AI-agent configuration and private working agreements.
 AGENTS.md
 .agents/
+.claude/
 .codex/
 
 # Embedding matrices: ~21 MB of binary, regenerable in ~2 min for ~$0.004 via
@@ -35,3 +36,10 @@ models/sectioning/deck/_tmp_rulebreak_scan*.json
 
 # Ad-hoc analysis working files
 scratchpad/
+
+# Private career/personal working notes — never public. These sit at the repo
+# root by accident of drafting, not by design; they contain academic records,
+# self-assessments, and personal-layer migration state.
+Incognito outlook on me.txt
+SecondBrain_HANDOFF.md
+phase1_May6_May24.md
