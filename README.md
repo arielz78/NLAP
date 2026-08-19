@@ -1,122 +1,170 @@
-# NLAP Project Guide
-*Last updated: 2026-07-09*
+# NLAP
 
-A single reference for how this project is organized and how to operate within it.
+NLAP is the production workflow for Vaughan Brief, a weekly local-events newsletter with
+approximately 13,000 subscribers. It ingests event data, normalizes and filters candidates,
+allocates events under editorial constraints, generates newsletter copy, and exports HTML for
+Beehiiv. The editor reviews the final selections before publication.
 
----
+**Stack:** Node.js, Python, n8n, Airtable, OpenAI, Beehiiv
 
-## What This Is
+## How It Works
 
-An automation pipeline that turns raw event data into a ready-to-publish weekly newsletter for a Vaughan-area client. The pipeline ingests events, classifies them, allocates them to newsletter sections, generates blurbs, and exports HTML for paste into Beehiiv.
+```text
+Event sources
+    -> n8n ingestion, normalization, and deduplication
+    -> Airtable Candidates
+    -> Node.js allocation
+    -> OpenAI-assisted copy generation
+    -> Beehiiv-ready HTML
+    -> editor review and publication
+```
 
-**Client:** Vaughan Brief (weekly, publishes Thursdays)
-**Stack:** Node.js, Airtable, n8n, OpenAI, Beehiiv
-**Owner:** Ariel (solo)
+The live workflow collects events from multiple sources, converts them into one consistent format,
+and stores them in Airtable. A Node.js allocator selects eligible events under the newsletter's date,
+quota, venue, and editor-lock rules. OpenAI generates constrained copy for the selected events, and
+the final output is exported as HTML for the editor to review in Beehiiv.
 
----
+The planned decision path, contingent on the current validation work, is:
 
-## Repository Layout
+```text
+Ingestion
+    -> hard-rule filtering
+    -> relevance gate: should this event remain eligible?
+    -> section classification: which audience section fits best?
+    -> interim ranking: P(include) x P(section)
+    -> constrained allocation
+    -> editor review
+```
 
-Top-level folders (the durable map — update this table when a top-level folder is added or removed):
+The gate removes permanently unsuitable candidates, classification suggests a section, ranking
+orders the viable candidates for the week, and the allocator applies final issue constraints. The
+editor remains responsible for the published selection.
 
-| Folder | What's in it |
+## Current Status
+
+- Event ingestion, allocation, copy generation, and HTML export are live.
+- The original automated section classifier has been retired, although some of its Airtable fields
+  remain in use temporarily.
+- A replacement relevance filter and section-suggestion model are being validated offline. They do
+  not write to the live workflow.
+- Candidate ranking work is deferred until that validation is complete.
+
+Detailed current status lives in the
+[`active release scope`](docs/r7/R7_Scope.md#status-snapshot-2026-08-01).
+
+## Where to Look
+
+| Time | Start here |
 |---|---|
-| `scripts/` | Main Node.js codebase — pipeline (R1–R4) + health-checks |
-| `workflows/` | n8n workflow JSON (R1, R2) |
-| `models/` | Offline model building + evaluation (Python). `sectioning/` = R7 section classifier, `ranking/` = R6 scorer harness. Shared venv at `models/.venv`. |
-| `docs/` | Documentation. Subfolders: `r5\|r6\|r7/` (per-release scope), `archive/`, `client_prompts/` |
-| `data/` | Data artifacts — Beehiiv issue history, tracking output (gitignored) |
-| `output/` | Exported Beehiiv HTML snippets per issue (gitignored) |
-| `test_runs/` | Prompt A/B test output captures (gitignored) |
-| `logs/` | Frozen per-release build history + Website_Log |
+| 2 minutes | The diagram above and Current Status |
+| 5 minutes | [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for the operational architecture |
+| 10 minutes | [`scripts/buildIssues.js`](scripts/buildIssues.js) for the pure decision layer |
 
-**Naming rule:** `models/` subfolders are named for the **problem** they solve (`sectioning`, `ranking`), never the technique or the release — code outlives releases, and the technique changes (R7 went TF-IDF → embeddings on 2026-07-20 with no folder rename). Release numbers live on `docs/r{N}/`, milestones, and branches. *(Superseded 2026-07-20: the old `eval/` + `r6_eval/` split was by creation date, not function — see issue #89.)*
+## Repository Terminology
 
-**Trap to know:** never name a folder under `models/` `data/` or `output/` — the root `.gitignore` matches those at any depth and would silently untrack committed artifacts.
+| Term | Meaning |
+|---|---|
+| Candidate | One normalized event available for review or allocation |
+| Issue | One weekly newsletter edition |
+| IssueItem | One event assigned to a specific section and slot in an Issue |
+| Section | One of the newsletter's audience or content categories |
+| Lock | An editor-controlled flag that prevents an assigned item from being changed on rerun |
 
-> **Moving a top-level folder breaks code.** Scripts anchor to relative paths (`__dirname/../data`, `../NLAP_Airtable.env`, sibling `require("./x.js")`). If you relocate or rename a folder, fix the path literals in `scripts/` in the same change — don't just edit this table.
+## Pipeline Components
 
----
+| Stage | Tool | Function |
+|---|---|---|
+| Ingestion | n8n | Ingests event sources, normalizes records, deduplicates them, and writes Candidates to Airtable. |
+| Allocation | Node.js | Allocates eligible Candidates to issues under date-window, quota, venue-diversity, and lock rules. |
+| Copy generation | Node.js + OpenAI | Generates constrained newsletter copy and exports five Beehiiv HTML sections. |
+| Model validation | Python + Airtable | Evaluates a relevance gate and section model against frozen data and blind editor rulings. Not live. |
 
-## Pipeline Stages
+The allocation rules are implemented as a pure function in
+[`scripts/buildIssues.js`](scripts/buildIssues.js). Airtable reads and writes remain in
+[`scripts/connectAirtable.js`](scripts/connectAirtable.js), so the decision logic can be tested
+without live state.
 
-| Stage | Tool | What it does |
-|-------|------|--------------|
-| R1 | n8n | Ingests events from RSS + Eventbrite. Deduplicates. Writes to Candidates table. |
-| R2 | n8n | Retired classifier workflow; it is not operated. Its legacy `SegmentSuggested` and `NeedsReview` field contract remains consumed by R3 pending the R6/R7 production-integration pass. |
-| R3 | Node.js | Allocates approved candidates to newsletter issues. Enforces quotas, date windows, venue diversity. |
-| R4 | Node.js | Generates blurbs per IssueItem. Exports 5 HTML snippets for Beehiiv. |
-| R5+ | Node.js & n8n | Post-MVP: source expansion (R5, done), scoring (R6), section classifier (R7, active), handoff (R8). |
+## Operational Behavior
 
-R1, R3, R4 are complete and stable. R2 is retired; its replacement is planned through the R6/R7 integration work. R5 is closed. R6–R8 are the active roadmap.
+- Reruns preserve editor-locked IssueItems.
+- Allocation enforces issue windows, section quotas, and one venue per section.
+- Copy generation supports dry runs and validates required output before publication.
+- Post-run checks report candidate depth, cross-source overlap, rejections, stale intake, and
+  unexpected changes to editor-controlled state.
+- Model experiments remain read-only until their release checks are complete.
 
----
+## Current Measurements
 
-## Key Files
+- Ingestion runtime: approximately 14 minutes reduced to 35 seconds.
+- Typical Sunday-to-issue window after source expansion: approximately 310 eligible listings.
+- Frozen 2026-08-13 window: 321 listings representing 225 distinct event series.
+- Client-reported baseline: approximately 4 hours and 100 events reviewed per issue. Post-handoff
+  time savings have not yet been measured.
 
-| File | What it is |
-|------|------------|
-| `docs/NLAP_PostMVP_Roadmap_v3.md` | Original week-by-week plan for R5–R8. **Frozen intent, not status** — read for the plan, not where things stand. |
-| `docs/README.md` | The fact map — the maintained index of *which doc is the home for each fact*. Read before deciding where something goes. |
-| `docs/Decision_Log.md` | Every significant architectural / editorial decision, with reasoning. Read before changing anything structural. |
-| Active release Scope doc (`docs/r{N}/R{N}_Scope.md`) | Current release status ("where are we"). Authoritative for status, not the roadmap. |
-| `Execution_Log.md` | Chronological session journal — what ran, what broke, next step. |
-| `scripts/connectAirtable.js` | Fetches Issues/Candidates, runs allocator, writes IssueItems (R3) |
-| `scripts/buildIssues.js` | Allocation logic — pure function, no Airtable dependency |
-| `scripts/generateBlurbs.js` | Generates DisplayTitle, Description, CTA per IssueItem via GPT (R4) |
-| `scripts/pushToBeehiiv.js` | Exports 5 HTML snippets for paste into Beehiiv (R4) |
-
-*Full script index (many scripts overlap — check before writing a new one) lives in `CLAUDE.md`.*
-
----
-
-## How Work Is Tracked
-
-| What | Where |
-|------|-------|
-| Session journal + next step | `Execution_Log.md` |
-| Current release status | active release Scope doc's Status Snapshot (`docs/r{N}/R{N}_Scope.md`) |
-| Architectural decisions | `docs/Decision_Log.md` |
-| Open debt / experiments | GitHub Issues — [arielz78/NLAP](https://github.com/arielz78/NLAP/issues) |
-| Release planning (frozen intent) | `docs/NLAP_PostMVP_Roadmap_v3.md` |
-| Past release history | `logs/` |
-| Which doc is the home for what | `docs/README.md` (the fact map) |
-
----
-
-## GitHub Issues Setup
-
-Labels map to releases: `r5` `r6` `r7` `r8` `prerequisite` `spike`
-
-Two additional labels distinguish work type:
-- `roadmap` — planned release work (what we're building next)
-- `debt` — unplanned open items (deferred fixes, improvements)
-
-Milestones: Prerequisite, R5, R6, R7, R8. Every issue gets a release milestone at creation — the milestone (not just the `r{N}` label) is the accounting unit for the release sign-off gate.
-
----
-
-## End of Session
-
-Run **`/wrap`**. It appends `Execution_Log.md` + `CHANGELOG.md` automatically, then walks the conditional-homes checklist *for you* — proposing which maintained docs changed (Decision_Log, source sheet, metrics log, GitHub issues) for a yes/no confirm. You react; it does the scanning.
-
-Architectural decisions still land in `docs/Decision_Log.md` (the "why," once — the journal points to it).
-
----
+Definitions, provenance, and caveats are maintained in
+[`NA/Vaughan_Metrics_Log.md`](NA/Vaughan_Metrics_Log.md).
 
 ## Running the Pipeline
 
-Credentials live in `NLAP_Airtable.env` one level above the scripts folder. Scripts load it via dotenv.
+Credentials are loaded from `NLAP_Airtable.env`, which is not committed.
 
 ```bash
-# R3 — allocate candidates to an issue
+# Allocate candidates to an issue
 node scripts/connectAirtable.js
 
-# R4 — generate blurbs
-node scripts/generateBlurbs.js
+# Generate newsletter copy for an issue
+node scripts/generateBlurbs.js 2026-05-29
 
-# R4 — export HTML for Beehiiv
-node scripts/pushToBeehiiv.js
+# Export Beehiiv HTML for an issue
+node scripts/pushToBeehiiv.js 2026-05-29
 ```
 
-R1 and R2 run inside n8n — import the workflow JSON files from `workflows/`.
+`generateBlurbs.js` and `pushToBeehiiv.js` also accept `--dry-run`. Ingestion runs in n8n from the workflow
+definition under `workflows/`.
+
+See [`docs/RUNBOOK.md`](docs/RUNBOOK.md) for script order, the Airtable data model, field definitions,
+and failure handling.
+
+## Key Files
+
+| File | Purpose |
+|---|---|
+| [`scripts/buildIssues.js`](scripts/buildIssues.js) | Pure allocation logic and allocator checks |
+| [`scripts/connectAirtable.js`](scripts/connectAirtable.js) | Airtable reads, allocation execution, and IssueItem writes |
+| [`scripts/generateBlurbs.js`](scripts/generateBlurbs.js) | Newsletter copy generation and output validation |
+| [`scripts/pushToBeehiiv.js`](scripts/pushToBeehiiv.js) | Beehiiv HTML export |
+| [`scripts/postRunChecks.js`](scripts/postRunChecks.js) | Post-ingestion health-check runner |
+| [`models/sectioning/gate_step4a.py`](models/sectioning/gate_step4a.py) | Relevance-gate evaluation |
+| [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | Operational reference |
+| [`docs/r7/R7_Scope.md`](docs/r7/R7_Scope.md) | Active release status and validation contract |
+| [`docs/Decision_Log.md`](docs/Decision_Log.md) | Architectural and editorial decisions |
+
+## Project Documentation
+
+| Information | Source |
+|---|---|
+| Current release status | Active release Scope document |
+| Architectural decisions | [`docs/Decision_Log.md`](docs/Decision_Log.md) |
+| Original release plan | [`docs/NLAP_PostMVP_Roadmap_v3.md`](docs/NLAP_PostMVP_Roadmap_v3.md) |
+| Document ownership and update rules | [`docs/README.md`](docs/README.md) |
+| Historical release logs | [`logs/`](logs/) |
+| Metrics | [`NA/Vaughan_Metrics_Log.md`](NA/Vaughan_Metrics_Log.md) |
+
+The roadmap records original intent. Once a release starts, its Scope document is authoritative for
+status.
+
+## Repository Layout
+
+| Path | Contents |
+|---|---|
+| `scripts/` | Node.js pipeline, integration tools, and health checks |
+| `workflows/` | n8n workflow definitions |
+| `models/` | Python model building and evaluation code |
+| `docs/` | Runbook, decisions, roadmap, and release-working documents |
+| `logs/` | Frozen release history |
+| `data/` | Local data and tracking artifacts; some contents are gitignored |
+| `output/` | Generated Beehiiv HTML; gitignored |
+| `test_runs/` | Prompt-test output captures; gitignored |
+
+Model folders are named for the problem they solve: `models/sectioning/` contains classification
+and relevance-gate work, while `models/ranking/` contains the deferred ranking work.
