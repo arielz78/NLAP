@@ -4,9 +4,11 @@
 **Deadline (self-imposed):** R7-W6 done by ~2026-08-02 (end of next week). R6 the week after (~2026-08-09).
 **Roadmap:** `docs/NLAP_PostMVP_Roadmap_v3.md` (frozen intent — read only for original release intent).
 
-**Read order:** this doc → `docs/r6/R6_Scope.md` (the ranker half; they feed each other, see the seam note in §3) → `docs/Decision_Log.md` §61–90 → `logs/R7_Log.md` (build history) only if you need the empirical record.
+**Read order:** this doc → `docs/r6/R6_Scope.md` (the ranker half; they feed each other, see the seam note in §3) → `docs/Decision_Log.md` §61–94 → `logs/R7_Log.md` (build history) only if you need the empirical record.
 
 **Type: Release-working.** Current truth + the one-week plan. Build history (probe numbers, confusion matrices, the dead investigation sequence) is in `logs/R7_Log.md`; decisions in `docs/Decision_Log.md` §61–90; chronological recaps in `Execution_Log.md`. Verbatim prior version (the pre-reframe 261-line doc) is in git (`8dd1c7d`).
+
+**Closeout worklist:** [`R7_Closeout_Checklist.md`](R7_Closeout_Checklist.md) is the audited 2026-08-27 inventory and execution order for closing R7-W6. This Scope remains the source of truth for release status.
 
 **Key data input:** the editor-labeled deck (`R7 Label Deck`, Airtable `tblOxYHuAl2yp9Znl`). Airtable holds **456 rows** (239 None / 211 includable / 6 blank); the current modeling set uses **416**. **#107 accounts for all 40 omitted rows:** 30 Batch-5 rows post-date the embedding pull, 4 walkthrough rows were omitted at staging, 4 have blank `Section`, and 2 have no URL. Use 456 when talking about what the editor has ruled on, 416 only when describing a fit actually run on the cached model set.
 

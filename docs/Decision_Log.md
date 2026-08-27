@@ -2171,3 +2171,15 @@ A is therefore reported as:
 **Generalizable rule:** *an end-to-end instrument must reproduce known production constraints; otherwise it measures its own staging artifact.*
 
 **Second generalizable rule:** *when a human rater can access information the model could not, record what the rater actually consumed, not what was available to them.* Availability is a property of the sheet; consumption is the confound.
+
+---
+
+## 94. R7 Closes at W6; the Former W7 Production Tranche Moves into R8 Integration (2026-08-27)
+
+**Decision:** R7 closes at W6 once its remaining model-closeout decisions and issue dispositions are complete. The former R7-W7 production deployment and model-lifecycle tranche moves into R8, where R7 viability and section signals, R6 ranking, allocation, and the editor console are integrated. This amends §61's “W7 after R6” sequence by rehoming that work rather than treating it as an unfinished R7 release tranche.
+
+**Why:** the remaining W7 work validates the integrated production path rather than the offline model's viability. Deploying it separately would create an intermediate production architecture immediately replaced by R8 and split one system contract across releases. Keeping deployment, fallback behavior, model/evaluation versions, regression replay, retraining triggers, and production monitoring together gives the production system one integration boundary and one owner while allowing R7's measured model result to close honestly.
+
+**Consequence:** R7-W6 closeout does not claim the models are live. The future R8 scope inherits classifier/gate deployment into R2, bypass/fallback and rationale behavior, the 20-record production test, frozen-set replay, version/rollback metadata, retraining policy, post-deployment NeedsReview measurement, and proof that model behavior survives the production path. R6 remains next and continues to own weekly relative ranking.
+
+**What this does not decide:** Fork C's final wording, Step 4c disposition, #108's disposition, and the open R7 milestone issues remain separate closeout decisions. Moving productionization does not mark those items complete.

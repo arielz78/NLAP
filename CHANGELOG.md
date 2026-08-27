@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-08-27
+- Completed the blinded live evaluation of the event viability and sectioning models, documenting where model ordering transfers and where downstream ranking and list construction remain necessary.
+- Added a reproducible readout tool, tests, sealed technical report, and audited release-close checklist.
+
 ## 2026-08-14
 - Measured how much of the editor's published newsletter is recoverable from the automated candidate pool, across eleven past issues, and documented the matching method together with its limits and provenance.
 - Added a per-source liveness gap to the backlog after finding two ingestion sources had gone quiet for weeks with no alarm covering them.
