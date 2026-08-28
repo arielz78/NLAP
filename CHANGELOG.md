@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-08-28
+- Restored a blocked ingestion source by diagnosing a bot-protection layer that rejects requests during the encrypted handshake, before any request header is read — a failure that is invisible to the usual header-based fixes. Documented the diagnostic that isolates this class of failure, and recorded it as applying to every library on the same platform rather than just the one site.
+- Ran the full post-ingestion health-check suite and folded the findings into the existing backlog rather than opening new items, correcting the recorded count of silently inactive sources and confirming that a monitoring script has been reporting month-old results as current.
+
 ## 2026-08-27
 - Completed the blinded live evaluation of the event viability and sectioning models, documenting where model ordering transfers and where downstream ranking and list construction remain necessary.
 - Added a reproducible readout tool, tests, sealed technical report, and audited release-close checklist.
