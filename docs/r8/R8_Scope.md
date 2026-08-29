@@ -201,18 +201,29 @@ automatically — in order? Write the list before CP1, not during it.
 
 ---
 
-## 6. The write path: two silent failures and one invariant
+## 6. The write path: two failure modes and one invariant
 
-Both failures produce a normal-looking newsletter and throw no error.
+The first is silent. The second is loud but blocking. Verified against the files 2026-08-28.
 
 1. **An unlocked swap is deleted on the next allocation run.**
    `connectAirtable.js:218` `deleteUnlockedIssueItems()` deletes every unlocked IssueItem on
    current and future issues and rebuilds from the model's picks. Blast radius is current +
    future only; `fetchIssues()` drops `date < today`, so published history is safe.
-2. **…but locking it first empties the newsletter bullet.**
-   `generateBlurbs.js:270` filters `!i.lock` — it *skips locked rows*. `pushToBeehiiv.js:113–117`
-   defaults `DisplayTitle`/`Description`/`CTA` to `''` and `renderSlot()` emits the bullet anyway.
-   Lock before generating and the editor's own picks come out blank in the paste.
+2. **…but locking it first blocks the export.**
+   `generateBlurbs.js:270` filters `!i.lock` — it *skips locked rows*, so a row locked before copy
+   is generated never gets `DisplayTitle`/`Description`/`CTA`. `pushToBeehiiv.js:209` then filters
+   for any item missing those fields and **throws** before rendering, naming the section and slot.
+   The export cannot run until it is unpicked.
+   ⚠️ **Corrected 2026-08-28 after review.** An earlier draft claimed this rendered a blank bullet
+   silently — `pushToBeehiiv.js:113–117` does default those fields to `''` and `renderSlot()` does
+   emit the bullet unconditionally, but the `main()` guard 90 lines away makes that path
+   unreachable. Loud, not silent. **The architecture is unchanged:** failure 1 alone is silent and
+   destructive and independently requires both the no-console-writes rule and the fixed order.
+
+   **The genuinely silent variant is different and is not yet covered.** If reconcile re-points an
+   existing row's `Candidate` link instead of creating a new row, the copy fields are non-empty but
+   *stale* — the guard passes and the export renders the previous event's blurb under the new
+   event's URL. `TODO(ariel):` the 09-01 write contract must invalidate copy on any re-pointed row.
 
 `apply → generate blurbs → lock` is the only order that avoids both. **But an order is not a safe
 operation.** If reconcile dies after apply and before lock, the editor's choices sit in Airtable

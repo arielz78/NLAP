@@ -61,8 +61,10 @@ The picker re-runs periodically, and on each run it **deletes every unlocked row
 upcoming issues** and rebuilds them from its own choices. A swap written as a normal row silently
 disappears, and the newsletter still looks correct.
 
-Locking the row is worse: **the copywriter skips locked rows**, so the event survives with no blurb
-and the export prints an empty entry. Neither failure raises an error.
+Locking the row breaks it the other way: **the copywriter skips locked rows**, so the event survives
+with no copy, and the export script then refuses to run at all — it checks for missing copy and
+stops with an error naming the section and slot. That one is loud rather than silent, but it blocks
+the newsletter until someone unpicks it.
 
 Both are avoidable in one specific order — apply, generate copy, then lock — and I own the script
 that does it.
