@@ -2183,3 +2183,27 @@ A is therefore reported as:
 **Consequence:** R7-W6 closeout does not claim the models are live. The future R8 scope inherits classifier/gate deployment into R2, bypass/fallback and rationale behavior, the 20-record production test, frozen-set replay, version/rollback metadata, retraining policy, post-deployment NeedsReview measurement, and proof that model behavior survives the production path. R6 remains next and continues to own weekly relative ranking.
 
 **What this does not decide:** Fork C's final wording, Step 4c disposition, #108's disposition, and the open R7 milestone issues remain separate closeout decisions. Moving productionization does not mark those items complete.
+
+---
+
+## 95. R8 Opens Ahead of the R6 Gate, by Client Commitment (2026-08-28)
+
+**Decision:** R8 opens now, ahead of the R6 completion gate set by `R8_Editor_Console_Concept.md`'s header. A delivery date of 2026-09-08 was committed to the editor. R7 remains open in closeout only; R8 is the active release for session purposes.
+
+**Why:** the gate existed to ensure the console was built on validated ranking behaviour. A client commitment overtook it. Holding the release to the original sequence would delay a user outcome to preserve an internal ordering, and the console's value — capturing editor swaps as preference evidence — does not depend on R6 being finished. The ordering input is isolated behind a single adapter so a later ranking model can replace it without redesigning the editor workflow.
+
+**Consequence:** V1 orders candidates on R7's existing viability and section outputs, labelled "suggested" and never "best" (§87/§93 forbid the stronger claim). 09-08 cannot claim unattended operation, solo editor operation, three consecutive solo weeks, deployed models, or validated ordering. `CLAUDE.md`'s Session Start section still routes `/start` to `docs/r7/R7_Scope.md` and needs updating, or every session reopens R7 while the R8 clock runs.
+
+**What this does not decide:** whether the pipeline is hosted for 09-08, and whether R6 cuts over into V1 if it lands before delivery. Both remain open in `R8_Scope.md` §7 (TODO-1, TODO-5).
+
+---
+
+## 96. The Editor Console Does Not Write to Airtable (2026-08-28)
+
+**Decision:** the console records an append-only submission and performs no production writes. An operator-run reconcile script, owned by Ariel, validates that submission, applies it to IssueItems, generates blurbs, then locks — in that order.
+
+**Why:** two code paths make a naive write silently destructive, and they pull in opposite directions. `connectAirtable.js:218` `deleteUnlockedIssueItems()` deletes every unlocked IssueItem on current and future issues and rebuilds them from the allocator's own picks, so an ordinary swap disappears on the next allocation run while the newsletter still looks correct. The obvious remedy is worse: `generateBlurbs.js:270` filters `!i.lock` and `pushToBeehiiv.js:113–117` defaults `DisplayTitle`/`Description`/`CTA` to empty strings while still rendering the bullet, so locking first produces blank entries in the paste with no error anywhere. Only a controlled sequence avoids both, and placing that sequence outside the console keeps the dangerous semantics with the contributor who knows the pipeline.
+
+**Consequence:** the implementing developer cannot corrupt production state, which removes the release's largest silent-failure risk from the person least able to detect it. The reconcile script is Ariel-authored and sits on the correctness boundary he already owns. Two obligations follow: a submission→reconcile handoff contract (durable, immutably identified, version-bound, non-repeatable), and a failure invariant — an ordering alone is not a safe operation, because a reconcile that dies between apply and lock leaves submitted rows exposed to the deletion above.
+
+**What this does not decide:** which failure invariant (deterministic rerun convergence vs restore-on-failure), what `Lock` means after a submit, or the persistence mechanism. All open in `R8_Scope.md` §5b and §7.
