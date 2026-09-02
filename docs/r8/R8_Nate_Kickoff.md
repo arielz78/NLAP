@@ -70,7 +70,7 @@ Both are avoidable in one specific order — apply, generate copy, then lock —
 that does it.
 
 So: the console records the submitted result. How you store and expose that submission is yours.
-What it has to guarantee is mine, and you'll have that contract on Sept 1.
+What it has to guarantee is mine, and you'll have that contract at CP1.
 
 ---
 
@@ -100,12 +100,13 @@ Two rules that shape the schema:
 scores or explanations shown · post-swap tap is never a form · lands straight in the current issue ·
 no Airtable writes.
 
-**Open until Sept 1:** number of alternates · card contents · what "locked" means after submit ·
-whether replace-from-alternates covers the editor's whole task.
+**Open until CP1:** number of alternates · card contents · what "locked" means after submit.
 
-On the last one — I'm watching him build a real issue Sunday to confirm. He may need something the
-alternates can't express, e.g. inserting a sponsored event that was never a candidate. **Avoid
-architecture assuming a slot can only be filled from its own alternate list.**
+**Now closed, and it simplifies your build:** I'd flagged that the editor might need to fill a slot
+with something that was never a candidate — a sponsored event — and asked you to avoid architecture
+assuming a slot can only be filled from its own alternate list. **That instruction is withdrawn.**
+Sponsored events go into a different section entirely, one this console doesn't touch. A slot is
+filled from its own alternates, always. Build for that.
 
 **Ordering:** the bench order comes from a model we're replacing shortly. It currently produces
 **two values per event, not one score.** Keep ordering behind a single adapter so the swap is a
@@ -132,16 +133,18 @@ counts as recorded preference, or affect the date.
 
 ## 8. Checkpoints
 
-**All dates below are my proposal, not fixed.** Only 09-08 is committed to the client. Push back on
-any of the rest on Sept 1 if they don't suit how you work.
+**These are gates, not a calendar.** Each one has to happen and they have to happen in this order,
+but I'm not putting dates on them until you tell me when you can start. Delivery to the client is
+mine to manage — you tell me your real timeline and I'll work to it.
 
-| Date | Day | |
+| # | Gate | What it means |
 |---|---|---|
-| 09-01 | Tue | I give you the write contract. You give me your architecture, sequence, estimates, top risks, and anything above you disagree with. |
-| 09-03 | Thu | First demo — load an issue from mock data, replace, undo, refresh without losing the draft, submit, show the recorded output. No production writes. |
-| 09-05 | Sat | Feature freeze. I run the full workflow as the editor. |
-| 09-08 | Tue | Delivery. |
-| 09-13 | Sun | First real editor use. |
+| **CP1** | **Kickoff exchange** | I give you the write contract. You give me your architecture, sequence, estimates, top risks, and anything in this brief you disagree with. |
+| **CP2** | **Survival demo** | Load an issue from mock data, replace, undo, refresh without losing the draft, submit, and show me the recorded output. No production writes. |
+| **CP3** | **Feature freeze** | Nothing new goes in. I run the full workflow end to end as the editor would. |
+| **CP4** | **Delivery** | Built, hosted, and rehearsable. |
+| **CP5** | **First real editor use** | He runs a live issue in it. |
 
-On the estimate: I committed the date before you'd seen the requirements. If the scope doesn't fit,
-I need to know on Sept 1, while there's still room to cut.
+Two things I need from you at CP1, before anything else: **when you can start**, and **how long you
+think this takes** once you have. I set a client date before you'd seen the requirements, so if the
+scope doesn't fit the time, I need to hear it at CP1 while there's still room to cut.
