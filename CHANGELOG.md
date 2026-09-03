@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-09-03
+- Reframed the event-ranking release around section-aware evidence and ordering, separating viability, issue assembly, and human review while retiring a legacy formula-score assumption.
+- Corrected the editor-console handoff from per-slot benches to section-level alternatives and added a single-planner migration invariant.
+- Adopted progressive specification and separate journals for concurrent release work, keeping future docs detailed only when evidence or an active handoff requires it.
+
 ## 2026-08-28
 - Restored a blocked ingestion source by diagnosing a bot-protection layer that rejects requests during the encrypted handshake, before any request header is read — a failure that is invisible to the usual header-based fixes. Documented the diagnostic that isolates this class of failure, and recorded it as applying to every library on the same platform rather than just the one site.
 - Ran the full post-ingestion health-check suite and folded the findings into the existing backlog rather than opening new items, correcting the recorded count of silently inactive sources and confirming that a monitoring script has been reporting month-old results as current.

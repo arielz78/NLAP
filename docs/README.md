@@ -10,6 +10,27 @@ index, or just run `/wrap` (it walks this list for you at session end).
 When two docs would disagree: Scope snapshot wins for *status*, Decision_Log wins for *decisions*.
 This is the guard against the cross-doc drift that otherwise recurs every release.
 
+## Progressive specification
+
+Documentation contains only **verified current state, settled decisions, the next executable gate, and
+detail already required by a current consumer, build step or handoff**. Unvalidated implementation detail
+stays a hypothesis, open question or named experiment gate; do not specify schemas, thresholds, feature
+lists, UI behaviour, work packages or workflows merely to make a document look complete.
+
+Add detail when evidence resolves it and the next step requires it. A document becomes more specific as
+the system becomes more certain instead of repeatedly rewriting speculative detail. Parallel work is the
+exception: define the minimum stable interface needed to prevent incompatible assumptions, while leaving
+internal implementation open.
+
+Applied by document type:
+
+- **Living references:** update when a stable fact or decision changes.
+- **Release scopes:** direction, boundaries, settled decisions and the next gate; no speculative full plan.
+- **Decision Log:** the durable decision and rationale only.
+- **Execution/release logs:** detailed historical record; allowed to age because history is frozen.
+- **Handoff contracts:** only the interface required for independent work.
+- **Meeting notes:** what occurred or was promised, not inferred future architecture.
+
 ## Three doc types (organized by durability, not by release)
 
 A doc's *type* tells you its update discipline. It's a label, **not** a folder —
@@ -20,20 +41,21 @@ never changes, whereas type (working → frozen) does.
 |---|---|---|
 | **Living reference** | Update in place forever. No release number. | `docs/` top level, `NA/` |
 | **Release-working** | Maintained *during* a release; frozen + moved to `logs/` at close. | `docs/r{N}/` |
-| **Frozen record** | Never updated. *Allowed* to look stale — a snapshot is not drift. | `docs/archive/`, `logs/`, `meetings/` |
+| **Frozen record** | Never updated. *Allowed* to look stale — a snapshot is not drift. | `docs/archive/`, completed release logs, `meetings/` |
 
 ## Where every fact lives — the index
 
 | Fact | Home | Type | Update when |
 |---|---|---|---|
-| Session journal (what happened, next step) | `Execution_Log.md` (root) | Living (journal) | **Every session** |
-| Public repo changelog | `CHANGELOG.md` (root) | Derived from Execution_Log | Every session (auto — derived, not authored twice) |
+| R7 closeout / release-neutral journal | `Execution_Log.md` (root) | Living (journal) | Each applicable session |
+| Active parallel release journals | `logs/R6_Log.md`, `logs/R8_Log.md` | Living until that release closes | Each applicable R6/R8 session |
+| Public repo changelog | `CHANGELOG.md` (root) | Derived from the applicable journal | Every session (auto — derived, not authored twice) |
 | Architectural / editorial decisions + rationale | `docs/Decision_Log.md` | Living reference | **Only** when a real decision is made |
 | Active release status ("where are we") | active Scope doc's Status Snapshot (e.g. `docs/r7/R7_Scope.md`) | Release-working | When release status changes |
 | Per-source method / status / field inventory / verdict | `docs/source_decision_sheet.md` | Living reference | When a source's state changes |
 | Scrape / source-probe methodology | `docs/scrape_blueprint.md` | Living reference | When the method or standard changes |
 | Release plan (original intent, **not** status) | `docs/NLAP_PostMVP_Roadmap_v3.md` | Frozen *per-section* (see below) | A section freezes when its release opens; otherwise never |
-| Past release build history | `logs/` | Frozen | At release close (move the Scope doc's history here) |
+| Completed release build history | `logs/` | Frozen | At release close; an already-open parallel release journal freezes in place |
 | Website build sessions | `logs/Website_Log.md` | Living (journal) | Website sessions |
 | Client meeting notes | `meetings/` (dated) | Frozen | Per meeting |
 | Tracking / health-check output | `data/tracking/` | Generated | Per run (local; not posted) |
@@ -49,9 +71,8 @@ never changes, whereas type (working → frozen) does.
 
 `NLAP_PostMVP_Roadmap_v3.md` is a **mixed-maturity** doc, so it isn't frozen all at once:
 
-- **Started releases** (R5, R6, R7) → that section is **frozen intent**. Read the release's Scope doc for status; read the roadmap only for the *original* plan. The plan-vs-actual gap is intentional writeup material — never sync the roadmap to reality.
-- **Not-yet-started releases** (R8) → the roadmap **is** its live source of truth. There's no Scope doc yet.
-- A section freezes **the moment its release gets a Scope doc.** When you open R8, seed `docs/r8/R8_Scope.md` from the roadmap's R8 section; from then on R8 status lives in the Scope doc. **Every Scope doc carries two standing sign-off gates (copy R5_Scope's):** (1) a **milestone-completeness gate** — the release closes only when no open issue is unmilestoned *and* every issue in that release's GitHub milestone is closed or deferred-with-disposition; (2) a **reusability / config gate** — the release closes only after confirming nothing new is Vaughan-hardcoded outside config, i.e. the pipeline stays city-swappable (base-per-newsletter): **R6** = scoring weights/venue logic config-driven; **R7** = per-base models; **R8** = onboard-via-config verified. Both gates are status, so they live in the Scope doc, never the roadmap. When you seed a new Scope doc from the roadmap, both gates come with it — they cannot be skipped.
+- **Started releases** (R5, R6, R7, R8) → that section is **frozen intent**. Read the release's Scope doc for status; read the roadmap only for the *original* plan. The plan-vs-actual gap is intentional writeup material — never sync the roadmap to reality.
+- A section freezes **the moment its release gets a Scope doc.** The Scope then owns live status. **Every Scope doc carries two standing sign-off gates:** (1) a **milestone-completeness gate** — the release closes only when no open issue is unmilestoned *and* every issue in that release's GitHub milestone is closed or deferred-with-disposition; (2) a **reusability / config gate** — the release closes only after confirming nothing new is Vaughan-hardcoded outside config, i.e. the pipeline stays city-swappable (base-per-newsletter): **R6** = scoring weights/venue logic config-driven; **R7** = per-base models; **R8** = onboard-via-config verified. Both gates are status, so they live in the Scope doc, never the roadmap.
 - Post-R8, when every section has been consumed, the whole roadmap retires to `docs/archive/`.
 
 ## Two patterns that prevent "writing the same thing twice"
@@ -66,4 +87,4 @@ Every "thing to do next" follows one path: **captured at `/wrap` → filed as a 
 
 ## Session end
 
-`/wrap` runs this index as a checklist *for you*: it appends the journal + changelog automatically, then scans the session and proposes which conditional homes (Decision_Log, source sheet, metrics log, GitHub issues) changed. You confirm — you don't scan.
+`/wrap` runs this index as a checklist *for you*: it appends the applicable journal + changelog automatically, then scans the session and proposes which conditional homes (Decision_Log, source sheet, metrics log, GitHub issues) changed. You confirm — you don't scan.

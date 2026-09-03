@@ -39,8 +39,8 @@ copywriter.
 One screen, opened by link on a laptop. It shows the current issue, already assembled:
 
 - Three sections: Families, Couples, Golden Age
-- 5 selected events each, plus a short ranked list of alternates
-- Replace a selection with an alternate; undo available
+- 5 selected events each, plus a short section-level list of alternatives
+- Replace a selection with a section alternative; undo available
 - After a replace, one optional tap: *preferred the other* / *listing is broken*
 - One Submit per issue
 
@@ -76,7 +76,7 @@ What it has to guarantee is mine, and you'll have that contract at CP1.
 
 ## 5. Interaction recording
 
-Capture at the moment of each replace: **the alternates actually shown and their order**, the
+Capture at the moment of each replace: **the alternatives actually shown and their order**, the
 ranking version behind that order, whether the slot was valid then, and **whether he opened the
 event's source link**.
 
@@ -96,7 +96,7 @@ Two rules that shape the schema:
 
 ## 6. Fixed vs. open
 
-**Fixed:** three sections · 5 slots plus alternates · laptop only · single replace action · no
+**Fixed:** three sections · 5 slots plus section-level alternatives · laptop only · single replace action · no
 scores or explanations shown · post-swap tap is never a form · lands straight in the current issue ·
 no Airtable writes.
 
@@ -104,11 +104,16 @@ no Airtable writes.
 
 **Now closed, and it simplifies your build:** I'd flagged that the editor might need to fill a slot
 with something that was never a candidate — a sponsored event — and asked you to avoid architecture
-assuming a slot can only be filled from its own alternate list. **That instruction is withdrawn.**
+assuming a selection can only be filled from the section's alternative list. **That instruction is withdrawn.**
 Sponsored events go into a different section entirely, one this console doesn't touch. A slot is
-filled from its own alternates, always. Build for that.
+filled from its section's alternatives, always. Build for that.
 
-**Ordering:** the bench order comes from a model we're replacing shortly. It currently produces
+**Choice-set contract:** your fixture receives the collective five selected events, one section-level
+alternative list, and a replacement assessment when an alternative is proposed against a selected event:
+`clean`, `override`, or `unavailable`, with a reason. One alternative may have different results against
+different selected events. Do not reproduce those rules in the console; Ariel supplies the assessment.
+
+**Ordering:** the alternative order comes from a model we're replacing shortly. It currently produces
 **two values per event, not one score.** Keep ordering behind a single adapter so the swap is a
 one-file change, and don't introduce a scalar `score` field.
 

@@ -3,7 +3,7 @@
 **Owner:** Ariel · **Builder:** Nate · **Committed delivery:** 2026-09-08
 
 **Type: Release-working.** Decisions home in `docs/Decision_Log.md`. Session recaps in
-`Execution_Log.md`. Everything Nate-facing — scope of his build, decision rights, checkpoints —
+`logs/R8_Log.md`. Everything Nate-facing — scope of his build, decision rights, checkpoints —
 homes in `docs/r8/R8_Nate_Kickoff.md`. This doc does not restate any of it.
 
 **Read order:** this doc → `docs/r8/R8_Editor_Console_Concept.md` (§3 pair rules, §5 write trap) →
@@ -65,11 +65,11 @@ Ariel's decisions. Where a bracket cites review or code, that is the evidence, n
 ```
 Ariel        trigger ingestion + R7 scoring                      (manual — TODO-1)
   |
-pipeline     allocator selects 5 picks per section               (buildIssues.js)
+pipeline     allocator selects the collective 5 per section      (buildIssues.js)
   |
-Ariel        CHOICE-SET BUILDER: the feasible bench per slot     <-- W9, does not exist
+Ariel        W9: section alternatives + replacement assessment   <-- does not exist
   |
-Nate         console renders the built issue + bench
+Nate         console renders the built issue + alternatives
   |
 editor       review, replace, undo, submit once
   |
@@ -128,7 +128,7 @@ does not reproduce `connectAirtable.js`'s exact string vanishes silently from th
 | W6 | Reconcile script | **Ariel** |
 | W7 | Acceptance scenarios + fallback procedures | **Ariel** |
 | W8 | Pipeline hosting migration | Nate — TODO-1 |
-| **W9** | **Choice-set / snapshot builder** | **Ariel** (semantics + fixtures) |
+| **W9** | **Assembly / choice-set contract** | **Ariel** (semantics + fixtures) |
 
 **W1 must define three things**, all Ariel's semantics: what a submit applies and in what order,
 including what `Lock` means afterwards (TODO-2); §4's failure invariant; and the
@@ -138,15 +138,21 @@ submission is durable, carries an immutable identifier, names the built-issue ve
 to, survives a console restart, cannot be reconciled against the wrong one, and is recorded as
 applied. How it is exposed is Nate's.
 
-**W9 exists because nothing produces a bench.** `buildIssues.js:372` returns
-`[{IssueDate, ItemID, Section, Slot}]` — selected picks only. Something must assemble the feasible
-alternates per slot while honouring date-window eligibility, recurring-series collapse,
-one-venue-per-section, cross-issue assignment, locked slots and section ordering. Those rules live
-in `buildIssues.js` and any divergence is silent, so the semantics are Ariel's. Without W9, Nate
-either invents product logic or builds against a fixture that can never become production data.
+**W9 exists because nothing produces alternatives.** `buildIssues.js:372` returns
+`[{IssueDate, ItemID, Section, Slot}]` — selected picks only. W9 defines one logical assembly
+boundary around that planner: consume an ordered pool; return the collective five-event set per
+section, section-level alternatives, and a contextual assessment when an alternative is proposed
+against a selected event (`clean`, `override` or `unavailable`, with a reason). The same alternative
+may be clean against one selected event and conflict against another because the other four remain
+fixed.
 
-`TODO(ariel):` does W9 reuse `buildIssues.js`'s constraint functions, or restate them? Reuse is the
-default. Due CP1.
+For delivery, `buildIssues.js` remains the sole production planner. W9 must not restate its rules in
+a second writer. A future replacement runs read-only against identical inputs and records slate
+diffs; at cutover, `connectAirtable.js` invokes exactly one planner, and the legacy planner is retired
+or reduced to a wrapper. This closes the silent failure where two planners produce different,
+plausible `IssueItems` from the same pool.
+
+Nate owns presentation, not these semantics. Drag-and-drop remains out of the committed delivery.
 
 ---
 
@@ -156,8 +162,8 @@ default. Due CP1.
 2026-09-01: yes.** Paid events go into a separate section, so no slot is filled from outside the
 candidate pool. No manual-insert feature. `meetings/2026-07-19.md`'s *"~2 of 5 events to be
 sponsorships"* is superseded — intent that did not become practice. `R8_Nate_Kickoff.md` §6's
-instruction to avoid assuming a slot is filled only from its own alternates is **withdrawn**;
-correct at CP1. Still unvalidated, non-blocking: whether the bench expresses his editorial
+instruction to avoid assuming a selection is filled only from the section's alternatives is **withdrawn**;
+correct at CP1. Still unvalidated, non-blocking: whether the alternative set expresses his editorial
 operations — splitting similar events across sections, balancing cities issue-wide. Both were
 re-scored as reasons to swap, not operations the UI must add. First exposure is the live session.
 
@@ -174,11 +180,12 @@ button rather than making him press it.
 field's meaning. Must satisfy §4's invariant.
 *Answer:* ______
 
-**TODO-3 — Bench size (k), and what a card shows.** Editor validates.
-*Lean:* k=5. Ask him what he needs to judge an event in three seconds.
+**TODO-3 — Section-alternative count (`K`), and what a card shows.** Editor validates.
+`K` is the number R8 initially displays, distinct from R6's enrichment depth `M`. Choose it from
+observed editor use; no permanent value is set in advance.
 *Answer:* ______
 
-**TODO-4 — What orders the bench on day one?** Due before the scoring run.
+**TODO-4 — What orders the alternatives on day one?** Due before the scoring run.
 *Lean:* `P(include) × P(section)` per section, labelled "suggested" — never "best". §87/§93 forbid
 the stronger claim.
 *Answer:* ______
@@ -228,6 +235,10 @@ Observable scenarios. **No numeric targets** — the evidence supports none.
 13. Both fallback procedures work and are documented before the first live session.
 14. **One real Sunday, observed not surveyed:** did he finish, where did he stall, did he open
     Airtable anyway, what did he ask for that wasn't there.
+15. One alternative can be clean against one selected event and require an override or be
+    unavailable against another; each result carries the correct reason.
+16. Any future planner runs read-only and is diffed before cutover; production invokes exactly one
+    planner for a given pool.
 
 ---
 
