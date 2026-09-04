@@ -16,7 +16,14 @@ only when evidence resolves them and the next build step requires them.
 ## 0. Status snapshot (2026-09-03)
 
 R6 has resumed at architecture-definition stage while R8 carries the immediate editor-delivery work.
-No production R6 scorer, enrichment harness or ranking writer exists.
+
+**2026-09-04:** a read-only ranking harness now exists at `scripts/r6/` — evidence joins, series
+collapse, LLM attribute extraction, scoring and assembly. It writes no Airtable and no production
+artifact; its config worksheets ship blank and `--attributes` refuses to run until they are authored.
+**No production R6 scorer or ranking writer exists**, and whether this harness becomes the production
+implementation is open. The wider R6 architecture proposal drafted the same day is **unratified** and is
+deliberately not written into this document (Decision_Log §97); only the runtime/language boundary was
+settled.
 
 The original July draft is superseded by later repo and editor evidence:
 
@@ -35,6 +42,10 @@ The original July draft is superseded by later repo and editor evidence:
 
 **Current gate:** secure R8's W1/W6/W7/W9 delivery path. R6 implementation starts afterward with one
 bounded, read-only enrichment-pool experiment.
+
+**Amended 2026-09-04:** a bounded read-only run has already happened, ahead of that gate and at Ariel's
+direction — the harness above ran on the frozen 2026-08-13 window and the live 2026-09-10 window. The
+*enrichment* arm proper (detail-page recovery, §3) is still not run. Tracked on #133.
 
 ---
 
