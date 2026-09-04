@@ -2221,3 +2221,13 @@ A is therefore reported as:
 **Consequence:** the implementing developer cannot corrupt production state, which removes the release's largest silent-failure risk from the person least able to detect it. The reconcile script is Ariel-authored and sits on the correctness boundary he already owns. Two obligations follow: a submission→reconcile handoff contract (durable, immutably identified, version-bound, non-repeatable), and a failure invariant — an ordering alone is not a safe operation, because a reconcile that dies between apply and lock leaves submitted rows exposed to the deletion above.
 
 **What this does not decide:** which failure invariant (deterministic rerun convergence vs restore-on-failure), what `Lock` means after a submit, or the persistence mechanism. All open in `R8_Scope.md` §5b and §7.
+
+---
+
+## 97. R6 Ranking Runs in Node Beside the Allocator; Fitting Stays Offline in Python (2026-09-04)
+
+**Decision:** the R6 weekly ranking harness — evidence joins, LLM attribute extraction, scoring and assembly — is Node, colocated with `buildIssues.js` and `connectAirtable.js`. Model fitting and evaluation stay in Python under `models/ranking/`. The two exchange files: Python writes a weights config, Node reads it; R7 continues to hand over `scored_survivors.jsonl`.
+
+**Why:** language follows the runtime boundary, not the author's preference. The weekly production job is one hosted process Nate must be able to run without a Python venv, and R6's assembly step has to converge with `buildIssues.js` under §87's single-planner rule — two planners in two languages is exactly the competing-slate failure that rule exists to prevent. Fitting is offline, runs on Ariel's machine, and already has its tooling and pinned deps in `models/ranking/`; porting a working grader to Node buys no runtime. This is §28's "fit once, rules in production" shape applied to a second component, with the config file as the seam.
+
+**What this does not decide:** the `RankedPool` schema, the attribute schema, the weights, or whether the read-only demo harness becomes the production implementation. Nothing here ratifies the wider R6 architecture proposal drafted the same session; that remains an unwritten hypothesis until it lands in `docs/r6/R6_Scope.md`.

@@ -1,0 +1,28 @@
+{
+  "_readme": [
+    "TODO(ariel): authored core (representation). The harness refuses to run --attributes while any blank remains.",
+    "For every field: write the one-sentence 'definition' the model reads (this is the label's meaning; §83's lesson),",
+    "and for every allowed value give the number in [0,1] that score.js uses for it (1 = most desirable for the editor).",
+    "Rename, add or delete values and fields freely; field names must match the keys in weights.json.",
+    "'unknown' is always allowed and never listed. Bumping prompt_version invalidates the attribute cache.",
+    "Fields with role hard_rule:* are facts only; score.js applies the editor's 2026-07-09 rules (alcohol -> Couples, kids -> Families).",
+    "section_appeal routes a series to a section ONLY when no R7 scores are supplied (demo fallback)."
+  ],
+  "prompt_version": "demo-0.1",
+  "fields": [
+    { "name": "novelty_type", "definition": "", "quote": true,
+      "values": { "one-off": null, "annual-or-seasonal": null, "recurring-weekly": null, "ongoing-program": null } },
+    { "name": "audience_breadth", "definition": "", "quote": true,
+      "values": { "broad": null, "moderate": null, "niche": null } },
+    { "name": "participation", "definition": "", "quote": true,
+      "values": { "active-hands-on": null, "passive": null } },
+    { "name": "food_drink", "definition": "", "quote": true, "type": "boolean" },
+    { "name": "alcohol", "definition": "", "quote": true, "type": "boolean", "role": "hard_rule:For Couples" },
+    { "name": "kids_activities", "definition": "", "quote": true, "type": "boolean", "role": "hard_rule:For Families" },
+    { "name": "cost_tier", "definition": "", "quote": true,
+      "values": { "free": null, "low": null, "mid": null, "high": null } },
+    { "name": "section_appeal", "definition": "", "type": "appeal_1_5", "role": "routing_when_no_r7" },
+    { "name": "info_quality", "definition": "", "type": "diagnostic",
+      "values": { "high": null, "medium": null, "low": null } }
+  ]
+}

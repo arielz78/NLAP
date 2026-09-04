@@ -1,0 +1,37 @@
+{
+  "_readme": [
+    "TODO(ariel): authored core (operating point). Every null must be a number before a scored run.",
+    "features: relative weights; score.js renormalizes over the features KNOWN for a series, so unknown never counts as zero.",
+    "penalties: subtracted from the base score. recency = w * max(0, 1 - days_since_last_run / recency_horizon_days).",
+    "recurring = w * min(1, (occurrences_in_horizon - 1) / (recurring_cap_occurrences - 1)).",
+    "click_prior = (n * median_pct + click_shrink_n * 0.5) / (n + click_shrink_n); with n = 0 it is unknown.",
+    "flex_margin: |P(Couples) - P(Golden)| at or below this makes a series flex (dual membership). On the 0-1 scale.",
+    "near_dup_action: 'flag' places near-duplicates and marks the alternative 'override'; 'skip' leaves one per cluster.",
+    "use_probable_history: true lets a title-match ('probably ran before', e.g. Mini-Makers Fun 2026-07-16) drive the recency penalty; false uses URL/record joins only.",
+    "p_include and section_fit are only known when --r7 scores are supplied; leave weights anyway."
+  ],
+  "features": {
+    "p_include": null,
+    "section_fit": null,
+    "novelty_type": null,
+    "audience_breadth": null,
+    "participation": null,
+    "food_drink": null,
+    "cost_tier": null,
+    "section_appeal": null,
+    "click_prior": null
+  },
+  "penalties": {
+    "recency": null,
+    "recurring": null
+  },
+  "params": {
+    "recency_horizon_days": null,
+    "recurring_cap_occurrences": null,
+    "click_shrink_n": null,
+    "flex_margin": null,
+    "near_dup_action": "flag",
+    "near_dup_jaccard": 0.6,
+    "use_probable_history": true
+  }
+}

@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-09-04
+- Designed the editorial ranking stage end to end and built a read-only prototype of it: the weekly candidate pool is grouped into distinct events, joined against publication and engagement history, and turned into a complete proposed issue with ranked alternatives — every hard rule enforced in code, and a reason recorded for every event the builder passed over.
+- Measured a second week of pool composition and found the redundancy rate is not stable across weeks, retiring a figure that was on its way to becoming a conversion factor.
+- Settled where the ranking runs and in which language, on the grounds of the runtime boundary rather than preference, so the eventual production path has exactly one issue planner.
+
 ## 2026-09-03
 - Reframed the event-ranking release around section-aware evidence and ordering, separating viability, issue assembly, and human review while retiring a legacy formula-score assumption.
 - Corrected the editor-console handoff from per-slot benches to section-level alternatives and added a single-planner migration invariant.
