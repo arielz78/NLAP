@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-09-05
+- Ran a comparative LLM ranking demonstration for the September 10 issue using fresh viability scores, publication history, contextual click evidence and retrieved event details.
+- Produced a local editor preview with recommendations and ordered alternatives through the existing allocator, retaining section flexibility in a temporary adapter.
+- Preserved the raw model response, source-verified corrections, allocation trace, validation results and measured API usage; production integration remains open.
+
 ## 2026-09-04
 - Designed the editorial ranking stage end to end and built a read-only prototype of it: the weekly candidate pool is grouped into distinct events, joined against publication and engagement history, and turned into a complete proposed issue with ranked alternatives — every hard rule enforced in code, and a reason recorded for every event the builder passed over.
 - Measured a second week of pool composition and found the redundancy rate is not stable across weeks, retiring a figure that was on its way to becoming a conversion factor.

@@ -1,7 +1,7 @@
 # R6 Scope — Editorial Ranking
 
 **Owner:** Ariel
-**Status:** DRAFT v2 (2026-09-03) — direction set; implementation deferred behind the delivery-critical R8 path
+**Status:** DRAFT — September 10 comparative-ranking demo available; production architecture remains open
 **Roadmap:** `docs/NLAP_PostMVP_Roadmap_v3.md` Release 6 is frozen intent. This document supersedes it for current R6 direction.
 **Read order:** this doc → `docs/Decision_Log.md` §87 → `docs/r7/R7_Scope.md` → `docs/r8/R8_Scope.md`
 
@@ -13,9 +13,26 @@ only when evidence resolves them and the next build step requires them.
 
 ---
 
-## 0. Status snapshot (2026-09-03)
+## 0. Status snapshot (2026-09-05)
 
 R6 has resumed at architecture-definition stage while R8 carries the immediate editor-delivery work.
+
+**Current handoff:** a reviewed September 10 editor demonstration is available locally at
+`data/tracking/r6_demo/2026-09-10_editor_inputs_2026-09-05_1936/editor_preview.html`
+(Markdown alongside it). It contains five recommendations and five ordered alternatives per event
+section, with reasons, uncertainty warnings and checked replacement slots. Fresh R7 scores and
+publication history fed a real GPT-5.6 Terra comparison. A temporary local adapter retained section
+flexibility and invoked the existing `buildIssues.js` for placements and replacement checks. The
+production allocator and Airtable were not changed.
+
+The raw model response required explicit source-verified corrections before display; receipts and
+limits are in the run folder's `README.md` and `review_corrections.json`. This is a reviewed demonstration,
+not production readiness or ratification of a permanent ranking prompt, retrieval depth, flex policy,
+feature schema or tool-using architecture. The original attribute/weight worksheets were not used.
+
+The preview file was provided to Ariel with instructions for forwarding it; editor delivery and feedback
+are not confirmed. Model usage was returned, but the billing-dashboard charge has not been independently
+matched. The metric and its qualification live in `NA/Vaughan_Metrics_Log.md` under the September 10 demo.
 
 **2026-09-04:** a read-only ranking harness now exists at `scripts/r6/` — evidence joins, series
 collapse, LLM attribute extraction, scoring and assembly. It writes no Airtable and no production
@@ -40,12 +57,16 @@ The original July draft is superseded by later repo and editor evidence:
 - R8 is the first reliable path for capturing the displayed choice set and deliberate editor replacements
   that a future learned ranker needs.
 
-**Current gate:** secure R8's W1/W6/W7/W9 delivery path. R6 implementation starts afterward with one
-bounded, read-only enrichment-pool experiment.
+**Next executable action:** share the local editor preview and collect preferred picks, replacements
+and reasons. Then reconcile the full R6 target and next experiment with that feedback. The remaining
+sections describe the earlier experiment proposal; the completed comparative demo above supersedes
+claims that no enrichment or comparative run has occurred. Production integration remains separate
+from this handoff and subject to the single-planner boundary below.
 
-**Amended 2026-09-04:** a bounded read-only run has already happened, ahead of that gate and at Ariel's
-direction — the harness above ran on the frozen 2026-08-13 window and the live 2026-09-10 window. The
-*enrichment* arm proper (detail-page recovery, §3) is still not run. Tracked on #133.
+The September 4 harness ran on the frozen August 13 window and the September 10 window ahead of the
+original R8 prerequisite. The September 5 demonstration additionally retrieved supplied detail pages;
+it does not establish a production enrichment method or a candidate-depth coverage curve. Existing
+ranking work remains tracked on #133.
 
 ---
 
