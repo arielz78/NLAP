@@ -99,6 +99,6 @@ server acknowledges a revision.
 
 ## References
 
-- [R8 concept §3: preference-pair rules](../R8_Editor_Console_Concept.md)
+- [R8 scope §2: pair-evidence contract](../R8_Scope.md)
 - [R8 kickoff §5: interaction recording](../R8_Nate_Kickoff.md)
 - [R8 scope §7: acceptance scenarios](../R8_Scope.md)

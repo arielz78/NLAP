@@ -6,22 +6,46 @@
 `logs/R8_Log.md`. Everything Nate-facing — scope of his build, decision rights, checkpoints —
 homes in `docs/r8/R8_Nate_Kickoff.md`. This doc does not restate any of it.
 
-**Read order:** this doc → `docs/r8/R8_Editor_Console_Concept.md` (§3 pair rules, §5 write trap) →
-`docs/Decision_Log.md` §87, §93, §94, §95, §96.
+**Read order:** this doc → `docs/Decision_Log.md` §87, §93, §94, §95, §96, §98, §99.
 
 ---
 
-## 0. Status (2026-09-01)
+## How to use this Scope
+
+When opening R8, read §0 for the current verified state and `Next`, then §5 for package ownership
+and status. Do not infer completion from code existing: advance a package only when its stated
+behaviour has been demonstrated.
+
+After every R8 session:
+
+1. Update §0 only with newly verified state and replace `Next` with the single next executable gate.
+2. Update §5's Status cell only for packages whose evidence changed.
+3. Append the session record to `logs/R8_Log.md`; do not copy the recap into this Scope.
+4. Put any new settled architecture/editorial decision in `docs/Decision_Log.md` and point to it here.
+
+---
+
+## 0. Status (2026-09-10)
 
 R8 is open ahead of the R6 gate, on a delivery commitment to the editor. R7 is closeout-only and
 off the critical path.
 
-Nothing is built. Nate has not started and has not confirmed a start date.
+Nate's `1370f77` foundation is present: the Next.js console shell, three-section fixture, replace,
+undo, browser-draft persistence, submit state, interaction capture, PostgreSQL schema and API
+routes. On 2026-09-10, its three existing unit tests, lint and production build passed. Ariel's
+browser-fixture sitting confirmed replace, feedback, refresh persistence, undo and submitted-state
+persistence.
+
+This is not yet a database-backed or end-to-end R8 proof. The sitting ran in `browser-demo` mode;
+PostgreSQL persistence, real raw-content fit, W9 inputs, reconciliation, failure recovery and the
+Beehiiv handoff remain unverified. The sitting also found a broken selected-card click target and
+fixture/content-copy corrections for Nate's next bounded CP2 pass.
 
 **TODO-0 is resolved: the premise holds.** Sponsored events go into a separate section, so no
 console slot is ever filled from outside the candidate pool.
 
-**Next:** CP1 — the write contract to Nate, and the kickoff-brief corrections it now needs.
+**Next:** Nate may complete the bounded CP2 UI/fixture corrections against the now-settled W1
+contract. Before production reconciliation work begins, Ariel defines W6's acceptance tests.
 
 ---
 
@@ -57,6 +81,22 @@ Ariel's decisions. Where a bracket cites review or code, that is the evidence, n
   and excluded from training.
 - **Nate selects the host.** He operates it, he picks it.
 - **Beehiiv stays a manual paste**, unchanged.
+
+### Pair-evidence contract
+
+A submitted replacement becomes ranking evidence only when all of the following hold:
+
+- The editor explicitly classified the final replacement as preferred. Broken-listing and
+  unclassified replacements remain audit events and never become training pairs.
+- The final submitted event is compared with the slot's original event. Intermediate exploration
+  is not evidence: A→B→C yields at most C over A; returning to A yields no pair.
+- Both events were feasible for the same slot at decision time, including the date window, venue
+  constraint, lock state, cross-issue assignment and recurring-series collapse.
+- The interaction preserved the displayed choice set and order, ordering/model version, original
+  ranks, feasibility assessment and whether the editor opened the source link. Missing provenance
+  marks the event incomplete and excludes it from training without blocking submission.
+
+An untouched pick is not preference evidence; the editor may not have reviewed its alternatives.
 
 ---
 
@@ -104,12 +144,8 @@ blurb under the new event's URL. The write contract must invalidate copy on any 
 reconcile dies after apply and before lock, the editor's choices sit unlocked, waiting for failure
 1, and the allocator's rebuild looks plausible.
 
-**Required invariant, W1 must state which:**
-**(a)** a failed reconcile reruns against the same submission and deterministically converges, with
-no duplicate effects; or
-**(b)** a failed reconcile restores the pre-reconcile IssueItems before reporting failure.
-
-Mechanism is Nate's. The guarantee is Ariel's.
+**Chosen W1 invariant:** a failed reconcile reruns against the same immutable submission and
+deterministically converges, with no duplicate effects. W6 implements and tests this guarantee.
 
 Also: `pushToBeehiiv.js:106` selects rows by `SEARCH(TARGET_DATE, {Name})`. Any row whose `Name`
 does not reproduce `connectAirtable.js`'s exact string vanishes silently from the export.
@@ -118,25 +154,47 @@ does not reproduce `connectAirtable.js`'s exact string vanishes silently from th
 
 ## 5. Work packages
 
-| # | Package | Owner |
-|---|---|---|
-| W1 | Write-and-state contract | **Ariel** — due CP1 |
-| W2 | Console: shell, layout, swap/undo, draft, interaction log | Nate |
-| W3 | Console hosting + deploy — **day one, not last** | Nate |
-| W4 | Read layer against real scored data | Nate |
-| W5 | Append-only submission + provenance capture | Nate |
-| W6 | Reconcile script | **Ariel** |
-| W7 | Acceptance scenarios + fallback procedures | **Ariel** |
-| W8 | Pipeline hosting migration | Nate — TODO-1 |
-| **W9** | **Assembly / choice-set contract** | **Ariel** (semantics + fixtures) |
+| # | Package | Owner | Status |
+|---|---|---|---|
+| W1 | Write-and-state contract | **Ariel** — due CP1 | ✅ Settled 2026-09-10 |
+| W2 | Console: shell, layout, swap/undo, draft, interaction log | Nate | 🟡 Partial — fixture flow passed; bounded UI/content corrections remain |
+| W3 | Console hosting + deploy — **day one, not last** | Nate | ⬜ Not evidenced |
+| W4 | Read layer against real scored data | Nate | ⬜ Not started |
+| W5 | Append-only submission + provenance capture | Nate | 🟡 Implemented; PostgreSQL path unverified |
+| W6 | Reconcile script + durable per-attempt run receipt | **Ariel** | ⬜ Not started |
+| W7 | Acceptance/fallbacks + PostgreSQL/API integration tests, failure injection and CI | **Ariel** | 🟡 Fixture checks passed; system evidence remains |
+| W8 | Pipeline hosting migration | Nate — TODO-1 | ⏸ Deferred / open decision |
+| **W9** | **Assembly / choice-set contract** | **Ariel** (semantics + fixtures) | ⬜ Not started |
 
-**W1 must define three things**, all Ariel's semantics: what a submit applies and in what order,
-including what `Lock` means afterwards (TODO-2); §4's failure invariant; and the
-submission→reconcile handoff. The handoff is the most dangerous boundary in the system — Nate owns
-one side, Ariel the other, and neither spec covers it. It must guarantee that a successful
-submission is durable, carries an immutable identifier, names the built-issue version it belongs
-to, survives a console restart, cannot be reconciled against the wrong one, and is recorded as
-applied. How it is exposed is Nate's.
+**W1 — settled write-and-state contract.** [Decision_Log §98]
+
+- A draft is mutable and auto-saved. The editor may leave and resume it without submitting.
+- Submit creates an immutable revision containing: submission ID; issue and built-issue version;
+  editor identity; submitted time; the final ordered five for each included section; every
+  original→replacement change; and the editor's recorded reason for each change.
+- The submitted revision, not mutable browser state, is the input to reconciliation. Reconcile
+  refuses a submission whose issue/build identity does not match its target.
+- Reconcile deterministically converges on safe rerun against the same submission. Each attempt
+  records its stage and outcome; retrying after interruption completes the remaining work without
+  duplicate effects.
+- The operation order is validate → apply → generate blurbs → lock. The issue becomes locked only
+  after the full operation succeeds. The latest successfully applied revision is the authoritative
+  editorial decision for that issue, and Airtable must match it.
+- A lock prevents accidental mutation; it is not permanent. An explicit **Reopen for editing**
+  action creates a new editable revision while preserving the previous submission and processing
+  history. Resubmission reconciles the new revision, then locks it after success.
+- At most one revision for an issue may be the current editable draft or active reconciliation
+  target. How Nate exposes these states is implementation detail; these guarantees are not.
+
+**W6 must make every reconciliation attempt auditable.** Its durable receipt names the immutable
+submission and issue-build version, records the terminal outcome and last completed stage, and
+reports applied/rejected/incomplete counts. A failed attempt remains distinguishable from a
+successful no-change rerun; logs alone are not the receipt.
+
+**W7 proves the state boundary, not only the pure domain functions.** The credential-free CI path
+runs tests, lint and the production build. A separately configured, isolated PostgreSQL test path
+exercises command and submit transactions, stale revisions, duplicate requests and the interruption
+points in Acceptance #8. It must never point at the live console database.
 
 **W9 exists because nothing produces alternatives.** `buildIssues.js:372` returns
 `[{IssueDate, ItemID, Section, Slot}]` — selected picks only. W9 defines one logical assembly
@@ -178,7 +236,8 @@ button rather than making him press it.
 **TODO-2 — What does `Lock` mean after a submit?** Due CP1, part of W1.
 *Lean:* lock the whole submitted issue after blurbs generate. Not per-swap — that degrades the
 field's meaning. Must satisfy §4's invariant.
-*Answer:* ______
+*Answer:* Lock the whole issue only after successful apply and blurb generation. Reopening creates
+a new revision and preserves the applied revision and audit history.
 
 **TODO-3 — Section-alternative count (`K`), and what a card shows.** Editor validates.
 `K` is the number R8 initially displays, distinct from R6's enrichment depth `M`. Choose it from
@@ -205,7 +264,9 @@ tracking is the wrong precedent with a client.
 *Lean:* (a) *before reconcile* — Airtable is untouched, he finishes there as today; (b) *after
 partial reconcile* — per §4's chosen invariant. Written, not improvised. No preference pairs are
 inferred from a fallback session.
-*Answer:* ______
+*Answer:* Before reconcile, retain the draft and use the existing Airtable process if necessary.
+After partial reconcile, retry the same immutable submission and deterministically converge; do
+not infer preference pairs from a fallback session.
 
 **TODO-8 — If Nate's CP1 estimate does not fit, what drops, in order?** Write the list before CP1,
 not during it.
@@ -239,12 +300,17 @@ Observable scenarios. **No numeric targets** — the evidence supports none.
     unavailable against another; each result carries the correct reason.
 16. Any future planner runs read-only and is diffed before cutover; production invokes exactly one
     planner for a given pool.
+17. A clean CI run executes the credential-free tests, lint and production build; the isolated
+    PostgreSQL suite proves command/submit transaction and retry behaviour before live use.
+18. Every reconcile attempt leaves a durable receipt with its submission/build identity, outcome,
+    last completed stage and applied/rejected/incomplete counts.
 
 ---
 
 ## 8. Explicitly out
 
-R6 ranking as a delivery dependency (the adapter ships; cutover is TODO-5) · Local Aroma and Trust
+R6 ranking as a delivery dependency (the adapter ships; cutover is TODO-5) · a new click/CTOR
+collection system or click-optimized R6 objective [Decision_Log §99] · Local Aroma and Trust
 Me Recipe in any form · blurbs or Beehiiv triggered from the console · the Decision_Log §94
 model-deployment tranche · search, filters, history, drag-and-drop · visible model scores or
 explanations · any reason taxonomy beyond the two-way tap · real accounts (one link, one password)
@@ -271,7 +337,8 @@ explanations · any reason taxonomy beyond the two-way tap · real accounts (one
 
 Named, owned, explicitly not part of delivery:
 
-- **PROVEN** — three consecutive solo editor Sundays, once the manual-trigger dependency is gone.
+- **PROVEN** — three consecutive solo editor Sundays, once the manual-trigger dependency is gone;
+  record completion time, swaps, fallbacks, failed submissions and operator intervention per run.
 - **HOSTED** — unattended pipeline scheduling (#62), if TODO-1 lands "not hosted".
 - **RANKED** — R6 cutover, if TODO-5 lands "not before delivery".
 - **PORTABLE** — Mississauga config-only onboarding.

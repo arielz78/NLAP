@@ -2200,7 +2200,7 @@ A is therefore reported as:
 
 ## 95. R8 Opens Ahead of the R6 Gate, by Client Commitment (2026-08-28)
 
-**Decision:** R8 opens now, ahead of the R6 completion gate set by `R8_Editor_Console_Concept.md`'s header. A delivery date of 2026-09-08 was committed to the editor. R7 remains open in closeout only; R8 is the active release for session purposes.
+**Decision:** R8 opens now, ahead of its original R6-completion gate. A delivery date of 2026-09-08 was committed to the editor. R7 remains open in closeout only; R8 is the active release for session purposes.
 
 **Why:** the gate existed to ensure the console was built on validated ranking behaviour. A client commitment overtook it. Holding the release to the original sequence would delay a user outcome to preserve an internal ordering, and the console's value — capturing editor swaps as preference evidence — does not depend on R6 being finished. The ordering input is isolated behind a single adapter so a later ranking model can replace it without redesigning the editor workflow.
 
@@ -2231,3 +2231,49 @@ A is therefore reported as:
 **Why:** language follows the runtime boundary, not the author's preference. The weekly production job is one hosted process Nate must be able to run without a Python venv, and R6's assembly step has to converge with `buildIssues.js` under §87's single-planner rule — two planners in two languages is exactly the competing-slate failure that rule exists to prevent. Fitting is offline, runs on Ariel's machine, and already has its tooling and pinned deps in `models/ranking/`; porting a working grader to Node buys no runtime. This is §28's "fit once, rules in production" shape applied to a second component, with the config file as the seam.
 
 **What this does not decide:** the `RankedPool` schema, the attribute schema, the weights, or whether the read-only demo harness becomes the production implementation. Nothing here ratifies the wider R6 architecture proposal drafted the same session; that remains an unwritten hypothesis until it lands in `docs/r6/R6_Scope.md`.
+
+---
+
+## 98. R8 Uses Editable Drafts, Immutable Submission Revisions and Convergent Reconciliation (2026-09-10)
+
+**Decision:** an editor may leave and resume a mutable auto-saved draft. Submit creates an immutable,
+version-bound revision containing the final ordered selections, original-to-final changes and their
+recorded reasons. Successful reconciliation applies that revision, generates blurbs and then locks
+the whole issue. A later correction explicitly reopens the issue into a new editable revision rather
+than changing prior history. If reconciliation is interrupted, rerunning the same submission must
+deterministically converge without duplicate effects.
+
+**Why:** a permanent lock would make ordinary corrections impossible, while mutating a submitted
+draft would erase what the editor originally approved. Reconciliation crosses PostgreSQL, Airtable
+and blurb generation, so partial failure is normal external-system behavior rather than an exceptional
+case that can be left unspecified. Immutable revisions preserve auditability; idempotent convergence
+makes recovery possible without a second rollback operation that can itself fail.
+
+**Consequence:** W5 must support more than one lifetime submission for an issue while preserving one
+current editable or active revision. W6 consumes only an immutable submission, validates its issue
+and build identity, records each attempt durably, and locks only after the full sequence succeeds.
+The original one-draft/one-submission PostgreSQL scaffold is not the completed contract.
+
+**What this does not decide:** PostgreSQL table layout, API shape, hosting, authentication, the W9
+issue-bundle schema or the implementation mechanics of retry.
+
+---
+
+## 99. R8 Does Not Treat Newsletter Clicks as Counterfactual Replacement Evidence (2026-09-10)
+
+**Decision:** R8 does not add a click/CTOR collection system or use clicks to decide whether an
+editor replacement beat the rejected model choice. The existing Beehiiv history/click path remains
+the home for engagement analysis. R8 preserves stable final candidate identity and URLs so that path
+continues to join, but its new learning signal is the editor's qualified preference evidence.
+
+**Why:** after the editor replaces A with C, only C is published and exposed to readers. C's clicks
+therefore describe C; they cannot establish how A would have performed. A causal comparison would
+require deliberately exposing comparable reader groups to different selections, which is not an R8
+product behavior. Adding more click fields cannot manufacture that missing counterfactual.
+
+**Consequence:** R8 remains focused on editor decisions, provenance, coverage failures, operating
+time and reliable delivery. Published clicks may be joined later for descriptive analysis, but are
+not clean ranking labels and do not expand the release into dashboards or experimentation.
+
+**What this does not decide:** whether a future release runs a randomized reader experiment or
+changes R6's optimization target after sufficient evidence exists.
