@@ -384,6 +384,7 @@ instance-specific configuration, not turnkey imports. See
 | Path | Contents |
 |---|---|
 | `scripts/` | Node.js pipeline, integration tools, and health checks |
+| `apps/` | Editor console (Next.js + PostgreSQL) |
 | `workflows/` | n8n workflow definitions |
 | `models/` | Python model development and evaluation code |
 | `docs/` | Runbook, decisions, roadmap, and release-working documents |

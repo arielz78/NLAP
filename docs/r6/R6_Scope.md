@@ -57,8 +57,10 @@ The original July draft is superseded by later repo and editor evidence:
 - R8 is the first reliable path for capturing the displayed choice set and deliberate editor replacements
   that a future learned ranker needs.
 
-**Next executable action:** share the local editor preview and collect preferred picks, replacements
-and reasons. Then reconcile the full R6 target and next experiment with that feedback. The remaining
+**Next executable action:** editor feedback on the preview was received 2026-09-12 (private,
+`docs/r6/R6_Editor_Feedback.md`; uptake in `NA/Vaughan_Metrics_Log.md`). Reconcile the full R6 target
+and next experiment against it under #133; its repeat, format, language and organizer-variety
+hypotheses are undecided. Click evidence must be refreshed before the next ranking run. The remaining
 sections describe the earlier experiment proposal; the completed comparative demo above supersedes
 claims that no enrichment or comparative run has occurred. Production integration remains separate
 from this handoff and subject to the single-planner boundary below.

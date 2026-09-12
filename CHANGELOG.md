@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-09-12
+- Collected the editor's first structured feedback on the comparative ranking demo and turned it into explicit, undecided hypotheses for the ranking stage — repeat similarity, activity format, audience language fit, and organizer-level variety.
+- Stood up the editor console locally against its fixture data and traced how its immutable build, event log and submission tables will yield preference pairs for later evaluation.
+
 ## 2026-09-10
 - Inspected the editor-console foundation across UI, domain, API and PostgreSQL boundaries, verified its existing test/build evidence, and converted production gaps into bounded follow-up work.
 - Settled a versioned draft, immutable submission and recoverable reconciliation contract, while consolidating current R8 design rules into the active release scope.
