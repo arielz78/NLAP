@@ -13,11 +13,18 @@ only when evidence resolves them and the next build step requires them.
 
 ---
 
-## 0. Status snapshot (2026-09-05)
+## 0. Status snapshot (2026-09-12)
 
 R6 has resumed at architecture-definition stage while R8 carries the immediate editor-delivery work.
 
-**Current handoff:** a reviewed September 10 editor demonstration is available locally at
+**Current handoff (2026-09-12):** a second demonstration (v2b, September 17 issue) is built locally at
+`data/tracking/r6_demo/v2b_2026-09-17_snapshot_2026-09-12_1958/editor_preview.html`, using the same
+pipeline as v1 with the editor's v1 feedback supplied as guidance. Run index:
+`data/tracking/r6_demo/RUNS.md`. A first v2 attempt with binding rules was discarded. Six hand corrections
+the harness did not make are logged in the run `README.md` as future-harness gaps under #133. Clicks
+still end 2026-06-25 (#139). Not yet sent to the editor.
+
+**Previous handoff:** a reviewed September 10 editor demonstration is available locally at
 `data/tracking/r6_demo/2026-09-10_editor_inputs_2026-09-05_1936/editor_preview.html`
 (Markdown alongside it). It contains five recommendations and five ordered alternatives per event
 section, with reasons, uncertainty warnings and checked replacement slots. Fresh R7 scores and
@@ -30,8 +37,7 @@ limits are in the run folder's `README.md` and `review_corrections.json`. This i
 not production readiness or ratification of a permanent ranking prompt, retrieval depth, flex policy,
 feature schema or tool-using architecture. The original attribute/weight worksheets were not used.
 
-The preview file was provided to Ariel with instructions for forwarding it; editor delivery and feedback
-are not confirmed. Model usage was returned, but the billing-dashboard charge has not been independently
+The v1 preview was delivered and editor feedback was received 2026-09-12. Model usage was returned, but the billing-dashboard charge has not been independently
 matched. The metric and its qualification live in `NA/Vaughan_Metrics_Log.md` under the September 10 demo.
 
 **2026-09-04:** a read-only ranking harness now exists at `scripts/r6/` — evidence joins, series
@@ -57,10 +63,10 @@ The original July draft is superseded by later repo and editor evidence:
 - R8 is the first reliable path for capturing the displayed choice set and deliberate editor replacements
   that a future learned ranker needs.
 
-**Next executable action:** editor feedback on the preview was received 2026-09-12 (private,
-`docs/r6/R6_Editor_Feedback.md`; uptake in `NA/Vaughan_Metrics_Log.md`). Reconcile the full R6 target
-and next experiment against it under #133; its repeat, format, language and organizer-variety
-hypotheses are undecided. Click evidence must be refreshed before the next ranking run. The remaining
+**Next executable action:** send the v2b preview to the editor and collect uptake and feedback. Then
+reconcile the full R6 target under #133 against both rounds of feedback (v1 in private
+`docs/r6/R6_Editor_Feedback.md`) and the logged harness gaps; the repeat, format, language and
+organizer-variety hypotheses remain undecided. Click evidence (#139) is still unrefreshed. The remaining
 sections describe the earlier experiment proposal; the completed comparative demo above supersedes
 claims that no enrichment or comparative run has occurred. Production integration remains separate
 from this handoff and subject to the single-planner boundary below.

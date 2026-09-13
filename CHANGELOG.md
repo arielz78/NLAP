@@ -5,6 +5,7 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-09-12
+- Ran a second editor-ranking demonstration for the September 17 issue that folds the editor's feedback from the first round into the model's inputs, and documented each correction the pipeline still needed by hand as scoped future work.
 - Collected the editor's first structured feedback on the comparative ranking demo and turned it into explicit, undecided hypotheses for the ranking stage — repeat similarity, activity format, audience language fit, and organizer-level variety.
 - Stood up the editor console locally against its fixture data and traced how its immutable build, event log and submission tables will yield preference pairs for later evaluation.
 
