@@ -11,6 +11,21 @@ function eventBase() {
 }
 
 describe("editor draft domain", () => {
+  it("uses long, source-style fixture copy without placeholder link labels", () => {
+    const candidates = mockIssueBuild.sections.flatMap((section) => [
+      ...section.selected,
+      ...section.alternatives.map((alternative) => alternative.candidate),
+    ]);
+
+    expect(candidates.every((candidate) => candidate.sourceLabel === "View event")).toBe(
+      true,
+    );
+    expect(candidates.every((candidate) => candidate.description.length > 180)).toBe(
+      true,
+    );
+    expect(candidates.some((candidate) => candidate.title.length > 85)).toBe(true);
+  });
+
   it("replaces and undoes without producing a final preference pair", () => {
     const initial = createInitialDraft(mockIssueBuild);
     const replacement = applyDraftCommand(mockIssueBuild, initial, {

@@ -128,12 +128,12 @@ function FeedbackPrompt({
 }) {
   return (
     <div className="feedback-prompt">
-      <span>What made this better?</span>
+      <span>Why did you replace the original event?</span>
       <div className="feedback-actions" aria-label="Replacement feedback">
         {(
           [
-            ["preferred", "Preferred this"],
-            ["broken", "Listing was broken"],
+            ["preferred", "I prefer this event"],
+            ["broken", "Original listing is broken"],
             ["skipped", "Skip"],
           ] as const
         ).map(([option, label]) => (
@@ -178,7 +178,9 @@ function SelectedCard({
   ) => void;
 }) {
   return (
-    <article className={`selected-card ${active ? "active" : ""}`}>
+    <article
+      className={`selected-card ${active ? "active" : ""} ${disabled ? "disabled" : ""}`}
+    >
       <button
         type="button"
         className="card-select-target"
@@ -302,6 +304,7 @@ export function EditorConsole({
       ? currentSelections[activeSlot.slotIndex]
       : currentSelections[0];
   const submitted = workspace.draft.status === "submitted";
+  const isDemo = workspace.persistence === "browser-demo";
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -508,6 +511,7 @@ export function EditorConsole({
             {issueDateFormatter.format(new Date(`${workspace.build.issueDate}T00:00:00Z`))}
           </strong>
           <span className="version-pill">Build {workspace.build.buildVersion}</span>
+          {isDemo && <span className="demo-pill">Demo · browser only</span>}
         </div>
         <div className="topbar-actions">
           <div className={`save-state ${saveState}`} role="status">
@@ -516,7 +520,9 @@ export function EditorConsole({
               ? "Saving…"
               : saveState === "error"
                 ? "Not saved"
-                : "All changes saved"}
+                : isDemo
+                  ? "Saved in this browser"
+                  : "All changes saved"}
           </div>
           <button
             type="button"
@@ -524,13 +530,33 @@ export function EditorConsole({
             disabled={submitted || saveState === "saving"}
             onClick={() => setConfirmingSubmit(true)}
           >
-            {submitted ? "Issue submitted" : "Submit issue"}
+            {submitted
+              ? isDemo
+                ? "Demo completed"
+                : "Issue submitted"
+              : isDemo
+                ? "Simulate submit"
+                : "Submit issue"}
             {!submitted && <Icon name="arrow" />}
           </button>
         </div>
       </header>
 
-      {workspace.notice && <div className="fixture-notice">{workspace.notice}</div>}
+      {isDemo ? (
+        <div className="demo-mode-banner" role="status">
+          <span className="demo-mode-label">Demo mode</span>
+          <div>
+            <strong>Browser-only practice workspace</strong>
+            <span>
+              Nothing on this screen is saved to PostgreSQL, submitted for
+              reconciliation, or sent to Airtable.
+            </span>
+            {workspace.notice && <small>{workspace.notice}</small>}
+          </div>
+        </div>
+      ) : (
+        workspace.notice && <div className="fixture-notice">{workspace.notice}</div>
+      )}
       {error && (
         <div className="error-banner" role="alert">
           <span>{error}</span>
@@ -540,14 +566,26 @@ export function EditorConsole({
         </div>
       )}
       {submitted && workspace.submission && (
-        <div className="submitted-banner" role="status">
+        <div
+          className={`submitted-banner ${isDemo ? "demo-submitted" : ""}`}
+          role="status"
+        >
           <Icon name="check" />
           <div>
-            <strong>Lineup submitted.</strong>
-            <span>
-              Receipt {workspace.submission.submissionId.slice(0, 8)} · {changedCount}{" "}
-              {changedCount === 1 ? "change" : "changes"} in the final lineup
-            </span>
+            <strong>
+              {isDemo ? "Demo submission saved in this browser." : "Lineup submitted."}
+            </strong>
+            {isDemo ? (
+              <span>
+                No real submission or receipt was created. Refreshing will preserve
+                this simulated state on this device.
+              </span>
+            ) : (
+              <span>
+                Receipt {workspace.submission.submissionId.slice(0, 8)} · {changedCount}{" "}
+                {changedCount === 1 ? "change" : "changes"} in the final lineup
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -593,7 +631,6 @@ export function EditorConsole({
         <section className="lineup-column" aria-labelledby="lineup-title">
           <div className="column-heading">
             <div>
-              <p className="overline">{currentSectionBundle.eyebrow}</p>
               <h2 id="lineup-title">{currentSectionBundle.label} lineup</h2>
             </div>
             {workspace.draft.history.length > 0 && !submitted && (
@@ -698,7 +735,11 @@ export function EditorConsole({
           Draft revision {workspace.draft.revision} · {workspace.events.length}{" "}
           interactions captured
         </span>
-        <span>Console only — no Airtable records are changed here.</span>
+        <span>
+          {isDemo
+            ? "Demo mode — browser storage only; no real submission exists."
+            : "Console only — no Airtable records are changed here."}
+        </span>
       </footer>
 
       {confirmingSubmit && (
@@ -712,11 +753,14 @@ export function EditorConsole({
             <span className="dialog-icon">
               <Icon name="check" />
             </span>
-            <p className="overline">Final check</p>
-            <h2 id="submit-title">Submit this lineup?</h2>
+            <p className="overline">{isDemo ? "Demo checkpoint" : "Final check"}</p>
+            <h2 id="submit-title">
+              {isDemo ? "Simulate this submission?" : "Submit this lineup?"}
+            </h2>
             <p>
-              This creates one immutable submission for the issue. It does not write
-              to Airtable or run the copywriter.
+              {isDemo
+                ? "This only records a simulated submitted state in this browser. It does not create a PostgreSQL submission or contact Airtable."
+                : "This creates one immutable submission for the issue. It does not write to Airtable or run the copywriter."}
             </p>
             <div className="dialog-summary">
               <span>15 selected events</span>
@@ -728,7 +772,7 @@ export function EditorConsole({
                 Keep editing
               </button>
               <button type="button" className="confirm-submit" onClick={submitDraft}>
-                Submit lineup
+                {isDemo ? "Simulate submit" : "Submit lineup"}
                 <Icon name="arrow" />
               </button>
             </div>

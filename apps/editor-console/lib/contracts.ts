@@ -33,7 +33,6 @@ export interface AlternativeCandidate {
 export interface SectionBundle {
   id: SectionId;
   label: string;
-  eyebrow: string;
   selected: Candidate[];
   alternatives: AlternativeCandidate[];
   replacementAssessments: Record<
