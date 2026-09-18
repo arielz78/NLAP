@@ -1,19 +1,22 @@
 import { NextResponse } from "next/server";
 
 import {
+  reopenPostgresSubmission,
   StaleDraftError,
-  submitPostgresDraft,
   WorkspaceUnavailableError,
 } from "@/lib/server/workspace-store";
-import { draftIdSchema, submitRequestSchema } from "@/lib/validation";
+import { reopenRequestSchema, submissionIdSchema } from "@/lib/validation";
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ draftId: string }> },
+  { params }: { params: Promise<{ submissionId: string }> },
 ) {
-  const draftId = draftIdSchema.safeParse((await params).draftId);
-  if (!draftId.success) {
-    return NextResponse.json({ error: "Invalid draft identifier" }, { status: 400 });
+  const submissionId = submissionIdSchema.safeParse((await params).submissionId);
+  if (!submissionId.success) {
+    return NextResponse.json(
+      { error: "Invalid submission identifier" },
+      { status: 400 },
+    );
   }
 
   let requestBody: unknown;
@@ -23,18 +26,18 @@ export async function POST(
     return NextResponse.json({ error: "Request body must be JSON" }, { status: 400 });
   }
 
-  const parsed = submitRequestSchema.safeParse(requestBody);
+  const parsed = reopenRequestSchema.safeParse(requestBody);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid submission", details: parsed.error.flatten() },
+      { error: "Invalid reopen request", details: parsed.error.flatten() },
       { status: 400 },
     );
   }
 
   try {
     return NextResponse.json(
-      await submitPostgresDraft(
-        draftId.data,
+      await reopenPostgresSubmission(
+        submissionId.data,
         parsed.data.expectedRevision,
         parsed.data.clientEventId,
         parsed.data.occurredAt,
@@ -54,7 +57,7 @@ export async function POST(
             ? "The production workspace is unavailable."
             : error instanceof Error
               ? error.message
-              : "Submission failed",
+              : "Reopen failed",
       },
       { status },
     );

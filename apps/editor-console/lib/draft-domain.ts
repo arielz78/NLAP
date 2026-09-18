@@ -6,6 +6,8 @@ import type {
   EditorWorkspace,
   InteractionEvent,
   IssueBuild,
+  OrderingProvenance,
+  SubmittedReplacement,
   SubmissionSnapshot,
   TrainingPair,
 } from "@/lib/contracts";
@@ -17,11 +19,24 @@ function copy<T>(value: T): T {
 
 export function createInitialDraft(
   build: IssueBuild,
-  draftId = crypto.randomUUID(),
+  options:
+    | string
+    | {
+        draftId?: string;
+        issueRevision?: number;
+        editorIdentity?: string;
+        reopenedFromSubmissionId?: string;
+      } = {},
 ): DraftSnapshot {
+  const normalizedOptions =
+    typeof options === "string" ? { draftId: options } : options;
+
   return {
-    id: draftId,
+    id: normalizedOptions.draftId ?? crypto.randomUUID(),
     issueBuildId: build.id,
+    issueRevision: normalizedOptions.issueRevision ?? 1,
+    editorIdentity: normalizedOptions.editorIdentity ?? "demo-editor",
+    reopenedFromSubmissionId: normalizedOptions.reopenedFromSubmissionId,
     revision: 0,
     status: "draft",
     selections: Object.fromEntries(
@@ -38,6 +53,13 @@ export function createInitialDraft(
 
 function displayedAlternativeIds(alternatives: AlternativeCandidate[]) {
   return alternatives.map(({ candidate: item }) => item.id);
+}
+
+function displayedAlternatives(alternatives: AlternativeCandidate[]) {
+  return alternatives.map(({ candidate: item, orderingPosition }) => ({
+    candidateId: item.id,
+    orderingPosition,
+  }));
 }
 
 function baseEvent(
@@ -97,7 +119,10 @@ export function applyDraftCommand(
       slotIndex: command.slotIndex,
       previousSelections: copy(selections),
       previousAlternatives: copy(alternatives),
-      previousFeedback: copy(draft.feedbackBySlot),
+      hadPreviousSlotFeedback:
+        slotKey(command.sectionId, command.slotIndex) in draft.feedbackBySlot,
+      previousSlotFeedback:
+        draft.feedbackBySlot[slotKey(command.sectionId, command.slotIndex)],
       summary: `${selected.title} → ${alternative.candidate.title}`,
     });
 
@@ -117,9 +142,16 @@ export function applyDraftCommand(
       displayedAlternativeIds: displayedAlternativeIds(
         currentDraft.alternatives[command.sectionId],
       ),
+      displayedAlternatives: displayedAlternatives(
+        currentDraft.alternatives[command.sectionId],
+      ),
+      selectedSlotPosition: command.slotIndex + 1,
+      replacementOrderingPosition: alternative.orderingPosition,
       ordering: build.ordering,
       selectedClassification: selected.classification,
       replacementClassification: alternative.candidate.classification,
+      sourceLinkConsumptionCaptured: true,
+      provenanceVersion: "r8.interaction.v2",
     });
   } else if (command.type === "undo") {
     const previous = draft.history.pop();
@@ -129,7 +161,17 @@ export function applyDraftCommand(
 
     draft.selections[previous.sectionId] = previous.previousSelections;
     draft.alternatives[previous.sectionId] = previous.previousAlternatives;
-    draft.feedbackBySlot = previous.previousFeedback;
+    const previousSlotKey = slotKey(previous.sectionId, previous.slotIndex);
+    const legacyPreviousFeedback = previous.previousFeedback?.[previousSlotKey];
+    const hadPreviousSlotFeedback =
+      previous.hadPreviousSlotFeedback ?? legacyPreviousFeedback !== undefined;
+    const previousSlotFeedback =
+      previous.previousSlotFeedback ?? legacyPreviousFeedback;
+    if (hadPreviousSlotFeedback && previousSlotFeedback) {
+      draft.feedbackBySlot[previousSlotKey] = previousSlotFeedback;
+    } else {
+      delete draft.feedbackBySlot[previousSlotKey];
+    }
 
     event = baseEvent(nextRevision, command, {
       sectionId: previous.sectionId,
@@ -177,34 +219,245 @@ export function applyDraftCommand(
   return { draft, event };
 }
 
+function isOrderingProvenance(value: unknown): value is OrderingProvenance {
+  if (!value || typeof value !== "object") return false;
+  const ordering = value as Record<string, unknown>;
+  return [
+    "adapterVersion",
+    "rankerVersion",
+    "evidenceVersion",
+    "generatedAt",
+    "inputHash",
+  ].every((key) => typeof ordering[key] === "string" && ordering[key] !== "");
+}
+
+function eventMatchesSlot(
+  event: InteractionEvent,
+  sectionId: string,
+  slotIndex: number,
+) {
+  return (
+    event.payload.sectionId === sectionId && event.payload.slotIndex === slotIndex
+  );
+}
+
+function sourceWasOpened(events: InteractionEvent[], candidateId: string) {
+  return events.some(
+    (event) =>
+      event.type === "source_open" && event.payload.candidateId === candidateId,
+  );
+}
+
+function parseDisplayedAlternatives(value: unknown) {
+  if (!Array.isArray(value)) return null;
+
+  const parsed = value.map((item) => {
+    if (!item || typeof item !== "object") return null;
+    const candidate = item as Record<string, unknown>;
+    if (
+      typeof candidate.candidateId !== "string" ||
+      typeof candidate.orderingPosition !== "number" ||
+      !Number.isInteger(candidate.orderingPosition) ||
+      candidate.orderingPosition < 1
+    ) {
+      return null;
+    }
+    return {
+      candidateId: candidate.candidateId,
+      orderingPosition: candidate.orderingPosition,
+    };
+  });
+
+  return parsed.every((item) => item !== null)
+    ? (parsed as Array<{ candidateId: string; orderingPosition: number }>)
+    : null;
+}
+
+function latestMatchingEvent(
+  events: InteractionEvent[],
+  predicate: (event: InteractionEvent) => boolean,
+) {
+  return [...events]
+    .sort((left, right) => right.draftRevision - left.draftRevision)
+    .find(predicate);
+}
+
+function deriveSubmittedReplacement(
+  workspace: EditorWorkspace,
+  sectionId: (typeof sectionIds)[number],
+  slotIndex: number,
+): { replacement: SubmittedReplacement; explicitlyPreferred: boolean } | null {
+  const section = workspace.build.sections.find((item) => item.id === sectionId);
+  const original = section?.selected[slotIndex];
+  const selected = workspace.draft.selections[sectionId]?.[slotIndex];
+  if (!section || !original || !selected || original.id === selected.id) return null;
+
+  const recordedReason =
+    workspace.draft.feedbackBySlot[slotKey(sectionId, slotIndex)] ??
+    "unclassified";
+  const currentReplaceEvent = latestMatchingEvent(
+    workspace.events,
+    (event) =>
+      event.type === "replace" &&
+      eventMatchesSlot(event, sectionId, slotIndex) &&
+      event.payload.replacementCandidateId === selected.id,
+  );
+  const inheritedReplacement = workspace.baseSubmission?.replacements?.find(
+    (replacement) =>
+      replacement.sectionId === sectionId &&
+      replacement.slotIndex === slotIndex &&
+      replacement.originalCandidateId === original.id &&
+      replacement.finalCandidateId === selected.id,
+  );
+  const feedbackEvent = latestMatchingEvent(
+    workspace.events,
+    (event) =>
+      event.type === "feedback" &&
+      eventMatchesSlot(event, sectionId, slotIndex) &&
+      event.payload.candidateId === selected.id,
+  );
+  const assessment =
+    section.replacementAssessments[original.id]?.[selected.id] ?? null;
+  const feasible =
+    assessment !== null &&
+    (assessment.status === "clean" || assessment.status === "override");
+  const finalAlternativePosition =
+    section.alternatives.find(
+      (alternative) => alternative.candidate.id === selected.id,
+    )?.orderingPosition ?? null;
+  const currentDisplayedAlternatives = parseDisplayedAlternatives(
+    currentReplaceEvent?.payload.displayedAlternatives,
+  );
+  const displayedAlternativeProvenance =
+    currentDisplayedAlternatives ??
+    inheritedReplacement?.provenance.displayedAlternatives ??
+    [];
+  const eventOrdering = currentReplaceEvent?.payload.ordering;
+  const ordering = isOrderingProvenance(eventOrdering)
+    ? eventOrdering
+    : inheritedReplacement?.provenance.ordering ?? null;
+  const originalSourceOpened =
+    sourceWasOpened(workspace.events, original.id) ||
+    inheritedReplacement?.provenance.originalSourceOpened === true;
+  const finalSourceOpened =
+    sourceWasOpened(workspace.events, selected.id) ||
+    inheritedReplacement?.provenance.finalSourceOpened === true;
+
+  const currentEventHasCompleteProvenance = Boolean(
+    currentReplaceEvent &&
+      !currentReplaceEvent.incomplete &&
+      currentReplaceEvent.payload.provenanceVersion === "r8.interaction.v2" &&
+      currentReplaceEvent.payload.sourceLinkConsumptionCaptured === true &&
+      currentDisplayedAlternatives?.some(
+        (alternative) => alternative.candidateId === selected.id,
+      ) &&
+      isOrderingProvenance(eventOrdering) &&
+      currentReplaceEvent.payload.selectedSlotPosition === slotIndex + 1 &&
+      currentReplaceEvent.payload.replacementOrderingPosition ===
+        finalAlternativePosition &&
+      finalAlternativePosition !== null,
+  );
+  const inheritedHasCompleteProvenance = Boolean(
+    !currentReplaceEvent && inheritedReplacement?.provenanceComplete,
+  );
+  const provenanceComplete = Boolean(
+    (currentEventHasCompleteProvenance || inheritedHasCompleteProvenance) &&
+      assessment &&
+      assessment.reason &&
+      original.classification === "classified" &&
+      selected.classification === "classified" &&
+      workspace.build.id &&
+      workspace.build.issueKey &&
+      workspace.build.bundleHash &&
+      workspace.build.contractVersion,
+  );
+  const currentPreferenceRecorded = Boolean(
+    feedbackEvent?.payload.value === "preferred" &&
+      (!currentReplaceEvent ||
+        feedbackEvent.draftRevision > currentReplaceEvent.draftRevision),
+  );
+  const inheritedPreferenceRecorded = Boolean(
+    !feedbackEvent && inheritedReplacement?.recordedReason === "preferred",
+  );
+  const explicitlyPreferred =
+    recordedReason === "preferred" &&
+    (currentPreferenceRecorded || inheritedPreferenceRecorded);
+
+  return {
+    replacement: {
+      sectionId,
+      slotIndex,
+      originalCandidateId: original.id,
+      finalCandidateId: selected.id,
+      recordedReason,
+      assessment,
+      feasible,
+      provenanceComplete,
+      provenance: {
+        displayedAlternatives: displayedAlternativeProvenance,
+        ordering,
+        originalSelectionPosition: slotIndex + 1,
+        finalAlternativePosition,
+        originalSourceOpened,
+        finalSourceOpened,
+      },
+    },
+    explicitlyPreferred,
+  };
+}
+
+export function createReopenedDraft(
+  workspace: EditorWorkspace,
+  options: {
+    draftId?: string;
+    editorIdentity: string;
+    reopenedAt: string;
+  },
+): DraftSnapshot {
+  if (workspace.draft.status !== "submitted" || !workspace.submission) {
+    throw new Error("Only a submitted revision can be reopened.");
+  }
+
+  return {
+    ...copy(workspace.draft),
+    id: options.draftId ?? crypto.randomUUID(),
+    issueRevision: workspace.submission.revision + 1,
+    editorIdentity: options.editorIdentity,
+    reopenedFromSubmissionId: workspace.submission.submissionId,
+    revision: 0,
+    status: "draft",
+    history: [],
+    updatedAt: options.reopenedAt,
+  };
+}
+
 export function createSubmission(
   workspace: EditorWorkspace,
-  submissionId = crypto.randomUUID(),
-  submittedAt = new Date().toISOString(),
+  options: {
+    submissionId?: string;
+    submitClientEventId: string;
+    editorIdentity: string;
+    submittedAt?: string;
+  },
 ): SubmissionSnapshot {
   const trainingPairs: TrainingPair[] = [];
+  const replacements: SubmittedReplacement[] = [];
 
   for (const sectionId of sectionIds) {
-    const originalSection = workspace.build.sections.find(
-      (section) => section.id === sectionId,
-    );
-    if (!originalSection) continue;
-
     workspace.draft.selections[sectionId].forEach((selected, slotIndex) => {
-      const original = originalSection.selected[slotIndex];
-      const feedback = workspace.draft.feedbackBySlot[slotKey(sectionId, slotIndex)];
+      const derived = deriveSubmittedReplacement(workspace, sectionId, slotIndex);
+      if (!derived) return;
 
+      replacements.push(derived.replacement);
       if (
-        original &&
-        selected.id !== original.id &&
-        feedback === "preferred" &&
-        original.classification === "classified" &&
-        selected.classification === "classified"
+        derived.explicitlyPreferred &&
+        derived.replacement.feasible &&
+        derived.replacement.provenanceComplete
       ) {
         trainingPairs.push({
           sectionId,
           slotIndex,
-          rejectedCandidateId: original.id,
+          rejectedCandidateId: derived.replacement.originalCandidateId,
           preferredCandidateId: selected.id,
           feedback: "preferred",
         });
@@ -213,12 +466,21 @@ export function createSubmission(
   }
 
   return {
-    submissionId,
+    submissionId: options.submissionId ?? crypto.randomUUID(),
+    submitClientEventId: options.submitClientEventId,
+    issueKey: workspace.build.issueKey,
+    issueDate: workspace.build.issueDate,
     issueBuildId: workspace.build.id,
+    buildVersion: workspace.build.buildVersion,
+    contractVersion: workspace.build.contractVersion,
+    bundleHash: workspace.build.bundleHash,
+    editorIdentity: options.editorIdentity,
+    revision: workspace.draft.issueRevision,
     draftId: workspace.draft.id,
     draftRevision: workspace.draft.revision + 1,
-    submittedAt,
+    submittedAt: options.submittedAt ?? new Date().toISOString(),
     finalSelections: copy(workspace.draft.selections),
+    replacements,
     trainingPairs,
     incompleteEventCount: workspace.events.filter((event) => event.incomplete).length,
   };

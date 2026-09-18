@@ -8,6 +8,8 @@ const eventBase = {
 const sectionId = z.enum(["families", "couples", "golden-age"]);
 
 export const draftIdSchema = z.string().uuid();
+export const submissionIdSchema = z.string().uuid();
+export const issueBuildIdSchema = z.string().uuid();
 
 export const draftCommandSchema = z.discriminatedUnion("type", [
   z.object({
@@ -47,3 +49,5 @@ export const submitRequestSchema = z.object({
   clientEventId: z.string().uuid(),
   occurredAt: z.string().datetime(),
 });
+
+export const reopenRequestSchema = submitRequestSchema;

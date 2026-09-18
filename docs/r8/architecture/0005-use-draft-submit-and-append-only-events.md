@@ -54,6 +54,12 @@ Use three distinct state forms:
 3. **Submission:** an immutable snapshot of the final draft, its issue-build version, final draft
    revision, idempotency key, and provenance-completeness state.
 
+One issue build may have multiple lifecycle revisions, but at most one may be the current editable
+draft or active submission target. Submit closes that draft and creates immutable submission v1.
+An explicit reopen retires that current target and creates a new editable draft linked to v1; its
+later submit creates immutable v2 without updating or deleting v1. Command revision numbers remain
+separate from these issue-level lifecycle revision numbers.
+
 For an acknowledged state-changing command, the server persists the interaction event and advances
 the draft revision in one database transaction. Commands include their expected revision; a stale
 command is rejected rather than merged silently.
@@ -66,6 +72,11 @@ Only a submitted final state may produce preference pairs. Pair derivation follo
 - final change marked broken listing: no ranking pair;
 - unclassified, infeasible, or provenance-incomplete comparison: retained for audit, excluded from
   training.
+
+Feasibility and provenance are evaluated for the final original-to-selected comparison, not merely
+the last intermediate click. Thus A to B to C can yield C over A only when the build contains a
+feasible A-to-C contextual assessment and the final comparison retains the displayed choice order,
+ordering/model versions, original ranks, and source-link-consumption state required by the contract.
 
 Browser storage may cache an unsent command for recovery, but it is not authoritative once the
 server acknowledges a revision.

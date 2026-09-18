@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   applyPostgresCommand,
   StaleDraftError,
+  WorkspaceUnavailableError,
 } from "@/lib/server/workspace-store";
 import { commandRequestSchema, draftIdSchema } from "@/lib/validation";
 
@@ -39,9 +40,21 @@ export async function POST(
       ),
     );
   } catch (error) {
-    const status = error instanceof StaleDraftError ? 409 : 500;
+    const status =
+      error instanceof StaleDraftError
+        ? 409
+        : error instanceof WorkspaceUnavailableError
+          ? 503
+          : 500;
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Command failed" },
+      {
+        error:
+          status === 503
+            ? "The production workspace is unavailable."
+            : error instanceof Error
+              ? error.message
+              : "Command failed",
+      },
       { status },
     );
   }

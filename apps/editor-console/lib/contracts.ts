@@ -5,6 +5,7 @@ export type ReplacementStatus = "clean" | "override" | "unavailable";
 export type FeedbackValue = "preferred" | "broken" | "skipped";
 export type DraftStatus = "draft" | "submitted";
 export type PersistenceMode = "postgres" | "browser-demo";
+export type RuntimeMode = "demo" | "production";
 
 export interface Candidate {
   id: string;
@@ -65,13 +66,19 @@ export interface DraftHistoryEntry {
   slotIndex: number;
   previousSelections: Candidate[];
   previousAlternatives: AlternativeCandidate[];
-  previousFeedback: Record<string, FeedbackValue>;
+  hadPreviousSlotFeedback: boolean;
+  previousSlotFeedback?: FeedbackValue;
+  /** Read support for drafts written before slot-scoped undo was introduced. */
+  previousFeedback?: Record<string, FeedbackValue>;
   summary: string;
 }
 
 export interface DraftSnapshot {
   id: string;
   issueBuildId: string;
+  issueRevision: number;
+  editorIdentity: string;
+  reopenedFromSubmissionId?: string;
   revision: number;
   status: DraftStatus;
   selections: Record<SectionId, Candidate[]>;
@@ -86,7 +93,8 @@ export type InteractionEventType =
   | "undo"
   | "feedback"
   | "source_open"
-  | "submit";
+  | "submit"
+  | "reopen";
 
 export interface InteractionEvent {
   clientEventId: string;
@@ -105,13 +113,48 @@ export interface TrainingPair {
   feedback: "preferred";
 }
 
+export interface DisplayedAlternativeProvenance {
+  candidateId: string;
+  orderingPosition: number;
+}
+
+export interface ReplacementProvenance {
+  displayedAlternatives: DisplayedAlternativeProvenance[];
+  ordering: OrderingProvenance | null;
+  originalSelectionPosition: number;
+  finalAlternativePosition: number | null;
+  originalSourceOpened: boolean;
+  finalSourceOpened: boolean;
+}
+
+export interface SubmittedReplacement {
+  sectionId: SectionId;
+  slotIndex: number;
+  originalCandidateId: string;
+  finalCandidateId: string;
+  recordedReason: FeedbackValue | "unclassified";
+  assessment: ReplacementAssessment | null;
+  feasible: boolean;
+  provenanceComplete: boolean;
+  provenance: ReplacementProvenance;
+}
+
 export interface SubmissionSnapshot {
   submissionId: string;
+  submitClientEventId: string;
+  issueKey: string;
+  issueDate: string;
   issueBuildId: string;
+  buildVersion: number;
+  contractVersion: string;
+  bundleHash: string;
+  editorIdentity: string;
+  revision: number;
   draftId: string;
   draftRevision: number;
   submittedAt: string;
   finalSelections: Record<SectionId, Candidate[]>;
+  replacements: SubmittedReplacement[];
   trainingPairs: TrainingPair[];
   incompleteEventCount: number;
 }
@@ -123,6 +166,8 @@ export interface EditorWorkspace {
   persistence: PersistenceMode;
   notice?: string;
   submission?: SubmissionSnapshot;
+  baseSubmission?: SubmissionSnapshot;
+  submissionHistory: SubmissionSnapshot[];
 }
 
 interface CommandBase {

@@ -15,6 +15,7 @@ import type {
 import { sectionIds, slotKey } from "@/lib/contracts";
 import {
   applyDraftCommand,
+  createReopenedDraft,
   createSubmission,
 } from "@/lib/draft-domain";
 
@@ -293,7 +294,7 @@ export function EditorConsole({
   const [confirmingSubmit, setConfirmingSubmit] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
-  const storageKey = `r8-editor:${workspace.build.id}`;
+  const storageKey = `r8-editor:v2:${workspace.build.id}`;
   const currentSectionBundle = workspace.build.sections.find(
     (section) => section.id === activeSection,
   )!;
@@ -310,7 +311,7 @@ export function EditorConsole({
     const frame = window.requestAnimationFrame(() => {
       if (initialWorkspace.persistence === "browser-demo") {
         const saved = window.localStorage.getItem(
-          `r8-editor:${initialWorkspace.build.id}`,
+          `r8-editor:v2:${initialWorkspace.build.id}`,
         );
         if (saved) {
           try {
@@ -327,7 +328,7 @@ export function EditorConsole({
             }
           } catch {
             window.localStorage.removeItem(
-              `r8-editor:${initialWorkspace.build.id}`,
+              `r8-editor:v2:${initialWorkspace.build.id}`,
             );
           }
         }
@@ -434,7 +435,11 @@ export function EditorConsole({
 
     try {
       if (workspace.persistence === "browser-demo") {
-        const submission = createSubmission(workspace, crypto.randomUUID(), occurredAt);
+        const submission = createSubmission(workspace, {
+          submitClientEventId: clientEventId,
+          editorIdentity: workspace.draft.editorIdentity,
+          submittedAt: occurredAt,
+        });
         const draft = {
           ...workspace.draft,
           revision: workspace.draft.revision + 1,
@@ -457,6 +462,7 @@ export function EditorConsole({
           draft,
           events: [...current.events, event],
           submission,
+          submissionHistory: [...current.submissionHistory, submission],
         }));
       } else {
         const response = await fetch(
@@ -486,12 +492,78 @@ export function EditorConsole({
           draft: body.draft,
           events: [...current.events, body.event],
           submission: body.submission,
+          submissionHistory: current.submissionHistory.some(
+            (submission) => submission.submissionId === body.submission.submissionId,
+          )
+            ? current.submissionHistory
+            : [...current.submissionHistory, body.submission],
         }));
       }
       setSaveState("saved");
     } catch (caught) {
       setSaveState("error");
       setError(caught instanceof Error ? caught.message : "The issue could not be submitted.");
+    }
+  }
+
+  async function reopenSubmission() {
+    if (!workspace.submission) return;
+
+    setError(null);
+    setSaveState("saving");
+    const occurredAt = new Date().toISOString();
+    const clientEventId = crypto.randomUUID();
+
+    try {
+      if (workspace.persistence === "browser-demo") {
+        const baseSubmission = workspace.submission;
+        const draft = createReopenedDraft(workspace, {
+          editorIdentity: workspace.draft.editorIdentity,
+          reopenedAt: occurredAt,
+        });
+        const event: InteractionEvent = {
+          clientEventId,
+          type: "reopen",
+          draftRevision: 0,
+          occurredAt,
+          incomplete: false,
+          payload: {
+            previousSubmissionId: baseSubmission.submissionId,
+            issueBuildId: workspace.build.id,
+            issueRevision: draft.issueRevision,
+            editorIdentity: draft.editorIdentity,
+          },
+        };
+        setWorkspace((current) => ({
+          ...current,
+          draft,
+          events: [event],
+          submission: undefined,
+          baseSubmission,
+        }));
+      } else {
+        const response = await fetch(
+          `/api/submissions/${workspace.submission.submissionId}/reopen`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              expectedRevision: workspace.draft.revision,
+              clientEventId,
+              occurredAt,
+            }),
+          },
+        );
+        const body = (await response.json()) as EditorWorkspace | { error: string };
+        if (!response.ok || !("draft" in body)) {
+          throw new Error("error" in body ? body.error : "The issue could not be reopened.");
+        }
+        setWorkspace(body);
+      }
+      setSaveState("saved");
+    } catch (caught) {
+      setSaveState("error");
+      setError(caught instanceof Error ? caught.message : "The issue could not be reopened.");
     }
   }
 
@@ -511,6 +583,7 @@ export function EditorConsole({
             {issueDateFormatter.format(new Date(`${workspace.build.issueDate}T00:00:00Z`))}
           </strong>
           <span className="version-pill">Build {workspace.build.buildVersion}</span>
+          <span className="version-pill">Revision {workspace.draft.issueRevision}</span>
           {isDemo && <span className="demo-pill">Demo · browser only</span>}
         </div>
         <div className="topbar-actions">
@@ -582,11 +655,20 @@ export function EditorConsole({
               </span>
             ) : (
               <span>
-                Receipt {workspace.submission.submissionId.slice(0, 8)} · {changedCount}{" "}
+                Revision {workspace.submission.revision} · Receipt{" "}
+                {workspace.submission.submissionId.slice(0, 8)} · {changedCount}{" "}
                 {changedCount === 1 ? "change" : "changes"} in the final lineup
               </span>
             )}
           </div>
+          <button
+            type="button"
+            className="reopen-button"
+            disabled={saveState === "saving"}
+            onClick={() => void reopenSubmission()}
+          >
+            {isDemo ? "Reopen demo" : "Reopen for editing"}
+          </button>
         </div>
       )}
 
@@ -760,7 +842,7 @@ export function EditorConsole({
             <p>
               {isDemo
                 ? "This only records a simulated submitted state in this browser. It does not create a PostgreSQL submission or contact Airtable."
-                : "This creates one immutable submission for the issue. It does not write to Airtable or run the copywriter."}
+                : `This creates immutable submission revision ${workspace.draft.issueRevision}. It does not write to Airtable or run the copywriter.`}
             </p>
             <div className="dialog-summary">
               <span>15 selected events</span>

@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 
-import { applyDraftCommand, createInitialDraft, createSubmission } from "./draft-domain";
+import type {
+  DraftSnapshot,
+  EditorWorkspace,
+  InteractionEvent,
+  IssueBuild,
+} from "./contracts";
+import {
+  applyDraftCommand,
+  createInitialDraft,
+  createReopenedDraft,
+  createSubmission,
+} from "./draft-domain";
 import { mockIssueBuild } from "./mock-issue";
 
 function eventBase() {
@@ -8,6 +19,33 @@ function eventBase() {
     clientEventId: crypto.randomUUID(),
     occurredAt: "2026-09-08T18:00:00.000Z",
   };
+}
+
+function workspace(
+  draft: DraftSnapshot,
+  events: InteractionEvent[],
+  build: IssueBuild = mockIssueBuild,
+  additional: Partial<EditorWorkspace> = {},
+): EditorWorkspace {
+  return {
+    build,
+    draft,
+    events,
+    persistence: "browser-demo",
+    submissionHistory: [],
+    ...additional,
+  };
+}
+
+function submit(
+  value: EditorWorkspace,
+  submitClientEventId = crypto.randomUUID(),
+) {
+  return createSubmission(value, {
+    submitClientEventId,
+    editorIdentity: value.draft.editorIdentity,
+    submittedAt: "2026-09-08T18:05:00.000Z",
+  });
 }
 
 describe("editor draft domain", () => {
@@ -39,18 +77,13 @@ describe("editor draft domain", () => {
       ...eventBase(),
       type: "undo",
     });
-    const workspace = {
-      build: mockIssueBuild,
-      draft: undone.draft,
-      events: [replacement.event, undone.event],
-      persistence: "browser-demo" as const,
-    };
+    const value = workspace(undone.draft, [replacement.event, undone.event]);
 
     expect(undone.draft.selections.families[0].id).toBe("fam-01");
-    expect(createSubmission(workspace).trainingPairs).toEqual([]);
+    expect(submit(value).trainingPairs).toEqual([]);
   });
 
-  it("derives one final pair after A to B to C", () => {
+  it("derives exactly one final pair after a provenance-complete A to B to C", () => {
     const initial = createInitialDraft(mockIssueBuild);
     const first = applyDraftCommand(mockIssueBuild, initial, {
       ...eventBase(),
@@ -73,14 +106,13 @@ describe("editor draft domain", () => {
       slotIndex: 0,
       value: "preferred",
     });
-    const workspace = {
-      build: mockIssueBuild,
-      draft: feedback.draft,
-      events: [first.event, second.event, feedback.event],
-      persistence: "browser-demo" as const,
-    };
+    const value = workspace(feedback.draft, [
+      first.event,
+      second.event,
+      feedback.event,
+    ]);
 
-    expect(createSubmission(workspace).trainingPairs).toEqual([
+    expect(submit(value).trainingPairs).toEqual([
       {
         sectionId: "families",
         slotIndex: 0,
@@ -89,6 +121,159 @@ describe("editor draft domain", () => {
         feedback: "preferred",
       },
     ]);
+  });
+
+  it("excludes A to B to C when the final A to C assessment is unavailable", () => {
+    const build = structuredClone(mockIssueBuild);
+    build.sections[0].replacementAssessments["fam-01"]["fam-08"] = {
+      status: "unavailable",
+      reason: "C cannot replace A while the original slate remains fixed.",
+    };
+    const first = applyDraftCommand(build, createInitialDraft(build), {
+      ...eventBase(),
+      type: "replace",
+      sectionId: "families",
+      slotIndex: 0,
+      alternativeCandidateId: "fam-06",
+    });
+    const second = applyDraftCommand(build, first.draft, {
+      ...eventBase(),
+      type: "replace",
+      sectionId: "families",
+      slotIndex: 0,
+      alternativeCandidateId: "fam-08",
+    });
+    const feedback = applyDraftCommand(build, second.draft, {
+      ...eventBase(),
+      type: "feedback",
+      sectionId: "families",
+      slotIndex: 0,
+      value: "preferred",
+    });
+    const submission = submit(
+      workspace(feedback.draft, [first.event, second.event, feedback.event], build),
+    );
+
+    expect(submission.replacements).toMatchObject([
+      {
+        originalCandidateId: "fam-01",
+        finalCandidateId: "fam-08",
+        feasible: false,
+      },
+    ]);
+    expect(submission.trainingPairs).toEqual([]);
+  });
+
+  it("excludes a preferred comparison when interaction provenance is incomplete", () => {
+    const initial = createInitialDraft(mockIssueBuild);
+    const replacement = applyDraftCommand(mockIssueBuild, initial, {
+      ...eventBase(),
+      type: "replace",
+      sectionId: "families",
+      slotIndex: 0,
+      alternativeCandidateId: "fam-06",
+    });
+    delete replacement.event.payload.displayedAlternatives;
+    const feedback = applyDraftCommand(mockIssueBuild, replacement.draft, {
+      ...eventBase(),
+      type: "feedback",
+      sectionId: "families",
+      slotIndex: 0,
+      value: "preferred",
+    });
+    const submission = submit(
+      workspace(feedback.draft, [replacement.event, feedback.event]),
+    );
+
+    expect(submission.replacements[0].provenanceComplete).toBe(false);
+    expect(submission.trainingPairs).toEqual([]);
+  });
+
+  it("undoes only the replacement slot and preserves later unrelated feedback", () => {
+    const initial = createInitialDraft(mockIssueBuild);
+    const couplesReplacement = applyDraftCommand(mockIssueBuild, initial, {
+      ...eventBase(),
+      type: "replace",
+      sectionId: "couples",
+      slotIndex: 0,
+      alternativeCandidateId: "cou-06",
+    });
+    const familiesReplacement = applyDraftCommand(
+      mockIssueBuild,
+      couplesReplacement.draft,
+      {
+        ...eventBase(),
+        type: "replace",
+        sectionId: "families",
+        slotIndex: 0,
+        alternativeCandidateId: "fam-06",
+      },
+    );
+    const unrelatedFeedback = applyDraftCommand(
+      mockIssueBuild,
+      familiesReplacement.draft,
+      {
+        ...eventBase(),
+        type: "feedback",
+        sectionId: "couples",
+        slotIndex: 0,
+        value: "preferred",
+      },
+    );
+    const undone = applyDraftCommand(mockIssueBuild, unrelatedFeedback.draft, {
+      ...eventBase(),
+      type: "undo",
+    });
+
+    expect(undone.draft.selections.families[0].id).toBe("fam-01");
+    expect(undone.draft.selections.couples[0].id).toBe("cou-06");
+    expect(undone.draft.feedbackBySlot["couples:0"]).toBe("preferred");
+  });
+
+  it("reopens a submitted revision without mutating the prior submission", () => {
+    const initial = createInitialDraft(mockIssueBuild);
+    const replacement = applyDraftCommand(mockIssueBuild, initial, {
+      ...eventBase(),
+      type: "replace",
+      sectionId: "families",
+      slotIndex: 0,
+      alternativeCandidateId: "fam-06",
+    });
+    const feedback = applyDraftCommand(mockIssueBuild, replacement.draft, {
+      ...eventBase(),
+      type: "feedback",
+      sectionId: "families",
+      slotIndex: 0,
+      value: "preferred",
+    });
+    const beforeSubmit = workspace(feedback.draft, [
+      replacement.event,
+      feedback.event,
+    ]);
+    const firstSubmission = submit(beforeSubmit);
+    const submittedDraft: DraftSnapshot = {
+      ...feedback.draft,
+      revision: feedback.draft.revision + 1,
+      status: "submitted",
+    };
+    const submittedWorkspace = workspace(submittedDraft, beforeSubmit.events, mockIssueBuild, {
+      submission: firstSubmission,
+      submissionHistory: [firstSubmission],
+    });
+    const reopened = createReopenedDraft(submittedWorkspace, {
+      editorIdentity: "fixture-editor",
+      reopenedAt: "2026-09-08T19:00:00.000Z",
+    });
+
+    expect(firstSubmission.revision).toBe(1);
+    expect(firstSubmission.finalSelections.families[0].id).toBe("fam-06");
+    expect(reopened).toMatchObject({
+      issueRevision: 2,
+      revision: 0,
+      status: "draft",
+      reopenedFromSubmissionId: firstSubmission.submissionId,
+    });
+    expect(reopened.selections.families[0].id).toBe("fam-06");
   });
 
   it("blocks a replacement marked unavailable", () => {

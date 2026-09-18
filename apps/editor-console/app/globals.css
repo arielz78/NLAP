@@ -312,6 +312,51 @@ svg {
   display: block;
 }
 
+.reopen-button {
+  margin-left: auto;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid currentColor;
+  border-radius: 7px;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 0.7rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.reopen-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.blocking-state {
+  width: min(640px, calc(100% - 2rem));
+  min-height: 100vh;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  margin: 0 auto;
+}
+
+.blocking-state .brand-mark {
+  margin-bottom: 2rem;
+}
+
+.blocking-state h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 5vw, 3.3rem);
+  font-weight: 500;
+  line-height: 1.05;
+}
+
+.blocking-state > p:last-child {
+  max-width: 580px;
+  margin: 1rem 0 0;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+
 .submitted-banner.demo-submitted {
   color: #573300;
   background: #fff4d6;
