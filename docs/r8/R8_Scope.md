@@ -44,6 +44,12 @@ fixture/content-copy corrections for Nate's next bounded CP2 pass.
 **TODO-0 is resolved: the premise holds.** Sponsored events go into a separate section, so no
 console slot is ever filled from outside the candidate pool.
 
+**Weight after Sept 13 (set 2026-09-17, Personal OS planning sitting):** NLAP holds at 3 × 3h/week.
+Work order is finish R8, then bring R6 into it. **Open, not settled:** how much of R6 is actually
+done — its slate has reached the editor two weeks running — and what "done enough to inject into
+R8" requires. Resolve in an NLAP session before encoding it anywhere as architecture. Hours re-checked
+against the log at the Sept 27 sprint boundary.
+
 **Next:** Nate may complete the bounded CP2 UI/fixture corrections against the now-settled W1
 contract. Before production reconciliation work begins, Ariel defines W6's acceptance tests.
 

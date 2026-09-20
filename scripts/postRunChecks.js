@@ -7,7 +7,14 @@
 //   3. overlapAudit.js        — cross-source duplicate health
 //   4. depthCheck.js          — per-issue in-window pool depth vs floor
 //   5. facebookSubmissionCheck.js — Facebook 0-submission / stale-intake alarm
-//   6. rejectionCheck.js      — pre-Airtable drop counts + reasons (Clean/Filter, DateWindow)
+//
+// rejectionCheck.js was removed 2026-09-04. The n8n Code-node logging it read was
+// destroyed by the 2026-07-27 re-import and is not being rebuilt (#111, deferred to
+// Future). The script was reporting the frozen 2026-07-24 log as if it were the
+// latest run, and exiting 0 — a green check on stale data. The historical log stays
+// at data/tracking/ingestion_rejections.jsonl; nothing reads it. Depth, overlap and
+// integrity cover "is anything wrong"; the rejection log only answered "why was this
+// specific row dropped", asked only while debugging a named complaint.
 //
 // Each check runs even if an earlier one fails; a single combined exit code and
 // summary are returned at the end. If DISCORD_WEBHOOK_RUNLOGS is set in the env,
@@ -26,7 +33,6 @@ const CHECKS = [
   { name: "overlap", file: "overlapAudit.js" },
   { name: "depth", file: "depthCheck.js" },
   { name: "fbsubmission", file: "facebookSubmissionCheck.js" },
-  { name: "rejections", file: "rejectionCheck.js" },
 ];
 
 function runOne(file) {

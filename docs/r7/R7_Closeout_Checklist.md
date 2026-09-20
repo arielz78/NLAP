@@ -16,26 +16,47 @@ The upcoming ranked-week prototype is R6 work. It is not an R7 close requirement
 
 ### 1. Settle the three remaining W6 decisions
 
-- [ ] **Fork C:** record the V1 ship boundary. Current supported resolution: R7 supplies reversible viability and section signals; R6 owns weekly relative ranking; the allocator applies final-list constraints; the editor retains final selection.
-- [ ] **Step 4c:** either adjudicate only the error rows made consequential by the live evidence, or explicitly defer the remaining worksheet. The numerical run is complete; all 35 worksheet rows remain unadjudicated.
-- [ ] **#108:** either run the frozen 300-character AllEvents backfill arm or explicitly defer it as an enrichment experiment that does not change V1.
+- [x] **Fork C: SETTLED 2026-09-04 (Ariel) — option (a), gate only.** R7 supplies reversible viability and section signals; R6 owns weekly relative ranking; the allocator applies final-list constraints; the editor retains final selection.
+  - Options (b) expand W6 to own ranking and (c) merge W6 into R6 are closed. Foreclosed by §87's function split and by R6's 2026-09-03 reopening, which owns `RankedPool`.
+  - **What this sets is the exit bar, not the artifact.** R7's claim is "directionally correct signal," which the sealed readout's ROC AUC 0.824 and 62.3% / 77.9% section agreement support. It is not "this system picks the final 15" — that claim would owe measurement R7 does not have.
+  - Per §78 R7 scores and sorts, never deletes: it hands downstream the whole in-window pool (~310–360) with viability and section affinity attached. It does not emit a shortlist. Shortlist depth is R6's `M` and R8's `K`, both deliberately unfixed.
+  - **Accepted cost:** R7 ships nothing the editor sees directly. Its value is contingent on R6 or the allocator consuming it.
+  - Not a blocker, still open: the `~720` denominator `TODO(ariel)` at `R7_Scope.md:70` is labelled "Fork C's arithmetic." Line 74 already records that the premise survives at ~10:1 and only the magnitude changes, and §87 settled the boundary on function rather than that ratio. Stop quoting `~505 of ~720`; do not re-derive before close.
+  - Still to record: the Decision Log entry, in the Gate 5 batch below.
+- [x] **Step 4c: CLOSED 2026-09-04 (Ariel) — the error-mechanism adjudication is killed, not deferred.** The numerical run stands. `R7_Step4c_Error_Mechanism_Table.md` remains sealed evidence of that run; its 35 `TODO(ariel)` rows are marked **not performed, deliberately** — they are not pending work and must not reappear as debt in a later audit.
+  - **The worksheet's categories no longer exist.** Its 35 rows are 3 demoted keepers + 32 surviving junk *at the 0.4530 cut* — and per §78 plus Fork C nothing thresholds. The gate scores, R6 ranks. With no cut there is no false positive or negative, only an order.
+  - The errors do not vanish, they change type. Row 61 (`Bollywood Boom`, 0.8438) is no longer junk past a filter; it is junk ranked above keepers. That is a pairwise ranking failure, owned by R6, measured against R6's target.
+  - **The observation instrument is the R8 console, not a hand-filled worksheet.** An editor swap is the error record — the model ranked A above B, he chose B. See `R8_Scope.md` §1.
+  - Its findings already have homes: 8 of 35 rows are `TITLE ONLY` (that is #108), and the narrow-audience cluster — Bollywood Boom, Afghan Nights, Russian Nights, Hebrew Library, Oshkabewis, Holy Week — is #123. The worksheet would have itemized two tracked issues, not discovered a third.
+  - **Accepted cost:** Step 4b's comparable pass found 11 label errors in 30 rows, so the eval set behind R7's closing numbers is probably slightly noisy and stays that way. Accepted because the release closes on the live readout, which does not depend on that set.
+- [x] **#108: MOVED TO R6 2026-09-04 (Ariel).** Deferred out of R7 as an enrichment experiment that does not change V1. Framing: *we can enrich AllEvents; R6 measures whether it helps.* Re-milestone the issue to R6; do not run R7's frozen arm.
+  - **Rationale:** R7's arm could only move an exit bar Fork C has now fixed at "directionally correct." In R6 the same enrichment feeds the ranker, where it can change an outcome.
+  - **What already exists (2026-08-04, read-only): reach measured, comparison never run.** On the 165-row slice, backfill at cap 300 changes text on 40 rows (21 previously title-only), touching 1 of 3 demoted keepers and 9 of 32 surviving junk. Stated ceiling was keeper recall 97.1% → 98.1% and junk rejection 47.5% → 62.3%.
+  - ⚠️ **That ceiling is expressed in threshold terms and does not transfer.** With Step 4c's cut killed, the R6 question is whether enrichment moves those rows *down the order* — a different measurement than the one staged. Do not quote 62.3% as an R6 target.
+  - **Deployment is the expensive half and is not entailed by the experiment.** `scripts/fetchAllEventsDescriptions.js` is a working reference implementation, not wired into R1; wiring it means a per-event detail-page fetch loop in n8n. Run the offline arm first; wire only on a win. The 2026-08-04 note that `text_recipe.py:36-41` welds the artifact rules to that wiring still stands.
+  - **Second arm, R6's to schedule: LLM + websearch enrichment as a comparator.** Not the dead LLM-fallback path in §4 below — that concerned classification confidence, not text recovery. Deterministic scraping is free, repeatable and byte-identical, but needs a stable detail page; LLM search costs per event across ~310–360 rows/week and is non-deterministic, so features move between runs. They solve different problems: scraping wins where a page exists, LLM search is the only option for sources without one. Compare them **on AllEvents specifically**, because it is the case with verifiable ground truth — an LLM arm that cannot match a scrape you can check is not trustworthy on the sources where you cannot check it.
 
 ### 2. Record the former W7 tranche as moved to R8
 
-- [ ] Add the cross-release decision to `Decision_Log.md`.
-- [ ] Remove W7 from the definition of R7 completion rather than leaving it ambiguously deferred.
-- [ ] Ensure the future R8 scope inherits:
-  - classifier/gate deployment into R2;
-  - the production bypass/fallback contract;
-  - `LLM_Rationale` behavior;
-  - a 20-record production-path test;
-  - replay of a frozen evaluation set through production;
-  - frozen model/evaluation versions and rollback metadata;
-  - retraining cadence or trigger;
-  - post-deployment NeedsReview measurement;
-  - proof that model behavior survives the production path.
+- [x] Add the cross-release decision to `Decision_Log.md` — **DONE**, §94 (2026-08-27).
+- [x] Remove W7 from the definition of R7 completion rather than leaving it ambiguously deferred — **DONE 2026-09-04**, `R7_Scope.md` §3 now records W7 as dropped with per-step reasoning, and the two `R7_Scope.md` pointers routing #111 to "W7 deploy work" are corrected.
+- [x] **R8 inherits nothing from W7. RESOLVED 2026-09-04 (Ariel): all five W7 steps are dropped from R7.** The earlier "ensure R8 inherits" framing is withdrawn — it would have parked a dependency R8 does not have. R8 scores manually per `R8_Scope.md` §3, so no production deployment is required for delivery.
 
-These were roadmap promises, but they are integration/lifecycle work rather than unfinished model-validity work. Until the move is recorded canonically, they remain unresolved—not silently complete.
+W7's five steps, triaged against what R7 actually shipped:
+
+| # | W7 step | Disposition |
+|---|---|---|
+| 1 | Classifier in R2 ahead of the LLM node; high-confidence predictions skip the LLM | **Dropped — superseded.** The confidence/abstention path is dead on measurement (§78): None and includable confidence distributions are near-identical, so confidence cannot do reject work. R7 shipped a scoring gate plus section head, not a classifier that short-circuits the LLM. |
+| 2 | Templated `LLM_Rationale` for skipped rows | **Dropped.** Existed only to fill the gap left by step 1. |
+| 3 | 20-record test of classifier+fallback vs GPT-4o-only | **Dropped.** Compares against a path that does not exist. A production smoke test may be written independently if scoring ever goes unattended. |
+| 4 | Replay a frozen evaluation set through the production path | **Dropped (Ariel).** Rationale: future R6/R8 versions will not be worse than current R7, so R7-as-baseline has no value. Flagged once and accepted: the residual use of a *pre-committed* set is catching a later version that breaks silently — a bad re-embed or feature bug whose output still looks plausible — not benchmarking against R7. Revisit if that becomes a live concern. |
+| 5 | Retraining trigger on N editor corrections | **Deferred past R8 (Ariel).** Decide the trigger once the console is delivering editor corrections; the mechanism depends on what R8 actually captures. |
+
+- [x] **#101 split and moved R7 → R6 2026-09-04 (Ariel).** It bundled two things and they resolve differently.
+  - **Frozen eval set — dropped, on method fit.** A frozen benchmark catches regressions before they reach users; here they cannot, because the editor reviews every issue before it publishes. The one failure he would miss is slow degradation, and R8's console records swaps — swap rate over time is that detector, free with a release already being built. Freezing now would also freeze the wrong question: R7 measured viability and section, R6 measures ordering. The sealed live readout and sealed Step-4c snapshot remain as frozen evidence. Revisit only if the model ever runs where the editor does not see the output.
+  - **Model versioning — kept, moved to R6.** Persist the fitted model with a training-data hash, config and metrics. It earns its keep in R6, which will produce multiple scoring versions; without it, "why did this event rank differently this week" has no answer. Copy `models/sectioning/embed_corpus.py`'s existing corpus manifest pattern.
+  - Issue retitled accordingly; the frozen-set and retraining-trigger done-criteria are withdrawn from it.
+- [ ] The "measurable NeedsReview reduction" deliverable is **dead as a release bar** (explicitly superseded below) and survives only as a post-deployment observation. The 226 baseline is captured and keeps its value.
 
 ### 3. Disposition every open R7 milestone issue
 

@@ -2277,3 +2277,43 @@ not clean ranking labels and do not expand the release into dashboards or experi
 
 **What this does not decide:** whether a future release runs a randomized reader experiment or
 changes R6's optimization target after sufficient evidence exists.
+
+---
+
+## 100. Demo Slates Are Scored by Recall Against the Published Issue, Not by Editor Self-Report (2026-09-20)
+
+**Decision:** the R6 editor demonstrations are evaluated by **recall** — of the slots the editor
+actually published, how many the slate supplied — measured by joining the published Beehiiv issue
+against the demo run's picks and alternatives. Recall is reported decomposed four ways: from main
+picks, from alternatives, missed although the event was in the candidate pool, and missed because the
+event was never a candidate. Precision is not a target. Uptake is not collected by asking the editor.
+
+**Why:** three reasons, in order of weight.
+
+First, self-reporting had already failed. The v2b round's uptake was recorded as "which specific
+events he ultimately published — self-reported, and hedged." The published issue is already pulled by
+`fetchBeehiivHistory.js`, so the number can be derived from existing state rather than requested,
+which is both exact and free.
+
+Second, precision is structurally misleading here. The editor fills 15 slots; a 43-entry slate
+therefore caps at 35% precision no matter how good it is. Optimising precision would penalise
+offering alternatives at all — and alternatives supplied half the hits in the first measured round.
+
+Third, the decomposition is what makes the number actionable. Undecomposed recall says the slate is
+"53% good" and points nowhere. Split, the first measurement showed six of seven misses were events
+that never entered the candidate pool — relocating the problem from ranking to coverage, where none
+of the ranking-side work under consideration could have reached it.
+
+**Consequence:** demo runs are judged on a number derived from the editor's behaviour rather than his
+description of it, and a coverage miss is distinguishable from a ranking miss at a glance. It also
+sets the order of work: establishing where uncovered events live precedes further ranking effort.
+
+A direct consequence, taken the same day: **no venue or organizer cap was added to alternatives**,
+although one run showed a single venue appearing six times across a batch. Such a cap would encode an
+assumption about what the editor dislikes *and delete the evidence needed to test it* — if he
+publishes three of those events, the repetition was never a defect. Constraints on the slate wait on
+uptake data rather than anticipating it.
+
+**What this does not decide:** the eventual production target. Recall against the editor's published
+issue measures agreement with his current behaviour, which is the right objective while he remains
+the decision-maker; it is not automatically the right objective for a slate he stops editing.

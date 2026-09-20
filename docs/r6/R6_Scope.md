@@ -1,7 +1,7 @@
 # R6 Scope — Editorial Ranking
 
 **Owner:** Ariel
-**Status:** DRAFT — September 10 comparative-ranking demo available; production architecture remains open
+**Status:** DRAFT — third comparative-ranking demo (v3, September 24) available; production architecture remains open
 **Roadmap:** `docs/NLAP_PostMVP_Roadmap_v3.md` Release 6 is frozen intent. This document supersedes it for current R6 direction.
 **Read order:** this doc → `docs/Decision_Log.md` §87 → `docs/r7/R7_Scope.md` → `docs/r8/R8_Scope.md`
 
@@ -13,11 +13,25 @@ only when evidence resolves them and the next build step requires them.
 
 ---
 
-## 0. Status snapshot (2026-09-12)
+## 0. Status snapshot (2026-09-20)
 
 R6 has resumed at architecture-definition stage while R8 carries the immediate editor-delivery work.
 
-**Current handoff (2026-09-12):** a second demonstration (v2b, September 17 issue) is built locally at
+**Current handoff (2026-09-20):** a third demonstration (v3, September 24 issue) is built locally at
+`data/tracking/r6_demo/v3_2026-09-24_snapshot_2026-09-20_1417/editor_preview.html`, not yet sent. One paid
+call, US$0.242236, validation clean. Three response defects were detected by validation and repaired by hand
+(`review_corrections.json`); the run `README.md` carries the full table. Third consecutive run with
+wrong-record entries — a wrong-but-valid id carrying a copied quote would still pass silently.
+
+**Two measurements from this round set the near-term direction.** First, the allocator was a pass-through:
+15 of 15 picks were the model’s top 5, in order, in all three sections, so no constraint bound and both the
+venue-variety gain in the picks and the repetition in the tail belong to the model, not `assemble.js`.
+Second, scoring v2b against the published September 17 issue gives recall 8/15, decomposed as 4 main picks,
+4 alternatives, 1 in-pool ranking/gate miss and **6 events that were never candidates**. Coverage, not
+ranking, is the larger gap; establishing where those six events live precedes further ranking work.
+Evaluation method and the decision not to cap alternatives yet: Decision_Log §100.
+
+**Previous handoff (2026-09-12):** a second demonstration (v2b, September 17 issue) is built locally at
 `data/tracking/r6_demo/v2b_2026-09-17_snapshot_2026-09-12_1958/editor_preview.html`, using the same
 pipeline as v1 with the editor's v1 feedback supplied as guidance. Run index:
 `data/tracking/r6_demo/RUNS.md`. A first v2 attempt with binding rules was discarded. Six hand corrections

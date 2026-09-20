@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-09-20
+- Ran a third editor-ranking demonstration for the September 24 issue, and introduced a measured evaluation for it: scoring each slate by how many of the editor’s published slots it actually supplied, derived automatically from the published newsletter rather than asked for.
+- That measurement moved the priority — most of the gap turned out to be events the pipeline never collected at all, rather than events it ranked poorly — so a planned variety constraint was deliberately deferred until there is evidence it is needed.
+- Diagnosed a source outage as site-side rather than a pipeline fault, and scoped sold-out detection as tiered work with an explicit stop rule for the expensive half.
+
 ## 2026-09-12
 - Ran a second editor-ranking demonstration for the September 17 issue that folds the editor's feedback from the first round into the model's inputs, and documented each correction the pipeline still needed by hand as scoped future work.
 - Collected the editor's first structured feedback on the comparative ranking demo and turned it into explicit, undecided hypotheses for the ranking stage — repeat similarity, activity format, audience language fit, and organizer-level variety.

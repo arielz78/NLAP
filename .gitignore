@@ -44,5 +44,15 @@ Incognito outlook on me.txt
 SecondBrain_HANDOFF.md
 phase1_May6_May24.md
 
+# Personal time study. The .xlsx is the live sheet and stays local so it can be
+# edited; the .md is a one-off analysis whose durable copy lives in Notion under
+# Personal OS → Checkpoints. Neither is NLAP work.
+Time Study.xlsx
+Time_Study_Summary.md
+
+# Local scratch / DSA practice
+Untitled-*.py
+python_practice_sep-dec/
+
 # Candid client feedback naming real organizers (public repo) — keep local.
 docs/r6/R6_Editor_Feedback.md
