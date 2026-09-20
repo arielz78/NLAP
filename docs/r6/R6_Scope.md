@@ -18,7 +18,11 @@ only when evidence resolves them and the next build step requires them.
 R6 has resumed at architecture-definition stage while R8 carries the immediate editor-delivery work.
 
 **Current handoff (2026-09-20):** a third demonstration (v3, September 24 issue) is built locally at
-`data/tracking/r6_demo/v3_2026-09-24_snapshot_2026-09-20_1417/editor_preview.html`, not yet sent. One paid
+`data/tracking/r6_demo/v3_2026-09-24_snapshot_2026-09-20_1417/editor_preview.html`. **Fix before sending:**
+the preview header still reads “applies your feedback on the September 10 shortlist”; v3 applies the
+September 17 round. The sentence is hard-coded at `demo.js:254` and is not one of the constants the weekly
+re-point touches. One-word correction, no re-run. Sending it uncorrected would tell the editor his latest
+feedback was ignored, contaminating the response this run exists to measure. Not yet sent. One paid
 call, US$0.242236, validation clean. Three response defects were detected by validation and repaired by hand
 (`review_corrections.json`); the run `README.md` carries the full table. Third consecutive run with
 wrong-record entries — a wrong-but-valid id carrying a copied quote would still pass silently.
@@ -29,7 +33,9 @@ venue-variety gain in the picks and the repetition in the tail belong to the mod
 Second, scoring v2b against the published September 17 issue gives recall 8/15, decomposed as 4 main picks,
 4 alternatives, 1 in-pool ranking/gate miss and **6 events that were never candidates**. Coverage, not
 ranking, is the larger gap; establishing where those six events live precedes further ranking work.
-Evaluation method and the decision not to cap alternatives yet: Decision_Log §100.
+Evaluation method and the decision not to cap alternatives yet: Decision_Log §100. **The recall join is
+pinned to the rendered slate** — the preview shows only the first 5 alternatives per section (`demo.js:249`),
+so scoring must join picks plus those on-screen alternatives, never all of `allocation.json`.
 
 **Previous handoff (2026-09-12):** a second demonstration (v2b, September 17 issue) is built locally at
 `data/tracking/r6_demo/v2b_2026-09-17_snapshot_2026-09-12_1958/editor_preview.html`, using the same
