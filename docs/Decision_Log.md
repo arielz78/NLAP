@@ -2317,3 +2317,24 @@ uptake data rather than anticipating it.
 **What this does not decide:** the eventual production target. Recall against the editor's published
 issue measures agreement with his current behaviour, which is the right objective while he remains
 the decision-maker; it is not automatically the right objective for a slate he stops editing.
+
+---
+
+## 101. A Registration Form Is Not a Publishable Event Link (2026-09-26)
+
+**Decision:** an event whose only link is a registration form — a Google Form or similar — is not
+offered to the editor. It is removed from the slate and its slot backfilled, even when the event itself
+is a good fit. Ariel's call, 2026-09-26, on the v4b demo (Historic Unionville Walking Tour, Golden #4).
+
+**Why:** the link is what a reader clicks to decide whether to go. A bare form gives no description,
+venue or date context, so it reads as broken or suspicious in a newsletter regardless of the event's
+merit. The editor would have to find a real page himself — the reverse of what the slate is for.
+
+**Consequence:** this is an editorial rule about the *link*, separate from geography. The source sheet's
+Step-3 note that `forms.gle` must not be geo-blocked stays correct — a form carries no location signal,
+so it is not grounds for rejecting the event from the pool. The event may stay a candidate; it just
+cannot be published on that link. Nothing in the pipeline enforces this yet; it was caught by hand.
+
+**What this does not decide:** whether the fix belongs at ingestion (capture the event page instead),
+at slate time (a URL check), or both; and whether a form is acceptable as a *secondary* registration
+link alongside a real event page.

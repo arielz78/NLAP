@@ -1,7 +1,7 @@
 # R6 Scope — Editorial Ranking
 
 **Owner:** Ariel
-**Status:** DRAFT — third comparative-ranking demo (v3, September 24) available; production architecture remains open
+**Status:** DRAFT — fourth comparative-ranking demo (v4b, October 1) ready to send; production architecture remains open
 **Roadmap:** `docs/NLAP_PostMVP_Roadmap_v3.md` Release 6 is frozen intent. This document supersedes it for current R6 direction.
 **Read order:** this doc → `docs/Decision_Log.md` §87 → `docs/r7/R7_Scope.md` → `docs/r8/R8_Scope.md`
 
@@ -13,11 +13,22 @@ only when evidence resolves them and the next build step requires them.
 
 ---
 
-## 0. Status snapshot (2026-09-20)
+## 0. Status snapshot (2026-09-26)
 
 R6 has resumed at architecture-definition stage while R8 carries the immediate editor-delivery work.
 
-**Current handoff (2026-09-20):** a third demonstration (v3, September 24 issue) is built locally at
+**Current handoff (2026-09-26):** the October 1 demonstration is built locally at
+`data/tracking/r6_demo/v4b_2026-10-01_snapshot_2026-09-26_1933/editor_preview.html`, **ready to send**.
+The editor's v3 feedback arrived after a first build (v4, not sent) that repeated two of his explicit v3
+rejections as picks; v4b reran the same inputs with that feedback as guidance. With the pool held fixed,
+the feedback removed every rejected type from screen and cut library-branch picks 7 → 4. Cross-section
+duplicates fell 3 → 1 but did not reach zero because the prompt still instructs keeping Couples/Golden
+dual-fits on both lists, contradicting the editor (#133). A Google-Form-linked pick was removed by hand
+(Decision_Log §101). Two calls, US$0.508 together; four hand corrections, none a borrowed-content defect.
+Run table and receipts: `RUNS.md` and the v4b `README.md`. v3 recall against the published September 24
+issue is not yet scored.
+
+**Previous handoff (2026-09-20):** a third demonstration (v3, September 24 issue) is built locally at
 `data/tracking/r6_demo/v3_2026-09-24_snapshot_2026-09-20_1417/editor_preview.html`, **ready to send**.
 The preview header originally read “applies your feedback on the September 10 shortlist” when v3 applies the
 September 17 round — hard-coded at `demo.js:254` and not one of the constants the weekly re-point touches.
@@ -83,7 +94,9 @@ The original July draft is superseded by later repo and editor evidence:
 - R8 is the first reliable path for capturing the displayed choice set and deliberate editor replacements
   that a future learned ranker needs.
 
-**Next executable action:** send the v2b preview to the editor and collect uptake and feedback. Then
+**Next executable action:** send the v4b preview to the editor, and score v3 by recall against the
+published September 24 issue (Decision_Log §100, rendered-slate join). *Superseded 2026-09-26 — earlier
+text follows:* send the v2b preview to the editor and collect uptake and feedback. Then
 reconcile the full R6 target under #133 against both rounds of feedback (v1 in private
 `docs/r6/R6_Editor_Feedback.md`) and the logged harness gaps; the repeat, format, language and
 organizer-variety hypotheses remain undecided. Click evidence (#139) is still unrefreshed. The remaining
