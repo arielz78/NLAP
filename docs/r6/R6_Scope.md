@@ -1,7 +1,7 @@
 # R6 Scope — Editorial Ranking
 
 **Owner:** Ariel
-**Status:** DRAFT — fourth comparative-ranking demo (v4b, October 1) ready to send; production architecture remains open
+**Status:** DRAFT — fifth comparative-ranking demo (v5, October 8) sent 2026-10-04; production architecture remains open
 **Roadmap:** `docs/NLAP_PostMVP_Roadmap_v3.md` Release 6 is frozen intent. This document supersedes it for current R6 direction.
 **Read order:** this doc → `docs/Decision_Log.md` §87 → `docs/r7/R7_Scope.md` → `docs/r8/R8_Scope.md`
 
@@ -13,30 +13,28 @@ only when evidence resolves them and the next build step requires them.
 
 ---
 
-## 0. Status snapshot (2026-09-26)
+## 0. Status snapshot (2026-10-04)
 
 R6 has resumed at architecture-definition stage while R8 carries the immediate editor-delivery work.
 
-**Current handoff (2026-09-26):** the October 1 demonstration is built locally at
-`data/tracking/r6_demo/v4b_2026-10-01_snapshot_2026-09-26_1933/editor_preview.html`, **ready to send**.
+**Current handoff (2026-10-04):** the October 8 demonstration (v5) was built on 268 candidates and
+**sent 2026-10-04**. No feedback was given on v4b, so v5 uses the three earlier rounds as guidance. The
+prompt's keep-dual-fits line was replaced with the editor's one-section rule: cross-section duplicates on
+screen 1 → 0, library picks 4 → 2. One call, US$0.248310; seven hand repairs (id typo, four ranked rows
+the model's own reason disavowed, one cross-section duplicate, the Unionville form link removed again per
+Decision_Log §101). Known guidance misses were sent as-is to be measured by recall, not hand-edited: a
+Chef Upstairs pick repeating an October 1 activity, and two passive Markham-library picks in Golden.
+Receipts: `RUNS.md` and the v5 `README.md`; harness gaps on #133.
+
+**Previous handoff (2026-09-26):** the October 1 demonstration is built locally at
+`data/tracking/r6_demo/v4b_2026-10-01_snapshot_2026-09-26_1933/editor_preview.html`, **sent 2026-09-26**.
 The editor's v3 feedback arrived after a first build (v4, not sent) that repeated two of his explicit v3
 rejections as picks; v4b reran the same inputs with that feedback as guidance. With the pool held fixed,
 the feedback removed every rejected type from screen and cut library-branch picks 7 → 4. Cross-section
 duplicates fell 3 → 1 but did not reach zero because the prompt still instructs keeping Couples/Golden
 dual-fits on both lists, contradicting the editor (#133). A Google-Form-linked pick was removed by hand
 (Decision_Log §101). Two calls, US$0.508 together; four hand corrections, none a borrowed-content defect.
-Run table and receipts: `RUNS.md` and the v4b `README.md`. v3 recall against the published September 24
-issue is not yet scored.
-
-**Previous handoff (2026-09-20):** a third demonstration (v3, September 24 issue) is built locally at
-`data/tracking/r6_demo/v3_2026-09-24_snapshot_2026-09-20_1417/editor_preview.html`, **ready to send**.
-The preview header originally read “applies your feedback on the September 10 shortlist” when v3 applies the
-September 17 round — hard-coded at `demo.js:254` and not one of the constants the weekly re-point touches.
-Corrected 2026-09-20 in both the HTML and that run folder’s `demo.js`; verified no September 10 reference
-remains in the editor-facing file. **Add this string to the weekly re-point checklist** (#133 item 1). One paid
-call, US$0.242236, validation clean. Three response defects were detected by validation and repaired by hand
-(`review_corrections.json`); the run `README.md` carries the full table. Third consecutive run with
-wrong-record entries — a wrong-but-valid id carrying a copied quote would still pass silently.
+Run table and receipts: `RUNS.md` and the v4b `README.md`.
 
 **Two measurements from this round set the near-term direction.** First, the allocator was a pass-through:
 15 of 15 picks were the model’s top 5, in order, in all three sections, so no constraint bound and both the
@@ -94,9 +92,10 @@ The original July draft is superseded by later repo and editor evidence:
 - R8 is the first reliable path for capturing the displayed choice set and deliberate editor replacements
   that a future learned ranker needs.
 
-**Next executable action:** send the v4b preview to the editor, and score v3 by recall against the
-published September 24 issue (Decision_Log §100, rendered-slate join). *Superseded 2026-09-26 — earlier
-text follows:* send the v2b preview to the editor and collect uptake and feedback. Then
+**Next executable action:** score v3, v4b and v5 by recall against their published issues (September 24,
+October 1, October 8; Decision_Log §100, rendered-slate join; #133). *Superseded 2026-10-04 — earlier
+text follows:* send the v4b preview to the editor, and score v3 by recall against the
+published September 24 issue. *Superseded 2026-09-26 — earlier text follows:* send the v2b preview to the editor and collect uptake and feedback. Then
 reconcile the full R6 target under #133 against both rounds of feedback (v1 in private
 `docs/r6/R6_Editor_Feedback.md`) and the logged harness gaps; the repeat, format, language and
 organizer-variety hypotheses remain undecided. Click evidence (#139) is still unrefreshed. The remaining

@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-10-04
+- Restored the Eventbrite source after the site began rejecting placeholder request tokens: the ingestion workflow now obtains a fresh token from a public page on every run.
+- Built and sent the fifth editor ranking demonstration (October 8 issue); aligning the model instructions with the editor's one-section-per-event request removed every cross-section duplicate from the shortlist.
+
 ## 2026-09-26
 - Built the fourth editor ranking demonstration (October 1 issue) and a same-week revision incorporating the latest editor feedback; with the candidate pool held fixed, the revision removed every event type the editor had rejected and reduced single-source concentration.
 - Adopted an editorial rule that an event linking only to a registration form is not publishable, and traced one such link to its source.
