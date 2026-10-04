@@ -92,8 +92,9 @@ The original July draft is superseded by later repo and editor evidence:
 - R8 is the first reliable path for capturing the displayed choice set and deliberate editor replacements
   that a future learned ranker needs.
 
-**Next executable action:** score v3, v4b and v5 by recall against their published issues (September 24,
-October 1, October 8; Decision_Log §100, rendered-slate join; #133). *Superseded 2026-10-04 — earlier
+**Next executable action:** score v3 and v4b by recall against the published September 24 and October 1
+issues (Decision_Log §100, rendered-slate join; #133). Score v5 once the October 8 issue is published and
+the Beehiiv history is refreshed past 2026-10-08. *Superseded 2026-10-04 — earlier
 text follows:* send the v4b preview to the editor, and score v3 by recall against the
 published September 24 issue. *Superseded 2026-09-26 — earlier text follows:* send the v2b preview to the editor and collect uptake and feedback. Then
 reconcile the full R6 target under #133 against both rounds of feedback (v1 in private
