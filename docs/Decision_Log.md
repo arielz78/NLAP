@@ -2338,3 +2338,33 @@ cannot be published on that link. Nothing in the pipeline enforces this yet; it 
 **What this does not decide:** whether the fix belongs at ingestion (capture the event page instead),
 at slate time (a URL check), or both; and whether a form is acceptable as a *secondary* registration
 link alongside a real event page.
+
+---
+
+## 102. The Weekly Ranking Producer Is the Demo Lineage, Not `scripts/r6/` (2026-10-07)
+
+**Decision:** V1's weekly ranking producer is the per-run `demo.js` pipeline, de-hardcoded into a
+reusable script under `scripts/issue-build/`. Ariel's call, 2026-10-07. This forecloses two
+alternatives: authoring `scripts/r6/config/weights.json` (15 blanks) plus `attribute_schema.json` to
+run that library's scoring path, and ordering by R7 `p_include x p_section` alone (`run.js`'s `prior`
+mode, which the code itself labels "R8's day-one adapter").
+
+**Why:** the demo lineage has produced five editor-facing slates against real data with full receipts
+and one measured recall figure (v2b, 8/15, Decision_Log §100). `scripts/r6/` has never run in scoring
+mode, and an exhaustive grep confirms nothing in the repo imports `lib/assemble.js` except its own
+`run.js` — the vocabulary match with the console's assessment contract is real but the code path is
+dead. More decisively, ranking quality cannot currently be evaluated: the editor stopped giving
+feedback after v3, the click join ends 2026-06-25 (#139), and no post-R6 CTOR exists. Authoring
+weights would be tuning a model whose improvement is unmeasurable. Ship the lineage that has
+evidence; improve it once the console's own preference pairs supply signal.
+
+**Accepted cost:** an LLM stays in the weekly path at ~US$0.25/run, and the hand-repair burden has not
+decayed across five runs (6 / 3 / 3 / 3 / **7**). Recurring classes: id typo in 4 of 5 runs, borrowed
+content from sibling records in 4 of 5, and a new v5 class of ranked rows whose own `reason` disavows
+them. Validation stops the run but repairs nothing, so each week currently costs hand-repair time that
+does not amortise.
+
+**What this does not decide:** whether `scripts/r6/` is ever activated (it is retained as a reference
+for assessment semantics, not deleted); which validator or schema changes actually reduce the repair
+burden, since the two most obvious candidates were disproved during planning (see
+`docs/v1/V1_Ship_Plan.md` §8); and the convergence with `buildIssues.js` that §87 still requires.
