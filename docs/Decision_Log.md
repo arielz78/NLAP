@@ -2359,7 +2359,7 @@ weights would be tuning a model whose improvement is unmeasurable. Ship the line
 evidence; improve it once the console's own preference pairs supply signal.
 
 **Accepted cost:** an LLM stays in the weekly path at ~US$0.25/run, and the hand-repair burden has not
-decayed across five runs (6 / 3 / 3 / 3 / **7**). Recurring classes: id typo in 4 of 5 runs, borrowed
+decayed across five runs (v1 5, v2b 6, v3 3, v4b 3, v5 **7**). Recurring classes: id typo in 4 of 5 runs, borrowed
 content from sibling records in 4 of 5, and a new v5 class of ranked rows whose own `reason` disavows
 them. Validation stops the run but repairs nothing, so each week currently costs hand-repair time that
 does not amortise.
@@ -2368,3 +2368,38 @@ does not amortise.
 for assessment semantics, not deleted); which validator or schema changes actually reduce the repair
 burden, since the two most obvious candidates were disproved during planning (see
 `docs/v1/V1_Ship_Plan.md` §8); and the convergence with `buildIssues.js` that §87 still requires.
+
+---
+
+## 103. Ship-and-Fix Over Pre-Hardening for V1; Hosting Stays With Nate (2026-10-07)
+
+Two calls Ariel made while scoping V1. Recorded here because they license the cuts in
+`docs/v1/V1_Ship_Plan.md` §§4-7, which otherwise read as omissions.
+
+**Decision (a): a defect that fails loudly is accepted as post-ship work.** V1 ships with the
+producer's known hand-repair burden, without the four proposed validators, without recall scoring
+for v3/v4b/v5, and without the coverage fix. The exception is any defect that is *silent* — those
+are pre-ship.
+
+**Why:** the fully-scoped plan priced at 25-35 hours against a fixed budget of 12-16, so something
+had to be cut, and "loud versus silent" is the only cut line that does not trade away correctness.
+A loud defect costs annoyance and is self-announcing; a silent one publishes a wrong newsletter that
+looks right. Exactly one defect in the set is silent: `connectAirtable.js:218` deletes unlocked
+IssueItems and rebuilds from the model's picks, so submitted editor choices vanish while the issue
+still looks correct. That one is addressed before the editor touches the console; everything else
+waits for evidence that it matters.
+
+**Accepted cost:** the first live weeks will need hand-holding, and "V1 shipped" means the model's
+ranking reached the editor and his decisions reached the export — **not** that reconciliation is
+proven against interruption, retries or partial failure. Full W6 (#138) is V1.1. Stated in
+`docs/v1/V1_Ship_Plan.md` §6 so the finish line is not later read as more than it was.
+
+**Decision (b): Nate selects and operates the host.** Vercel + Neon provisioning stays his, per
+ADR 0003. Reaffirmed after a planning draft had assigned it to Ariel; that draft was wrong and the
+original decision stands. Ariel's role is supplying the password for the HTTP Basic middleware that
+replaces ADR 0008's unapproved signed-session design.
+
+**What this does not decide:** how many consecutive weeks of editor use V1 requires; what monitors
+the weekly run; or whether the console covering 3 of the newsletter's 5 sections produces a split
+workflow worse for the editor than all-Airtable. All three are unexamined — see
+`docs/v1/V1_Ship_Plan.md` §9.

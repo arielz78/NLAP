@@ -25,21 +25,25 @@ After every R8 session:
 
 ---
 
-## 0. Status (2026-09-10)
+## 0. Status (2026-10-07)
 
 R8 is open ahead of the R6 gate, on a delivery commitment to the editor. R7 is closeout-only and
 off the critical path.
 
-Nate's `1370f77` foundation is present: the Next.js console shell, three-section fixture, replace,
-undo, browser-draft persistence, submit state, interaction capture, PostgreSQL schema and API
-routes. On 2026-09-10, its three existing unit tests, lint and production build passed. Ariel's
-browser-fixture sitting confirmed replace, feedback, refresh persistence, undo and submitted-state
-persistence.
+**Nate's #135 (`8396a79`) and #136 (`c45a7ad`) have landed** (2026-09-18) on top of the `1370f77`
+foundation: versioned reopen lifecycle with one-current-revision DB constraints, immutable
+submissions, submissions carrying full provenance, stricter training-pair qualification, slot-scoped
+undo fix, explicit demo-vs-production modes where production fails closed, and a PostgreSQL
+integration suite. **Both issues remain open on GitHub.** `c45a7ad` is the last commit touching
+`apps/editor-console/`.
 
-This is not yet a database-backed or end-to-end R8 proof. The sitting ran in `browser-demo` mode;
-PostgreSQL persistence, real raw-content fit, W9 inputs, reconciliation, failure recovery and the
-Beehiiv handoff remain unverified. The sitting also found a broken selected-card click target and
-fixture/content-copy corrections for Nate's next bounded CP2 pass.
+⚠️ **No CI exists in the repo**, so "tests, lint and build pass" on both commits is unverified here;
+only the pre-`8396a79` state was independently confirmed (2026-09-10). The integration suite is gated
+behind `R8_REQUIRE_INTEGRATION_DB=1` and has not been run against a database in this repo.
+
+**The console remains fixture-only.** `lib/mock-issue.ts` is the single source of issue data, and
+`scripts/seed-demo.ts` inserts that same fixture into PostgreSQL — so even production mode serves the
+fixture, durably. No real data path, no hosting, **no authentication of any kind**, no write-back.
 
 **TODO-0 is resolved: the premise holds.** Sponsored events go into a separate section, so no
 console slot is ever filled from outside the candidate pool.
@@ -50,8 +54,14 @@ done — its slate has reached the editor two weeks running — and what "done e
 R8" requires. Resolve in an NLAP session before encoding it anywhere as architecture. Hours re-checked
 against the log at the Sept 27 sprint boundary.
 
-**Next:** Nate may complete the bounded CP2 UI/fixture corrections against the now-settled W1
-contract. Before production reconciliation work begins, Ariel defines W6's acceptance tests.
+**Next:** a read-only completeness sweep and audit of `docs/v1/V1_Ship_Plan.md` in a fresh session.
+That doc is the planning artifact for the remaining path to a first complete release — **it is a
+working doc, not a status source**, and its filename is deliberately outside `/start`'s
+`docs/r*/R*_Scope.md` glob, so this pointer is how it is found.
+
+**How R6 and R8 combine into a first complete release is deferred to that session and is not settled
+here.** A plan exists and Ariel approved it as a draft only; the release-structure question was
+explicitly parked.
 
 ---
 
