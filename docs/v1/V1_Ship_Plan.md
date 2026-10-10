@@ -1,452 +1,247 @@
 # V1 Ship Plan
 
-**Written 2026-10-07.** Working doc, not a status source — release status stays in
-`docs/r8/R8_Scope.md` §0. This filename deliberately does not match `/start`'s glob
-(`docs/r*/R*_Scope.md`) so it is never read as a Scope doc.
+**Written 2026-10-07, rewritten 2026-10-10 after two independent audits.** Working doc, not a status source:
+release status stays in `docs/r8/R8_Scope.md` §0 and `docs/r6/R6_Scope.md` §0. This filename deliberately does
+not match `/start`'s glob (`docs/r*/R*_Scope.md`), so it is never read as a Scope doc.
 
-**Purpose:** be the only artifact that survives the planning session, so a cold session can
-execute without re-deriving state. If this doc and a Scope doc disagree about *status*, Scope wins.
+**Purpose:** the remaining path to V1, ordered by dependency, with who builds each piece and the test that
+decides it is done. A cold session should be able to pick up the next item from here without re-deriving state.
+If this doc and a Scope disagree about *status*, the Scope wins.
 
-**Budget: ~12–16 hours of Ariel's time, at 3 × 3h/week. This is fixed. Do not propose more.**
-Anything that does not fit is a non-goal (§7), not a trimmed version of itself.
+**Timelines are off (Ariel, 2026-10-10).** Work runs in dependency order and is delegated to agents wherever the
+authorship split allows. The Oct 31 target and the 12–16h budget no longer drive scope. Neither audit found a V1
+package that fit them.
+
+**How this version was produced.** Claude and Codex each audited the 2026-10-07 plan cold, from the same prompt.
+Each then critiqued the other's audit, and every disagreement was settled on file evidence. Findings carry a
+provenance tag.
 
 ## Evidence legend
 
-Every substantive claim is tagged. **Check tagged claims rather than trusting them.**
-
-- `[VERIFIED x:N]` — read directly from the file during the 2026-10-07 session
-- `[REVIEW x:N]` — cited with line numbers by the read-only review agent, not re-read by the author
-- `[AGENT]` — reported by an exploration agent, line numbers not independently confirmed
-- `[INFERRED]` — the author's reasoning, no direct evidence
-- `[UNVERIFIED]` — stated nowhere and not checked; treat as open
+- `[VERIFIED x:N]`: read directly from the file or a live query during the audit
+- `[BOTH]`: found independently by both audits
+- `[CODEX ✓]`: Codex finding, re-verified in the file by Claude
+- `[ROUGH]`: rough measurement made during the audit, unreviewed and recorded nowhere else. Not a metric
+  (metrics originate only in `NA/Vaughan_Metrics_Log.md`)
+- `[INFERRED]`: reasoning, no direct evidence
+- `[UNVERIFIED]`: not checked; treat as open
 
 ---
 
-## 1. State as of 2026-10-07
+## 1. State, as corrected by the audit
+
+### The live path is the weekly preview, not Airtable
+
+- **The Airtable issue path has been dormant since June.** The Issues table has 12 records and the latest
+  `IssueDate` is 2026-06-18. IssueItems was last written May 30. No issue since June has gone through
+  allocation → blurbs → export. `[VERIFIED live Airtable query; data/tracking/snapshots/issueitems_2026-10-04_1500.json]`
+  V1 has to *revive* this path, not preserve it. No Issues record exists for any upcoming date, so every write
+  throws until one is created (`connectAirtable.js:272`).
+- **The editor builds from the weekly preview despite not replying.** His published slots that appeared on the
+  preview (picks plus the first 5 alternatives): v2b 8/15 (reproduces the hand-scored figure), v3 11/15, v4b
+  8/15. A control slate built for the already-published Aug 13 issue and never shown to him matched **2/15**.
+  `[ROUGH]` His v1 self-report (9 of 15 from the demo) agrees. This is evidence of use, not proof: the control used
+  a different producer and a smaller reachable pool, and the fuzzy match is validated only on v2b. `[CODEX ✓]`
+- **R7 is already in that path.** The producer reads `scored_survivors.jsonl`. `[VERIFIED prepare_inputs.py:27]`
+- **R7 depends on the Label Deck at runtime.** `live_runner.py` imports `gate_step4a`, which verifies the label
+  pull and reconciliation artifacts and fits the gate on 365 labelled rows. Preserve those artifacts and the
+  Airtable deck table. `[CODEX ✓ live_runner.py:470-482]`
 
 ### The ranking producer (R6)
 
-Five editor demos have been sent. `[VERIFIED data/tracking/r6_demo/RUNS.md]`
-
-| Run | Issue | Sent | Hand repairs | Recall |
-|---|---|---|---|---|
-| v1 | 09-10 | yes | 5 | 9/15 self-reported (not comparable) |
-| v2b | 09-17 | yes | 6 | **8/15 measured** (4 picks, 4 alternatives, 1 in-pool miss, 6 never-candidates) |
-| v3 | 09-24 | yes | 3 | unscored |
-| v4 | 10-01 | **no** — superseded | 3 | n/a |
-| v4b | 10-01 | yes, 09-26 | 3 | unscored |
-| v5 | 10-08 | yes, 10-04 | **7** | unscored (Oct 8 not yet published) |
-
-**The editor stopped responding.** He gave feedback on v1, v2b and v3. None on v4b, none on v5.
-`[VERIFIED logs/R6_Log.md]` Consequence: recall scoring is now the only measurement instrument left.
-
-**Hand repairs are not decaying.** Five runs, every one needed repair, and the newest was the worst.
-Recurring classes `[VERIFIED logs/R6_Log.md + run READMEs]`:
-
-- **id typo — 4 of 5 runs**
-- **borrowed content from sibling records — 4 of 5 runs** (v4b was the only clean one)
-- **Unionville Google Form URL reaching the slate — every run since it came back**; hand-removed in
-  both v4b and v5 (Decision_Log §101, issues #93 / #133)
-- **self-disavowed rows — new in v5**: four ranked rows whose own `reason` says not to use them; two
-  also appeared in `exclusions`
-- cross-section duplicates, duplicate section objects in the response, whitespace-mismatched quotes
-
-**What demonstrably worked:** replacing the prompt's keep-dual-fits line with the editor's
-one-section rule drove on-screen cross-section duplicates 1 → 0 and library picks 4 → 2.
-`[VERIFIED logs/R6_Log.md 2026-10-04]` Prompt changes land; validator asserts only stop the run.
-
-**The producer is a per-run copy.** `data/tracking/r6_demo/<run>/demo.js` carries hard-coded
-constants — `const ISSUE='2026-09-17'` and siblings at lines 6–7 `[AGENT]` — plus a seasonal
-lookback literal, a stale shortlist-policy string sent to the model, and `codeIdentity()`'s
-self-referential file list `[REVIEW demo.js:113,145]`. `prepare_inputs.py` has its own set.
-
-**`scripts/r6/` has never run in scoring mode.** Its two config worksheets are 100% blank (15 nulls
-in `weights.json`) and `run.js` refuses `--attributes` until they are authored. `[AGENT]` Nothing in
-the repo imports `scripts/r6/lib/assemble.js` except `scripts/r6/run.js` — confirmed by exhaustive
-grep. `[AGENT]` **Deliberately not being authored for V1** (§7).
+- Five editor demos sent (v1, v2b, v3, v4b, v5). The editor has given no feedback since v3. `[VERIFIED RUNS.md, R6_Log]`
+- Hand repairs are not decaying (v1 5, v2b 6, v3 3, v4b 3, v5 7). **Not every class is loud.** The v5
+  self-disavowed rows were caught by hand review, not a validator, so V1 keeps a human review of each slate.
+  `[CODEX ✓ v5 README.md:32]`
+- The producer is a per-run copy (`demo.js` + `prepare_inputs.py`) with hard-coded dates and labels. Lineage per
+  Decision_Log §102.
 
 ### The console (R8)
 
-Mechanically complete and **fixture-only**. `[AGENT]` Draft/submit, versioned reopen, immutable
-revisions, append-only interaction events, idempotency, slot-scoped undo, Postgres via Neon.
+- Mechanically complete and fixture-only. No real data, hosting, authentication or write-back. Status: R8_Scope §0.
+- **Its swap checks are fixed when the issue is built and never re-checked against the lineup.** A replacement
+  is looked up as one stored pair verdict. The lineup-dependent rules (one venue per section, no event in two
+  sections) can be broken after two swaps, and the console then stores those swaps as feasible training pairs.
+  `[BOTH; CODEX reproduced it with the real domain code; buildIssues.js:120-135; draft-domain.ts:108-133, :319]`
+- **Date-only events display a wrong date.** `formatSchedule` runs `new Date("2026-10-17")`, which is UTC
+  midnight, and renders Oct 16, 8 p.m. in Toronto with an invented time. `[CODEX ✓ editor-console.tsx:56]`
+- **"Only one current build" is enforced per build, not per issue,** so two builds for the same issue can each
+  hold an editable draft. `[CODEX ✓ 0002_versioned_submission_lifecycle.sql:22-28]`
+- No CI exists. `[VERIFIED .github/]`
 
-`c45a7ad` is the last commit touching `apps/editor-console/`. `[REVIEW]` Nate shipped #135
-(`8396a79`, UI/fixture) and #136 (`c45a7ad`, +2131 lines: versioned reopen lifecycle, immutable
-submissions, production fails closed, a 338-line Postgres integration suite). **Both issues are
-still open on GitHub.** `[AGENT]`
+### The Airtable write path
 
-Missing: real data (W4/W9), hosting (W3), **any authentication at all**, write-back (W6).
-`[REVIEW docs/r8/R8_Scope.md:170]`
-
-**No CI exists anywhere in the repo** — `.github/` holds only `ISSUE_TEMPLATE/`. `[REVIEW]` So
-"tests, lint and build pass" on both Nate commits is his claim, never independently run here.
-
-The integration suite is gated behind `R8_REQUIRE_INTEGRATION_DB=1` plus a confirmed-isolated DB and
-has almost certainly never run. `[REVIEW]`
-
-### Ingestion
-
-- **Eventbrite now needs a real CSRF token per run.** `[VERIFIED logs/R6_Log.md 2026-10-04]`
-  Post-fix count unconfirmed. `[REVIEW]`
-- Three sources silent since June/July — Visit Vaughan, McMichael, Facebook — verified not masked by
-  cross-source dedup. `[VERIFIED logs/R6_Log.md]` Issue #128; depends on #92 (source field blank on
-  ~418 Eventbrite rows, so counting by `Source` would misreport Eventbrite as dead). `[AGENT]`
-- Unionville back up 09-26, but its form-URL defect recurs until fixed at source (#93).
-- `postRunChecks.js` exits non-zero **solely** because of the stale-Facebook check, so a genuinely
-  failing check elsewhere cannot change the suite's exit code. `[AGENT, from #114 comment]` Unfiled.
-
-### Coverage — the finding that bounds ranking work
-
-**~40% of the editor's picks never enter the candidate pool.** Venue caps, organizer variety and
-prompt tuning all operate on the 53% already reached. `[VERIFIED logs/R6_Log.md]`
-
-Already enumerated in #133: **AppleFest, Double Ninth Festival, The Linda Ronstadt Show, Cook &
-Connect** (zero title matches anywhere in the pool), plus **Markham Fair**. `[REVIEW #133]`
-So enumeration is largely done; the open work is per-event source research.
-
-⚠️ Do not say "~7 uncovered events" — that conflates v2b's 6 never-candidates with its 1 in-pool
-ranking miss. The in-pool miss is not a coverage problem. `[REVIEW]`
+- **Importing `connectAirtable.js` runs the allocator.** `main()` is called unconditionally at `:373`, with no
+  `require.main === module` guard. Requiring it fires delete → `buildIssues` → write for every future issue. It
+  also auto-fills Local Aroma and Trust Me Recipe. `[BOTH; CODEX reproduced it with mocks]`
+- **Nothing sets `Lock=true`.** It is a manual Airtable checkbox (`createTables.js:48`), read at
+  `connectAirtable.js:213` and `generateBlurbs.js:261`. `[BOTH]`
+- **`writeIssueItems` is append-only POST.** Skipping the delete means a repeat run duplicates every row.
+  `[BOTH connectAirtable.js:288-307]`
+- **`generateBlurbs` rewrites copy on every unlocked row for the issue,** including Local Aroma. For a row with no
+  Candidate it prompts from the row's `Name`. `[BOTH generateBlurbs.js:262, :272, :338]`
+- R1 (n8n) never touches IssueItems; only `connectAirtable.js` deletes. `[VERIFIED workflows/NLAP R1.json]`
 
 ---
 
-## 2. The two discoveries this plan rests on
+## 2. The biggest flaw
 
-### D1 — The producer *is* W9
+**The console cannot express the issue the editor actually publishes.** Each week 4–7 of his 15 event slots
+come from outside the bench (Facebook, Visit Vaughan, other links). `[CODEX ✓ R6_Editor_Feedback.md:80; ROUGH join]`
+The console only replaces from the bench. TODO-0 (R8_Scope §6) was closed as "yes, he can complete an issue",
+on the premise that sponsored events have their own section. That premise does not cover these ordinary
+outside picks.
 
-The console consumes `{selected, alternatives, replacementAssessments}`. Nothing in the pipeline
-produces a bench: `buildIssues.js` returns selected picks only. `[VERIFIED Execution_Log.md]`
-De-hardcoding `demo.js` into a repeatable producer **is** W9. R6 and R8 are not two releases
-sequenced; they are one task with two names. `[INFERRED, but see D2]`
+So on a live Sunday he either:
+- **submits a lineup he then changes by hand in Beehiiv.** Write-back and blurbs run on events he won't publish,
+  his "kept" picks become false preference evidence, and the gap between submitted and published is silent in
+  the data; or
+- **abandons the console.** That fails finish-line item #4.
 
-ADR 0006 (versioned assembly contract) and ADR 0007 (ordering behind an adapter) were written to
-permit exactly this. `[AGENT docs/r8/architecture/]`
-
-### D2 — The Airtable write path already exists and the producer's output already fits it
-
-`writeIssueItems(issueItems, issueMap, startDateMap, urlMap)` `[VERIFIED connectAirtable.js:268]`
-takes an array of `{IssueDate, ItemID, Section, Slot}` plus three lookup maps. **It has no
-dependency on `buildIssues`.** Same for `writeSelectionNotes` `[VERIFIED :154]`.
-
-`demo.js` calls the real `buildIssues` through an adapter and writes `allocation.json` with
-`picks: [{IssueDate, ItemID, Section, Slot}]` — **exactly that input shape.** `[AGENT]`
-
-Three gaps, all small:
-
-1. **Nothing is exported.** No `module.exports` anywhere in `connectAirtable.js`.
-   `[VERIFIED — grep]` One line.
-2. Nothing reads a submission from Postgres.
-3. `main()` runs **delete → build → write** `[VERIFIED connectAirtable.js:314-372]`. A write-back
-   script must **skip the delete** and write only the chosen picks, then lock them.
-
-**Consequence:** Pareto W6 is ~2–3h, not the 10–15h a full Acceptance-#8 implementation costs
-(four tested interruption points, run receipts, reconciliation convergence). `[INFERRED]`
-
-**And it unlocks a shorter first step:** the demo's picks can be written to Airtable *with no console
-at all*. That is finish-line item #3 ("R7 in the live path") for ~2h, and it proves the write path
-**before** the console depends on it. `[INFERRED]`
+This happens every week, not occasionally. It needs Ariel's decision D0 (§4) before Step 4 or any live use.
+Raised by Codex; neither audit ranked it first until the comparison.
 
 ---
 
-## 3. The silent failure that governs sequencing
+## 3. Work map, in dependency order
 
-`deleteUnlockedIssueItems()` `[VERIFIED connectAirtable.js:218]` deletes every unlocked IssueItem on
-current and future issues, then `main()` rebuilds from **the model's** picks.
+**Owner key:** **Agent** = delegable plumbing, verifiable by inspection · **Ariel** = authored core (a wrong
+choice changes a number or a conclusion) · **Nate** = hosting/console per ADR 0003 and Decision_Log §103(b).
+Every acceptance test is written before its work.
 
-So: editor submits in the console → his choices sit in Postgres → next allocation run fires → his
-choices are gone → **the newsletter publishes and looks completely correct.**
+| # | Item | Owner | Depends on | Acceptance test |
+|---|---|---|---|---|
+| 1 | **CI** — `.github/workflows/ci.yml` | Agent | — | A GitHub Actions run goes green on `npm test && npm run lint && npm run build` in `apps/editor-console`, plus item 2's test. Database tests are reported as skipped, never counted as passed. |
+| 2 | **Allocator guard** in `connectAirtable.js`: a `require.main === module` guard; `main()` refuses any issue date that already has IssueItems unless `--rebuild`; export the fetch/write helpers | Agent | — | `require()` with a stubbed fetch makes zero requests. A direct run against a date with rows exits non-zero, names the date, and issues zero DELETEs. `--rebuild` restores today's behaviour. |
+| 3 | **Write-back writer** `scripts/writeIssuePicks.js`: input is a picks file (`allocation.json` now, item 7's output later). Dry-run by default; `--apply`; `--ensure-issue` creates the Issues record; refuses if a row already exists for (date, section, slot); `--lock` sets `Lock=true` on exactly the written IDs after blurbs | Agent; the first live `--apply` needs Ariel's go and a bounded review (irreversible external write) | 2 | Dry run lists exactly the file's picks and 0 deletes. After apply: exactly one row per pick, each `Name` byte-equal to `` `${Section} Slot ${n} — ${date}` ``. A repeat apply refuses. After `generateBlurbs`, rows the writer didn't touch are byte-identical before and after. Lock sets exactly the written rows. A `connectAirtable.js` run refuses. `pushToBeehiiv` exports without throwing. `integrityCheck` is clean. |
+| 4 | **Repeatable producer**: lift `demo.js` + `prepare_inputs.py` into `scripts/issue-build/`, parameterised by issue date. Includes the form-URL exclusion (Decision_Log §101). **Keep `render()` and the preview** until the console has served a real week. | Agent | — | Two different issue dates build from the CLI with no tracked-file edits. The manifest records the git SHA, a prompt-*template* hash and a repair receipt. 0 shortlist URLs match `forms.gle` or `docs.google.com/forms`. Thin supply stops the run before publish. Each run's receipt carries a human-review line. |
+| 5 | **Console date fix**: date-only events show the correct date and no time | Agent (console code; tell Nate) | — | A fixture event dated `2026-10-17` renders Oct 17 with no time, in the Toronto timezone. |
+| 6 | **Run the existing console suites** | Agent | 1 | `npm test` passes. The integration suite runs against an isolated Neon branch, or it is recorded as not run. |
+| 7 | **Submission → Airtable bridge**: read the latest submitted revision from Postgres, validate the final lineup against the allocator's rules, map it to the picks shape, feed item 3 | Agent | 2, 3; Neon credentials from Nate | A fixture submission maps exactly to its final state. Two same-venue picks in one section are refused, naming the slot. A build-identity mismatch is refused (W1). Replaying an applied submission is refused. Slots marked under D0 are skipped. |
+| 8 | **D0: how the console handles outside-pool events** | **Ariel** (product call; ideally checked with the editor) | — | Written in Decision_Log, with the console change it implies handed to Nate. |
+| 9 | **D2: replacement checks against the current lineup, plus the assessment matrix** (`buildAssessmentMatrix()`) | **Ariel** | 8 | Swaps in the same slot and in different slots; a newly created venue conflict is refused in the console and yields no pair; undo; an invalid final lineup is refused at submit; D0 slots yield no pair. Before writing it, read `lib/contracts.ts`, `lib/mock-issue.ts:33-70` and `lib/draft-domain.ts:103-133`. |
+| 10 | **Bundle + publish** (`to-bundle.js`, `publish-build.ts`) | Agent, around Ariel's item 9 | 4, 9 | A real build loads in the console. A bundle missing a section or carrying `"unclassified"` is rejected at publish. The `UNIQUE (bundle_hash)` conflict is handled. Publish refuses while another build for the same issue has an editable draft. |
+| 11 | **Hosting + auth** (HTTP Basic over TLS, `/api/*` included) | **Nate** | 10 | Unauthenticated page and API requests both return 401. The authenticated real build renders and survives a browser restart. `publish-build` from Ariel's laptop reaches the same database. |
+| 12 | **Operating message to the editor**: operator-supported V1, Ariel triggers runs, no scheduling, the console covers 3 sections, LA/TMR unchanged, the D0 behaviour, link-open recording (TODO-6) | Ariel sends; an agent drafts | 8 | Sent before the first live Sunday. |
+| 13 | **Live Sundays**: the preview is still sent as a fallback until one succeeds | Ariel + editor | 7, 10, 11, 12 | He submits in the console. Item 7 applies it. Blurbs, lock and export run clean. **Final check (Ariel):** join the published issue against the submitted lineup; every gap is explained by D0 slots or LA/TMR. |
 
-`[REVIEW docs/r8/R8_Scope.md:138-140 §4 failure mode 1]`
-
-This is the only defect in the whole set that does not announce itself, and it is client-facing. It
-is why the Airtable write-back is step 1 and not step 5: a scripted, locking write removes the
-failure by construction, where a manual Sunday transcription depends on remembering.
-
-Write order is fixed by Decision_Log §96: **write picks → `generateBlurbs` → lock.** Not lock-first.
-`pushToBeehiiv.js:209` filters items missing `DisplayTitle`/`Description`/`CTA` and **throws before
-rendering** — a loud failure, not a blank bullet. `[VERIFIED Execution_Log.md — this was a
-previously-propagated error, corrected in 5fc3be7]`
-
----
-
-## 4. Execution order
-
-Each step states its owner and its verification. Verification is written **before** execution
-(project rule: define acceptance before implementing).
-
-### Step 1 — Export the write functions, write demo picks to Airtable · **Ariel + Claude · ~2h**
-
-Add `module.exports` to `connectAirtable.js`. New `scripts/writeDemoPicks.js`: read a run folder's
-`allocation.json`, fetch Issues + Candidates for the maps, call `writeIssueItems`, then
-`writeSelectionNotes`. **Never** call `deleteUnlockedIssueItems`. Dry-run by default, `--apply` writes.
-
-**Verify:** dry run prints 15 picks matching the run's `editor_preview.html`; after `--apply`,
-Airtable IssueItems match for all three sections; a subsequent R1 run does **not** delete them
-(because they are locked); `generateBlurbs.js` populates copy; `pushToBeehiiv.js` exports without throwing.
-
-**Lands finish-line item #3.**
-
-### Step 2 — Two defect fixes that work by construction · **Claude · ~30min**
-
-- Reject any candidate URL on `forms.gle` / `docs.google.com/forms` before ranking. Most reliably
-  recurring defect in the set; hand-removed twice. `[REVIEW #133 2026-09-26 item 5]`
-- Make `sections` a fixed three-key **object** in `makeSchema()` so a duplicated section object is
-  impossible rather than caught-then-repaired. `[REVIEW #133 2026-09-26 item 2]`
-
-**Verify:** a replay of v5's saved `response.json` through the new schema rejects at parse; no
-Unionville form link appears in a fresh run's shortlist.
-
-### Step 3 — De-hardcode the producer · **Claude · ~4h**
-
-Lift `demo.js` + `prepare_inputs.py` into `scripts/issue-build/`, CLI-parameterised. **Delete
-`render()`** and the HTML/MD preview — the console replaces it, and that removes ~30 lines of
-hard-coded labels plus the date-sensitive render tests. `[REVIEW]`
-
-⚠️ Two traps. `codeIdentity()` must hash the prompt **template**, not the substituted text, or every
-week aborts as "code changed" `[REVIEW demo.js:113]`. And once code is shared across runs,
-`codeIdentity()` can no longer reproduce a past run's hash — which is the guarantee `RUNS.md` rests
-on ("never edit an older folder to rerun it"). **Decide what replaces that guarantee.** `[REVIEW]`
-
-**Verify:** one full run for a fresh issue date with **zero file edits**.
-
-### Step 4 — `to-bundle.js` + publish · **Ariel writes the matrix · Claude the rest · ~5h**
-
-⚠️ **This is not a field mapping.** `alternatives()` `[REVIEW demo.js:99-112]` returns
-`replaceable_slots: number[]`, computed only as alternative-vs-each-current-pick. The console needs
-`replacementAssessments[X][Y]` over **all ordered pairs of `selected ∪ alternatives`**, because
-`draft-domain.ts:129-133` `[REVIEW]` puts the displaced pick back into `alternatives` — so a second
-replace in the same slot looks up a pair that was never evaluated. Those pairs must be **computed**
-by re-invoking `accepted()`/`buildIssues`. Missing pair → `draft-domain.ts:111-116` throws
-"The assembly bundle did not assess this replacement." `[REVIEW]`
-
-**Ariel authors `buildAssessmentMatrix()`.** It is the one piece where a subtle error is silent
-until a real user hits it mid-session. Before writing it, read `lib/contracts.ts`,
-`lib/mock-issue.ts:33-70` and `lib/draft-domain.ts:103-133` directly — about 200 lines.
-
-Then `publish-build.ts`, a copy of `scripts/seed-demo.ts`, inserting into the existing
-`issue_builds` table. Three traps `[REVIEW]`:
-
-- `UNIQUE (bundle_hash)` `[REVIEW 0001_editor_console.sql:13]` is **not** covered by seed-demo's
-  `ON CONFLICT (issue_key, build_version)`. Compute a real content hash; handle that conflict
-  separately. The fixture's hash is the literal string `"fixture-2026-09-17-v2-raw-copy"`.
-- `issue_builds_are_immutable` trigger `[REVIEW 0001:70-80]` — a mis-published build cannot be fixed
-  or deleted, only superseded by a new `build_version`.
-- **No build selector exists.** `app/page.tsx` → `loadLatestWorkspace()` orders by
-  `issue_date DESC, build_version DESC` `[REVIEW workspace-store.ts:311-320]`, so publishing week
-  N+1 silently moves the editor off an unsubmitted draft on week N. `loadWorkspaceForBuild()` exists
-  but nothing reachable calls it. **Decide: accept, or add a selector.**
-
-Also: `createSubmission` iterates `sectionIds` with no guard `[REVIEW draft-domain.ts:446-447]` — a
-bundle missing any of the three sections throws at **submit**, not at publish. And
-`provenanceComplete` requires `classification === "classified"` on both sides
-`[REVIEW draft-domain.ts:368-369]` — emit `"unclassified"` anywhere and that slot yields **zero
-training pairs, silently**, which is the entire stated point of the console (`R8_Scope.md` §1).
-
-**Verify:** publish → console loads real picks → replace succeeds on every slot → **a second replace
-on the same slot succeeds** (this is the matrix test) → undo restores → submit produces a
-qualifying training pair.
-
-### Step 5 — Host it · **Nate · ~2h of his time**
-
-Vercel + Neon + env vars. ADR 0003 settled that **Nate picks and operates the host**
-`[REVIEW docs/r8/R8_Scope.md §2]` — so this is his, not Ariel's. He has said it would be quick.
-
-Auth: `middleware.ts` with HTTP Basic over TLS against one env var, matcher covering everything
-except `/_next` and static — **`/api/*` included**, since the mutations create durable state. Not
-ADR 0008's signed-session system, which is still `Status: Proposed` and unapproved `[REVIEW]`, and
-which `R8_Scope.md:322` puts out of scope anyway. Record as an ADR 0008 amendment; note the accepted
-downsides (no logout, no rate limiting).
-
-**Do not ship without auth.** The console serves unpublished candidate data with none today.
-
-**Verify:** `curl` the deployed page and a `POST /api/drafts/.../commands` with no credentials →
-both 401.
-
-### Step 6 — One full weekly run, timed · **Ariel · ~2h**
-
-Ingestion → producer → publish → editor session → write-back → export. Time it. **That is
-finish-line item #5** (hours per issue), and the before-number is already available.
-
-Budget a second run: this is the first time migrations, the publish CLI, the UI and submit ever meet.
-
-### Step 7 — CI · **Claude · ~20min**
-
-`.github/workflows/ci.yml` running `npm test && npm run lint && npm run build`. Credential-free, so
-no secrets. Retires the "never independently run" premise permanently, and it is an existing W7
-deliverable (Acceptance #17) `[REVIEW docs/r8/R8_Scope.md:200-203]`.
-
-Also, before Step 4: spend 20 minutes **running** the existing suites rather than reading them.
-Nate's training-pair logic has five dedicated unit tests plus an integration test `[REVIEW
-draft-domain.test.ts:67,86,126,167,192; workspace-store.integration.test.ts:274]` — it is the
-best-covered path in the commit, not the riskiest. The genuinely unverified surface is
-`workspace-store.ts` (968 changed lines) and migration `0002` (89 lines of ALTER plus a cross-join
-backfill). In particular `rowToSubmission` `[REVIEW workspace-store.ts:141-156]` overlays column
-values onto the stored snapshot JSON, so a column/bundle divergence is reported as the column value
-and nobody sees it.
+**Items 1, 2, 4 and 5 have no dependencies and can go to agents in parallel.**
 
 ---
 
-## 5. Open decisions — Ariel's, and they block the steps that need them
+## 4. Decisions that are Ariel's
 
-Five are still literally `*Answer:* ______` in `docs/r8/R8_Scope.md:248-256` `[REVIEW]`. An
-autonomous run would guess at these.
+**Blocking:**
+- **D0. Outside-pool events** (blocks items 9, 10 and 13). Options:
+  - (a) a per-slot "I'll fill this myself" tap: the slot leaves write-back and preference evidence, and he fills
+    it in Beehiiv as today. A small change for Nate.
+  - (b) he adds outside events to Airtable before the build. This costs his time and moves the hours number.
+  - (c) a manual-insert field in the console. R8 excluded this.
+  - *Claude's lean:* (a).
+- **D2. Replacement checks** (blocks item 10). Claude's earlier "advisory matrix, validate at write-back" was
+  **rejected by both audits**: write-back refusal protects Airtable, but the preference pairs are stored as
+  feasible during submission. The lineup-dependent rules are only one venue per section and no event in two
+  sections. A check over those two, against the current draft, closes the gap. Whether a TypeScript check
+  counts as "restating rules in a second planner" (R8_Scope §5) is Ariel's call.
+- **Finish-line thresholds:** see §5.
 
-| # | Decision | Blocks |
-|---|---|---|
-| TODO-3 | **K** — how many alternatives the console shows | Step 4. `alternatives()` returns ~20/section; `editor_preview` rendered only the first 5. Changing K breaks recall comparability against v2b's 8/15 — the only measured number — because `R6_Scope.md:45-47` pins the join to picks plus **on-screen** alternatives. `[REVIEW]` |
-| TODO-4 | What orders the alternatives | Step 4 |
-| TODO-1 | Pipeline hosting migration | Step 5 scope; #62 is explicitly a post-R8 gate `[REVIEW R8_Scope.md:348]` |
-| TODO-5, TODO-8 | (read them) | — |
-| — | Build selector: accept the silent-overwrite risk, or add one | Step 4 |
-| — | What replaces `codeIdentity()`'s per-run reproducibility guarantee | Step 3 |
-| — | Republication: look-back depth, and drop vs demote | deferred (§7) |
-
----
-
-## 6. What "V1 shipped" means under this plan
-
-Say this out loud so the finish line is not later read as more than it was:
-
-- The editor uses a hosted console on a real issue, and his submitted picks reach Airtable through a
-  **scripted, locking** write-back.
-- "R7 in the live path" means the model's ranking reached him and his decisions reached the export —
-  **not** that reconciliation is proven against interruption, retries or partial failure.
-- The measured number is hours per issue before/after, plus recall when the scoring debt is paid.
-
-Full W6 (Acceptance #8's four tested interruption points, run receipts, convergence) is V1.1.
+**Defaults** (no decision needed unless Ariel objects):
+- K = 5, matching the rendered slate and keeping Decision_Log §100 comparable.
+- Ordering per Decision_Log §102, labelled "suggested".
+- TODO-5: use the producer in the first console issue.
+- TODO-6: disclose link-open recording.
+- TODO-1: the pipeline is not hosted for V1; Ariel triggers runs.
+- LA/TMR stay in Beehiiv, not Airtable. This also defuses the blurb overwrite.
+- Build currentness: enforced by item 10's publish refusal.
+- Producer reproducibility: store inputs, the raw and reviewed responses, the correction receipt, the SHA and the
+  template hash. Replay saved responses; never promise identical LLM output.
 
 ---
 
-## 7. Non-goals — do not re-expand these
+## 5. Finish-line tests
 
-A reviewer put the fully-scoped version of this plan at **25–35h, plus 10–15h for full W6**. The cuts
-below are what makes ~12–16h real. Each is deferred, not forgotten.
+The five items (Notion, "NLAP — the finish line"): R6 done · R8 shipped · R7 in the live path · editor using it on
+real issues · one number measured. Thresholds are left blank because pass/fail is Ariel's authored decision.
 
-- **Authoring `scripts/r6/config/*.json`** (15 blank weights + the attribute schema). Keep
-  `lib/assemble.js` as a *reference* for assessment semantics; import nothing.
-- **Full W6** — interruption testing, run receipts, reconciliation convergence. #138.
-- **ADR 0008's session auth.** Basic over TLS instead.
-- **The four producer validators** — mandatory unique quotes, self-disavowal, republication filter,
-  pre-call fill guard. See §8 for why the first two do not work as originally specified. Hand repairs
-  are loud and annoying, not dangerous.
-- **Recall scoring for v3/v4b/v5.** No script exists; v2b's 8/15 was computed by hand `[REVIEW]`.
-  The join must honour the first-5-alternatives render slice. ~4–6h for two runs. #133.
-- **The coverage fix (the 40%).** Real and important; not a ship blocker. #128/#114/#124/#93.
-- **Series/occurrence identity modelling**, an `override` assessment status, start-time parsing out
-  of description text.
-- **Scheduling / unattended ingestion.** #62, already a post-R8 gate.
+- **R6 done:** for `TODO(ariel): N` consecutive weekly issues, (1) the slate comes from item 4's CLI with the
+  issue date as the only input, no tracked-file edits, and a human-review receipt; and (2) the rendered-slate join
+  (Decision_Log §100) is ≥ `TODO(ariel): floor` on each. Reference series: 8/11/8 `[ROUGH]`. This closes an
+  operator-supported producer; it does not prove ranking quality improved.
+- **R8 shipped:** items 10–11 pass, and item 13 succeeds once.
+- **R7 in the live path:** already true in substance via the producer's input. Formally passes when item 13 runs
+  on a slate built from R7 scores.
+- **Editor using it on real issues:** item 13 succeeds on `TODO(ariel): N` issues.
+- **One number measured:** the instrument is Ariel's choice.
+  - (a) re-ask the 2026-05-14 question ("total time per issue, research + writing", ~4h self-reported) after V1
+    issues. Cheap. Helper status at baseline was never captured, so the comparison is self-reported and the
+    labour conditions may differ.
+  - (b) time one untreated issue plus V1 issues on the same boundary (active editorial time, all 5 sections,
+    helper and Ariel support recorded separately).
+  - Either way it passes when before and after exist on the **same instrument** and are recorded in
+    `NA/Vaughan_Metrics_Log.md` with the wording and date. The value is not a gate. The metrics log's current
+    "pipeline elapsed time" after-method measures a different quantity and must not be used.
 
 ---
 
-## 8. Falsified claims — do not rebuild these
+## 6. Non-goals
 
-Each was asserted during planning and disproved. They are listed so a cold session does not
-re-derive them from the same docs that produced them.
+Deferred, not forgotten:
+- Authoring `scripts/r6/config/*.json`, and the duplicate-section schema redesign
+- Full W6 (#138: interruption testing, run receipts, convergence)
+- ADR 0008 session auth
+- New producer validators
+- The coverage fix (#128/#114/#124/#93)
+- Series/occurrence modelling and a republication policy
+- Scheduling and unattended ingestion (#62)
+- CTOR and click work
+- A build-browsing UI
+- Wholesale Airtable cleanup
+
+## 7. Assets with no V1 role
+
+- `scripts/r6/` (reference only, Decision_Log §102)
+- `connectAirtable.main()` (a hazard to guard; only its write helpers are used)
+- The R7 Label Deck *tools* (pushLabelDeck, pushLiveDemo30, readLiveDemoRulings, reconcileR7Step1c/4b). Their
+  *artifacts* are runtime inputs; see §1.
+- `models/ranking/`
+- The click CSVs, `joinClicksData.js`, #116/#117/#139
+- `facebookSubmissionCheck.js` and #114
+- `fetchAllEventsDescriptions.js` and #108
+- n8n R2
+- The tinker-era issues in the R8 milestone (#22 #28 #29 #30 #31 #32 #36 #50 #67 #103), which predate the console.
+  Triage them before the milestone can serve as a V1 completeness gate.
+
+## 8. Open, not settled here
+
+- **Release structure** (Ariel's call; do not encode). Both audits recommend keeping R6 and R8 separate, with
+  V1 as a GitHub milestone across them. Whichever is chosen must update **both** discovery entry points:
+  Claude's `/start` glob, and the Codex start skill, which still names R7 (`.agents/skills/start/SKILL.md:22`).
+- **Who operates V1 after it ships.** The weekly loop needs Ariel each week (R1 trigger, R7 runner, producer,
+  review, publish, write-back). Unassigned.
+- **What the editor has agreed to.** The 08-20 meeting records his request for scheduled ingestion. The 08-27
+  file is a presentation script with its outcomes blank, so it doesn't record what he heard. Item 12 settles the
+  operating arrangement in writing.
+- **Nate's availability.** No repo activity since 2026-09-18. Communication status is unknown. `[UNVERIFIED]`
+- **Canonical-state candidates, not yet applied:**
+  - TODO-0 (R8_Scope §6) should be reopened, per §2.
+  - Decision_Log §103(a)'s "every producer defect is loud" has a hand-review exception (the v5 self-disavowed rows).
+
+## 9. Falsified claims: do not rebuild these
 
 | Claim | Why it's false |
 |---|---|
-| `scripts/r6/lib/assemble.js` is already W9 | Vocabulary matches, but nothing imports it, it has never run in scoring mode, and the working lineage bypasses it to wrap `buildIssues` directly. `[AGENT]` |
-| Mandatory unique verbatim quotes kill the borrowed-content class | Borrowed content lives in `reason`/`warnings`, which are **unvalidated free text**; only `evidence_quote` is checked. A quote stolen from a sibling already fails today — that is how v3's defects were caught. `[REVIEW #133 2026-09-26 item 3; v3 README D2: "a wrong-but-valid id with a copied quote would still pass silently"]` Closing it needs a schema change, not a validator tweak. Separately, uniqueness introduces a **false-positive** risk: BiblioCommons programme blurbs are boilerplate across sessions. |
-| "Zero hand repairs" via more asserts | Every defect that *was* detected was detected by a hard-failing assert and still required a hand repair. More asserts → more repairs. Zero needs deterministic auto-repair plus prompt/schema changes. `[REVIEW #133 2026-09-12 item 3: "Validation stops but cannot repair"]` |
-| A self-disavowal assert is mechanical | Half already exists (`demo.js:64`, ranked-and-excluded). The other half needs classifying free-text English; `reason` is typed as a bare `str`. The honest fix is a structured `disqualifying: boolean` — authored by the same model that wrote the contradictory reason. Unproven. `[REVIEW]` |
-| A republication filter catches the v5 repeat | `historyFor()` matches **exact URL only** `[REVIEW demo.js:30-36]`. The v5 miss was a Chef Upstairs *pasta dinner* against an Oct 1 *ravioli workshop* — different URL, filter silent. Ariel already named the right lever in #133: a `same_organizer_in_last_2_issues` field. |
-| Fabricated history refs are an open gap | Already caught by `demo.js:60`. `[REVIEW]` |
-| "Zero console data-layer changes needed" | True only single-build. See Step 4's three traps. |
-| Phase estimate of ~12.5h for the fully-scoped plan | Review put it at 25–35h. This doc's 12–16h is the **cut** version (§7), not the same scope re-estimated. |
-| Ariel sets up Vercel | ADR 0003 settled that Nate picks and operates the host. `[REVIEW]` |
-| CTOR is a one-way door | It's a Beehiiv dashboard export (`posts_by_date_*.csv`) carrying a literal Click-To-Open Rate column, full archive back to Feb 2025 in one pull. Nothing expires. **The metrics log's capture instruction is wrong** — it points at `issue_history.json`, which carries no stats at all. `[AGENT]` |
-| `docs/v1/V1_Scope.md` would orphan the logs | False as stated — the logs are in `logs/`, not `docs/`. The real (narrow) breakage is that `/start` derives `logs/R{N}_Log.md` from the release it finds. `[REVIEW]` |
-
----
-
-## 9. Completeness — what has NOT been examined
-
-**Read this section as the plan's biggest weakness.** §4's seven steps are what the planning
-session happened to look at. They are not the output of a sweep against "what does a finished,
-owned V1 actually require." Nobody has done that sweep.
-
-### Raw materials that exist and are reusable
-
-Facts, not recommendations. A completeness sweep should start by asking what each of these is
-*for* in a finished V1, and which have no role (and so are dead weight to be said out loud).
-
-**Pipeline, live:** R1 + R2 in n8n (`workflows/`); 11 ingestion sources; `buildIssues.js`
-(production allocator); `connectAirtable.js` (fetch + write + delete); `generateBlurbs.js`;
-`pushToBeehiiv.js`.
-
-**Model, live:** the R7 gate — `models/sectioning/live_runner.py`, Voyage `voyage-4-large`
-embeddings, frozen corpora, `scored_survivors.jsonl`. Three materialized runs exist.
-
-**Model, trained but unused:** the R7 Label Deck — 400+ editor rulings across 4 batches, plus
-`eval/step1c_reconciliation.json` and `step4b_reconciliation.json`. Measured editor
-self-consistency: 77% overall, **89% conditional on both-included** — a hard ceiling on any
-label-matching metric.
-
-**The console:** complete, fixture-only, 8 ADRs, three test suites, one unrun integration suite.
-
-**The producer:** 5 runs of receipts under `data/tracking/r6_demo/` with manifests, hashes,
-costs (~US$0.25/run) and hand-repair tables. `RUNS.md` indexes them.
-
-**Unused by design:** `scripts/r6/` (7 library modules + `run.js`), config worksheets blank.
-
-**Monitoring:** `postRunChecks.js` and its five sub-checks (`depthCheck`, `overlapAudit`,
-`integrityCheck`, `snapshotCandidates`, `facebookSubmissionCheck`). Read-only. One is stuck
-non-zero (§1).
-
-**Measurement data:** `data/beehiiv/issue_history.json` (90 issues through 10-01); two
-`link_clicks_*.csv` exports (latest 2026-07-07, so clicks end 2026-06-25, #139); a
-`posts_by_date_*.csv` carrying per-issue **CTOR for all 71 issues back to Feb 2025**;
-`NA/Vaughan_Metrics_Log.md`.
-
-**Editor evidence:** `docs/r6/R6_Editor_Feedback.md` (three recorded rounds: v1, v2b, v3);
-`meetings/` notes; v2b's measured 8/15 recall.
-
-**Decisions:** `docs/Decision_Log.md`, 101 entries. ~62 open GitHub issues.
-
-### Completeness questions already visible — and this list is deliberately NOT exhaustive
-
-The next session's job is to find what is **not** on this list. These are starting points, not
-the answer.
-
-1. **The console covers 3 of the newsletter's 5 sections.** Local Aroma and Trust Me Recipe stay
-   in Airtable, out of scope by decision (`R8_Scope.md` §8). So every week the editor works in
-   two places. **Nobody has asked whether a split workflow is better or worse for him than
-   all-Airtable.** If it is worse, "editor using it on real issues" could be satisfied and the
-   project still fail its actual purpose.
-2. **"Editor using it on real issues" is plural.** One timed run is not sustained use. How many
-   consecutive weeks does V1 require? Unscoped.
-3. **Nothing monitors the weekly run.** If the producer, the publish or the write-back fails on a
-   Sunday, what tells anyone? The health-check suite covers ingestion, not this new path.
-4. **No handover artifact exists.** #49 (Airtable cleanup + client orientation SOP) and #61
-   (client-replication playbook) are open and unscoped. "Done and owned" may require one.
-5. **What happens when the editor is away**, or someone else runs the issue. No procedure.
-6. **The client has not visibly agreed to any of this.** No record of a conversation about the
-   console, the hosting, or where the data lives. `[UNVERIFIED]`
-7. **The committed delivery date (2026-09-08) passed a month ago** and is recorded nowhere as
-   renegotiated `[REVIEW R8_Scope.md:337]`. What the editor currently believes is unknown.
-8. **Nate's role after Step 5 is undefined.** `R8_Scope.md:333` notes he never confirmed a start
-   and no checkpoint fires until he does `[REVIEW]`.
-9. **Two of the five finish-line items have no acceptance test written** — "R6 done" and "one
-   number measured" are stated as outcomes, not as tests that can pass or fail.
-
----
-
-## 10. Not yet recorded anywhere
-
-The planning session wrote **only this file**. These remain unpersisted:
-
-- The R6+R8 → V1 collapse, and the V1 authorship split → `docs/Decision_Log.md`
-- `docs/r8/R8_Scope.md` §0 refresh + a pointer line in `docs/r6/R6_Scope.md`
-- `Execution_Log.md` session entry, `CHANGELOG.md`
-- **`NA/Vaughan_Metrics_Log.md`: the CTOR capture instruction is actively wrong** (see §8)
-- `docs/r7/R7_Scope.md` §0 contradicts `R7_Closeout_Checklist.md` (says the readout is next; the
-  checklist settled Fork C / 4c / #108 on 2026-09-04)
-- `logs/R6_Log.md` "Next" and `RUNS.md` were stale on v3's sent status (now superseded anyway)
-- Issues: close **#110** as duplicate of #117; retitle #117 (not a one-way door); file the
-  `postRunChecks.js` pinned-exit-code bug; file the self-disavowed-rows defect class; **#135 and
-  #136 are implemented but still open**
-- `/start` already reads `docs/r5/` and `docs/r7/` Scopes as open releases — pre-existing, worth two
-  minutes `[REVIEW]`
-- `CLAUDE.md:72` and `AGENTS.md:72` hardcode `docs/r8/R8_Scope.md` as "the active delivery path";
-  retitling it stales those lines `[REVIEW]`
-- A post-project retrospective task (what Ariel authored vs agent-written, and what goes on the
-  résumé) — Notion, one line, Ariel adds it
+| `scripts/r6/lib/assemble.js` is already W9 | Nothing imports it, and it has never run in scoring mode. |
+| Adding `module.exports` to `connectAirtable.js` is "one line" | The import runs `main()` (§1). |
+| A scripted write removes the deletion risk "by construction" via Lock | Nothing sets Lock. The protection is item 2's guard; Lock is a second layer. |
+| Step 1 "lands R7 in the live path" by writing to Airtable | R7 already feeds the preview. The Airtable path is dormant. |
+| A complete pair matrix makes replacements correct | Validity depends on the current lineup (§1). |
+| An advisory matrix plus write-back validation is enough | The preference pairs are already stored as feasible (§4 D2). |
+| TODO-0 is resolved | Ordinary outside picks are not covered by the sponsorship premise (§2). |
+| The Label Deck has no V1 role | R7's gate fits on it at runtime. |
+| The editor stopped using the slate when he stopped replying | Published overlap of 8–11/15 vs a 2/15 control (§1). |
+| Recall scoring costs 4–6h | A rough join took about 15 minutes. The formal Decision_Log §100 version remains #133. |
+| Mandatory unique quotes kill the borrowed-content class | That content lives in unvalidated free text (`reason`/`warnings`). |
+| "Zero hand repairs" via more asserts | Asserts stop the run but repair nothing. |
+| A republication filter catches the v5 repeat | `historyFor()` matches exact URLs only. |
+| Ariel sets up Vercel | ADR 0003 and Decision_Log §103(b): Nate. |
+| CTOR is a one-way door | It is a retroactive Beehiiv `posts_by_date` export. |
