@@ -2403,3 +2403,20 @@ replaces ADR 0008's unapproved signed-session design.
 the weekly run; or whether the console covering 3 of the newsletter's 5 sections produces a split
 workflow worse for the editor than all-Airtable. All three are unexamined — see
 `docs/v1/V1_Ship_Plan.md` §9.
+
+---
+
+## 104. V1 Proceeds in Dependency Order, Not Against a Date (2026-10-10)
+
+**Decision:** the Oct 31 target and the 12–16h budget no longer drive V1 scope. Work runs in dependency
+order and is delegated to agents wherever the authorship split allows. Ariel's call, 2026-10-10.
+
+**Why:** both independent audits of the ship plan concluded that no complete V1 package fit the budget.
+Cutting scope to fit a date would have shipped a console that cannot express the editor's real issue
+(#146).
+
+**Accepted cost:** no committed finish date. The weekly 3 × 3h cadence (R8_Scope §0) becomes capacity,
+not a deadline.
+
+**What this does not decide:** the authorship split (unchanged), the release structure, or §103(a)'s
+ship-and-fix cut line, which still applies.

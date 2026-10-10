@@ -45,7 +45,8 @@ behind `R8_REQUIRE_INTEGRATION_DB=1` and has not been run against a database in 
 `scripts/seed-demo.ts` inserts that same fixture into PostgreSQL — so even production mode serves the
 fixture, durably. No real data path, no hosting, **no authentication of any kind**, no write-back.
 
-**TODO-0 is resolved: the premise holds.** Sponsored events go into a separate section, so no
+**TODO-0 is resolved: the premise holds.** ⚠️ *Contested 2026-10-10: ordinary picks also come from outside
+the pool. See `docs/v1/V1_Ship_Plan.md` §2 and #146, pending Ariel's D0.* Sponsored events go into a separate section, so no
 console slot is ever filled from outside the candidate pool.
 
 **Weight after Sept 13 (set 2026-09-17, Personal OS planning sitting):** NLAP holds at 3 × 3h/week.
@@ -54,10 +55,11 @@ done — its slate has reached the editor two weeks running — and what "done e
 R8" requires. Resolve in an NLAP session before encoding it anywhere as architecture. Hours re-checked
 against the log at the Sept 27 sprint boundary.
 
-**Next:** a read-only completeness sweep and audit of `docs/v1/V1_Ship_Plan.md` in a fresh session.
-That doc is the planning artifact for the remaining path to a first complete release — **it is a
-working doc, not a status source**, and its filename is deliberately outside `/start`'s
-`docs/r*/R*_Scope.md` glob, so this pointer is how it is found.
+**Next:** dispatch agents on `docs/v1/V1_Ship_Plan.md` §3 items 1 (CI), 2 (`connectAirtable.js` guard,
+#144), 4 (repeatable producer) and 5 (console date fix, #145). D0 (#146) blocks items 9, 10 and 13. That doc
+is the planning artifact for the remaining path to a first complete release — **it is a working doc, not a
+status source**, and its filename is deliberately outside `/start`'s `docs/r*/R*_Scope.md` glob, so this
+pointer is how it is found.
 
 **How R6 and R8 combine into a first complete release is deferred to that session and is not settled
 here.** A plan exists and Ariel approved it as a draft only; the release-structure question was
