@@ -2459,3 +2459,23 @@ method. The weekly comparison reports whether the exported copy was used.
 **What this does not decide:** whether V1 closes at Stage A or at the destination; whether the console may
 trigger the Airtable write (that reverses §96 and needs its own entry); what replaces the human sign-off on
 each slate.
+
+---
+
+## 107. The Weekly Comparison Counts a Programme, and Reports the Exact Date Beside It (2026-10-11)
+
+**Decision:** a published slot counts as supplied when the event was on the slate the editor saw, in any section
+and on any date of the same programme. The comparison (`scripts/weeklyComparison.js`, ship-plan item 13a)
+reports that count as the headline, with the exact-date count and the same-section count beside it. A similar
+title under a different link is never counted automatically; it is listed for a person. Ariel's call,
+2026-10-11. Amends §100.
+
+**Why:** the number exists to show whether the system supplies events the editor uses. A different showing of a
+programme we offered answers that with yes. Reporting the stricter counts beside it keeps the looser one from
+hiding anything.
+
+**Accepted cost:** the headline can overstate by the rows where he chose a date we did not offer. No such row
+occurred in the five issues scored.
+
+**What this does not decide:** whether different-link matches are ever counted automatically, or which count
+goes in the metrics log.

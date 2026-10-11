@@ -61,9 +61,19 @@ against the log at the Sept 27 sprint boundary.
 test. The producer's live `prepare --fetch-pages`, `call` and `finalize` path ran
 on 2026-10-11 for the 2026-10-15 issue: v6 stopped on the thin-supply gate, v6b was signed off by Ariel and sent.
 
-**Next:** ship-plan items 3 (write-back writer; confirm its `Name` format first, and its first live
-`--apply` needs Ariel's go) and 6 (run the console suites) are now unblocked, as are 4a (pipeline chain) and 13a (weekly
-published-vs-confirmed comparison). The ship plan's new §0 states the destination (an editor-run week) and
+**Built and tested 2026-10-11, none yet run live:** item 3 (`scripts/writeIssuePicks.js`, #149; its one
+read-only dry run resolved all 15 v6b picks and found no Issues record for 2026-10-15), item 4a
+(`scripts/issue-build/runWeek.js`; stubbed stages only, and it checks R1, it does not run it) and item 13a
+(`scripts/weeklyComparison.js`; reproduces the hand-scored 8 of 15 for 2026-09-17, counting rule in
+Decision_Log §107). Item 6: the console unit suite passes (16 passed, 2 skipped); the integration suite is
+still not run. **Item 10 is half built:** `scripts/issue-build/to-bundle.js` converts a run folder to the
+console contract and **refuses every real run**, because the producer does not supply `build_version`,
+`seriesId`, `classification`, or a description for every event (ship-plan item 10a, #150). `publish-build.ts` does
+not exist.
+
+**Next:** ship-plan item 10a (the four missing fields) and item 9 (Ariel's replacement checks and assessment
+matrix) stand between the producer and a real build loading in the console. Item 3's first live `--apply`
+still needs Ariel's go and its own bounded review. The ship plan's new §0 states the destination (an editor-run week) and
 stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
 **where V1 closes is not settled.** D0 is chosen (Decision_Log §106), so it no longer
 blocks items 9, 10 and 13. That doc

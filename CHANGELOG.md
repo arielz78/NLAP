@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-10-11
+- Built the connectors between the weekly ranking build, the review console and Airtable: one command that runs the week's build stages and resumes after a failure without repeating a paid call, a create-only writer for confirmed selections that is dry-run by default, and a converter from a build into the console's data contract. An independent review found two silent-failure paths; both were fixed with tests before commit.
+- Added a weekly check that compares each published issue with the slate that was sent. It reproduced an earlier hand-scored result exactly and reports uncertain matches for a person instead of guessing.
 - Ran the first live week through the repeatable ranking producer, end to end from a fresh candidate snapshot to a reviewed, signed-off slate. The run exposed a gap between the prompt's soft target and the producer's hard minimum per section; the prompt now states the minimum, and two new data-driven repair operations (each with a test) cover response defects the first run surfaced.
 - Ran a third, whole-product review round with two independent reviewers and consolidated it into the release plan: the plan now states the finished weekly workflow end to end, stages it as operator-run first and editor-run second, and adds a weekly check comparing each published issue with the lineup the editor confirmed.
 - Added continuous integration: every push now runs the editor console's tests, lint and build and the pipeline's script tests on a clean machine, with database tests reported as skipped rather than counted as passed.

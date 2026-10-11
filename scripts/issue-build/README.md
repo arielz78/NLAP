@@ -30,6 +30,47 @@ reports one defect in the model response, you record the repair in the run folde
 **A human reviews every slate before it is sent.** `RECEIPT.md` and `run_manifest.json` say so in every
 run and stay unsigned until `signoff` writes `human_review.json`.
 
+## One command for the week
+
+`runWeek.js` runs the prerequisites and the first three steps above in order, for one issue date:
+
+```
+node scripts/issue-build/runWeek.js --issue 2026-10-22
+```
+
+| # | Stage | What it runs | Skipped when |
+|---|---|---|---|
+| 1 | `snapshot` | `scripts/snapshotCandidates.js` | a snapshot under 24 hours old exists, or the issue's R7 folder names one |
+| 2 | `r1-freshness` | nothing: a check on the snapshot | `--skip-r1`, or the snapshot is already scored |
+| 3 | `history` | `scripts/fetchBeehiivHistory.js` | the history already runs through the previous issue |
+| 4 | `r7-score` | `models/sectioning/live_runner.py`, once, with its paid embedding calls | `scored_survivors.jsonl` exists |
+| 5 | `prepare` | `issueBuild.js prepare --fetch-pages` | the run folder holds a request |
+| 6 | `call` | `issueBuild.js call` (the paid model call) | the run folder holds a response |
+| 7 | `finalize` | `issueBuild.js finalize` | the preview is rendered |
+
+It stops at the first failing stage, names it, and leaves earlier outputs in place; rerunning the same
+command resumes there. A paid call whose output is on disk is never repeated, and a run folder that
+records a call with no response is refused, not called again. It never runs `signoff`.
+
+**It checks R1; it does not run it.** R1 has only a manual trigger in n8n, so nothing here can start it.
+If the newest candidate in the snapshot is more than 24 hours older than the capture, the command stops
+and asks you to run "NLAP R1" in n8n. `--skip-r1` builds on the snapshot anyway.
+
+Exit codes: 0 preview rendered · 1 a stage failed · 2 thin supply · 3 the validation stop (record the
+repair in `corrections.json` and rerun). Other flags: `--snapshot <stamp>`, `--version vN` (required when
+a date already has several run folders), `--no-fetch-pages`, `--r1-max-age-hours N`, `--python <path>`.
+
+Tested with stubbed stages only; it has not yet run a real week end to end.
+
+## Console bundle
+
+`to-bundle.js <run folder>` converts a finished run into the editor console's `IssueBuild` contract
+(`apps/editor-console/lib/contracts.ts`) and writes `bundle.json` into the run folder. It refuses, and
+writes nothing, when a required field cannot be filled from the run folder. **It refuses every real run
+today:** the producer does not yet supply `build_version` (run manifest), `seriesId` or `classification`
+(ranking packet), and some events have no description. The replacement assessment matrix is an empty
+`TODO(ariel)` seam (ship-plan item 9), so a converted bundle allows no swaps until that is written.
+
 ## Replay (no model call, no page fetch)
 
 Rebuilds a week from a saved response. Runs `prepare` and `finalize`, never `call`:
@@ -122,3 +163,9 @@ repair is the form-link rule below. Nothing else is repaired without a person (D
 ## Tests
 
 `node scripts/issue-build/issueBuild.test.js` — offline; fixture dates are offsets from the issue date.
+
+`node scripts/issue-build/runWeek.test.js` — offline; every stage is a stub, so no snapshot, embedding
+call or model call happens.
+
+`node --test scripts/issue-build/to-bundle.test.js` — offline. Its check against the console's TypeScript
+contract needs `apps/editor-console` installed and skips itself otherwise (it is skipped in CI).
