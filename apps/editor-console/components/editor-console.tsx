@@ -18,19 +18,7 @@ import {
   createReopenedDraft,
   createSubmission,
 } from "@/lib/draft-domain";
-
-const dateFormatter = new Intl.DateTimeFormat("en-CA", {
-  weekday: "short",
-  month: "short",
-  day: "numeric",
-  timeZone: "America/Toronto",
-});
-
-const timeFormatter = new Intl.DateTimeFormat("en-CA", {
-  hour: "numeric",
-  minute: "2-digit",
-  timeZone: "America/Toronto",
-});
+import { formatSchedule } from "@/lib/format-schedule";
 
 const issueDateFormatter = new Intl.DateTimeFormat("en-CA", {
   month: "long",
@@ -51,11 +39,6 @@ function commandBase() {
     clientEventId: crypto.randomUUID(),
     occurredAt: new Date().toISOString(),
   };
-}
-
-function formatSchedule(startsAt: string) {
-  const date = new Date(startsAt);
-  return `${dateFormatter.format(date)} · ${timeFormatter.format(date)}`;
 }
 
 function Icon({ name }: { name: "arrow" | "check" | "clock" | "link" | "undo" }) {
