@@ -28,6 +28,55 @@ provenance tag.
 
 ---
 
+## 0. Destination and staging (Ariel, 2026-10-11)
+
+Set after a third audit round (Claude and Codex each reviewed the whole product cold, then Codex reviewed the
+merged result; no blockers). This section is the target; §3 is the work that gets there.
+
+**Destination — the editor runs the week himself:**
+
+1. He opens the console and clicks **Build this week**. R1 → R7 → R6 run unattended.
+2. The slate appears: 5 picks and ordered alternatives for Families, Couples and Golden Age.
+3. He reviews: keep, swap, mark a slot "I'm filling this myself", or write a note and get fresh picks from that
+   week's pool (item 4b).
+4. He presses **Confirm**. Nothing downstream runs before this.
+5. Automatically: his lineup is written to Airtable, blurbs are generated for those rows only and locked, and the
+   export file appears in the console.
+6. He pastes into Beehiiv and finishes there. **From the paste, Beehiiv is the final version**; a late change is
+   made in Beehiiv, not re-applied through the console.
+7. Friday, Ariel runs the comparison (item 13a): published issue against the confirmed lineup.
+
+**Stage A — the same flow with Ariel running the commands.** Steps 1 and 5 are operator commands, Ariel reviews
+and signs off each slate, and Ariel publishes the build to the console. Items 1–14 below are Stage A.
+
+**Stage B — the buttons.** Items 15–17. Every Stage A piece is built to run from a command first; Stage B calls
+those commands from the console.
+
+**Whether V1 closes at Stage A or at the destination is Ariel's call and is not settled here.**
+
+**What the audit round changed in the work map:**
+
+- **System-written blurbs are in (Ariel, 2026-10-11).** The audit round proposed testing first whether the
+  editor wants them, because he writes his own with a ChatGPT prompt and always rewrites generated copy
+  (`meetings/2026-04-13.md:76-78`, `2026-05-14.md:149`). Ariel declined the test: the blurb step has been
+  discussed with the editor at length and is built without a separate check. Item 13a still reports each week
+  whether the exported copy was used.
+- **No reopen-and-re-apply.** After the paste, corrections happen in Beehiiv and item 13a records them. The
+  console's reopen lifecycle has no consumer in this plan.
+- **The comparison is weekly, not a one-off final check.** It reports system-supplied share and copy use, so a
+  week where most slots were self-filled cannot pass silently.
+- **Time is measured by stage.** Only pool-building and picking-plus-copy are touched (about 2.25 of his 4 hours,
+  `meetings/2026-05-14.md:142-147`). Record editor, helper and Ariel's operator time separately.
+- **Corrections to §1:** R7's gate fits from local label-pull files (`gate_step4a.py:103-128`), so the files are
+  the runtime input, not the Airtable deck table. Kept picks do not become preference pairs; only explicit
+  replacements do (`draft-domain.ts:451-457`). The "4–7 of 15 outside the bench" figure is a no-URL-match count
+  (6, 5, 7 on 09-17, 09-24, 10-01) and is an upper bound.
+- **New fact:** all 268 candidates in the Oct 9–18 window are `Status=New` with no `SegmentSuggested`
+  (`candidates_2026-10-04_1500.json`), so `connectAirtable.js`'s planner allocates nothing on live data
+  (`buildIssues.js:53`, `:106-107`). The bridge must map confirmed selections to writer inputs itself.
+
+---
+
 ## 1. State, as corrected by the audit
 
 ### The live path is the weekly preview, not Airtable
@@ -115,6 +164,8 @@ Every acceptance test is written before its work.
 | 2 | **Allocator guard** in `connectAirtable.js`: a `require.main === module` guard; `main()` refuses any issue date that already has IssueItems unless `--rebuild`; export the fetch/write helpers | Agent | — | `require()` with a stubbed fetch makes zero requests. A direct run against a date with rows exits non-zero, names the date, and issues zero DELETEs. `--rebuild` restores today's behaviour. |
 | 3 | **Write-back writer** `scripts/writeIssuePicks.js`: input is a picks file (`allocation.json` now, item 7's output later). Dry-run by default; `--apply`; `--ensure-issue` creates the Issues record; refuses if a row already exists for (date, section, slot); `--lock` sets `Lock=true` on exactly the written IDs after blurbs | Agent; the first live `--apply` needs Ariel's go and a bounded review (irreversible external write) | 2 | Dry run lists exactly the file's picks and 0 deletes. After apply: exactly one row per pick, each `Name` byte-equal to `` `${Section} Slot ${n} — ${date}` ``. A repeat apply refuses. After `generateBlurbs`, rows the writer didn't touch are byte-identical before and after. Lock sets exactly the written rows. A `connectAirtable.js` run refuses. `pushToBeehiiv` exports without throwing. `integrityCheck` is clean. |
 | 4 | **Repeatable producer**: lift `demo.js` + `prepare_inputs.py` into `scripts/issue-build/`, parameterised by issue date. Includes the form-URL exclusion (Decision_Log §101). **Keep `render()` and the preview** until the console has served a real week. | Agent | — | Two different issue dates build from the CLI with no tracked-file edits. The manifest records the git SHA, a prompt-*template* hash and a repair receipt. 0 shortlist URLs match `forms.gle` or `docs.google.com/forms`. Thin supply stops the run before publish. Each run's receipt carries a human-review line. |
+| 4a | **Pipeline chain**: one operator command that runs R1 → snapshot → R7 live runner → producer `prepare`/`call`/`finalize` for an issue date, stopping at the first failing stage. Operator-run on Ariel's machine; not a console button (hosting stays deferred, §6). | Agent | 4 | One command with the issue date as its only input reaches the producer's validation stop or a rendered preview. A failure names the stage and leaves earlier stages' outputs intact. A rerun does not repeat a paid model call already recorded in the run folder. |
+| 4b | **Re-pick from the editor's note**: a second ranking call that takes his free-text request and returns picks from that week's pool only. Added 2026-10-11; not reviewed by either audit. | **Ariel** (prompt and what counts as a valid answer); Agent (plumbing) | 4 | Every returned id exists in that week's pool, or the run stops. The note and the response are stored in the run folder. A human reviews the result before it reaches the editor. |
 | 5 | **Console date fix**: date-only events show the correct date and no time | Agent (console code; tell Nate) | — | A fixture event dated `2026-10-17` renders Oct 17 with no time, in the Toronto timezone. |
 | 6 | **Run the existing console suites** | Agent | 1 | `npm test` passes. The integration suite runs against an isolated Neon branch, or it is recorded as not run. |
 | 7 | **Submission → Airtable bridge**: read the latest submitted revision from Postgres, validate the final lineup against the allocator's rules, map it to the picks shape, feed item 3 | Agent | 2, 3; Neon credentials from Nate | A fixture submission maps exactly to its final state. Two same-venue picks in one section are refused, naming the slot. A build-identity mismatch is refused (W1). Replaying an applied submission is refused. Slots marked under D0 are skipped. |
@@ -124,7 +175,11 @@ Every acceptance test is written before its work.
 | 11 | **Hosting + auth** (HTTP Basic over TLS, `/api/*` included) | **Nate** | 10 | Unauthenticated page and API requests both return 401. The authenticated real build renders and survives a browser restart. `publish-build` from Ariel's laptop reaches the same database. |
 | 12 | **Operating message to the editor**: operator-supported V1, Ariel triggers runs, no scheduling, the console covers 3 sections, LA/TMR unchanged, the D0 behaviour, link-open recording (TODO-6) | Ariel sends; an agent drafts | 8 | Sent before the first live Sunday. |
 | 13 | **Live Sundays**: the preview is still sent as a fallback until one succeeds | Ariel + editor | 7, 10, 11, 12 | He submits in the console. Item 7 applies it. Blurbs, lock and export run clean. **Final check (Ariel):** join the published issue against the submitted lineup; every gap is explained by D0 slots or LA/TMR. |
+| 13a | **Weekly comparison** (added 2026-10-11): after each issue publishes, join it against the confirmed lineup. Operator-run on Fridays. | Agent builds; Ariel runs and reads | 4; `fetchBeehiivHistory.js` | For 15 slots it reports: confirmed and published, changed after confirm, self-filled, and outside the pool; plus whether the exported copy was used. The join keeps occurrence identity (the same URL can carry several dates). Ambiguous matches are listed for a human, not guessed. |
 | 14 | **Page enrichment for the ranker** (#147, added 2026-10-11): replace the tag-strip in `fetchPages` with real extraction (structured event data, falling back to the main content block). Runs after R7, on the shortlist, so R7's validated input is unchanged (#108 stays separate). Today the fetch covers only shortlisted events with a source description under 120 characters, top 24 by R7 score (18 of 24 were Pinot's Palette on Oct 8); it keeps all visible text including navigation; the model sees the first 3,000 characters (23 of 24 pages were cut); blurbs never read it. `[VERIFIED issueBuild.js:234, :251-264; v5 page_evidence.json]` | **Ariel** decides what to extract, how many pages and the per-page cap (it changes what the ranker sees); an agent builds the extractor | 4 | `TODO(ariel)` |
+| 15 | **Stage B — hosted pipeline**: one small server set up as a copy of Ariel's machine (the n8n container, the R7 Python environment and its cached files, the producer, the same folders), so item 4a's command runs there unchanged. | Nate (host) with Ariel (the live n8n workflow, #141) | 4a; #141 settled | Item 4a's command completes on the server for a real issue date with no laptop involved. Its output matches a laptop run on the same snapshot. |
+| 16 | **Stage B — the producer runs clean without a reviewer**: today every slate needs 3–7 hand repairs and a human sign-off. | **Ariel** (what replaces the sign-off is a pass/fail call) | 4, 14 | `TODO(ariel)` |
+| 17 | **Stage B — the buttons**: **Build this week** starts item 15's run and shows progress and failures the editor can act on; **Confirm** triggers the write, blurbs, lock and export. This reverses Decision_Log §96 (the console does not write to Airtable; reconcile is operator-run) and needs a new Decision_Log entry before it is built. | Nate (console); Agent (job plumbing); **Ariel** (the §96 decision) | 7, 11, 15, 16 | He builds, confirms and receives the export in one sitting with no operator action. A failed run tells him what failed. |
 
 **Items 1, 2, 4 and 5 have no dependencies and can go to agents in parallel.**
 
@@ -139,6 +194,8 @@ Every acceptance test is written before its work.
   - (b) he adds outside events to Airtable before the build. This costs his time and moves the hours number.
   - (c) a manual-insert field in the console. R8 excluded this.
   - *Claude's lean:* (a).
+  - *2026-10-11:* Ariel's destination flow (§0) uses (a). The Decision_Log entry is still owed. Under (a)
+    self-filled slots get no system blurb, so generated copy covers only the bench slots.
 - **D2. Replacement checks** (blocks item 10). Claude's earlier "advisory matrix, validate at write-back" was
   **rejected by both audits**: write-back refusal protects Airtable, but the preference pairs are stored as
   feasible during submission. The lineup-dependent rules are only one venue per section and no event in two
