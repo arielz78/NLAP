@@ -2437,3 +2437,25 @@ the gate scores, which is #108's separate arm, and would roughly triple the page
 
 **What this does not decide:** what to extract, how many pages, the per-page cap, whether blurb generation
 also reads the result, or the acceptance test. Those are Ariel's and stay open on #147.
+
+---
+
+## 106. The Destination Is an Editor-Run Week, Reached in Two Stages (2026-10-11)
+
+**Decision:** the finished product has the editor run the week himself: he starts the build, reviews, confirms,
+and receives the export with no operator step. It is reached in two stages. Stage A is the same flow with Ariel
+running the commands; Stage B puts those commands behind console buttons. System-written blurbs are part of it,
+the console is the confirm surface, a slot can be marked "I'm filling this myself" (D0 option a, #146), and
+after he pastes into Beehiiv, Beehiiv is the final version. Ariel's call, 2026-10-11. Work map:
+`docs/v1/V1_Ship_Plan.md` §0.
+
+**Why:** building every step as a command first means Stage B adds a trigger, not a second implementation.
+Ending the system's authority at the paste removes the reopen-and-re-apply machinery; a weekly comparison of the
+published issue against the confirmed lineup records late changes instead.
+
+**Accepted cost:** the blurb step is built without first testing whether the editor prefers it to his own
+method. The weekly comparison reports whether the exported copy was used.
+
+**What this does not decide:** whether V1 closes at Stage A or at the destination; whether the console may
+trigger the Airtable write (that reverses §96 and needs its own entry); what replaces the human sign-off on
+each slate.

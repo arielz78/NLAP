@@ -47,7 +47,7 @@ run against a database in this repo; CI reports it as skipped, not passed.
 fixture, durably. No real data path, no hosting, **no authentication of any kind**, no write-back.
 
 **TODO-0 is resolved: the premise holds.** ⚠️ *Contested 2026-10-10: ordinary picks also come from outside
-the pool. See `docs/v1/V1_Ship_Plan.md` §2 and #146. Ariel chose D0 option (a), a per-slot "I'm filling this myself", on 2026-10-11 (ship plan §0 and §4); the Decision_Log entry is still owed.* Sponsored events go into a separate section, so no
+the pool. See `docs/v1/V1_Ship_Plan.md` §2 and #146. Ariel chose D0 option (a), a per-slot "I'm filling this myself", on 2026-10-11 (ship plan §0 and §4); see Decision_Log §106.* Sponsored events go into a separate section, so no
 console slot is ever filled from outside the candidate pool.
 
 **Weight after Sept 13 (set 2026-09-17, Personal OS planning sitting):** NLAP holds at 3 × 3h/week.
@@ -64,8 +64,8 @@ test. The producer's live model call and page fetch have not been run from the n
 `--apply` needs Ariel's go) and 6 (run the console suites) are now unblocked, as are 4a (pipeline chain) and 13a (weekly
 published-vs-confirmed comparison). The ship plan's new §0 states the destination (an editor-run week) and
 stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
-**where V1 closes is not settled.** D0 is chosen (above) but its Decision_Log entry still gates items 9, 10
-and 13. That doc
+**where V1 closes is not settled.** D0 is chosen (Decision_Log §106), so it no longer
+blocks items 9, 10 and 13. That doc
 is the planning artifact for the remaining path to a first complete release — **it is a working doc, not a
 status source**, and its filename is deliberately outside `/start`'s `docs/r*/R*_Scope.md` glob, so this
 pointer is how it is found.
