@@ -311,12 +311,31 @@ async function writeIssueItems(issueItems, issueMap, startDateMap, urlMap) {
 // Main
 // ---------------------------------------------------------------------------
 
-async function main() {
+// Refuses the run if any future issue already has IssueItems (locked or unlocked).
+// A rebuild deletes every unlocked row, so it has to be asked for with --rebuild.
+function refuseIfExistingIssueItems(existingIssueItems) {
+  const dates = [...new Set(existingIssueItems.map((r) => r.IssueDate))].sort();
+  if (dates.length === 0) return;
+  throw new Error(
+    `Refusing to run: IssueItems already exist for ${dates.join(", ")}. ` +
+    `Nothing was deleted or written. Re-run with --rebuild to delete unlocked rows and rebuild.`
+  );
+}
+
+async function main(argv = process.argv.slice(2)) {
+  const rebuild = argv.includes("--rebuild");
+
   if (!process.env.AIRTABLE_API_KEY) {
     throw new Error("AIRTABLE_API_KEY environment variable is not set");
   }
   if (!BASE_ID) {
     throw new Error("AIRTABLE_BASE_ID environment variable is not set");
+  }
+
+  // Pre-flight (read-only): runs before the ensure*Field() calls so a refusal makes no writes at all
+  if (!rebuild) {
+    console.log("Checking for existing IssueItems (pass --rebuild to overwrite)...");
+    refuseIfExistingIssueItems(await fetchExistingIssueItems(await fetchIssues()));
   }
 
   console.log("Ensuring SectionOrder field exists...");
@@ -351,6 +370,9 @@ async function main() {
   const lockedIssueItems = allExistingIssueItems.filter((r) => r.locked && r.ItemID !== null);
   console.log(`Found ${lockedIssueItems.length} locked, ${allExistingIssueItems.length - lockedIssueItems.length} unlocked.`);
 
+  // Re-check on the list about to be deleted — rows may have appeared since the pre-flight
+  if (!rebuild) refuseIfExistingIssueItems(allExistingIssueItems);
+
   console.log("Deleting unlocked IssueItems...");
   await deleteUnlockedIssueItems(allExistingIssueItems);
 
@@ -370,7 +392,24 @@ async function main() {
   await writeSelectionNotes(issueItems, lockedIssueItems, issueMap);
 }
 
-main().catch((err) => {
-  console.error(err.message);
-  process.exit(1);
-});
+module.exports = {
+  TABLES,
+  airtableFetch,
+  fetchAllRecords,
+  fetchIssues,
+  fetchExistingIssueItems,
+  fetchCandidates,
+  writeIssueItems,
+  deleteUnlockedIssueItems,
+  refuseIfExistingIssueItems,
+  main,
+};
+
+// Run only when executed directly: node connectAirtable.js [--rebuild]
+// require()-ing this file must never touch Airtable.
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err.message);
+    process.exit(1);
+  });
+}
