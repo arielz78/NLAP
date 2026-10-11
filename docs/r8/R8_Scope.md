@@ -58,7 +58,8 @@ against the log at the Sept 27 sprint boundary.
 
 **Done 2026-10-11:** `docs/v1/V1_Ship_Plan.md` §3 items 1 (CI), 2 (`connectAirtable.js` guard, #144), 4
 (repeatable producer, `scripts/issue-build/`) and 5 (console date fix, #145), each against its acceptance
-test. The producer's live model call and page fetch have not been run from the new code.
+test. The producer's live `prepare --fetch-pages`, `call` and `finalize` path ran
+on 2026-10-11 for the 2026-10-15 issue: v6 stopped on the thin-supply gate, v6b was signed off by Ariel and sent.
 
 **Next:** ship-plan items 3 (write-back writer; confirm its `Name` format first, and its first live
 `--apply` needs Ariel's go) and 6 (run the console suites) are now unblocked, as are 4a (pipeline chain) and 13a (weekly
