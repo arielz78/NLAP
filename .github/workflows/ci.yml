@@ -110,7 +110,7 @@ jobs:
         run: npm run build
 
   pipeline-scripts:
-    name: Pipeline scripts (connectAirtable test)
+    name: Pipeline scripts (connectAirtable + issue producer tests)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -131,3 +131,8 @@ jobs:
 
       - name: Test connectAirtable
         run: node --test scripts/connectAirtable.test.js
+
+      # Offline: no model call, no page fetch. The editor-feedback templates are
+      # gitignored, so here the template checks run against the *.example copies.
+      - name: Test issue producer
+        run: node scripts/issue-build/issueBuild.test.js
