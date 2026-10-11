@@ -110,7 +110,7 @@ jobs:
         run: npm run build
 
   pipeline-scripts:
-    name: Pipeline scripts (connectAirtable + issue producer tests)
+    name: Pipeline scripts (allocator, producer, writer, week chain, comparison, bundle tests)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -136,3 +136,19 @@ jobs:
       # gitignored, so here the template checks run against the *.example copies.
       - name: Test issue producer
         run: node scripts/issue-build/issueBuild.test.js
+
+      # Stubbed fetch, a temp folder under data/tracking: no Airtable request leaves the runner.
+      - name: Test writeIssuePicks
+        run: node --test scripts/writeIssuePicks.test.js
+
+      # Stubbed stages: no snapshot, no embedding call, no model call.
+      - name: Test week chain
+        run: node scripts/issue-build/runWeek.test.js
+
+      - name: Test weekly comparison
+        run: node --test scripts/weeklyComparison.test.js
+
+      # The check against the console's TypeScript contract skips itself here: this job
+      # does not install apps/editor-console. A skipped check is not a passed check.
+      - name: Test bundle converter
+        run: node --test scripts/issue-build/to-bundle.test.js
