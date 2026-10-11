@@ -176,6 +176,22 @@ test('correction ops apply, are recorded, and refuse a failed precondition or an
  assert.throws(run([{op:'invent'}]),/unknown op/);
  assert.throws(()=>repair(pool(['a']),{responseSha:'other',corrections:file,knownIds:['a']}),/another response/);
 });
+test('an empty repeated section is dropped; a populated repeat or a lone empty section is refused',()=>{
+ const fix=ranking=>repair(ranking,{responseSha:'s',corrections:{source_response_sha256:'s',corrections:[{op:'drop_empty_section',section:F}]},knownIds:['a','b','c']});
+ const ranking=pool(['a'],['b'],['c']); ranking.sections.push({section:F,ordered:[]});
+ assert.deepEqual(fix(ranking).ranking.sections.map(s=>[s.section,s.ordered.length]),[[F,1],[C,1],[G,1]]);
+ const populated=pool(['a'],['b'],['c']); populated.sections.push(JSON.parse(JSON.stringify(populated.sections[0])));
+ assert.throws(()=>fix(populated),/precondition failed/);
+ assert.throws(()=>fix(pool([],['b'],['c'])),/precondition failed/);
+});
+test('a ranked record is removed from the exclusions; an unranked or unexcluded one is refused',()=>{
+ const fix=(ranking,id)=>repair(ranking,{responseSha:'s',corrections:{source_response_sha256:'s',corrections:[{op:'drop_exclusion',id}]},knownIds:['a','b','c']});
+ const ranking=pool(['a'],['b'],['c']); ranking.exclusions=[{id:'a',reason:'note'},{id:'z',reason:'out'}];
+ const out=fix(ranking,'a').ranking;
+ assert.deepEqual(out.exclusions.map(o=>o.id),['z']); assert.deepEqual(out.sections[0].ordered.map(o=>o.id),['a']);
+ assert.throws(()=>fix(ranking,'z'),/precondition failed/);
+ assert.throws(()=>fix(ranking,'b'),/precondition failed/);
+});
 
 // ---- Receipt and exit status. ----
 test('the run receipt carries the human-review line with a place for who and when',()=>{

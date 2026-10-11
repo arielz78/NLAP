@@ -65,6 +65,9 @@ folder that already holds a `response.json`, use `finalize`.
 
 Later stages find the run folder from `--issue` (add `--version` or `--run-dir` if a date has several).
 
+Runs through v5 were hand-built and live in `data/tracking/r6_demo/`. That folder's `RUNS.md` is still the
+one index of every version, including the ones written here.
+
 ## When the editor gives feedback
 
 That is the one time the producer's inputs change: add the round to `guidance.json` and edit the guidance
@@ -91,7 +94,9 @@ Hand repairs are data, not a per-week script. `<run folder>/corrections.json`:
 ```
 
 Ops: `remap_id` (section, from, to) · `drop_row` (section, id) · `drop_everywhere` (id) ·
-`drop_duplicate_section` (section) · `set_quote` (id, from, to). Each applies only if its precondition
+`drop_duplicate_section` (section; two identical copies) · `drop_empty_section` (section; a repeat with no
+rows) · `drop_exclusion` (id; a ranked record also filed under exclusions, ranking kept) ·
+`set_quote` (id, from, to). Each applies only if its precondition
 holds; extra keys (`title`, `type`, `detected_by`, …) are carried into the receipt. The one automatic
 repair is the form-link rule below. Nothing else is repaired without a person (Decision_Log §102).
 

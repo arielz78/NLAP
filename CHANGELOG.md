@@ -5,6 +5,7 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-10-11
+- Ran the first live week through the repeatable ranking producer, end to end from a fresh candidate snapshot to a reviewed, signed-off slate. The run exposed a gap between the prompt's soft target and the producer's hard minimum per section; the prompt now states the minimum, and two new data-driven repair operations (each with a test) cover response defects the first run surfaced.
 - Ran a third, whole-product review round with two independent reviewers and consolidated it into the release plan: the plan now states the finished weekly workflow end to end, stages it as operator-run first and editor-run second, and adds a weekly check comparing each published issue with the lineup the editor confirmed.
 - Added continuous integration: every push now runs the editor console's tests, lint and build and the pipeline's script tests on a clean machine, with database tests reported as skipped rather than counted as passed.
 - Made the Airtable allocator safe to import and unable to overwrite an issue that already has selections unless explicitly asked; turned the per-week ranking build into a repeatable command driven by the issue date; fixed a console bug that showed date-only events a day early.

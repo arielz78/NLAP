@@ -42,6 +42,20 @@ const OPS={
     need(idx.length===2&&JSON.stringify(rank.sections[idx[0]])===JSON.stringify(rank.sections[idx[1]]),'expected two identical '+c.section+' sections');
     rank.sections.splice(idx[1],1);return 'dropped the second, identical '+c.section+' section';
   },
+  // A repeated section whose second copy is empty. Dropped only when exactly one of the two copies has no rows.
+  drop_empty_section(rank,c){
+    const idx=rank.sections.map((s,i)=>s.section===c.section?i:-1).filter(i=>i>=0);
+    const empty=idx.filter(i=>rank.sections[i].ordered.length===0);
+    need(idx.length===2&&empty.length===1,'expected two '+c.section+' sections, exactly one of them empty');
+    rank.sections.splice(empty[0],1);return 'dropped the empty, repeated '+c.section+' section';
+  },
+  // A ranked record that also sits in the exclusions (a placement note filed as an exclusion). The ranking is kept.
+  drop_exclusion(rank,c){
+    const ranked=rank.sections.flatMap(s=>s.ordered).filter(o=>o.id===c.id).length;
+    const at=rank.exclusions.map((o,i)=>o.id===c.id?i:-1).filter(i=>i>=0);
+    need(ranked===1&&at.length===1,'expected '+c.id+' ranked once and excluded once');
+    rank.exclusions.splice(at[0],1);return 'removed from exclusions; ranking kept';
+  },
   // Quote that differs from the source text (whitespace). `to` is checked against the record by validation.
   set_quote(rank,c){
     const hits=rank.sections.flatMap(s=>s.ordered).filter(o=>o.id===c.id&&o.evidence_quote===c.from);
