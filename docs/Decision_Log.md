@@ -2420,3 +2420,20 @@ not a deadline.
 
 **What this does not decide:** the authorship split (unchanged), the release structure, or §103(a)'s
 ship-and-fix cut line, which still applies.
+
+---
+
+## 105. Page Enrichment Is V1 Scope and Runs After R7 (2026-10-11)
+
+**Decision:** improving what the ranker reads from event detail pages is part of V1 (ship-plan item 14,
+#147). It stays where the page fetch already sits: after R7, on the shortlist. Ariel's call, 2026-10-11.
+
+**Why:** the current fetch is a tag-strip whose first 3,000 characters are mostly site navigation, so the
+ranker's only supplement for thin source descriptions carries little event content (evidence on #147).
+It runs after R7 because R7 was validated on the short source text: enriching earlier would change what
+the gate scores, which is #108's separate arm, and would roughly triple the pages fetched each week.
+
+**Accepted cost:** R7 keeps scoring on thin text, and V1 grows by one item.
+
+**What this does not decide:** what to extract, how many pages, the per-page cap, whether blurb generation
+also reads the result, or the acceptance test. Those are Ariel's and stay open on #147.

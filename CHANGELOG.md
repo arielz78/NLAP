@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-10-11
+- Added continuous integration: every push now runs the editor console's tests, lint and build and the pipeline's script tests on a clean machine, with database tests reported as skipped rather than counted as passed.
+- Made the Airtable allocator safe to import and unable to overwrite an issue that already has selections unless explicitly asked; turned the per-week ranking build into a repeatable command driven by the issue date; fixed a console bug that showed date-only events a day early.
+
 ## 2026-10-10
 - Commissioned two independent audits of the first-release plan and reconciled them on file evidence; the merged plan corrects the write-path safety mechanism, adds a missing submission-to-Airtable bridge, and orders the remaining work by dependency with acceptance tests defined up front.
 - Identified that the editor's weekly picks routinely include events from outside the candidate pool, a gap the review console must handle before live use.

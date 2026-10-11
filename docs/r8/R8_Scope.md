@@ -25,7 +25,7 @@ After every R8 session:
 
 ---
 
-## 0. Status (2026-10-07)
+## 0. Status (2026-10-11)
 
 R8 is open ahead of the R6 gate, on a delivery commitment to the editor. R7 is closeout-only and
 off the critical path.
@@ -37,9 +37,10 @@ undo fix, explicit demo-vs-production modes where production fails closed, and a
 integration suite. **Both issues remain open on GitHub.** `c45a7ad` is the last commit touching
 `apps/editor-console/`.
 
-⚠️ **No CI exists in the repo**, so "tests, lint and build pass" on both commits is unverified here;
-only the pre-`8396a79` state was independently confirmed (2026-09-10). The integration suite is gated
-behind `R8_REQUIRE_INTEGRATION_DB=1` and has not been run against a database in this repo.
+**CI exists since 2026-10-11** (`.github/workflows/ci.yml`): every push runs the console's tests, lint
+and build, the `connectAirtable.js` guard test and the issue-producer tests, green on `master` at
+`b8b6a68`. ⚠️ The integration suite is still gated behind `R8_REQUIRE_INTEGRATION_DB=1` and has not been
+run against a database in this repo; CI reports it as skipped, not passed.
 
 **The console remains fixture-only.** `lib/mock-issue.ts` is the single source of issue data, and
 `scripts/seed-demo.ts` inserts that same fixture into PostgreSQL — so even production mode serves the
@@ -55,8 +56,13 @@ done — its slate has reached the editor two weeks running — and what "done e
 R8" requires. Resolve in an NLAP session before encoding it anywhere as architecture. Hours re-checked
 against the log at the Sept 27 sprint boundary.
 
-**Next:** dispatch agents on `docs/v1/V1_Ship_Plan.md` §3 items 1 (CI), 2 (`connectAirtable.js` guard,
-#144), 4 (repeatable producer) and 5 (console date fix, #145). D0 (#146) blocks items 9, 10 and 13. That doc
+**Done 2026-10-11:** `docs/v1/V1_Ship_Plan.md` §3 items 1 (CI), 2 (`connectAirtable.js` guard, #144), 4
+(repeatable producer, `scripts/issue-build/`) and 5 (console date fix, #145), each against its acceptance
+test. The producer's live model call and page fetch have not been run from the new code.
+
+**Next:** ship-plan items 3 (write-back writer; confirm its `Name` format first, and its first live
+`--apply` needs Ariel's go) and 6 (run the console suites) are now unblocked. D0 (#146) blocks items 9, 10
+and 13. That doc
 is the planning artifact for the remaining path to a first complete release — **it is a working doc, not a
 status source**, and its filename is deliberately outside `/start`'s `docs/r*/R*_Scope.md` glob, so this
 pointer is how it is found.

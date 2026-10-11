@@ -340,12 +340,17 @@ This is the only part of the system that runs without credentials.
 
 ### Production operator workflow
 
-⚠️ **`connectAirtable.js` changes live state.** It deletes and rebuilds unlocked IssueItems on
-current and future issues. Locked rows are preserved, unlocked ones are not.
+⚠️ **`connectAirtable.js` changes live state.** With `--rebuild` it deletes and rebuilds unlocked
+IssueItems on current and future issues. Locked rows are preserved, unlocked ones are not. Without the
+flag it refuses to run if any upcoming issue already has IssueItems, and deletes or writes nothing.
 
 ```bash
 # Allocate candidates to upcoming issues — WRITES TO AIRTABLE
+# (refuses if an upcoming issue already has rows)
 node scripts/connectAirtable.js
+
+# Delete unlocked rows and rebuild every upcoming issue — WRITES TO AIRTABLE
+node scripts/connectAirtable.js --rebuild
 
 # Generate newsletter copy for an issue (issue date, YYYY-MM-DD)
 node scripts/generateBlurbs.js YYYY-MM-DD
