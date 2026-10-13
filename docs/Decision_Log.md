@@ -2506,5 +2506,50 @@ was shown, and not a second lookup. With nothing ever unavailable, the old exclu
 preference pairs is retired; a swap with no saved event still yields no pair.
 
 **What this does not decide:** venue aliases (parked until the weekly comparison shows misses); what defines a
-series (#150); how preference pairs are ever used. A pair is
+series (#150, since settled in §109); how preference pairs are ever used. A pair is
 conditional on the whole slate that week and must be read that way.
+
+---
+
+## 109. A Series Is a Title; Every Event the Producer Shows Is Classified (2026-10-13)
+
+**Decision:** two listings are the same series when their titles match, whatever the venue or time. The key is
+the lowercase, whitespace-collapsed title, the one R7 and `scripts/r6` already use (§92). Every event the
+producer displays is `classified`, because the ranker placed each one in its section; `unclassified` is kept
+for an event that reaches the console without going through the ranker. Both values are written at finalize
+into `displayed_events.json` and are not added to the ranking packet. Ariel's calls, 2026-10-13; the file
+they are written to was the implementer's choice. Closes ship-plan item 10a.
+
+**Why:** the console uses a series for one thing, a warning when a swap puts two of one series in a section.
+A storytime at six libraries is one programme to the reader. Keying on title and venue would add nothing,
+since the console already warns on a repeated venue. Keeping both fields out of the packet leaves the model's
+input, and so a replayed request, unchanged.
+
+**Accepted cost:** two different events with the same title are treated as one series, and a programme
+listed under two spellings is treated as two. On the 2026-10-15 shortlist the rule joined four groups out of
+95 events and none within a displayed section.
+
+**What this does not decide:** which venue or time of a series the editor would rather be shown (raised by
+Ariel, parked); how an event the editor supplies himself is classified. Those events do not enter the
+console as candidates today (§106).
+
+---
+
+## 110. Ariel Hosts the Console on His Own Accounts; One Shared Login (2026-10-13)
+
+**Decision:** the console runs on Vercel against a Neon database, both on accounts Ariel created and owns.
+Access is one shared username and password (HTTP Basic over HTTPS) checked on every page and every `/api`
+route; with no login configured, production refuses every request. The pipeline stays on Ariel's machine and
+reaches the console only through the database. Ariel's call, 2026-10-13. Amends §103(b), which left hosting
+with Nate; the console's code remains shared with him.
+
+**Why:** hosting was the first item on the longest remaining chain, and it could be done the same day. The
+code lives in the repository, so the accounts hold only the running copy and its data, and moving them later
+costs little.
+
+**Accepted cost:** every signed-in person is recorded as the same editor, so a look around by anyone else is
+saved as the editor's own action. There is no lockout after wrong guesses. The plans in use are the free ones;
+which plan the live weeks run on is Ariel's to revisit before the editor starts.
+
+**What this does not decide:** where the pipeline runs in Stage B. It cannot run on Vercel (long jobs, files
+kept between runs, n8n); whether that machine is always on or started on demand is open.

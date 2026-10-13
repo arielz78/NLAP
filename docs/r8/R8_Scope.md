@@ -42,9 +42,13 @@ and build, the `connectAirtable.js` guard test and the issue-producer tests, gre
 `b8b6a68`. ⚠️ The integration suite is still gated behind `R8_REQUIRE_INTEGRATION_DB=1` and has not been
 run against a database in this repo; CI reports it as skipped, not passed.
 
-**The console remains fixture-only.** `lib/mock-issue.ts` is the single source of issue data, and
-`scripts/seed-demo.ts` inserts that same fixture into PostgreSQL — so even production mode serves the
-fixture, durably. No real data path, no hosting, **no authentication of any kind**, no write-back.
+**The console is hosted and serves a real build (2026-10-13).** It runs in production mode on Vercel
+against a Neon database, behind one shared login (HTTP Basic on every page and `/api` route; with no
+login configured every request is refused). Ariel set up and owns both accounts (Decision_Log §110).
+The build it serves is the 2026-10-15 slate rebuilt from the v6b run, published with
+`npm run publish-build`. ⚠️ **That database holds test data:** one submission Ariel made while testing,
+recorded under the editor's identity. It must be cleared before the editor's first real week. No
+write-back to Airtable has run. `lib/mock-issue.ts` is now the demo-mode fixture only.
 
 **TODO-0 is resolved: the premise holds.** ⚠️ *Contested 2026-10-10: ordinary picks also come from outside
 the pool. See `docs/v1/V1_Ship_Plan.md` §2 and #146. Ariel chose D0 option (a), a per-slot "I'm filling this myself", on 2026-10-11 (ship plan §0 and §4); see Decision_Log §106.* Sponsored events go into a separate section, so no
@@ -84,9 +88,24 @@ The submit record carries the verdict saved with the swap event (Ariel, 2026-10-
 console no longer reads the bundle's assessment table at all. ⚠️ The PostgreSQL integration test for this was
 rewritten and has not been run.
 
-**Next:** item 10a's two remaining fields (Ariel: what defines
-a series, what `classification` means) and `publish-build.ts`, which stand between the producer and a real
-build loading in the console. Item 3's first live `--apply`
+**Done 2026-10-13, second session:** item 10a is complete: the producer writes a `series_id` and a
+`classification` for every displayed event into `displayed_events.json` (Decision_Log §109; #150), and a run
+finalized with this code converts with no missing-field diagnostics. Item 10 is complete:
+`apps/editor-console/scripts/publish-build.ts` checks a bundle and inserts it, dry run by default. Item 11
+is complete on its first acceptance test (unauthenticated page and API requests return 401; the real build
+renders after sign-in). The chain ran once on real data, by hand: producer run → bundle → database → hosted
+console → a submission → `applySubmission.js` dry run (15 picks, matching the submission). A run folder
+finalized before 2026-10-13 is still refused by the converter and is not rewritten; the v6b bundle came from
+a rebuild of that run's saved inputs, with a lineup byte-identical to the one sent.
+
+**Not yet run:** the writer's live `--apply` (item 3, #149), blurbs and export after a console submission,
+the PostgreSQL integration suite, and `runWeek.js` on a real week. The bridge's live database read is still
+a stub: the submission above was read through the console's own API and passed with `--submission`. The
+console has no "I'm filling this myself" control (#152). Three swaps made without tapping a reason produced
+no preference pairs, as designed; the reason control was not noticed during the test.
+
+**Next:** clear the test submission from the console database, then run the 2026-10-22 issue as the first
+real week: `runWeek.js` → `to-bundle.js` → `publish-build`. Item 3's first live `--apply`
 still needs Ariel's go and its own bounded review. The ship plan's new §0 states the destination (an editor-run week) and
 stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
 **where V1 closes is not settled.** D0 is chosen (Decision_Log §106), so it no longer

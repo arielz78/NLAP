@@ -48,6 +48,23 @@ npm run lint
 npm run build
 ```
 
+## Login
+
+Production mode requires `CONSOLE_AUTH_USER` and `CONSOLE_AUTH_PASSWORD`. `proxy.ts` checks them as
+HTTP Basic credentials on every page and every `/api` route. With either one missing, every request
+is refused with a 503. Demo mode has no login.
+
+## Publish a build
+
+```bash
+npm run publish-build -- path/to/bundle.json            # dry run: checks the bundle and the database
+npm run publish-build -- path/to/bundle.json --apply    # inserts the build
+```
+
+The bundle comes from `scripts/issue-build/to-bundle.js`. A published build cannot be edited or
+deleted. Publishing refuses a bundle changed after it was built, a version already published with
+different content, and any publish while another build of the same issue has a draft open.
+
 The credential-free suite covers replacement, slot-scoped undo, reopen semantics,
 strict final-state pair derivation, and production fail-closed behavior.
 
