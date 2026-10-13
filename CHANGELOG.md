@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-10-13
+- Resolved by hand the uncertain matches in the weekly published-versus-sent comparison, then checked every remaining miss against the full candidate pool. The misses now separate into events the pipeline never collected, events it held only on another date, and events it held but did not show, with the uncollected ones grouped by kind of source.
+- Decided how the hosted console's test data is cleared before its first real week, and parked two follow-ups (past weeks as preference evidence, and source coverage) on their existing issues instead of opening new work.
 - Put the review console online: hosted with a managed Postgres database behind a login that covers every page and API route and refuses all requests if it is ever left unconfigured. A real weekly build now loads in it, published by a new command that validates a build and never replaces one already published.
 - Ran the full chain on real data for the first time, from the ranking build through the hosted console to a submitted lineup mapped back to the Airtable writer's input (dry run only). Settled how a recurring series is identified, and scored three more published issues against the slates that were sent.
 - Trimmed the working session journal: sessions from the classifier release moved to that release's archive, and future session entries follow a fixed short format.
