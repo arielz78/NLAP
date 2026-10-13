@@ -7,6 +7,7 @@ import type {
   InteractionEvent,
   IssueBuild,
   OrderingProvenance,
+  ReplacementAssessment,
   SubmittedReplacement,
   SubmissionSnapshot,
   TrainingPair,
@@ -275,6 +276,15 @@ function parseDisplayedAlternatives(value: unknown) {
     : null;
 }
 
+function parseAssessment(value: unknown): ReplacementAssessment | null {
+  if (!value || typeof value !== "object") return null;
+  const { status, reason } = value as Record<string, unknown>;
+  if (status !== "clean" && status !== "override" && status !== "unavailable") {
+    return null;
+  }
+  return typeof reason === "string" ? { status, reason } : null;
+}
+
 function latestMatchingEvent(
   events: InteractionEvent[],
   predicate: (event: InteractionEvent) => boolean,
@@ -318,8 +328,11 @@ function deriveSubmittedReplacement(
       eventMatchesSlot(event, sectionId, slotIndex) &&
       event.payload.candidateId === selected.id,
   );
-  const assessment =
-    section.replacementAssessments[original.id]?.[selected.id] ?? null;
+  // The verdict's one home is the replace event: what the editor was shown when he made
+  // this swap (Decision_Log §108). The bundle's build-time table is not consulted.
+  const assessment = currentReplaceEvent
+    ? parseAssessment(currentReplaceEvent.payload.assessment)
+    : (inheritedReplacement?.assessment ?? null);
   const feasible =
     assessment !== null &&
     (assessment.status === "clean" || assessment.status === "override");

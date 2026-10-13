@@ -2501,6 +2501,10 @@ test suites must pass.
 Warned swaps enter the preference record, so a pair can favour an event the system itself could not have placed.
 One hard stop remains downstream: the Airtable writer cannot write one event to two slots.
 
-**What this does not decide:** venue aliases (parked until the weekly comparison shows misses); which verdict
-the submit record carries; what defines a series (#150); how preference pairs are ever used. A pair is
+**Amended the same day:** the submit record carries the verdict saved with the swap event, the one the editor
+was shown, and not a second lookup. With nothing ever unavailable, the old exclusion of unavailable swaps from
+preference pairs is retired; a swap with no saved event still yields no pair.
+
+**What this does not decide:** venue aliases (parked until the weekly comparison shows misses); what defines a
+series (#150); how preference pairs are ever used. A pair is
 conditional on the whole slate that week and must be read that way.

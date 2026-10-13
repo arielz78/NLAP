@@ -80,12 +80,11 @@ calls Airtable; the live database read is a stub awaiting Neon credentials, and 
 field is an assumption until the console writes one (#152). Item 10a is half done: the producer now supplies
 `build_version` and a description for every displayed event, so a rebuilt run is refused for `seriesId` and
 `classification` only (#150). Item 12's message is drafted and unsent.
-⚠️ The submit record still reads the build-time assessment table while the swap event carries the live verdict;
-the two can disagree. To fix before the first live week (#151).
+The submit record carries the verdict saved with the swap event (Ariel, 2026-10-13; #151 closed), so the
+console no longer reads the bundle's assessment table at all. ⚠️ The PostgreSQL integration test for this was
+rewritten and has not been run.
 
-**Next:** Ariel chooses which verdict the submit record carries (build-time table, the swap event's live
-verdict, or a check against the final lineup) and whether the "unavailable" exclusion survives §108; #151 is
-coded only after that choice. Then item 10a's two remaining fields (Ariel: what defines
+**Next:** item 10a's two remaining fields (Ariel: what defines
 a series, what `classification` means) and `publish-build.ts`, which stand between the producer and a real
 build loading in the console. Item 3's first live `--apply`
 still needs Ariel's go and its own bounded review. The ship plan's new §0 states the destination (an editor-run week) and

@@ -123,7 +123,7 @@ describe("editor draft domain", () => {
     ]);
   });
 
-  it("excludes A to B to C when the final A to C assessment is unavailable", () => {
+  it("records the verdict shown at the swap, whatever the bundle's table says", () => {
     const build = structuredClone(mockIssueBuild);
     build.sections[0].replacementAssessments["fam-01"]["fam-08"] = {
       status: "unavailable",
@@ -154,12 +154,74 @@ describe("editor draft domain", () => {
       workspace(feedback.draft, [first.event, second.event, feedback.event], build),
     );
 
+    expect(second.event.payload.assessment).toEqual({
+      status: "clean",
+      reason: "Fits this slot.",
+    });
     expect(submission.replacements).toMatchObject([
       {
         originalCandidateId: "fam-01",
         finalCandidateId: "fam-08",
-        feasible: false,
+        assessment: second.event.payload.assessment,
+        feasible: true,
       },
+    ]);
+    expect(submission.trainingPairs).toHaveLength(1);
+  });
+
+  it("carries a warning into the record and still derives the pair", () => {
+    const build = structuredClone(mockIssueBuild);
+    build.sections[0].alternatives[0].candidate.venue =
+      build.sections[0].selected[2].venue;
+    const replacement = applyDraftCommand(build, createInitialDraft(build), {
+      ...eventBase(),
+      type: "replace",
+      sectionId: "families",
+      slotIndex: 0,
+      alternativeCandidateId: "fam-06",
+    });
+    const feedback = applyDraftCommand(build, replacement.draft, {
+      ...eventBase(),
+      type: "feedback",
+      sectionId: "families",
+      slotIndex: 0,
+      value: "preferred",
+    });
+    const submission = submit(
+      workspace(feedback.draft, [replacement.event, feedback.event], build),
+    );
+
+    expect(submission.replacements[0].assessment).toEqual({
+      status: "override",
+      reason: `Same venue as pick 3: ${build.sections[0].selected[2].venue}.`,
+    });
+    expect(submission.replacements[0].feasible).toBe(true);
+    expect(submission.trainingPairs).toHaveLength(1);
+  });
+
+  it("records no verdict and derives no pair when the swap event is missing", () => {
+    const replacement = applyDraftCommand(
+      mockIssueBuild,
+      createInitialDraft(mockIssueBuild),
+      {
+        ...eventBase(),
+        type: "replace",
+        sectionId: "families",
+        slotIndex: 0,
+        alternativeCandidateId: "fam-06",
+      },
+    );
+    const feedback = applyDraftCommand(mockIssueBuild, replacement.draft, {
+      ...eventBase(),
+      type: "feedback",
+      sectionId: "families",
+      slotIndex: 0,
+      value: "preferred",
+    });
+    const submission = submit(workspace(feedback.draft, [feedback.event]));
+
+    expect(submission.replacements).toMatchObject([
+      { assessment: null, feasible: false, provenanceComplete: false },
     ]);
     expect(submission.trainingPairs).toEqual([]);
   });

@@ -102,6 +102,19 @@ describe("replacement checks against the current lineup", () => {
     ).toBe("clean");
   });
 
+  it("does not throw on a saved draft whose events lack a venue or series", () => {
+    const draft = createInitialDraft(mockIssueBuild);
+    const incoming = structuredClone(draft.alternatives.families[0].candidate);
+    const bare = incoming as unknown as Record<string, unknown>;
+    delete bare.venue;
+    delete bare.seriesId;
+    delete (draft.selections.families[1] as unknown as Record<string, unknown>).seriesId;
+
+    expect(
+      assessReplacement(mockIssueBuild, draft.selections, "families", 0, incoming),
+    ).toEqual({ status: "clean", reason: "Fits this slot." });
+  });
+
   it("warns on a series already in the section", () => {
     const build = buildWith({
       "fam-02": { seriesId: "series-shared" },

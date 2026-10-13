@@ -271,7 +271,9 @@ describe.skipIf(!canRun)("PostgreSQL editor-console API boundary", () => {
     expect(restartedV2?.submissionHistory).toHaveLength(2);
   });
 
-  it("excludes unavailable and provenance-incomplete final comparisons", async () => {
+  // The record carries the verdict saved with the swap event (Decision_Log §108), so an
+  // unavailable or missing entry in the bundle's table changes nothing.
+  it("derives the final comparison whatever the bundle's assessment table holds", async () => {
     await applyMigrations(testDatabaseUrl!);
 
     for (const finalAssessment of ["unavailable", "missing"] as const) {
@@ -328,11 +330,13 @@ describe.skipIf(!canRun)("PostgreSQL editor-console API boundary", () => {
         new Date().toISOString(),
       );
 
-      expect(submitted.submission.trainingPairs).toEqual([]);
-      expect(submitted.submission.replacements[0].provenanceComplete).toBe(
-        finalAssessment !== "missing",
-      );
-      expect(submitted.submission.replacements[0].feasible).toBe(false);
+      expect(submitted.submission.trainingPairs).toHaveLength(1);
+      expect(submitted.submission.replacements[0].provenanceComplete).toBe(true);
+      expect(submitted.submission.replacements[0].feasible).toBe(true);
+      expect(submitted.submission.replacements[0].assessment).toEqual({
+        status: "clean",
+        reason: "Fits this slot.",
+      });
     }
   });
 });

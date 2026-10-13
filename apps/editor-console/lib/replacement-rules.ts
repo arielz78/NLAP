@@ -30,22 +30,25 @@ export function assessReplacement(
   incoming: Candidate,
 ): ReplacementAssessment {
   const warnings: string[] = [];
+  // A draft saved before a field existed can lack it; a blank never matches.
+  const seriesKey = (value: string | null | undefined) =>
+    typeof value === "string" ? value.trim() : "";
   const incomingVenue = venueKey(incoming.venue);
-  const incomingSeries = incoming.seriesId.trim();
+  const incomingSeries = seriesKey(incoming.seriesId);
 
   (selections[sectionId] ?? []).forEach((staying, index) => {
-    if (index === slotIndex) return;
+    if (index === slotIndex || !staying) return;
     if (incomingVenue && venueKey(staying.venue) === incomingVenue) {
       warnings.push(`Same venue as pick ${index + 1}: ${staying.venue.trim()}.`);
     }
-    if (incomingSeries && staying.seriesId.trim() === incomingSeries) {
+    if (incomingSeries && seriesKey(staying.seriesId) === incomingSeries) {
       warnings.push(`Same series as pick ${index + 1}: ${staying.title}.`);
     }
   });
 
   for (const section of build.sections) {
     if (section.id === sectionId) continue;
-    if ((selections[section.id] ?? []).some((pick) => pick.id === incoming.id)) {
+    if ((selections[section.id] ?? []).some((pick) => pick?.id === incoming.id)) {
       warnings.push(`Already picked in ${section.label}.`);
     }
   }
