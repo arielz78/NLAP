@@ -5,6 +5,7 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-10-13
+- Trimmed the working session journal: sessions from the classifier release moved to that release's archive, and future session entries follow a fixed short format.
 - Settled how the review console treats a swap: every replacement is checked against the lineup as it currently stands, a repeat is shown as a specific warning, and the editor can always overrule it. The venue rule now lives in both the allocator and the console, kept in step by one shared list of test cases that both suites must pass.
 - Built the bridge from a console submission to the Airtable writer (fixtures only, no live write), and taught the weekly ranking build to supply a build number and a description for every displayed event.
 

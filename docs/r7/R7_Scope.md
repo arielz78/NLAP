@@ -6,7 +6,7 @@
 
 **Read order:** this doc → `docs/r6/R6_Scope.md` (the ranker half; they feed each other, see the seam note in §3) → `docs/Decision_Log.md` §61–94 → `logs/R7_Log.md` (build history) only if you need the empirical record.
 
-**Type: Release-working.** Current truth + the one-week plan. Build history (probe numbers, confusion matrices, the dead investigation sequence) is in `logs/R7_Log.md`; decisions in `docs/Decision_Log.md` §61–90; chronological recaps in `Execution_Log.md`. Verbatim prior version (the pre-reframe 261-line doc) is in git (`8dd1c7d`).
+**Type: Release-working.** Current truth + the one-week plan. Build history (probe numbers, confusion matrices, the dead investigation sequence) is in `logs/R7_Log.md`; decisions in `docs/Decision_Log.md` §61–90; chronological recaps in `logs/R7_Sessions.md`. Verbatim prior version (the pre-reframe 261-line doc) is in git (`8dd1c7d`).
 
 **Closeout worklist:** [`R7_Closeout_Checklist.md`](R7_Closeout_Checklist.md) is the audited 2026-08-27 inventory and execution order for closing R7-W6. This Scope remains the source of truth for release status.
 
