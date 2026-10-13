@@ -47,8 +47,11 @@ against a Neon database, behind one shared login (HTTP Basic on every page and `
 login configured every request is refused). Ariel set up and owns both accounts (Decision_Log §110).
 The build it serves is the 2026-10-15 slate rebuilt from the v6b run, published with
 `npm run publish-build`. ⚠️ **That database holds test data:** one submission Ariel made while testing,
-recorded under the editor's identity. It must be cleared before the editor's first real week. No
-write-back to Airtable has run. `lib/mock-issue.ts` is now the demo-mode fixture only.
+recorded under the editor's identity. **How it is cleared is not decided (Ariel).** Rows in `submissions`
+and `issue_builds` cannot be deleted one at a time. Resetting the database and re-migrating also removes
+the published 2026-10-15 build, and must happen before the 2026-10-22 build is published. Leaving the rows
+in place keeps the test submission in the record; the console serves the build with the latest issue date,
+so a 2026-10-22 build would still take over the screen. No write-back to Airtable has run. `lib/mock-issue.ts` is now the demo-mode fixture only.
 
 **TODO-0 is resolved: the premise holds.** ⚠️ *Contested 2026-10-10: ordinary picks also come from outside
 the pool. See `docs/v1/V1_Ship_Plan.md` §2 and #146. Ariel chose D0 option (a), a per-slot "I'm filling this myself", on 2026-10-11 (ship plan §0 and §4); see Decision_Log §106.* Sponsored events go into a separate section, so no
@@ -104,7 +107,8 @@ a stub: the submission above was read through the console's own API and passed w
 console has no "I'm filling this myself" control (#152). Three swaps made without tapping a reason produced
 no preference pairs, as designed; the reason control was not noticed during the test.
 
-**Next:** clear the test submission from the console database, then run the 2026-10-22 issue as the first
+**Next:** Ariel chooses how the test data in the console database is handled (reset and re-migrate, or
+leave it); nothing is published until he has. Then run the 2026-10-22 issue as the first
 real week: `runWeek.js` → `to-bundle.js` → `publish-build`. Item 3's first live `--apply`
 still needs Ariel's go and its own bounded review. The ship plan's new §0 states the destination (an editor-run week) and
 stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
