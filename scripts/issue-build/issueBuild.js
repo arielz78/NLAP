@@ -6,6 +6,7 @@ const fs=require('node:fs'), path=require('node:path'), crypto=require('node:cry
 const ROOT=path.resolve(__dirname,'../..');
 const {buildIssues}=require(path.join(ROOT,'scripts/buildIssues.js'));
 const {isFormUrl,repair}=require('./repair.js');
+const {normTitle}=require('../r6/lib/util.js');
 const SECTIONS=['For Families','For Couples','For Golden Age Readers'];
 const OUT_ROOT='data/tracking/issue_build', R7_ROOT='data/tracking/r7_live_runner', SNAPSHOTS='data/tracking/snapshots';
 // The three TEMPLATES carry the editor's feedback and are gitignored (public repo); EXAMPLES are their tracked, stripped copies.
@@ -239,9 +240,8 @@ function assemblePacket(d,selected,pages,week,rules) {
     similar.forEach(x=>needed.add(x.h.ref));
     const page=byPage.get(c.record_id);
     const pageExcerpt=page?{...page,text:page.text?.slice(0,3000)||null,packet_excerpt_truncated:(page.text?.length||0)>3000}:null;
-    // TODO(ariel): seriesId and classification (ship-plan item 10a) are not supplied. to-bundle.js reads both from
-    // these rows and refuses the run without them. What defines a series, and what classification means for a
-    // producer-built candidate, are undecided; nothing here derives or defaults them. This packet is the model's input.
+    // This packet is the model's input. The console's seriesId and classification are not added here:
+    // displayedEvents() writes them at finalize, so the request stays the same.
     return {record_id:c.record_id,snapshot_fields:c.snapshot_fields,
       r7:{p_include:c.r7.p_include,section_probabilities:c.r7.section_probabilities,gate_fit_overlap:c.r7.gate_fit_overlap},
       retrieval_reasons:c.retrieval_reasons,page:pageExcerpt,
@@ -432,18 +432,24 @@ function fallbackDescription(f){
   return [clean(f['Event Title']),when&&when[0].toUpperCase()+when.slice(1),'No description was supplied by the source'+(source?' ('+source+')':'')]
     .filter(Boolean).map(s=>/[.!?]$/.test(s)?s:s+'.').join(' ');
 }
+// Series rule (Ariel, 2026-10-13): listings with the same title are one series, whatever the venue or time.
+// The key is the lowercase, whitespace-collapsed title, the same one R7 and scripts/r6 use (Decision_Log §92).
+function seriesId(c){return normTitle(c.snapshot_fields['Event Title'])||'id:'+c.record_id;}
 // One row per event the preview shows: every pick, plus the alternatives render() lists. description_source
 // tells the snapshot's own text ('source') from the sentence built above ('fallback').
+// classification (Ariel, 2026-10-13): every event shown here was placed in a section by the ranker, so each
+// is 'classified'. 'unclassified' is for an event that reached the console without going through the ranker.
 function displayedEvents(issue,packet,result,alts){
   const byId=new Map(packet.candidates.map(c=>[c.record_id,c]));
   const ids=[...new Set([...result.picks.map(p=>p.ItemID),
     ...SECTIONS.flatMap(s=>(alts[s]||[]).filter(a=>a.replaceable_slots.length).slice(0,ALTERNATIVES).map(a=>a.id))])].sort();
-  return {schema_version:'issue-build-displayed/1',issue_date:issue,
+  return {schema_version:'issue-build-displayed/2',issue_date:issue,
     fallback_note:'description_source "fallback": the snapshot has no description; the text is the title, date, venue, city and source from the snapshot.',
     events:ids.map(id=>{
       const c=byId.get(id);assert(c,'Displayed event '+id+' is not in the ranking packet');
       const raw=c.snapshot_fields.DescriptionRaw,fromSource=typeof raw==='string'&&raw.trim().length>0;
-      return {id,description:fromSource?raw:fallbackDescription(c.snapshot_fields),description_source:fromSource?'source':'fallback'};
+      return {id,series_id:seriesId(c),classification:'classified',
+        description:fromSource?raw:fallbackDescription(c.snapshot_fields),description_source:fromSource?'source':'fallback'};
     })};
 }
 // Every finished run beside this one: a folder holding run_manifest.json under the output root or next to the run folder.
@@ -583,5 +589,5 @@ function main(argv){
   });
 }
 module.exports={SECTIONS,PICKS,ALTERNATIVES,POOL_FLOOR,HUMAN_REVIEW,ThinSupplyError,urlKey,sameOpportunity,historyFor,requestKey,validateRanking,allocate,alternatives,
-  shortlist,formLinked,assertPoolSupply,supplyProblems,buildSlate,fallbackDescription,displayedEvents,finishedManifests,nextBuildVersion,weekContext,recentIssues,windowLabel,fill,templateValues,addDays,receiptText,parseArgs,runGuarded,TEMPLATES,EXAMPLES};
+  shortlist,formLinked,assertPoolSupply,supplyProblems,buildSlate,fallbackDescription,seriesId,displayedEvents,finishedManifests,nextBuildVersion,weekContext,recentIssues,windowLabel,fill,templateValues,addDays,receiptText,parseArgs,runGuarded,TEMPLATES,EXAMPLES};
 if(require.main===module)main(process.argv.slice(2));

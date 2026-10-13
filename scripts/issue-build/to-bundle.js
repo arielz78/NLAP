@@ -1,10 +1,9 @@
 // Offline producer-run -> editor-console IssueBuild adapter (ship-plan item 10).
 // Usage: node scripts/issue-build/to-bundle.js <run-folder>
 // Writes bundle.json, or verifies identical existing bytes. Never replaces a different bundle.
-// The producer supplies manifest.build_version and displayed_events.json (a description for every
-// displayed event, each marked 'source' or 'fallback'); a run finalized before it did is refused.
-// Deliberate gaps: packet candidates' seriesId/classification must be supplied explicitly upstream.
-// A URL/title is not a verified recurring-series identity. Nothing here writes or rewrites copy.
+// The producer supplies manifest.build_version and displayed_events.json (for every displayed event:
+// a description marked 'source' or 'fallback', a series_id and a classification); a run finalized
+// before it did is refused. Nothing here derives a series, defaults a classification or rewrites copy.
 'use strict';
 const fs=require('node:fs'), path=require('node:path'), crypto=require('node:crypto');
 const ROOT=path.resolve(__dirname,'../..'), BUNDLE_FILE='bundle.json';
@@ -77,7 +76,7 @@ function buildBundle({manifest,week,preparation,packet,ranked,allocation,display
       else checkClassification(item,at+'.'+key);
     }
   }
-  checkClassification({packet,ranked,allocation},'run');
+  checkClassification({packet,ranked,allocation,displayed},'run');
   const issueDate=text(manifest?.issue_date,'issueDate','run_manifest.json.issue_date');
   if(issueDate&&!/^\d{4}-\d{2}-\d{2}$/.test(issueDate))problems.push('issueDate must be date-only');
   if(week?.issue!==issueDate||preparation?.issue_date!==issueDate)problems.push('Issue date mismatch in week.json or preparation_manifest.json');
@@ -138,15 +137,14 @@ function buildBundle({manifest,week,preparation,packet,ranked,allocation,display
       const c=byId.get(itemId),f=c?.snapshot_fields;
       if(!c)problems.push('Candidate '+itemId+' missing from ranking_packet.json');
       if(!ordered.some(row=>row?.id===itemId))problems.push('Candidate '+itemId+' missing from ranked section '+label);
-      const at='ranking_packet.json candidate '+itemId;
-      // TODO(ariel): seriesId and classification (ship-plan item 10a). The producer supplies neither, so every
-      // current run is refused on the two checks below. Do not derive or default them here.
-      const classification=c?.classification;
-      if(classification!=='classified')problems.push('classification not available or not classified: '+at+'.classification');
+      const at='ranking_packet.json candidate '+itemId,shownAt='displayed_events.json event '+itemId;
+      // Both come from the producer's displayed_events.json (ship-plan item 10a). Never derived or defaulted here.
+      const classification=shownById.get(itemId)?.classification;
+      if(classification!=='classified')problems.push('classification not available or not classified: '+shownAt+'.classification');
       const startsAt=text(f?.['Start Date'],'startsAt',at+'.snapshot_fields[Start Date]');
       if(startsAt&&!/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}.*)?$/.test(startsAt))problems.push('Invalid startsAt for '+itemId+': '+startsAt);
       return {id:text(c?.record_id,'id',at+'.record_id'),
-        seriesId:text(c?.seriesId,'seriesId',at+'.seriesId (verified recurring-series identity required)'),
+        seriesId:text(shownById.get(itemId)?.series_id,'seriesId',shownAt+'.series_id'),
         occurrenceId:text(f?.UniqueEventID,'occurrenceId',at+'.snapshot_fields.UniqueEventID'),
         title:text(f?.['Event Title'],'title',at+'.snapshot_fields[Event Title]'),startsAt,
         venue:text(f?.LocationName,'venue',at+'.snapshot_fields.LocationName'),

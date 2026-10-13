@@ -66,9 +66,9 @@ Tested with stubbed stages only; it has not yet run a real week end to end.
 
 `to-bundle.js <run folder>` converts a finished run into the editor console's `IssueBuild` contract
 (`apps/editor-console/lib/contracts.ts`) and writes `bundle.json` into the run folder. It refuses, and
-writes nothing, when a required field cannot be filled from the run folder. **It refuses every real run
-today:** the producer does not yet supply `seriesId` or `classification` (ranking packet). Both are
-`TODO(ariel)` seams (ship-plan item 10a); nothing derives or defaults them.
+writes nothing, when a required field cannot be filled from the run folder. A run finalized on or after
+2026-10-13 converts; an older run folder is refused for the fields it predates and is never rewritten
+(rebuild it from its saved response into a fresh folder).
 
 The replacement assessment matrix (ship-plan item 9, Decision_Log §108) is filled from the producer's own
 `replaceable_slots`: replacing an original pick with an alternative is `clean` when the pick's slot is in
@@ -77,7 +77,15 @@ only arise after an earlier swap, are marked as not checked. Nothing is ever `un
 does not show this table to the editor: it assesses each swap against the current lineup itself
 (`apps/editor-console/lib/replacement-rules.ts`). The table feeds the saved record of a swap only.
 
-`finalize` supplies the other two fields the bundle needs:
+`finalize` supplies the fields the bundle needs. In `displayed_events.json`, beside each description:
+
+- **`series_id`**: the event's title, lowercased with whitespace collapsed. Listings with the same title
+  are one series whatever the venue or time (the key R7 and `scripts/r6` use, Decision_Log §92). The
+  console uses it only to warn when a swap puts two of one series in a section.
+- **`classification`**: `classified` for every displayed event, because each was placed in its section by
+  the ranker. `unclassified` is reserved for an event that reached the console without the ranker.
+
+Neither is added to the ranking packet, so the model's input is unchanged. The other two:
 
 - **`build_version`** in `run_manifest.json`: one more than the number of finished runs (folders holding
   a `run_manifest.json`) for the same issue date, and never at or below a `build_version` one of them

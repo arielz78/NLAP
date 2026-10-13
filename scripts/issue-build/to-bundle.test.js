@@ -10,7 +10,7 @@ const encode=x=>JSON.stringify(x,null,2)+'\n';
 
 function fixture(){
   const candidates=LABELS.flatMap((section,s)=>Array.from({length:12},(_,i)=>({
-    record_id:'rec'+s+'_'+i,seriesId:'series'+s+'_'+i,classification:'classified',
+    record_id:'rec'+s+'_'+i,
     snapshot_fields:{'Event Title':'Event '+s+' '+i,'Start Date':'2026-10-17',
       UniqueEventID:'event '+s+' '+i+'|2026-10-17',LocationName:'Venue '+s+' '+i,
       City:'Vaughan',DescriptionRaw:'Source description '+s+' '+i,Source:'Library',
@@ -113,11 +113,12 @@ const refusalCases=[
   ['missing section',x=>x.ranked.sections.pop(),/Missing section: For Golden Age Readers/],
   ['missing alternative section',x=>delete x.allocation.alternatives[LABELS[1]],/Missing section: For Couples/],
   ['too few picks',x=>x.allocation.picks.pop(),/For Golden Age Readers: 4 of 5 picks/],
-  ['unclassified item',x=>x.packet.candidates[0].classification='unclassified',/unclassified/],
+  ['unclassified item',x=>shown(x,'rec0_0').classification='unclassified',/unclassified/],
   ['unclassified undisplayed item',x=>x.packet.candidates.at(-1).classification='unclassified',/unclassified/],
   ['missing required field',x=>delete x.packet.candidates[0].snapshot_fields.URL,/sourceUrl.*rec0_0/],
-  ['missing recurring-series identity',x=>delete x.packet.candidates[0].seriesId,/seriesId.*rec0_0/],
-  ['missing classification',x=>delete x.packet.candidates[0].classification,/classification.*rec0_0/],
+  ['missing recurring-series identity',x=>delete shown(x,'rec0_0').series_id,/seriesId.*rec0_0/],
+  ['blank recurring-series identity',x=>shown(x,'rec0_0').series_id=' ',/seriesId.*rec0_0/],
+  ['missing classification',x=>delete shown(x,'rec0_0').classification,/classification.*rec0_0/],
   ['missing displayed description',x=>x.displayed.events=x.displayed.events.filter(e=>e.id!=='rec0_0'),/description.*rec0_0/],
   ['empty displayed description',x=>shown(x,'rec0_0').description=' ',/description.*rec0_0/],
   ['unmarked description',x=>delete shown(x,'rec0_0').description_source,/description_source.*rec0_0/],
@@ -146,7 +147,6 @@ for(const [name,mutate,pattern] of refusalCases)test('refuses '+name+' with a na
 
 test('reports all unavailable fields together rather than manufacturing placeholders',()=>{
   const input=fixture();delete input.manifest.build_version;
-  for(const c of input.packet.candidates){delete c.seriesId;delete c.classification;}
   input.displayed.events=[];
   assert.throws(()=>d.buildBundle(input),e=>{
     for(const field of ['buildVersion','seriesId','classification','description'])assert.match(e.message,new RegExp(field));
@@ -154,11 +154,11 @@ test('reports all unavailable fields together rather than manufacturing placehol
   });
 });
 
-// Ship-plan item 10a: the producer supplies build_version and a description for every displayed event.
-// seriesId and classification stay open, and they are the only fields a current run is refused for.
-test('a run with build_version and descriptions is refused for seriesId and classification only',()=>{
+// Ship-plan item 10a: the producer supplies build_version and, for every displayed event, a description,
+// a series_id and a classification. A run finalized before the last two existed is refused for them only.
+test('a run finalized before series_id and classification existed is refused for those two only',()=>{
   const input=fixture();
-  for(const c of input.packet.candidates){delete c.seriesId;delete c.classification;}
+  for(const e of input.displayed.events){delete e.series_id;delete e.classification;}
   assert.throws(()=>d.buildBundle(input),e=>{
     const lines=e.message.split('\n- ').slice(1);
     assert.equal(lines.length,60); // 15 picks + 15 shown alternatives, two fields each
@@ -166,6 +166,23 @@ test('a run with build_version and descriptions is refused for seriesId and clas
     assert.equal(lines.filter(l=>l.startsWith('classification not available')).length,30);
     assert.doesNotMatch(e.message,/buildVersion|build_version|description/);return true;
   });
+});
+
+// The series rule: same title is one series, whatever the venue or time. Every displayed event is classified.
+test('one title at two venues and dates is one series; different titles are different series',()=>{
+  const input=fixture(),[a,b,c]=input.packet.candidates;
+  a.snapshot_fields['Event Title']='Little Explorers Storytime';
+  Object.assign(b.snapshot_fields,{'Event Title':'  little explorers   STORYTIME ','Start Date':'2026-10-18',LocationName:'Maple Library'});
+  input.displayed=producer.displayedEvents('2026-10-15',input.packet,input.allocation,input.allocation.alternatives);
+  const shownEvents=d.buildBundle(input).sections.flatMap(s=>[...s.selected,...s.alternatives.map(x=>x.candidate)]);
+  const series=id=>shownEvents.find(e=>e.id===id).seriesId;
+  assert.equal(series(a.record_id),'little explorers storytime');
+  assert.equal(series(b.record_id),series(a.record_id));
+  assert.notEqual(series(c.record_id),series(a.record_id));
+  assert.equal(new Set(shownEvents.map(e=>e.seriesId)).size,29); // 30 displayed events, two share a series
+  assert.ok(shownEvents.every(e=>e.classification==='classified'));
+  // The model's input carries neither field.
+  assert.ok(input.packet.candidates.every(x=>!('seriesId' in x)&&!('series_id' in x)&&!('classification' in x)));
 });
 
 test('a fallback description converts, and a run folder without displayed_events.json is refused',()=>{

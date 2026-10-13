@@ -223,7 +223,12 @@ test('every displayed event carries a description and a fallback is marked as on
  assert.equal(shown.length,30); assert.deepEqual(events.map(e=>e.id),shown);
  assert.ok(events.every(e=>e.description.trim().length>0&&['source','fallback'].includes(e.description_source)));
  const byId=new Map(events.map(e=>[e.id,e]));
- assert.deepEqual(byId.get('f0'),{id:'f0',description:'From the source.',description_source:'source'});
+ assert.deepEqual(byId.get('f0'),{id:'f0',series_id:d.seriesId(rows[0]),classification:'classified',description:'From the source.',description_source:'source'});
+ // Same title is one series whatever the venue or time; a blank title falls back to the record id.
+ assert.equal(d.seriesId({record_id:'a',snapshot_fields:{'Event Title':' Little  Explorers STORYTIME',LocationName:'Maple Library'}}),'little explorers storytime');
+ assert.equal(d.seriesId({record_id:'b',snapshot_fields:{'Event Title':'Little Explorers Storytime',LocationName:'Carrville Library'}}),'little explorers storytime');
+ assert.equal(d.seriesId({record_id:'c',snapshot_fields:{'Event Title':'  '}}),'id:c');
+ assert.ok(events.every(e=>e.classification==='classified'&&e.series_id));
  // Whitespace is not a description. The fallback uses only the candidate's own fields.
  assert.equal(byId.get('f1').description_source,'fallback');
  assert.equal(byId.get('f1').description,d.fallbackDescription(rows[1].snapshot_fields));
