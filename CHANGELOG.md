@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-10-13
+- Settled how the review console treats a swap: every replacement is checked against the lineup as it currently stands, a repeat is shown as a specific warning, and the editor can always overrule it. The venue rule now lives in both the allocator and the console, kept in step by one shared list of test cases that both suites must pass.
+- Built the bridge from a console submission to the Airtable writer (fixtures only, no live write), and taught the weekly ranking build to supply a build number and a description for every displayed event.
+
 ## 2026-10-11
 - Built the connectors between the weekly ranking build, the review console and Airtable: one command that runs the week's build stages and resumes after a failure without repeating a paid call, a create-only writer for confirmed selections that is dry-run by default, and a converter from a build into the console's data contract. An independent review found two silent-failure paths; both were fixed with tests before commit.
 - Added a weekly check that compares each published issue with the slate that was sent. It reproduced an earlier hand-scored result exactly and reports uncertain matches for a person instead of guessing.

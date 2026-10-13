@@ -18,6 +18,7 @@ import {
   createReopenedDraft,
   createSubmission,
 } from "@/lib/draft-domain";
+import { assessReplacement } from "@/lib/replacement-rules";
 import { formatSchedule } from "@/lib/format-schedule";
 
 const issueDateFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -761,12 +762,15 @@ export function EditorConsole({
             </p>
             <div className="alternative-list">
               {currentAlternatives.map(({ candidate }) => {
-                const assessment = currentSectionBundle.replacementAssessments[
-                  selectedForReplacement.id
-                ]?.[candidate.id] ?? {
-                  status: "unavailable" as const,
-                  reason: "No contextual assessment was supplied for this pairing.",
-                };
+                const assessment = assessReplacement(
+                  workspace.build,
+                  workspace.draft.selections,
+                  activeSection,
+                  activeSlot.sectionId === activeSection
+                    ? activeSlot.slotIndex
+                    : 0,
+                  candidate,
+                );
                 return (
                   <AlternativeCard
                     key={candidate.id}

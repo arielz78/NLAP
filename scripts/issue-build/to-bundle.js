@@ -1,9 +1,10 @@
 // Offline producer-run -> editor-console IssueBuild adapter (ship-plan item 10).
 // Usage: node scripts/issue-build/to-bundle.js <run-folder>
 // Writes bundle.json, or verifies identical existing bytes. Never replaces a different bundle.
-// Deliberate gaps: manifest.build_version and packet candidates' seriesId/classification must
-// be supplied explicitly upstream. A demo label is not a per-issue build version; a URL/title
-// is not a verified recurring-series identity. Null DescriptionRaw cannot become invented copy.
+// The producer supplies manifest.build_version and displayed_events.json (a description for every
+// displayed event, each marked 'source' or 'fallback'); a run finalized before it did is refused.
+// Deliberate gaps: packet candidates' seriesId/classification must be supplied explicitly upstream.
+// A URL/title is not a verified recurring-series identity. Nothing here writes or rewrites copy.
 'use strict';
 const fs=require('node:fs'), path=require('node:path'), crypto=require('node:crypto');
 const ROOT=path.resolve(__dirname,'../..'), BUNDLE_FILE='bundle.json';
@@ -28,15 +29,30 @@ function buildId(name){
   const h=bytes.toString('hex');return [h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join('-');
 }
 
-function buildAssessmentMatrix(section){
-  // TODO(ariel): build the per-replacement assessments (ship-plan item 9). {} is permitted
-  // by SectionBundle.replacementAssessments. Until filled, the console refuses all swaps.
-  return {};
+// Ship-plan item 9. No swap is ever refused: the worst verdict is a warning the editor can overrule.
+// The verdict is the producer's own replaceable_slots, never a second copy of the allocator's rules
+// (Decision_Log §87). The producer checked each alternative against the original five picks only, so
+// a pair that can arise only after an earlier swap has no verdict and is marked as not checked.
+const VERDICTS={
+  clean:{status:'clean',reason:'Fits this slot.'},
+  warning:{status:'override',reason:'This swap may repeat a venue or event already in this section.'},
+  unchecked:{status:'override',reason:'Not checked against your earlier swaps. Look for a repeated venue or event in this section.'}
+};
+function buildAssessmentMatrix(section,replaceableSlots){
+  const all=[...section.selected,...section.alternatives.map(a=>a.candidate)];
+  const slotOf=new Map(section.selected.map((c,i)=>[c.id,i+1]));
+  const verdict=(out,incoming)=>{
+    const slot=slotOf.get(out.id),slots=replaceableSlots.get(incoming.id);
+    if(slot===undefined||slots===undefined)return VERDICTS.unchecked;
+    return slots.includes(slot)?VERDICTS.clean:VERDICTS.warning;
+  };
+  return Object.fromEntries(all.map(out=>[out.id,
+    Object.fromEntries(all.filter(c=>c.id!==out.id).map(incoming=>[incoming.id,{...verdict(out,incoming)}]))]));
 }
 
 // Pure mapping. Collect every gap before refusing; the placeholder return values below are
 // never serialized if any problem exists. They are not defaults for missing source fields.
-function buildBundle({manifest,week,preparation,packet,ranked,allocation}){
+function buildBundle({manifest,week,preparation,packet,ranked,allocation,displayed}){
   const problems=[];
   const text=(value,field,source,allowEmpty=false)=>{
     if(typeof value!=='string'||(!allowEmpty&&!value.trim())){
@@ -87,6 +103,19 @@ function buildBundle({manifest,week,preparation,packet,ranked,allocation}){
     if(byId.has(id))problems.push('Duplicate candidate ID: '+id);
     byId.set(id,c);
   }
+  // The description_source mark stays in displayed_events.json: the console's Candidate has no field for it.
+  if(!displayed)problems.push('description not available: displayed_events.json is missing (the producer writes it at finalize; this run predates it)');
+  else if(displayed.issue_date!==issueDate)problems.push('Issue date mismatch in displayed_events.json');
+  const shownById=new Map((displayed?list(displayed.events,'displayed_events.json.events'):[]).map(e=>[e?.id,e]));
+  const describe=(itemId,raw)=>{
+    if(!displayed)return '';
+    const e=shownById.get(itemId),at='displayed_events.json event '+itemId,hasRaw=typeof raw==='string'&&raw.trim().length>0;
+    const value=text(e?.description,'description',at+'.description');
+    if(e&&!['source','fallback'].includes(e.description_source))problems.push('description_source must be source or fallback: '+at);
+    else if(e&&(e.description_source==='source')!==hasRaw)problems.push('description_source does not match the snapshot: '+at+' is marked '+e.description_source);
+    else if(e&&hasRaw&&value!==raw)problems.push('description differs from the snapshot text: '+at+' against snapshot_fields.DescriptionRaw');
+    return value;
+  };
   const ranking=list(ranked?.sections,'ranked_pool.json.sections'),picks=list(allocation?.picks,'allocation.json.picks');
   for(const s of ranking)if(!SECTIONS.some(([label])=>label===s?.section))problems.push('Unknown section in ranked_pool.json: '+s?.section);
   for(const p of picks)if(!SECTIONS.some(([label])=>label===p?.Section))problems.push('Unknown section in allocation.json: '+p?.Section);
@@ -110,6 +139,8 @@ function buildBundle({manifest,week,preparation,packet,ranked,allocation}){
       if(!c)problems.push('Candidate '+itemId+' missing from ranking_packet.json');
       if(!ordered.some(row=>row?.id===itemId))problems.push('Candidate '+itemId+' missing from ranked section '+label);
       const at='ranking_packet.json candidate '+itemId;
+      // TODO(ariel): seriesId and classification (ship-plan item 10a). The producer supplies neither, so every
+      // current run is refused on the two checks below. Do not derive or default them here.
       const classification=c?.classification;
       if(classification!=='classified')problems.push('classification not available or not classified: '+at+'.classification');
       const startsAt=text(f?.['Start Date'],'startsAt',at+'.snapshot_fields[Start Date]');
@@ -120,7 +151,7 @@ function buildBundle({manifest,week,preparation,packet,ranked,allocation}){
         title:text(f?.['Event Title'],'title',at+'.snapshot_fields[Event Title]'),startsAt,
         venue:text(f?.LocationName,'venue',at+'.snapshot_fields.LocationName'),
         city:text(f?.City,'city',at+'.snapshot_fields.City'),
-        description:text(f?.DescriptionRaw,'description',at+'.snapshot_fields.DescriptionRaw',true),
+        description:describe(itemId,f?.DescriptionRaw),
         sourceLabel:text(f?.Source,'sourceLabel',at+'.snapshot_fields.Source'),
         sourceUrl:text(f?.URL,'sourceUrl',at+'.snapshot_fields.URL'),classification};
     };
@@ -133,7 +164,7 @@ function buildBundle({manifest,week,preparation,packet,ranked,allocation}){
     const localIds=[...selected.map(c=>c.id),...alternatives.map(a=>a.candidate.id)];
     if(new Set(localIds).size!==localIds.length)problems.push('Duplicate displayed candidate in '+label);
     const section={id,label:displayLabel,selected,alternatives};
-    return {...section,replacementAssessments:buildAssessmentMatrix(section)};
+    return {...section,replacementAssessments:buildAssessmentMatrix(section,new Map(shown.map(a=>[a.id,a.replaceable_slots])))};
   });
   if(problems.length)throw new Error('Cannot create IssueBuild bundle:\n- '+[...new Set(problems)].join('\n- '));
   const payload={issueKey:'vaughan-brief-'+issueDate,issueDate,buildVersion,contractVersion:CONTRACT_VERSION,
@@ -163,8 +194,11 @@ function convertRun(runFolder,io=fs){
   };
   const input={manifest:read('run_manifest.json'),week:read('week.json'),preparation:read('preparation_manifest.json'),
     request:read('request_manifest.json'),packet:read('ranking_packet.json'),ranked:read('ranked_pool.json'),allocation:read('allocation.json')};
+  // Absent from a run finalized before the producer wrote it; buildBundle then names the gap with the others.
+  if(io.existsSync(filePath('displayed_events.json')))input.displayed=read('displayed_events.json');
   for(const [name,expected] of [['allocation.json',input.manifest.allocation_sha256],
-    ['ranked_pool.json',input.manifest.ranked_pool_sha256],['ranking_packet.json',input.request.packet_sha256]]){
+    ['ranked_pool.json',input.manifest.ranked_pool_sha256],['ranking_packet.json',input.request.packet_sha256],
+    ...(input.displayed?[['displayed_events.json',input.manifest.displayed_events_sha256]]:[])]){
     if(typeof expected!=='string'||sha(bytes[name])!==expected)throw new Error(name+' hash mismatch against saved manifest');
   }
   const output=filePath(BUNDLE_FILE),serialized=canonicalJSON(buildBundle(input));

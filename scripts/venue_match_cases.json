@@ -1,0 +1,17 @@
+{
+  "about": "Shared cases for 'are these two venue names the same place'. Two implementations must agree with every row: venueKey() in scripts/buildIssues.js and venueKey() in apps/editor-console/lib/replacement-rules.ts. Change the rule in both, and add the case here first.",
+  "rule": "Same venue when the names are equal after trimming, lower-casing and collapsing runs of whitespace. A blank name never matches anything, including another blank.",
+  "cases": [
+    { "a": "Vaughan Public Library", "b": "Vaughan Public Library", "same": true },
+    { "a": "Vaughan Public Library", "b": "vaughan public library", "same": true },
+    { "a": " City Playhouse Theatre ", "b": "City Playhouse Theatre", "same": true },
+    { "a": "Kortright  Centre", "b": "Kortright Centre", "same": true },
+    { "a": "McMichael\tGallery", "b": "mcmichael gallery", "same": true },
+    { "a": "", "b": "", "same": false },
+    { "a": "   ", "b": "", "same": false },
+    { "a": "", "b": "Vaughan Public Library", "same": false },
+    { "a": "Vaughan Public Library", "b": "Markham Public Library", "same": false },
+    { "a": "VPL - Civic Centre", "b": "Civic Centre Resource Library", "same": false },
+    { "a": "Pinot's Palette", "b": "Pinots Palette", "same": false }
+  ]
+}

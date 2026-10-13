@@ -276,17 +276,16 @@ describe("editor draft domain", () => {
     expect(reopened.selections.families[0].id).toBe("fam-06");
   });
 
-  it("blocks a replacement marked unavailable", () => {
+  it("never refuses a replacement, even one the bundle marked unavailable", () => {
     const initial = createInitialDraft(mockIssueBuild);
+    const result = applyDraftCommand(mockIssueBuild, initial, {
+      ...eventBase(),
+      type: "replace",
+      sectionId: "families",
+      slotIndex: 3,
+      alternativeCandidateId: "fam-09",
+    });
 
-    expect(() =>
-      applyDraftCommand(mockIssueBuild, initial, {
-        ...eventBase(),
-        type: "replace",
-        sectionId: "families",
-        slotIndex: 3,
-        alternativeCandidateId: "fam-09",
-      }),
-    ).toThrow("same upstream series");
+    expect(result.draft.selections.families[3].id).toBe("fam-09");
   });
 });

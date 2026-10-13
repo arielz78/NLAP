@@ -67,9 +67,30 @@ Tested with stubbed stages only; it has not yet run a real week end to end.
 `to-bundle.js <run folder>` converts a finished run into the editor console's `IssueBuild` contract
 (`apps/editor-console/lib/contracts.ts`) and writes `bundle.json` into the run folder. It refuses, and
 writes nothing, when a required field cannot be filled from the run folder. **It refuses every real run
-today:** the producer does not yet supply `build_version` (run manifest), `seriesId` or `classification`
-(ranking packet), and some events have no description. The replacement assessment matrix is an empty
-`TODO(ariel)` seam (ship-plan item 9), so a converted bundle allows no swaps until that is written.
+today:** the producer does not yet supply `seriesId` or `classification` (ranking packet). Both are
+`TODO(ariel)` seams (ship-plan item 10a); nothing derives or defaults them.
+
+The replacement assessment matrix (ship-plan item 9, Decision_Log §108) is filled from the producer's own
+`replaceable_slots`: replacing an original pick with an alternative is `clean` when the pick's slot is in
+that alternative's list and a warning (`override`) otherwise. Pairs the producer never assessed, which can
+only arise after an earlier swap, are marked as not checked. Nothing is ever `unavailable`. The console
+does not show this table to the editor: it assesses each swap against the current lineup itself
+(`apps/editor-console/lib/replacement-rules.ts`). The table feeds the saved record of a swap only.
+
+`finalize` supplies the other two fields the bundle needs:
+
+- **`build_version`** in `run_manifest.json`: one more than the number of finished runs (folders holding
+  a `run_manifest.json`) for the same issue date, and never at or below a `build_version` one of them
+  already carries. A run finished before the field existed counts as one build; a run that stopped
+  before its manifest does not. Deleting the highest-numbered run folder frees its number.
+- **`displayed_events.json`**: one row per event the preview shows (picks and listed alternatives), with
+  a non-empty `description` and a `description_source`. `source` is the snapshot's `DescriptionRaw`,
+  unchanged. `fallback` is used when that is missing or blank: the title, date, venue, city and source
+  from the snapshot, ending "No description was supplied by the source". No model call and no page
+  fetch. The mark stays in this file; the console's contract has no field for it.
+
+A run finalized before these existed is also refused for them, and stays that way: outputs are never
+rewritten.
 
 ## Replay (no model call, no page fetch)
 
@@ -157,7 +178,8 @@ repair is the form-link rule below. Nothing else is repaired without a person (D
 `editor_rules.md`, `ranking_prompt.txt` (as sent) · `page_evidence.json` · `ranking_packet.json`,
 `request.json`, `request_manifest.json` · `response.json`, `usage.json`, `attempt.json` or `replay.json` ·
 `ranked_pool.json` (the repaired, validated ranking), `allocation.json`, `validation.json` ·
-`editor_preview.html`, `editor_preview.md` · `run_manifest.json` (git SHA, `prompt_template_sha256`,
+`displayed_events.json` · `editor_preview.html`, `editor_preview.md` · `run_manifest.json` (git SHA,
+`build_version`, `prompt_template_sha256`,
 `repair_receipt`, `human_review`, checks, hashes) · `RECEIPT.md` · `human_review.json` after signoff.
 
 ## Tests

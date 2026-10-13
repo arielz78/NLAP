@@ -12,6 +12,7 @@ import type {
   TrainingPair,
 } from "@/lib/contracts";
 import { sectionIds, slotKey } from "@/lib/contracts";
+import { assessReplacement } from "@/lib/replacement-rules";
 
 function copy<T>(value: T): T {
   return structuredClone(value);
@@ -105,14 +106,15 @@ export function applyDraftCommand(
     }
 
     const alternative = alternatives[alternativeIndex];
-    const assessment =
-      section.replacementAssessments[selected.id]?.[alternative.candidate.id];
-
-    if (!assessment || assessment.status === "unavailable") {
-      throw new Error(
-        assessment?.reason ?? "The assembly bundle did not assess this replacement.",
-      );
-    }
+    // Assessed against the lineup as it stands now. A replacement is never refused:
+    // the worst verdict is a warning, recorded with the event below.
+    const assessment = assessReplacement(
+      build,
+      draft.selections,
+      command.sectionId,
+      command.slotIndex,
+      alternative.candidate,
+    );
 
     draft.history.push({
       sectionId: command.sectionId,

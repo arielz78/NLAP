@@ -25,7 +25,7 @@ After every R8 session:
 
 ---
 
-## 0. Status (2026-10-11)
+## 0. Status (2026-10-13)
 
 R8 is open ahead of the R6 gate, on a delivery commitment to the editor. R7 is closeout-only and
 off the critical path.
@@ -71,8 +71,21 @@ console contract and **refuses every real run**, because the producer does not s
 `seriesId`, `classification`, or a description for every event (ship-plan item 10a, #150). `publish-build.ts` does
 not exist.
 
-**Next:** ship-plan item 10a (the four missing fields) and item 9 (Ariel's replacement checks and assessment
-matrix) stand between the producer and a real build loading in the console. Item 3's first live `--apply`
+**Built and tested 2026-10-13, none yet run live:** item 9 (replacement checks; Decision_Log §108). The console
+now assesses every swap against the current lineup (`lib/replacement-rules.ts`), warns and never refuses, and
+`to-bundle.js` fills the assessment table from the producer's `replaceable_slots`. The allocator's venue match
+ignores capitals and extra spaces, held to the console's copy by `scripts/venue_match_cases.json`. Item 7 is
+built against fixtures (`scripts/applySubmission.js`): it maps a submission to the writer's picks file and never
+calls Airtable; the live database read is a stub awaiting Neon credentials, and its "I'm filling this myself"
+field is an assumption until the console writes one (#152). Item 10a is half done: the producer now supplies
+`build_version` and a description for every displayed event, so a rebuilt run is refused for `seriesId` and
+`classification` only (#150). Item 12's message is drafted and unsent.
+⚠️ The submit record still reads the build-time assessment table while the swap event carries the live verdict;
+the two can disagree. To fix before the first live week (#151).
+
+**Next:** the submit record's verdict source (above), then item 10a's two remaining fields (Ariel: what defines
+a series, what `classification` means) and `publish-build.ts`, which stand between the producer and a real
+build loading in the console. Item 3's first live `--apply`
 still needs Ariel's go and its own bounded review. The ship plan's new §0 states the destination (an editor-run week) and
 stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
 **where V1 closes is not settled.** D0 is chosen (Decision_Log §106), so it no longer

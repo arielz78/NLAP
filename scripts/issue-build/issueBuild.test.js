@@ -193,6 +193,49 @@ test('a ranked record is removed from the exclusions; an unranked or unexcluded 
  assert.throws(()=>fix(ranking,'b'),/precondition failed/);
 });
 
+// ---- Console bundle inputs (ship-plan item 10a): build version and displayed descriptions. ----
+test('build version is a per-issue number that rises with every finished build',()=>{
+ const first=d.nextBuildVersion(ISSUE,[]); assert.equal(first,1);
+ const second=d.nextBuildVersion(ISSUE,[{issue_date:ISSUE,build_version:first}]);
+ assert.ok(Number.isSafeInteger(second)&&second>first);
+ assert.equal(d.nextBuildVersion(ISSUE,[{issue_date:ISSUE,build_version:first},{issue_date:ISSUE,build_version:second}]),3);
+ // Another issue's builds do not count. A run finished before the field existed counts as one build.
+ assert.equal(d.nextBuildVersion(ISSUE,[{issue_date:d.addDays(ISSUE,7),build_version:9}]),1);
+ assert.equal(d.nextBuildVersion(ISSUE,[{issue_date:ISSUE}]),2);
+ assert.equal(d.nextBuildVersion(ISSUE,[{issue_date:ISSUE},{issue_date:ISSUE,build_version:2}]),3);
+ assert.equal(d.nextBuildVersion(ISSUE,[{issue_date:ISSUE,build_version:4}]),5);
+ // From disk: only folders holding a run manifest are finished builds, and the folder being built is not its own sibling.
+ const root=path.resolve(__dirname,'../../data/tracking/issue_build'),at=(...p)=>path.join(root,...p);
+ const files=new Map([[at('v5_a','run_manifest.json'),JSON.stringify({issue_date:ISSUE,build_version:1})],
+  [at('v5_stopped','ranked_pool.json'),'{}'],[at('v6_a','run_manifest.json'),JSON.stringify({issue_date:d.addDays(ISSUE,7),build_version:1})],
+  [at('v5_b','run_manifest.json'),JSON.stringify({issue_date:ISSUE,build_version:7})]]);
+ const io={existsSync:p=>p===root||files.has(p),readdirSync:()=>['v5_a','v5_stopped','v6_a','v5_b'],readFileSync:p=>files.get(p)};
+ const found=d.finishedManifests(at('v5_b'),io);
+ assert.deepEqual(found.map(m=>m.build_version),[1,1]);
+ assert.equal(d.nextBuildVersion(ISSUE,found),2);
+});
+test('every displayed event carries a description and a fallback is marked as one',()=>{
+ const rows=fullRows(); rows[0].snapshot_fields.DescriptionRaw='From the source.'; rows[1].snapshot_fields.DescriptionRaw='   ';
+ Object.assign(rows[2].snapshot_fields,{City:'Vaughan',Source:'Library'});
+ const built=d.buildSlate(week(),packetOf(rows),fullPool(rows)), events=built.displayed.events;
+ const shown=[...new Set([...built.result.picks.map(p=>p.ItemID),
+  ...d.SECTIONS.flatMap(s=>built.alts[s].filter(a=>a.replaceable_slots.length).slice(0,5).map(a=>a.id))])].sort();
+ assert.equal(shown.length,30); assert.deepEqual(events.map(e=>e.id),shown);
+ assert.ok(events.every(e=>e.description.trim().length>0&&['source','fallback'].includes(e.description_source)));
+ const byId=new Map(events.map(e=>[e.id,e]));
+ assert.deepEqual(byId.get('f0'),{id:'f0',description:'From the source.',description_source:'source'});
+ // Whitespace is not a description. The fallback uses only the candidate's own fields.
+ assert.equal(byId.get('f1').description_source,'fallback');
+ assert.equal(byId.get('f1').description,d.fallbackDescription(rows[1].snapshot_fields));
+ assert.equal(d.fallbackDescription({'Event Title':'Family Day!','Start Date':'2026-10-17T11:30:00-04:00',LocationName:'Library',City:'Vaughan',Source:'VPL'}),
+  'Family Day! October 17, 2026 at Library, Vaughan. No description was supplied by the source (VPL).');
+ assert.equal(d.fallbackDescription({'Event Title':'Yoga',LocationName:null}),'Yoga. No description was supplied by the source.');
+ assert.ok(byId.get('f2').description.includes('at F2, Vaughan.')&&byId.get('f2').description.endsWith('(Library).'));
+ assert.equal(events.filter(e=>e.description_source==='fallback').length,29);
+ assert.equal(built.displayed.issue_date,ISSUE); assert.ok(byId.get('f1').description.startsWith('f1. '));
+ assert.deepEqual(d.buildSlate(week(),packetOf(rows),fullPool(rows)).displayed,built.displayed);
+});
+
 // ---- Receipt and exit status. ----
 test('the run receipt carries the human-review line with a place for who and when',()=>{
  const manifest={mode:'replay',replay:{source:'x/response.json'},git:{sha:'abc',producer_paths_uncommitted:[]},prompt_template_sha256:'t',

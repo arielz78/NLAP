@@ -132,6 +132,14 @@ jobs:
       - name: Test connectAirtable
         run: node --test scripts/connectAirtable.test.js
 
+      # Includes the venue-match cases shared with the console (scripts/venue_match_cases.json).
+      - name: Test allocator
+        run: node scripts/buildIssues.js
+
+      # Fixtures only: no database, no Airtable request.
+      - name: Test submission bridge
+        run: node --test scripts/applySubmission.test.js
+
       # Offline: no model call, no page fetch. The editor-feedback templates are
       # gitignored, so here the template checks run against the *.example copies.
       - name: Test issue producer

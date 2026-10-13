@@ -87,10 +87,11 @@ function buildIssues(eligibleItems, lockedAssignments = [], issueDates = null, a
         filledSlots[a.Section] ??= new Set();
         filledSlots[a.Section].add(a.Slot);
         const lockedItem = eligibleItems.find((i) => i.id === a.ItemID);
-        if (lockedItem?.LocationName) {
+        const lockedVenue = venueKey(lockedItem?.LocationName);
+        if (lockedVenue) {
           venueCount[a.Section] ??= {};
-          venueCount[a.Section][lockedItem.LocationName] =
-            (venueCount[a.Section][lockedItem.LocationName] ?? 0) + 1;
+          venueCount[a.Section][lockedVenue] =
+            (venueCount[a.Section][lockedVenue] ?? 0) + 1;
         }
       }
     }
@@ -118,7 +119,7 @@ function buildIssues(eligibleItems, lockedAssignments = [], issueDates = null, a
       if (slot === null) continue;
 
       // Venue diversity: skip if same venue already appears in this section/issue
-      const venue = item.LocationName;
+      const venue = venueKey(item.LocationName);
       if (venue) {
         const sectionVenues = venueCount[section] ?? {};
         if ((sectionVenues[venue] ?? 0) >= 1) continue;
@@ -159,6 +160,13 @@ function toMidnight(date) {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+// Two venue names are the same place when their keys are equal. A blank name has no key and
+// never matches. The editor console carries its own copy of this rule; both must agree with
+// scripts/venue_match_cases.json.
+function venueKey(name) {
+  return typeof name === "string" ? name.trim().toLowerCase().replace(/\s+/g, " ") : "";
 }
 
 function fmtDate(date) {
@@ -243,6 +251,8 @@ function runTests() {
     item("V3", "For Couples", 64, WINDOW1_START, { location: "Venue Alpha" }), // 3rd — should be skipped
     // Blank venue should always be allowed through
     item("V4", "For Couples", 62, WINDOW1_START, { location: "" }),
+    // Same venue as V1 under different capitals and spacing — should be skipped
+    item("V5", "For Couples", 60, WINDOW1_START, { location: "  venue  ALPHA " }),
   ];
 
   // BAD5 is pre-existing in IssueItems as slot 1 of For Families in issue 1
@@ -338,6 +348,14 @@ function runTests() {
   if (issue1Ids2.has("V2"))  errors.push("FAIL: V2 should be skipped (2nd at Venue Alpha — venue limit)");
   if (issue1Ids2.has("V3"))  errors.push("FAIL: V3 should be skipped (3rd at Venue Alpha — venue limit)");
   if (!issue1Ids2.has("V4")) errors.push("FAIL: V4 should be placed (blank venue — always allowed)");
+  if (issue1Ids2.has("V5"))  errors.push("FAIL: V5 should be skipped (Venue Alpha under different capitals and spacing)");
+
+  // 7b. The venue rule agrees with the cases shared with the editor console
+  const venueCases = JSON.parse(require("fs").readFileSync(require("path").join(__dirname, "venue_match_cases.json"), "utf8")).cases;
+  for (const c of venueCases) {
+    const same = venueKey(c.a) !== "" && venueKey(c.a) === venueKey(c.b);
+    if (same !== c.same) errors.push(`FAIL: venue case "${c.a}" vs "${c.b}" — expected same=${c.same}, got ${same}`);
+  }
 
   // 8. Slot-aware lock: BAD5 is pre-existing at For Families slot 1 in issue 1
   //    Allocator must not re-place BAD5, and new For Families slots must start at 2
@@ -369,7 +387,7 @@ function runTests() {
 // ---------------------------------------------------------------------------
 
 if (typeof module !== "undefined") {
-  module.exports = { buildIssues, getNextThursdays, QUOTAS };
+  module.exports = { buildIssues, getNextThursdays, QUOTAS, venueKey };
 }
 
 // Run tests when executed directly: node buildIssues.js

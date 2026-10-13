@@ -239,6 +239,9 @@ function assemblePacket(d,selected,pages,week,rules) {
     similar.forEach(x=>needed.add(x.h.ref));
     const page=byPage.get(c.record_id);
     const pageExcerpt=page?{...page,text:page.text?.slice(0,3000)||null,packet_excerpt_truncated:(page.text?.length||0)>3000}:null;
+    // TODO(ariel): seriesId and classification (ship-plan item 10a) are not supplied. to-bundle.js reads both from
+    // these rows and refuses the run without them. What defines a series, and what classification means for a
+    // producer-built candidate, are undecided; nothing here derives or defaults them. This packet is the model's input.
     return {record_id:c.record_id,snapshot_fields:c.snapshot_fields,
       r7:{p_include:c.r7.p_include,section_probabilities:c.r7.section_probabilities,gate_fit_overlap:c.r7.gate_fit_overlap},
       retrieval_reasons:c.retrieval_reasons,page:pageExcerpt,
@@ -420,6 +423,40 @@ function supplyProblems(result,alts){
     supply[s].replaceable_alternatives<ALTERNATIVES?s+': '+supply[s].replaceable_alternatives+' of '+ALTERNATIVES+' replaceable alternatives':null].filter(Boolean));
   return {supply,problems};
 }
+// ---- Console bundle inputs (ship-plan item 10a). to-bundle.js reads both; neither is sent to the model. ----
+// Built only from fields already on the candidate: no model call, no page fetch. Always non-empty.
+function fallbackDescription(f){
+  const clean=x=>String(x||'').replace(/\s+/g,' ').trim();
+  const date=String(f['Start Date']||'').slice(0,10),place=[f.LocationName,f.City].map(clean).filter(Boolean).join(', ');
+  const when=[isDate(date)?longLabel(date):'',place?'at '+place:''].filter(Boolean).join(' '),source=clean(f.Source);
+  return [clean(f['Event Title']),when&&when[0].toUpperCase()+when.slice(1),'No description was supplied by the source'+(source?' ('+source+')':'')]
+    .filter(Boolean).map(s=>/[.!?]$/.test(s)?s:s+'.').join(' ');
+}
+// One row per event the preview shows: every pick, plus the alternatives render() lists. description_source
+// tells the snapshot's own text ('source') from the sentence built above ('fallback').
+function displayedEvents(issue,packet,result,alts){
+  const byId=new Map(packet.candidates.map(c=>[c.record_id,c]));
+  const ids=[...new Set([...result.picks.map(p=>p.ItemID),
+    ...SECTIONS.flatMap(s=>(alts[s]||[]).filter(a=>a.replaceable_slots.length).slice(0,ALTERNATIVES).map(a=>a.id))])].sort();
+  return {schema_version:'issue-build-displayed/1',issue_date:issue,
+    fallback_note:'description_source "fallback": the snapshot has no description; the text is the title, date, venue, city and source from the snapshot.',
+    events:ids.map(id=>{
+      const c=byId.get(id);assert(c,'Displayed event '+id+' is not in the ranking packet');
+      const raw=c.snapshot_fields.DescriptionRaw,fromSource=typeof raw==='string'&&raw.trim().length>0;
+      return {id,description:fromSource?raw:fallbackDescription(c.snapshot_fields),description_source:fromSource?'source':'fallback'};
+    })};
+}
+// Every finished run beside this one: a folder holding run_manifest.json under the output root or next to the run folder.
+function finishedManifests(dir,io=fs){
+  const folders=[...new Set([abs(OUT_ROOT),path.dirname(dir)])].filter(root=>io.existsSync(root)).flatMap(root=>io.readdirSync(root).map(n=>path.join(root,n)));
+  return [...new Set(folders)].filter(p=>p!==dir&&io.existsSync(path.join(p,'run_manifest.json'))).map(p=>JSON.parse(io.readFileSync(path.join(p,'run_manifest.json'),'utf8')));
+}
+// Per-issue build number: one more than the finished builds for this issue date, and never at or below a
+// number one of them already carries. A run finished before the field existed counts as one build.
+function nextBuildVersion(issue,manifests){
+  const same=manifests.filter(m=>m?.issue_date===issue);
+  return Math.max(same.length,...same.map(m=>m.build_version).filter(v=>Number.isSafeInteger(v)&&v>0))+1;
+}
 // Pure: a repaired ranking in, a checked slate and its preview out. Throws ThinSupplyError before anything is rendered.
 function buildSlate(week,packet,ranking){
   const ranked=validateRanking(ranking,packet.candidates,packet.history);
@@ -430,7 +467,7 @@ function buildSlate(week,packet,ranking){
     no_form_urls:!ranked.sections.some(s=>s.ordered.some(o=>isFormUrl(byId.get(o.id).snapshot_fields.URL)))};
   if(problems.length)throw new ThinSupplyError('Thin supply: '+problems.join('; ')+'. No editor preview was rendered; inspect allocation.json.',{ranked,result,alts,checks,supply});
   assert(checks.unique_ids,'A record was allocated twice');assert(checks.no_form_urls,'Form-linked record in the ranked pool (Decision_Log §101)');
-  return {ranked,result,alts,checks,supply,output:render(week,packet,ranked,result,alts)};
+  return {ranked,result,alts,checks,supply,displayed:displayedEvents(week.issue,packet,result,alts),output:render(week,packet,ranked,result,alts)};
 }
 function receiptText(week,manifest){
   const r=manifest.repair_receipt,line=c=>'  - '+[c.defect,c.type||c.op,c.title||c.record_id||c.id||c.section,c.effect||c.action].filter(Boolean).join(' · ');
@@ -463,6 +500,8 @@ function finalize(dir,opts={}){
   const raw=fs.readFileSync(path.join(dir,'response.json')),body=JSON.parse(raw),replay=has(dir,'replay.json')?read(dir,'replay.json'):null;
   if(opts.corrections&&path.resolve(abs(opts.corrections))!==path.join(dir,'corrections.json'))fs.copyFileSync(abs(opts.corrections),path.join(dir,'corrections.json'),fs.constants.COPYFILE_EXCL);
   const corrections=has(dir,'corrections.json')?read(dir,'corrections.json'):null;
+  // Read before anything is saved: an unreadable sibling manifest must stop the run while finalize can still be rerun.
+  const buildVersion=nextBuildVersion(week.issue,finishedManifests(dir));
   const {ranking,receipt}=repair(parseResponse(body),{responseSha:sha(raw),formExcluded:formLinked(d),corrections,
     correctionsSource:corrections?(opts.corrections?rel(opts.corrections):rel(path.join(dir,'corrections.json'))):null,knownIds:packet.candidates.map(c=>c.record_id)});
   let built;
@@ -472,12 +511,13 @@ function finalize(dir,opts={}){
     save(dir,'ranked_pool.json',e.detail.ranked);save(dir,'allocation.json',{...e.detail.result,alternatives:e.detail.alts});save(dir,'validation.json',{...e.detail.checks,supply:e.detail.supply});
     throw e;
   }
-  const {ranked,result,alts,checks,supply,output}=built;
+  const {ranked,result,alts,checks,supply,displayed,output}=built;
   if(!has(dir,'usage.json'))save(dir,'usage.json',usageFrom(body,m,Boolean(replay)));
   const usage=read(dir,'usage.json');
   save(dir,'ranked_pool.json',ranked);save(dir,'allocation.json',{...result,alternatives:alts});save(dir,'validation.json',{...checks,supply});
+  save(dir,'displayed_events.json',displayed);
   save(dir,'editor_preview.html',output.html);save(dir,'editor_preview.md',output.md);
-  const manifest={schema_version:'issue-build-run/1',issue_date:week.issue,version:week.version,window:[week.windowStart,week.windowEnd],finished_at:new Date().toISOString(),
+  const manifest={schema_version:'issue-build-run/1',issue_date:week.issue,version:week.version,build_version:buildVersion,window:[week.windowStart,week.windowEnd],finished_at:new Date().toISOString(),
     mode:replay?'replay':'live',replay,git:git(),git_at_prepare:m.git,
     prompt_template_sha256:m.prompt_template_sha256,editor_rules_template_sha256:m.editor_rules_template_sha256,guidance_sha256:m.guidance_sha256,prompt_rendered_sha256:m.prompt_rendered_sha256,
     human_review:{required:true,statement:HUMAN_REVIEW,reviewed_by:null,reviewed_at:null,recorded_in:'human_review.json (signoff command) or the line in RECEIPT.md'},
@@ -485,7 +525,7 @@ function finalize(dir,opts={}){
     request_key:m.request_key,request_code_sha256:m.code_sha256,render_code_sha256:codeIdentity(),
     allocator_sha256:sha(fs.readFileSync(path.join(ROOT,'scripts/buildIssues.js'))),response_sha256:sha(raw),
     ranked_pool_sha256:sha(fs.readFileSync(path.join(dir,'ranked_pool.json'))),allocation_sha256:sha(fs.readFileSync(path.join(dir,'allocation.json'))),
-    editor_html_sha256:sha(output.html),checks,supply,cost_usd:usage.estimated_usd,history_warning:week.history_warning,
+    displayed_events_sha256:sha(fs.readFileSync(path.join(dir,'displayed_events.json'))),editor_html_sha256:sha(output.html),checks,supply,cost_usd:usage.estimated_usd,history_warning:week.history_warning,
     projection:'Local Approved eligibility only; originals stay New/Approved. No Airtable mutation. Shared candidates retained until allocator-backed scarcity resolution.',
     architecture:'Provisional demo adapter; production buildIssues.js unchanged. Not a production cutover.'};
   save(dir,'run_manifest.json',manifest);save(dir,'RECEIPT.md',receiptText(week,manifest));
@@ -543,5 +583,5 @@ function main(argv){
   });
 }
 module.exports={SECTIONS,PICKS,ALTERNATIVES,POOL_FLOOR,HUMAN_REVIEW,ThinSupplyError,urlKey,sameOpportunity,historyFor,requestKey,validateRanking,allocate,alternatives,
-  shortlist,formLinked,assertPoolSupply,supplyProblems,buildSlate,weekContext,recentIssues,windowLabel,fill,templateValues,addDays,receiptText,parseArgs,runGuarded,TEMPLATES,EXAMPLES};
+  shortlist,formLinked,assertPoolSupply,supplyProblems,buildSlate,fallbackDescription,displayedEvents,finishedManifests,nextBuildVersion,weekContext,recentIssues,windowLabel,fill,templateValues,addDays,receiptText,parseArgs,runGuarded,TEMPLATES,EXAMPLES};
 if(require.main===module)main(process.argv.slice(2));

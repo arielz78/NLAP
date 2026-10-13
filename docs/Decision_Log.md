@@ -2479,3 +2479,28 @@ occurred in the five issues scored.
 
 **What this does not decide:** whether different-link matches are ever counted automatically, or which count
 goes in the metrics log.
+
+---
+
+## 108. Replacement Checks Warn and Never Refuse, and Run in the Console Against the Current Lineup (2026-10-13)
+
+**Decision:** no rule blocks a swap. A swap that would repeat a venue or a series within a section, or use an
+event already picked in another section, shows a warning and the editor may go ahead. The check runs in the
+console when he clicks, against the lineup as it stands (`apps/editor-console/lib/replacement-rules.ts`), not
+from a table computed when the slate was built. A swap made over a warning still counts as a preference when he
+marks it preferred. Venue names match ignoring capitals and extra spaces; a blank venue never matches. The
+bridge reports the repeats he kept and passes them. Ariel's calls, 2026-10-13. Settles ship-plan §4 D2 and
+amends the item 9 acceptance test.
+
+**Why:** the editor's word is final. A check against the original five picks is wrong from the second swap in a
+section onward. The console cannot load the allocator across the deploy boundary, so it carries its own copy of
+the venue rule, held to the allocator's by one shared case list (`scripts/venue_match_cases.json`) that both
+test suites must pass.
+
+**Accepted cost:** the venue rule exists twice, and a change to one side with no new shared case goes unnoticed.
+Warned swaps enter the preference record, so a pair can favour an event the system itself could not have placed.
+One hard stop remains downstream: the Airtable writer cannot write one event to two slots.
+
+**What this does not decide:** venue aliases (parked until the weekly comparison shows misses); which verdict
+the submit record carries; what defines a series (#150); how preference pairs are ever used. A pair is
+conditional on the whole slate that week and must be read that way.
