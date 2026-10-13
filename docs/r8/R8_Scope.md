@@ -48,9 +48,9 @@ login configured every request is refused). Ariel set up and owns both accounts 
 The build it serves is the 2026-10-15 slate rebuilt from the v6b run, published with
 `npm run publish-build`. ⚠️ **That database holds test data:** one submission Ariel made while testing,
 recorded under the editor's identity. **Decided 2026-10-13 (Ariel): the database is reset and re-migrated
-once, immediately before the 2026-10-22 build is published.** Everything in it before that reset is test
-data, including anything the editor submits while trying the console this week; real data starts with the
-2026-10-22 build. Rows in `submissions` and `issue_builds` cannot be deleted one at a time, so the reset
+once, immediately before the first real build is published (2026-10-22 at the earliest; the first issue
+after the editor walkthrough).** Everything in it before that reset is test data, including anything the
+editor submits while trying the console; real data starts with that build. Rows in `submissions` and `issue_builds` cannot be deleted one at a time, so the reset
 also removes the published 2026-10-15 build, which was a test rebuild. The reset has not been run. No
 write-back to Airtable has run. `lib/mock-issue.ts` is now the demo-mode fixture only.
 
