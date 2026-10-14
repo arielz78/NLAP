@@ -849,6 +849,7 @@ export function EditorConsole({
                   activeSection,
                   activeSlotIndex,
                   candidate,
+                  selfFilledSlots,
                 );
                 return (
                   <AlternativeCard

@@ -121,6 +121,7 @@ export function applyDraftCommand(
       command.sectionId,
       command.slotIndex,
       alternative.candidate,
+      draft.selfFilledSlots,
     );
 
     draft.history.push({

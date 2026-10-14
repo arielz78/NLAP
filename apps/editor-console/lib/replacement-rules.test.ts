@@ -180,6 +180,93 @@ describe("replacement checks against the current lineup", () => {
     });
   });
 
+  it("ignores a slot the editor is filling himself, and counts it again once unmarked", () => {
+    const build = buildWith({
+      "fam-03": { venue: "Example Hall", seriesId: "series-shared" },
+      "fam-06": { venue: "Example Hall", seriesId: "series-shared" },
+    });
+    const marked = applyDraftCommand(build, createInitialDraft(build), {
+      ...eventBase(),
+      type: "self_fill",
+      sectionId: "families",
+      slotIndex: 2,
+      selfFilled: true,
+    }).draft;
+    const incoming = marked.alternatives.families[0].candidate;
+
+    expect(
+      assessReplacement(
+        build,
+        marked.selections,
+        "families",
+        0,
+        incoming,
+        marked.selfFilledSlots,
+      ),
+    ).toEqual({ status: "clean", reason: "Fits this slot." });
+    expect(
+      applyDraftCommand(build, marked, {
+        ...eventBase(),
+        type: "replace",
+        sectionId: "families",
+        slotIndex: 0,
+        alternativeCandidateId: "fam-06",
+      }).event.payload.assessment,
+    ).toEqual({ status: "clean", reason: "Fits this slot." });
+
+    const unmarked = applyDraftCommand(build, marked, {
+      ...eventBase(),
+      type: "self_fill",
+      sectionId: "families",
+      slotIndex: 2,
+      selfFilled: false,
+    }).draft;
+
+    expect(
+      applyDraftCommand(build, unmarked, {
+        ...eventBase(),
+        type: "replace",
+        sectionId: "families",
+        slotIndex: 0,
+        alternativeCandidateId: "fam-06",
+      }).event.payload.assessment,
+    ).toEqual({
+      status: "override",
+      reason: `Same venue as pick 3: Example Hall. Same series as pick 3: ${unmarked.selections.families[2].title}.`,
+    });
+  });
+
+  it("still warns on an unmarked slot when a different slot is self-filled", () => {
+    const build = buildWith({
+      "fam-03": { venue: "Example Hall" },
+      "fam-06": { venue: "Example Hall" },
+    });
+    const draft = createInitialDraft(build);
+    const incoming = draft.alternatives.families[0].candidate;
+
+    expect(
+      assessReplacement(build, draft.selections, "families", 0, incoming, [
+        { sectionId: "families", slotIndex: 4 },
+      ]),
+    ).toEqual({
+      status: "override",
+      reason: "Same venue as pick 3: Example Hall.",
+    });
+  });
+
+  it("does not report an event as already picked when that pick is self-filled", () => {
+    const build = structuredClone(mockIssueBuild);
+    const shared = build.sections[1].selected[0];
+    build.sections[0].alternatives[0].candidate = structuredClone(shared);
+    const draft = createInitialDraft(build);
+
+    expect(
+      assessReplacement(build, draft.selections, "families", 0, shared, [
+        { sectionId: "couples", slotIndex: 0 },
+      ]),
+    ).toEqual({ status: "clean", reason: "Fits this slot." });
+  });
+
   it("lets the editor go ahead with a warned replacement and records the warning", () => {
     const build = buildWith({
       "fam-03": { venue: "Example Hall" },
