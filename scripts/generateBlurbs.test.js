@@ -4,7 +4,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { blurbItems, buildPrompts } = require("./generateBlurbs.js");
+const { blurbItems, buildPrompts, buildRequestBody } = require("./generateBlurbs.js");
 
 const items = [
   { id: "recRowA", section: "For Families", slot: 1, title: "Pottery Night", desc: "Wheel throwing for kids", city: "Vaughan" },
@@ -70,6 +70,75 @@ test("a repeated CTA is still flagged, never silently accepted", async () => {
   assert.equal(results[0].flags, "");
   assert.match(results[1].flags, /CTA_DUPLICATE/);
   assert.equal(results[1].valid, false);
+});
+
+test("a blank or missing emoji never prints 'undefined' and is flagged", async () => {
+  const emojis = [undefined, "  ", "🎨"];
+  let n = 0;
+  const callModel = async (item) => ({ ...blurbFor(item, `Go ${item.id}`), emoji: emojis[n++] });
+  const results = await blurbItems(items, "2026-10-22", callModel, quiet);
+
+  assert.equal(results[0].displayTitle, "About Pottery Night");
+  assert.equal(results[1].displayTitle, "About Jazz Brunch");
+  assert.equal(results[2].displayTitle, "🎨 About Wine Walk");
+  assert.match(results[0].flags, /NO_EMOJI/);
+  assert.match(results[1].flags, /NO_EMOJI/);
+  assert.doesNotMatch(results[2].flags, /NO_EMOJI/);
+});
+
+// Seen on the real model, 2026-10-14 dry run for 2026-05-28: 4 of 10 titles broken this way.
+test("an emoji inside the title is removed so the title carries exactly one", async () => {
+  const callModel = async (item) => ({ ...blurbFor(item, `Go ${item.id}`), emoji: "🐾", displayTitle: "🧴 VADER Derm Day – Pet Skin Health" });
+  const [r] = await blurbItems([items[0]], "2026-10-22", callModel, quiet);
+  assert.equal(r.displayTitle, "🐾 VADER Derm Day – Pet Skin Health");
+  assert.match(r.flags, /TITLE_HAD_EMOJI/);
+});
+
+test("a title the model wrote twice is cut back to once", async () => {
+  const callModel = async (item) => ({
+    ...blurbFor(item, `Go ${item.id}`),
+    emoji: "🌷",
+    displayTitle: "🌷 Richmond Hill Spring Fair – Family Fun 🌷 Richmond Hill Spring Fair – Family Fun",
+  });
+  const [r] = await blurbItems([items[0]], "2026-10-22", callModel, quiet);
+  assert.equal(r.displayTitle, "🌷 Richmond Hill Spring Fair – Family Fun");
+  assert.match(r.flags, /TITLE_REPEATED/);
+});
+
+test("multi-part emoji in the title are removed whole", async () => {
+  const callModel = async (item) => ({ ...blurbFor(item, `Go ${item.id}`), emoji: "🎨", displayTitle: "👨‍👩‍👧 🧘🏽‍♀️ Family Yoga Morning" });
+  const [r] = await blurbItems([items[0]], "2026-10-22", callModel, quiet);
+  assert.equal(r.displayTitle, "🎨 Family Yoga Morning");
+});
+
+test("an emoji only in the title is kept when the emoji field is blank", async () => {
+  const callModel = async (item) => ({ ...blurbFor(item, `Go ${item.id}`), emoji: "", displayTitle: "🕯️ Candle Craft for Beginners" });
+  const [r] = await blurbItems([items[0]], "2026-10-22", callModel, quiet);
+  assert.equal(r.displayTitle, "🕯️ Candle Craft for Beginners");
+  assert.doesNotMatch(r.flags, /NO_EMOJI/);
+});
+
+test("a clean title passes through unchanged and unflagged", async () => {
+  const callModel = async (item) => ({ ...blurbFor(item, "Book Now"), emoji: "🎭", displayTitle: "Spring Fair – Kids Welcome" });
+  const [r] = await blurbItems([items[0]], "2026-10-22", callModel, quiet);
+  assert.equal(r.displayTitle, "🎭 Spring Fair – Kids Welcome");
+  assert.doesNotMatch(r.flags, /TITLE_/);
+});
+
+test("the prompt keeps the emoji out of the title", () => {
+  const { systemPrompt } = buildPrompts(items[0], "2026-10-22", []);
+  assert.doesNotMatch(systemPrompt, /emoji at the start/i);
+  assert.match(systemPrompt, /no emoji/i);
+});
+
+test("the request asks for a strict schema with every field required", () => {
+  const { response_format } = buildRequestBody(items[0], "2026-10-22", []);
+  assert.equal(response_format.type, "json_schema");
+  assert.equal(response_format.json_schema.strict, true);
+  assert.deepEqual(
+    [...response_format.json_schema.schema.required].sort(),
+    ["cta", "description", "displayTitle", "emoji"]
+  );
 });
 
 test("a failed model call stops the run instead of skipping the event", async () => {

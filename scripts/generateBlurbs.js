@@ -143,6 +143,22 @@ function countWords(str) {
   return str.trim().split(/\s+/).filter(Boolean).length;
 }
 
+// One emoji as the reader sees it: flags, skin tones and ZWJ families count as one.
+const EMOJI_RE = /\p{Regional_Indicator}{2}|\p{Extended_Pictographic}️?\p{Emoji_Modifier}?(?:‍\p{Extended_Pictographic}️?\p{Emoji_Modifier}?)*/gu;
+
+// Backstop for the model writing its emoji into the title as well, or writing the title twice
+// (both seen on the real model, 2026-10-14). The emoji field is the only emoji the title keeps.
+function cleanTitle(raw) {
+  const found = raw.match(EMOJI_RE) || [];
+  let title = raw.replace(EMOJI_RE, '').replace(/\s+/g, ' ').trim();
+  const words = title.split(' ');
+  const half = words.length / 2;
+  const repeated = words.length >= 2 && Number.isInteger(half) &&
+    words.slice(0, half).join(' ') === words.slice(half).join(' ');
+  if (repeated) title = words.slice(0, half).join(' ');
+  return { title, firstEmoji: found[0] || '', hadEmoji: found.length > 0, repeated };
+}
+
 // ── LLM call ──────────────────────────────────────────────────────────────────
 // One call per event. The code holds the row; the model never sees a row ID or a list index,
 // so a blurb cannot land on another event's row. CTAs already used are passed in instead.
@@ -150,7 +166,7 @@ function buildPrompts(item, issueDate, usedCtas) {
   const systemPrompt = `You are a newsletter copywriter for the Vaughan Brief, a warm local events newsletter for the Greater Toronto Area. Audience: 75% women aged 35–60. Most popular section: For Families.
 
 For the event provided, generate a blurb with THREE parts:
-1. A creative display title of ~6 words in Title Case — NOT the original event name verbatim. Rephrase to be engaging and specific. You may use an em dash (–) to add urgency or context (e.g. "– Last Chance", "– Free Admission", "– Kids Welcome"). Include an appropriate emoji at the start. Example: "🍁 Canada's Largest Maple Syrup Festival – Last Chance" or "🧭 Family Mapping & Orienteering at Kortright"
+1. A creative display title of ~6 words in Title Case — NOT the original event name verbatim. Rephrase to be engaging and specific. You may use an em dash (–) to add urgency or context (e.g. "– Last Chance", "– Free Admission", "– Kids Welcome"). The title has no emoji: put one emoji that fits the event in the separate "emoji" field only. Example title: "Canada's Largest Maple Syrup Festival – Last Chance" or "Family Mapping & Orienteering at Kortright"
 2. A description of 10 words — aim for exactly 10, but 9 or 11 is acceptable
 3. A 2–3 word CTA that is different from every CTA listed as already used
 
@@ -174,25 +190,41 @@ Return ONLY valid JSON — no markdown, no preamble:
   return { systemPrompt, userPrompt };
 }
 
-async function callGPT(item, issueDate, usedCtas) {
-  const { systemPrompt, userPrompt } = buildPrompts(item, issueDate, usedCtas);
+// Strict schema: the API cannot return a blurb with a field missing, so the emoji is always present.
+const BLURB_SCHEMA = {
+  type: 'object',
+  properties: {
+    emoji:        { type: 'string' },
+    displayTitle: { type: 'string' },
+    description:  { type: 'string' },
+    cta:          { type: 'string' }
+  },
+  required: ['emoji', 'displayTitle', 'description', 'cta'],
+  additionalProperties: false
+};
 
+function buildRequestBody(item, issueDate, usedCtas) {
+  const { systemPrompt, userPrompt } = buildPrompts(item, issueDate, usedCtas);
+  return {
+    model: MODEL,
+    temperature: 0.3,
+    response_format: { type: 'json_schema', json_schema: { name: 'blurb', strict: true, schema: BLURB_SCHEMA } },
+    max_completion_tokens: 2500,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user',   content: userPrompt }
+    ]
+  };
+}
+
+async function callGPT(item, issueDate, usedCtas) {
   const res = await timedFetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${OPENAI_KEY}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      model: MODEL,
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-      max_completion_tokens: 2500,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userPrompt }
-      ]
-    })
+    body: JSON.stringify(buildRequestBody(item, issueDate, usedCtas))
   }, 60000);
 
   if (!res.ok) {
@@ -239,13 +271,19 @@ async function blurbItems(itemsToBlurb, issueDate, callModel = callGPT, log = co
     ctaSeen.add((blurb.cta || '').toLowerCase());
     usedCtas.push(blurb.cta || '');
 
+    const cleaned = cleanTitle(blurb.displayTitle);
+    const emoji = (typeof blurb.emoji === 'string' ? blurb.emoji.trim() : '') || cleaned.firstEmoji;
+
     const flags = [
       !wordOk  ? `WORD_COUNT:${wc}/10` : '',
       ctaDupe  ? 'CTA_DUPLICATE'       : '',
-      !ctaOk && !ctaDupe ? `CTA_LENGTH:${ctaWords}` : ''
+      !ctaOk && !ctaDupe ? `CTA_LENGTH:${ctaWords}` : '',
+      !emoji   ? 'NO_EMOJI'            : '',
+      cleaned.hadEmoji ? 'TITLE_HAD_EMOJI' : '',
+      cleaned.repeated ? 'TITLE_REPEATED'  : ''
     ].filter(Boolean).join(' | ');
 
-    const displayTitle = `${blurb.emoji} ${blurb.displayTitle}`;
+    const displayTitle = emoji ? `${emoji} ${cleaned.title}` : cleaned.title;
 
     log(`[${item.section} | Slot ${item.slot}]  ${wordOk ? '✅' : '⚠️ '} ${wc}w  CTA: "${blurb.cta}" ${ctaOk ? '✅' : '⚠️ '}`);
     log(`  ${displayTitle}`);
@@ -333,26 +371,29 @@ async function main() {
   console.log(`\n🤖 Calling ${MODEL} once per event for ${itemsToBlurb.length} blurbs...\n`);
   const results = await blurbItems(itemsToBlurb, TARGET_DATE);
 
+  // Warnings print here only; nothing reads them from Airtable since review moved to the console.
+  const flaggedRows = results.filter(r => r.flags);
+  if (flaggedRows.length) {
+    console.log(`⚠️  ${flaggedRows.length} blurb(s) flagged — check before export:`);
+    for (const r of flaggedRows) console.log(`   ${r.id}  ${r.displayTitle}  →  ${r.flags}`);
+    console.log();
+  }
+
   // 8. Write back
   if (DRY_RUN) {
     console.log('⏭️  Dry run — skipping Airtable writes.');
   } else {
     console.log(`📤 Writing ${results.length} blurbs to Airtable...`);
-    let ok = 0, flagged = 0;
 
     for (const r of results) {
-      const fields = {
+      await patchRecord('IssueItems', r.id, {
         DisplayTitle: r.displayTitle,
         Description:  r.description,
         CTA:          r.cta,
-      };
-      if (r.flags) fields.Notes = `⚠️ ${r.flags}`;
-      await patchRecord('IssueItems', r.id, fields);
-      if (r.valid) ok++; else flagged++;
+      });
     }
 
-    console.log(`\n✅ Done.  Written: ${ok}  |  Flagged: ${flagged}`);
-    if (flagged) console.log('   Check IssueItems.Notes for flagged records.');
+    console.log(`\n✅ Done.  Written: ${results.length}  |  Flagged: ${flaggedRows.length}`);
   }
 }
 
@@ -363,4 +404,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { buildPrompts, blurbItems };
+module.exports = { buildPrompts, buildRequestBody, blurbItems };
