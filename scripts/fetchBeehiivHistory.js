@@ -97,7 +97,7 @@ function parseIssue(html) {
 
       // The leading emoji goes in its own field. ZWJ, variation selectors, skin tones and keycaps
       // are part of the emoji, so none of them is left on the title.
-      const emojiMatch = (lines[0] || '').match(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\p{Emoji_Modifier}‍️⃣\s]+/u);
+      const emojiMatch = (lines[0] || '').match(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\p{Emoji_Modifier}\u200d\ufe0f\u20e3\s]+/u);
       const emoji = emojiMatch ? emojiMatch[0].replace(/\s+/g, '') : '';
       const displayTitle = (lines[0] || '').slice(emojiMatch ? emojiMatch[0].length : 0).trim();
       // More than three lines: the last is the CTA and the middle ones are the description.
