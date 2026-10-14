@@ -49,7 +49,7 @@ merged result; no blockers). This section is the target; §3 is the work that ge
 **Stage A — the same flow with Ariel running the commands.** Steps 1 and 5 are operator commands, Ariel reviews
 and signs off each slate, and Ariel publishes the build to the console. Items 1–14 below are Stage A.
 
-**Stage B — the buttons.** Items 15–17. Every Stage A piece is built to run from a command first; Stage B calls
+**Stage B — the buttons.** Items 15–18. Every Stage A piece is built to run from a command first; Stage B calls
 those commands from the console.
 
 **Whether V1 closes at Stage A or at the destination is Ariel's call and is not settled here.**
@@ -177,10 +177,13 @@ Every acceptance test is written before its work.
 | 12 | **Operating message to the editor**: operator-supported V1, Ariel triggers runs, no scheduling, the console covers 3 sections, LA/TMR unchanged, the D0 behaviour, link-open recording (TODO-6) | Ariel sends; an agent drafts | 8 | Sent before the first live Sunday. |
 | 13 | **Live Sundays**: the preview is still sent as a fallback until one succeeds | Ariel + editor | 7, 10, 11, 12 | He submits in the console. Item 7 applies it. Blurbs, lock and export run clean. **Final check (Ariel):** join the published issue against the submitted lineup; every gap is explained by D0 slots or LA/TMR. |
 | 13a | **Weekly comparison** (added 2026-10-11): after each issue publishes, join it against the confirmed lineup. Operator-run on Fridays. | Agent builds; Ariel runs and reads | 4; `fetchBeehiivHistory.js` | For 15 slots it reports: confirmed and published, changed after confirm, self-filled, and outside the pool; plus whether the exported copy was used. The join keeps occurrence identity (the same URL can carry several dates). Ambiguous matches are listed for a human, not guessed. |
-| 14 | **Page enrichment for the ranker** (#147, added 2026-10-11): replace the tag-strip in `fetchPages` with real extraction (structured event data, falling back to the main content block). Runs after R7, on the shortlist, so R7's validated input is unchanged (#108 stays separate). Today the fetch covers only shortlisted events with a source description under 120 characters, top 24 by R7 score (18 of 24 were Pinot's Palette on Oct 8); it keeps all visible text including navigation; the model sees the first 3,000 characters (23 of 24 pages were cut); blurbs never read it. `[VERIFIED issueBuild.js:234, :251-264; v5 page_evidence.json]` | **Ariel** decides what to extract, how many pages and the per-page cap (it changes what the ranker sees); an agent builds the extractor | 4 | `TODO(ariel)` |
+| 14 | **Page enrichment for the ranker** (#147, added 2026-10-11): replace the tag-strip in `fetchPages` with real extraction. Runs after R7, on the shortlist, so R7's validated input is unchanged (#108 stays separate). **Ariel's calls, 2026-10-14:** extract each site's description element (Eventbrite `structuredContent`, JSON-LD fallback; Richmond Hill's "Event Details" block; VPL `div.description`; AllEvents via `fetchAllEventsDescriptions.js`); skip Pinot's Palette, whose section rule is in the editor guidance instead; fetch every shortlisted event with a source description under 120 characters, up to 30 (the worst week to date had 29 without Pinot's); cap each description at 3,000 characters. A redirect to a different path is discarded, and a known site whose markup changed gives no text, not the menu. Blurbs never read it. `[scripts/issue-build/pageExtract.js]` | **Ariel** decides what to extract, how many pages and the per-page cap (it changes what the ranker sees); an agent builds the extractor | 4 | `TODO(ariel)` |
 | 15 | **Stage B — hosted pipeline**: one small server set up as a copy of Ariel's machine (the n8n container, the R7 Python environment and its cached files, the producer, the same folders), so item 4a's command runs there unchanged. | Nate (host) with Ariel (the live n8n workflow, #141) | 4a; #141 settled | Item 4a's command completes on the server for a real issue date with no laptop involved. Its output matches a laptop run on the same snapshot. |
-| 16 | **Stage B — the producer runs clean without a reviewer**: today every slate needs 3–7 hand repairs and a human sign-off. | **Ariel** (what replaces the sign-off is a pass/fail call) | 4, 14 | `TODO(ariel)` |
+| 16 | **Stage B — the producer runs clean without a reviewer**: today every slate needs 3–7 hand repairs and a human sign-off (38 repairs across 8 runs, tally on #133). Split 2026-10-14 by what the repair is: | — | 4, 14 | see 16a, 16b |
+| 16a | **Mechanical repairs, automated**: the four types the producer already detects but stops on — record-id typo, misquoted text, repeated section, history-ref typo (21 of 38). Repair them in code or retry the call, so an unattended build does not stop on bookkeeping. | Agent | 4 | Each of the four, injected into a saved response, completes `finalize` with a receipt naming the repair; a response it cannot repair still stops the run. |
+| 16b | **Judgment errors**: a pick its own reason rejects, the wrong real record, a cross-section duplicate, a recent repeat, ignored guidance (13 of 38). They do not stop the run; the editor would see them in the console. | **Ariel** (which, if any, need a check before the editor sees the slate is a pass/fail call) | 16a | `TODO(ariel)` |
 | 17 | **Stage B — the buttons**: **Build this week** starts item 15's run and shows progress and failures the editor can act on; **Confirm** triggers the write, blurbs, lock and export. This reverses Decision_Log §96 (the console does not write to Airtable; reconcile is operator-run) and needs a new Decision_Log entry before it is built. | Nate (console); Agent (job plumbing); **Ariel** (the §96 decision) | 7, 11, 15, 16 | He builds, confirms and receives the export in one sitting with no operator action. A failed run tells him what failed. |
+| 18 | **Stage B — failures find Ariel** (added 2026-10-14): the post-run health checks (`postRunChecks.js`, the Facebook-intake alarm, R1 freshness) run with item 15's chain and notify Ariel on a failure; the Friday comparison (13a) runs on a schedule. Without this, an unattended week fails silently. | Agent | 13a, 15 | A deliberately failed check on the server reaches Ariel without him opening anything. A week with no published issue is reported, not skipped. |
 
 **Items 1, 2, 4 and 5 have no dependencies and can go to agents in parallel.**
 
@@ -205,6 +208,13 @@ Every acceptance test is written before its work.
   - *2026-10-13:* settled in Decision_Log §108. The check is in the console, warns and never refuses, and
     covers a repeated series as well as the two rules above.
 - **Finish-line thresholds:** see §5.
+
+**Not blocking (parked 2026-10-14):**
+- **Description word-count range.** The blurb warning flags outside 9–11 words; the editor's own published
+  descriptions have a median of 10 and mostly fall in 7–12 (9 sampled issues, about half inside 9–11). It only
+  changes which blurbs are flagged in the terminal.
+- **The shortlist rule.** `issueBuild.js` labels its rule "Demo only" (top 30 per section, shared
+  Couples/Golden top 20, uncertain-section top 10; 93–108 events a week). Ratify or change it.
 
 **Defaults** (no decision needed unless Ariel objects):
 - K = 5, matching the rendered slate and keeping Decision_Log §100 comparable.
