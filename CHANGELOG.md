@@ -5,6 +5,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-10-14
+- Event-page enrichment: the ranking step now reads each event's own description from its page (per-site extraction, with redirects to the wrong page discarded) instead of raw page text that was mostly navigation.
+- Newsletter titles now carry exactly one emoji, enforced by a strict response schema and a backstop check, verified against the live model.
 - Newsletter copy is now generated one event at a time, so each blurb is tied to its event by code rather than by the model.
 - CI runs the editor console's database tests against a temporary Neon branch on every push.
 - Console swap warnings ignore slots the editor fills himself; the submission bridge reports which database it reads.

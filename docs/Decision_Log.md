@@ -2438,6 +2438,13 @@ the gate scores, which is #108's separate arm, and would roughly triple the page
 **What this does not decide:** what to extract, how many pages, the per-page cap, whether blurb generation
 also reads the result, or the acceptance test. Those are Ariel's and stay open on #147.
 
+*Amended 2026-10-14 (Ariel):* the first three are settled. Each known site's description element is extracted
+(`scripts/issue-build/pageExtract.js`); every shortlisted event with a source description under 120 characters is
+fetched, up to 30; each description is capped at 3,000 characters, today's cap, so the prompt cannot grow past its
+current size. Pinot's Palette pages are skipped: their only addition is an audience line that reads as Families,
+which the editor has ruled out (§63, §64), so his Pinot's rule goes into the ranker's editor guidance instead.
+Whether blurb generation reads page text, and the acceptance test, stay open.
+
 ---
 
 ## 106. The Destination Is an Editor-Run Week, Reached in Two Stages (2026-10-11)

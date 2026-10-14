@@ -124,10 +124,19 @@ bounded review (#149) returned READY with no blockers, and a second review (Code
 the PostgreSQL suite on a throwaway Neon branch made from an empty `ci-empty` parent, unproven until its first
 GitHub run. Evidence for items 14 and 16 is on #147 and #133.
 
+**Done 2026-10-14, second session:** blurb titles carry exactly one emoji: a strict response schema, a prompt
+that keeps the emoji out of the title, and a backstop that strips a stray one or a doubled title; warnings print
+in the terminal and `Notes` is no longer written (`32957b3`). A real-model dry run for 2026-05-28 returned 10 of 10
+clean titles (the first try, before the prompt fix, broke 4 of 10). Item 14 is built (`5067362`, Decision_Log §105
+amendment): per-site description extraction, redirects discarded, Pinot's skipped; live on the 2026-09-24
+shortlist, 21 of 23 pages gave event text. The editor's Pinot's rule (Couples or Golden only, one per section) is
+in the local, gitignored editor guidance. The ship plan's work map now splits item 16 and adds alerts as item 18
+(`fa8963c`).
+
 **Not yet run:** the writer's live `--apply` (item 3, #149), blurbs and export after a console submission,
 `runWeek.js`'s R1 freshness stage (skipped in the rehearsal; n8n was down), and the "I'm filling this
-myself" control against the hosted database (tried in demo mode only). `generateBlurbs.js`'s per-event prompt
-has not yet been run against the real model. CI's PostgreSQL job (`editor-console-db`) first timed out at
+myself" control against the hosted database (tried in demo mode only), and item 14's extraction inside a full
+`prepare` run. CI's PostgreSQL job (`editor-console-db`) first timed out at
 vitest's 5-second default while applying every migration to a cold branch; with a 30-second limit (`d803dd8`)
 all 3 tests pass on a throwaway Neon branch, so the integration suite now runs on every push.
 
