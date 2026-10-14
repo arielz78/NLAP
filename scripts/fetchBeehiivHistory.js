@@ -1,17 +1,15 @@
 // Fetches all published Vaughan Brief issues via Beehiiv API.
-// Extracts (date, section, slot, url, displayTitle, description, cta) per event.
+// Extracts (date, section, slot, url, emoji, displayTitle, description, cta) per event.
 // Output: data/beehiiv/issue_history.json
 //
 // Run: node scripts/fetchBeehiivHistory.js
+// Test (offline, parser only): node --test scripts/fetchBeehiivHistory.test.js
 
-require('dotenv').config({ path: require('path').join(__dirname, '../NLAP_Airtable.env') });
 const fs = require('fs');
 const path = require('path');
 
-const KEY = process.env.BEEHIIV_API_KEY;
+let KEY;
 const PUB_ID = 'pub_ff7a12c2-7452-46da-9792-771ec6ece149';
-
-if (!KEY) throw new Error('BEEHIIV_API_KEY not set in NLAP_Airtable.env');
 
 const SECTIONS = [
   'For Families',
@@ -91,16 +89,22 @@ function parseIssue(html) {
       const url = stripUtm(urlMatches[0][1]);
       if (!isEventUrl(url)) continue;
 
-      const lines = liContent.split(/<br\s*\/?>/i)
+      // A line ends at <br> or at a closing </p>: newer issues put title, description and CTA in
+      // separate paragraphs (#156).
+      const lines = liContent.split(/<br\s*\/?>|<\/p>/i)
         .map(l => stripTags(l).trim())
         .filter(l => l.length > 0);
 
-      // Remove leading emoji from displayTitle
-      const displayTitle = (lines[0] || '').replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, '').trim();
-      const description = lines[1] || '';
-      const cta = lines[2] || '';
+      // The leading emoji goes in its own field. ZWJ, variation selectors, skin tones and keycaps
+      // are part of the emoji, so none of them is left on the title.
+      const emojiMatch = (lines[0] || '').match(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\p{Emoji_Modifier}‍️⃣\s]+/u);
+      const emoji = emojiMatch ? emojiMatch[0].replace(/\s+/g, '') : '';
+      const displayTitle = (lines[0] || '').slice(emojiMatch ? emojiMatch[0].length : 0).trim();
+      // More than three lines: the last is the CTA and the middle ones are the description.
+      const description = lines.length > 3 ? lines.slice(1, -1).join(' ') : lines[1] || '';
+      const cta = lines.length > 3 ? lines[lines.length - 1] : lines[2] || '';
 
-      events.push({ section: positions[i].section, slot, url, displayTitle, description, cta });
+      events.push({ section: positions[i].section, slot, url, emoji, displayTitle, description, cta });
     }
   }
 
@@ -118,6 +122,9 @@ async function fetchPage(page) {
 }
 
 async function main() {
+  require('dotenv').config({ path: path.join(__dirname, '../NLAP_Airtable.env') });
+  KEY = process.env.BEEHIIV_API_KEY;
+  if (!KEY) throw new Error('BEEHIIV_API_KEY not set in NLAP_Airtable.env');
   console.log('Fetching all published posts...');
   const first = await fetchPage(1);
   const totalPages = first.total_pages;
@@ -172,7 +179,11 @@ async function main() {
   console.log(`\nSaved to ${outPath}`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+module.exports = { parseIssue, stripUtm, isEventUrl };
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
