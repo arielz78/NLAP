@@ -127,10 +127,9 @@ GitHub run. Evidence for items 14 and 16 is on #147 and #133.
 **Not yet run:** the writer's live `--apply` (item 3, #149), blurbs and export after a console submission,
 `runWeek.js`'s R1 freshness stage (skipped in the rehearsal; n8n was down), and the "I'm filling this
 myself" control against the hosted database (tried in demo mode only). `generateBlurbs.js`'s per-event prompt
-has not yet been run against the real model. CI's PostgreSQL job (`editor-console-db`) ran once on GitHub
-(2026-10-14, run 38591282358): branch created and deleted, 2 of 3 tests passed, and the first test timed out at
-vitest's 5-second default while applying every migration to a cold branch. Until it passes, the integration
-suite is unproven in CI.
+has not yet been run against the real model. CI's PostgreSQL job (`editor-console-db`) first timed out at
+vitest's 5-second default while applying every migration to a cold branch; with a 30-second limit (`d803dd8`)
+all 3 tests pass on a throwaway Neon branch, so the integration suite now runs on every push.
 
 **Next:** Ariel walks the editor through the console at their next meeting (item 12; decided 2026-10-13 in
 place of a written message; no date set). The first real week is the first issue after that meeting:
