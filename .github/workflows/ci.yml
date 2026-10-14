@@ -172,7 +172,8 @@ jobs:
         env:
           TEST_DATABASE_URL: ${{ steps.neon.outputs.db_url }}
           TEST_DATABASE_CONFIRMED_ISOLATED: "yes"
-        run: npm run test:integration
+        # 30s, not vitest's 5s default: the first test applies every migration to a cold, empty branch.
+        run: npm run test:integration -- --testTimeout=30000
 
       # Runs even when the tests fail; the branch's expiry is the backstop if this step never runs.
       - name: Delete throwaway Neon branch
