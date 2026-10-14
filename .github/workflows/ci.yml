@@ -235,6 +235,10 @@ jobs:
       - name: Test weekly comparison
         run: node --test scripts/weeklyComparison.test.js
 
+      # Fixture HTML only: no page is fetched.
+      - name: Test page extraction
+        run: node --test scripts/issue-build/pageExtract.test.js
+
       # The check against the console's TypeScript contract skips itself here: this job
       # does not install apps/editor-console. A skipped check is not a passed check.
       - name: Test bundle converter

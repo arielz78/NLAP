@@ -16,7 +16,7 @@ Prerequisites, both already on disk before you start: a candidates snapshot
 `data/beehiiv/issue_history.json` first, or `prepare` warns that the recency guidance is a week stale.
 
 ```
-node scripts/issue-build/issueBuild.js prepare  --issue 2026-10-15 --fetch-pages   # inputs + request; fetches up to 24 public event pages
+node scripts/issue-build/issueBuild.js prepare  --issue 2026-10-15 --fetch-pages   # inputs + request; fetches up to 30 thin-text event pages (pageExtract.js)
 node scripts/issue-build/issueBuild.js call     --issue 2026-10-15                 # the one paid model call (~US$0.25)
 node scripts/issue-build/issueBuild.js finalize --issue 2026-10-15                 # repair -> validate -> allocate -> render
 node scripts/issue-build/issueBuild.js signoff  --issue 2026-10-15 --by "Ariel"    # after a person has read the slate

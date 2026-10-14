@@ -6,6 +6,8 @@ const fs=require('node:fs'), path=require('node:path'), crypto=require('node:cry
 const ROOT=path.resolve(__dirname,'../..');
 const {buildIssues}=require(path.join(ROOT,'scripts/buildIssues.js'));
 const {isFormUrl,repair}=require('./repair.js');
+const {extractDescription,sameEvent,skipPage,PAGE_TEXT_CAP}=require('./pageExtract.js');
+const {fetchDescription:fetchAllEvents}=require(path.join(ROOT,'scripts/fetchAllEventsDescriptions.js'));
 const {normTitle}=require('../r6/lib/util.js');
 const SECTIONS=['For Families','For Couples','For Golden Age Readers'];
 const OUT_ROOT='data/tracking/issue_build', R7_ROOT='data/tracking/r7_live_runner', SNAPSHOTS='data/tracking/snapshots';
@@ -239,7 +241,7 @@ function assemblePacket(d,selected,pages,week,rules) {
       .filter(x=>x.overlap>=2).sort((a,b)=>b.overlap-a.overlap||b.h.date.localeCompare(a.h.date)||a.h.ref.localeCompare(b.h.ref)).slice(0,3);
     similar.forEach(x=>needed.add(x.h.ref));
     const page=byPage.get(c.record_id);
-    const pageExcerpt=page?{...page,text:page.text?.slice(0,3000)||null,packet_excerpt_truncated:(page.text?.length||0)>3000}:null;
+    const pageExcerpt=page?{...page,text:page.text?.slice(0,PAGE_TEXT_CAP)||null,packet_excerpt_truncated:(page.text?.length||0)>PAGE_TEXT_CAP}:null;
     // This packet is the model's input. The console's seriesId and classification are not added here:
     // displayedEvents() writes them at finalize, so the request stays the same.
     return {record_id:c.record_id,snapshot_fields:c.snapshot_fields,
@@ -258,24 +260,34 @@ function assemblePacket(d,selected,pages,week,rules) {
     editor_feedback_on_previous_demo:d.editor_feedback_v1_demo,editor_rules:rules,
     explicit_editor_criterion:'Decision Log section 66: cultural-tie-in nightlife rejected; generic party can fit. Do not generalize to other cultural activities.'};
 }
+// Thin-text shortlisted events only, Pinot's skipped, at most PAGE_LIMIT (the worst week to date had 29
+// once Pinot's is out). Each site's description comes from pageExtract.js; AllEvents from its own fetcher.
+const PAGE_LIMIT=30;
+async function fetchOnePage(c){
+  const start=new Date().toISOString(),url=c.snapshot_fields.URL;
+  try{const u=new URL(url);assert(u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&!/^\d|localhost$|\.local$/i.test(u.hostname),'Unsupported page URL');
+    if(/(^|\.)allevents\.in$/i.test(u.hostname)){
+      const a=await fetchAllEvents(url);const text=a.description?.replace(/\s+/g,' ').trim()||null;
+      return {id:c.record_id,url,final_url:a.finalUrl,fetched_at:start,status:a.status,method:a.source?'allevents_'+a.source:'allevents',
+        text:text&&text.slice(0,PAGE_TEXT_CAP),truncated:Boolean(text&&text.length>PAGE_TEXT_CAP),full_chars:text?text.length:0,identity_status:a.idMatched?'same_event':'redirected_elsewhere'};
+    }
+    const r=await fetch(url,{signal:AbortSignal.timeout(12000),headers:{'User-Agent':'NLAP-Editorial-Review/1.0'}});
+    if(!r.ok)return {id:c.record_id,url,final_url:r.url,fetched_at:start,status:r.status,text:null};
+    const raw=await r.text();assert(raw.length<4000000,'Page too large');
+    if(!sameEvent(url,r.url))return {id:c.record_id,url,final_url:r.url,fetched_at:start,status:r.status,raw_sha256:sha(raw),text:null,identity_status:'redirected_elsewhere'};
+    return {id:c.record_id,url,final_url:r.url,fetched_at:start,status:r.status,raw_sha256:sha(raw),...extractDescription(r.url,raw),identity_status:'same_event'};
+  }catch{return {id:c.record_id,url,fetched_at:start,status:'fetch_failed',text:null};}
+}
 async function fetchPages(selected) {
-  const wanted=selected.filter(c=>String(c.snapshot_fields.DescriptionRaw||'').length<120)
-    .sort((a,b)=>b.r7.p_include-a.r7.p_include||a.record_id.localeCompare(b.record_id)).slice(0,24);
+  const wanted=selected.filter(c=>String(c.snapshot_fields.DescriptionRaw||'').length<120&&!skipPage(c.snapshot_fields.URL))
+    .sort((a,b)=>b.r7.p_include-a.r7.p_include||a.record_id.localeCompare(b.record_id)).slice(0,PAGE_LIMIT);
   const results=[];
   for(let offset=0;offset<wanted.length;offset+=4){
-    const batch=await Promise.all(wanted.slice(offset,offset+4).map(async c=>{
-      const start=new Date().toISOString(),url=c.snapshot_fields.URL;
-      try{const u=new URL(url);assert(u.protocol==='https:'&&!u.username&&!u.password&&!u.port&&!/^\d|localhost$|\.local$/i.test(u.hostname),'Unsupported page URL');
-        const r=await fetch(url,{signal:AbortSignal.timeout(12000),headers:{'User-Agent':'NLAP-Editorial-Review/1.0'}});
-        if(!r.ok)return {id:c.record_id,url,fetched_at:start,status:r.status,text:null};
-        const raw=await r.text();assert(raw.length<4000000,'Page too large');
-        const text=raw.replace(/<(script|style|svg|noscript)\b[^>]*>[\s\S]*?<\/\1>/gi,' ').replace(/<[^>]+>/g,' ')
-          .replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'").replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
-        return {id:c.record_id,url,final_url:r.url,fetched_at:start,status:r.status,raw_sha256:sha(raw),full_text_chars:text.length,text:text.slice(0,10000),truncated:text.length>10000,
-          identity_status:'unverified retrieval; compare title, venue and occurrence before relying on this text'};
-      }catch{return {id:c.record_id,url,fetched_at:start,status:'fetch_failed',text:null};}
-    }));results.push(...batch);console.log('Detail pages attempted '+results.length+'/'+wanted.length);
+    results.push(...await Promise.all(wanted.slice(offset,offset+4).map(fetchOnePage)));
+    console.log('Detail pages attempted '+results.length+'/'+wanted.length);
   }
+  const byMethod={};for(const p of results){const k=p.text?p.method:(p.identity_status==='redirected_elsewhere'?'redirected':p.status==='fetch_failed'||p.status!==200?'http_'+p.status:p.method+'_EMPTY');byMethod[k]=(byMethod[k]||0)+1;}
+  console.log('Page text by method: '+JSON.stringify(byMethod)+(Object.keys(byMethod).some(k=>k.endsWith('_EMPTY'))?'  ⚠ a known site returned no text; its markup may have changed':''));
   return results;
 }
 
@@ -589,5 +601,5 @@ function main(argv){
   });
 }
 module.exports={SECTIONS,PICKS,ALTERNATIVES,POOL_FLOOR,HUMAN_REVIEW,ThinSupplyError,urlKey,sameOpportunity,historyFor,requestKey,validateRanking,allocate,alternatives,
-  shortlist,formLinked,assertPoolSupply,supplyProblems,buildSlate,fallbackDescription,seriesId,displayedEvents,finishedManifests,nextBuildVersion,weekContext,recentIssues,windowLabel,fill,templateValues,addDays,receiptText,parseArgs,runGuarded,TEMPLATES,EXAMPLES};
+  shortlist,fetchPages,formLinked,assertPoolSupply,supplyProblems,buildSlate,fallbackDescription,seriesId,displayedEvents,finishedManifests,nextBuildVersion,weekContext,recentIssues,windowLabel,fill,templateValues,addDays,receiptText,parseArgs,runGuarded,TEMPLATES,EXAMPLES};
 if(require.main===module)main(process.argv.slice(2));
