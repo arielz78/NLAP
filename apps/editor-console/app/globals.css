@@ -772,6 +772,93 @@ svg {
   height: 0.7rem;
 }
 
+/* A swap with no reason yet: the question stands out until it is answered. */
+.feedback-prompt.unanswered {
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #ecd2a0;
+  border-radius: 8px;
+  background: var(--amber-wash);
+}
+
+.feedback-prompt.unanswered > span {
+  color: var(--amber);
+  font-weight: 750;
+}
+
+.alternatives-sticky > .feedback-prompt {
+  margin: 0 0 0.85rem;
+}
+
+.dialog-unanswered {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0 0 1.25rem;
+  font-size: 0.78rem;
+}
+
+.dialog-unanswered .feedback-prompt {
+  margin-top: 0;
+}
+
+.selected-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+  margin-top: 0.65rem;
+}
+
+.selected-card-actions .source-link {
+  margin-top: 0;
+}
+
+.self-fill-button {
+  position: relative;
+  z-index: 2;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  color: var(--ink-soft);
+  background: #fff;
+  font-size: 0.66rem;
+  font-weight: 650;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.self-fill-button:hover:not(:disabled) {
+  color: var(--navy);
+  border-color: #91abc9;
+}
+
+.self-fill-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.self-filled-chip {
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  color: var(--amber);
+  background: var(--amber-wash);
+  font-size: 0.58rem;
+}
+
+.selected-card.self-filled {
+  border-style: dashed;
+  background: var(--paper);
+}
+
+.selected-card.self-filled h3,
+.selected-card.self-filled .venue-line,
+.selected-card.self-filled .description {
+  opacity: 0.5;
+}
+
+.selected-card.self-filled h3 {
+  text-decoration: line-through;
+}
+
 .alternatives-title-row {
   margin-bottom: 0.65rem;
 }

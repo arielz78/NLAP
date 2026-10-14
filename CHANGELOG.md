@@ -5,6 +5,9 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-10-13
+- Closed the remaining gaps before a first live week that did not need the editor. The submission bridge now reads the latest submitted lineup straight from the console's database, read-only, and refuses one that was reopened and never resubmitted.
+- Added an "I'm filling this myself" control to the review console, so a slot the editor fills from outside the candidate pool is recorded as such and skipped downstream, and made the swap-reason question hard to miss, including a reminder at submit.
+- Ran the console's database test suite against an isolated copy of the production database for the first time, and rehearsed the one-command weekly build end to end on real data, confirming a rerun never repeats a paid model call.
 - Resolved by hand the uncertain matches in the weekly published-versus-sent comparison, then checked every remaining miss against the full candidate pool. The misses now separate into events the pipeline never collected, events it held only on another date, and events it held but did not show, with the uncollected ones grouped by kind of source.
 - Decided how the hosted console's test data is cleared before its first real week, and parked two follow-ups (past weeks as preference evidence, and source coverage) on their existing issues instead of opening new work.
 - Put the review console online: hosted with a managed Postgres database behind a login that covers every page and API route and refuses all requests if it is ever left unconfigured. A real weekly build now loads in it, published by a new command that validates a build and never replaces one already published.

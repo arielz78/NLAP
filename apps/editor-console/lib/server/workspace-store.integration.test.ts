@@ -339,4 +339,39 @@ describe.skipIf(!canRun)("PostgreSQL editor-console API boundary", () => {
       });
     }
   });
+
+  it("stores a self-filled slot and carries it onto the submission", async () => {
+    await applyMigrations(testDatabaseUrl!);
+    const build = fixtureBuild();
+    await seedBuild(build);
+    const store = PostgresWorkspaceStore.connect(testDatabaseUrl!, "integration-editor");
+    const initial = (await store.loadWorkspaceForBuild(build.id))!;
+
+    const marked = await store.applyCommand(
+      initial.draft.id,
+      0,
+      command({
+        type: "self_fill" as const,
+        sectionId: "couples" as const,
+        slotIndex: 2,
+        selfFilled: true,
+      }),
+    );
+    const reloaded = await store.loadWorkspaceByDraftId(initial.draft.id);
+    expect(reloaded?.draft.selfFilledSlots).toEqual([
+      { sectionId: "couples", slotIndex: 2 },
+    ]);
+    expect(reloaded?.events.map((event) => event.type)).toEqual(["self_fill"]);
+
+    const submitted = await store.submitDraft(
+      initial.draft.id,
+      marked.draft.revision,
+      crypto.randomUUID(),
+      new Date().toISOString(),
+    );
+    expect(submitted.submission.selfFilledSlots).toEqual([
+      { sectionId: "couples", slotIndex: 2 },
+    ]);
+    expect(submitted.submission.finalSelections.couples).toHaveLength(5);
+  });
 });

@@ -37,6 +37,13 @@ export const draftCommandSchema = z.discriminatedUnion("type", [
     sourceUrl: z.string().url(),
     context: z.enum(["selected", "alternative"]),
   }),
+  z.object({
+    ...eventBase,
+    type: z.literal("self_fill"),
+    sectionId,
+    slotIndex: z.number().int().min(0).max(4),
+    selfFilled: z.boolean(),
+  }),
 ]);
 
 export const commandRequestSchema = z.object({

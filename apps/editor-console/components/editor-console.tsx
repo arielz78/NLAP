@@ -12,7 +12,7 @@ import type {
   SectionId,
   SubmissionSnapshot,
 } from "@/lib/contracts";
-import { sectionIds, slotKey } from "@/lib/contracts";
+import { isSelfFilled, slotKey } from "@/lib/contracts";
 import {
   applyDraftCommand,
   createReopenedDraft,
@@ -106,14 +106,16 @@ function FeedbackPrompt({
   value,
   disabled,
   onChoose,
+  question = "Why did you replace the original event?",
 }: {
   value?: FeedbackValue;
   disabled: boolean;
   onChoose: (value: FeedbackValue) => void;
+  question?: string;
 }) {
   return (
-    <div className="feedback-prompt">
-      <span>Why did you replace the original event?</span>
+    <div className={`feedback-prompt ${value ? "" : "unanswered"}`}>
+      <span>{question}</span>
       <div className="feedback-actions" aria-label="Replacement feedback">
         {(
           [
@@ -143,20 +145,24 @@ function SelectedCard({
   position,
   active,
   changed,
+  selfFilled,
   feedback,
   disabled,
   onSelect,
   onFeedback,
+  onSelfFill,
   onSourceOpen,
 }: {
   candidate: Candidate;
   position: number;
   active: boolean;
   changed: boolean;
+  selfFilled: boolean;
   feedback?: FeedbackValue;
   disabled: boolean;
   onSelect: () => void;
   onFeedback: (value: FeedbackValue) => void;
+  onSelfFill: (selfFilled: boolean) => void;
   onSourceOpen: (
     candidate: Candidate,
     context: "selected" | "alternative",
@@ -164,7 +170,7 @@ function SelectedCard({
 }) {
   return (
     <article
-      className={`selected-card ${active ? "active" : ""} ${disabled ? "disabled" : ""}`}
+      className={`selected-card ${active ? "active" : ""} ${disabled ? "disabled" : ""} ${selfFilled ? "self-filled" : ""}`}
     >
       <button
         type="button"
@@ -177,19 +183,31 @@ function SelectedCard({
       <div className="selected-card-body">
         <div className="card-kicker">
           <span>{formatSchedule(candidate.startsAt)}</span>
-          {changed && <span className="changed-chip">Changed</span>}
+          {changed && !selfFilled && <span className="changed-chip">Changed</span>}
+          {selfFilled && <span className="self-filled-chip">Filling this myself</span>}
         </div>
         <h3>{candidate.title}</h3>
         <p className="venue-line">
           {candidate.venue} <span>·</span> {candidate.city}
         </p>
         <p className="description">{candidate.description}</p>
-        <SourceLink
-          candidate={candidate}
-          context="selected"
-          onOpen={onSourceOpen}
-        />
-        {changed && (
+        <div className="selected-card-actions">
+          <SourceLink
+            candidate={candidate}
+            context="selected"
+            onOpen={onSourceOpen}
+          />
+          <button
+            type="button"
+            className="self-fill-button"
+            disabled={disabled}
+            aria-pressed={selfFilled}
+            onClick={() => onSelfFill(!selfFilled)}
+          >
+            {selfFilled ? "Use this pick after all" : "I’m filling this myself"}
+          </button>
+        </div>
+        {changed && !selfFilled && (
           <FeedbackPrompt
             value={feedback}
             disabled={disabled}
@@ -197,9 +215,11 @@ function SelectedCard({
           />
         )}
       </div>
-      <span className="replace-cue" aria-hidden="true">
-        Replace <Icon name="arrow" />
-      </span>
+      {!selfFilled && (
+        <span className="replace-cue" aria-hidden="true">
+          Replace <Icon name="arrow" />
+        </span>
+      )}
     </article>
   );
 }
@@ -329,21 +349,56 @@ export function EditorConsole({
     }
   }, [hydrated, storageKey, workspace]);
 
-  const changedCount = useMemo(
-    () =>
-      sectionIds.reduce((count, sectionId) => {
-        const original = workspace.build.sections.find(
-          (section) => section.id === sectionId,
-        )!.selected;
-        return (
-          count +
-          workspace.draft.selections[sectionId].filter(
-            (candidate, index) => candidate.id !== original[index]?.id,
-          ).length
-        );
-      }, 0),
-    [workspace.build.sections, workspace.draft.selections],
+  const selfFilledSlots = workspace.draft.selfFilledSlots;
+  const selfFilledCount = selfFilledSlots?.length ?? 0;
+  const activeSlotIndex =
+    activeSlot.sectionId === activeSection ? activeSlot.slotIndex : 0;
+  const activeSlotSelfFilled = isSelfFilled(
+    selfFilledSlots,
+    activeSection,
+    activeSlotIndex,
   );
+
+  // Every slot whose pick differs from the build's, leaving out the ones he fills himself.
+  const changedSlots = useMemo(
+    () =>
+      workspace.build.sections.flatMap((section) =>
+        workspace.draft.selections[section.id].flatMap((candidate, slotIndex) =>
+          candidate.id !== section.selected[slotIndex]?.id &&
+          !isSelfFilled(selfFilledSlots, section.id, slotIndex)
+            ? [
+                {
+                  sectionId: section.id,
+                  sectionLabel: section.label,
+                  slotIndex,
+                  title: candidate.title,
+                },
+              ]
+            : [],
+        ),
+      ),
+    [workspace.build.sections, workspace.draft.selections, selfFilledSlots],
+  );
+  const changedCount = changedSlots.length;
+  // A swap with no answer is saved as a replacement with no reason and teaches nothing.
+  const unansweredSwaps = changedSlots.filter(
+    (slot) =>
+      workspace.draft.feedbackBySlot[slotKey(slot.sectionId, slot.slotIndex)] ===
+      undefined,
+  );
+  const activeSwapUnanswered = unansweredSwaps.some(
+    (slot) => slot.sectionId === activeSection && slot.slotIndex === activeSlotIndex,
+  );
+
+  function sendFeedback(sectionId: SectionId, slotIndex: number, value: FeedbackValue) {
+    void dispatchCommand({
+      ...commandBase(),
+      type: "feedback",
+      sectionId,
+      slotIndex,
+      value,
+    });
+  }
 
   async function dispatchCommand(command: DraftCommand) {
     setError(null);
@@ -666,11 +721,18 @@ export function EditorConsole({
           </p>
         </div>
         <div className="progress-summary" aria-label="Issue progress">
-          <strong>15</strong>
+          <strong>{15 - selfFilledCount}</strong>
           <span>events selected</span>
           <i />
           <strong>{changedCount}</strong>
           <span>changed</span>
+          {selfFilledCount > 0 && (
+            <>
+              <i />
+              <strong>{selfFilledCount}</strong>
+              <span>filling myself</span>
+            </>
+          )}
         </div>
       </section>
 
@@ -724,6 +786,7 @@ export function EditorConsole({
                     activeSlot.slotIndex === index
                   }
                   changed={candidate.id !== original?.id}
+                  selfFilled={isSelfFilled(selfFilledSlots, activeSection, index)}
                   feedback={
                     workspace.draft.feedbackBySlot[slotKey(activeSection, index)]
                   }
@@ -731,13 +794,14 @@ export function EditorConsole({
                   onSelect={() =>
                     setActiveSlot({ sectionId: activeSection, slotIndex: index })
                   }
-                  onFeedback={(value) =>
+                  onFeedback={(value) => sendFeedback(activeSection, index, value)}
+                  onSelfFill={(selfFilled) =>
                     void dispatchCommand({
                       ...commandBase(),
-                      type: "feedback",
+                      type: "self_fill",
                       sectionId: activeSection,
                       slotIndex: index,
-                      value,
+                      selfFilled,
                     })
                   }
                   onSourceOpen={openSource}
@@ -756,19 +820,34 @@ export function EditorConsole({
               </div>
               <span className="target-pill">Pick {activeSlot.slotIndex + 1}</span>
             </div>
-            <p className="alternative-intro">
-              Replacing <strong>{selectedForReplacement.title}</strong>. These are
-              already ordered upstream for this section.
-            </p>
+            {activeSlotSelfFilled ? (
+              <p className="alternative-intro">
+                You are filling pick {activeSlotIndex + 1} yourself. Choose{" "}
+                <strong>Use this pick after all</strong> on the card to replace it
+                from this list.
+              </p>
+            ) : (
+              <p className="alternative-intro">
+                Replacing <strong>{selectedForReplacement.title}</strong>. These are
+                already ordered upstream for this section.
+              </p>
+            )}
+            {activeSwapUnanswered && !submitted && (
+              <FeedbackPrompt
+                question={`You replaced pick ${activeSlotIndex + 1}. Why?`}
+                disabled={saveState === "saving"}
+                onChoose={(value) =>
+                  sendFeedback(activeSection, activeSlotIndex, value)
+                }
+              />
+            )}
             <div className="alternative-list">
               {currentAlternatives.map(({ candidate }) => {
                 const assessment = assessReplacement(
                   workspace.build,
                   workspace.draft.selections,
                   activeSection,
-                  activeSlot.sectionId === activeSection
-                    ? activeSlot.slotIndex
-                    : 0,
+                  activeSlotIndex,
                   candidate,
                 );
                 return (
@@ -776,7 +855,9 @@ export function EditorConsole({
                     key={candidate.id}
                     candidate={candidate}
                     assessment={assessment}
-                    disabled={submitted || saveState === "saving"}
+                    disabled={
+                      submitted || saveState === "saving" || activeSlotSelfFilled
+                    }
                     onSourceOpen={openSource}
                     onReplace={() =>
                       void dispatchCommand({
@@ -832,10 +913,35 @@ export function EditorConsole({
                 : `This creates immutable submission revision ${workspace.draft.issueRevision}. It does not write to Airtable or run the copywriter.`}
             </p>
             <div className="dialog-summary">
-              <span>15 selected events</span>
+              <span>{15 - selfFilledCount} selected events</span>
               <span>{changedCount} changed picks</span>
+              {selfFilledCount > 0 && (
+                <span>
+                  {selfFilledCount} {selfFilledCount === 1 ? "slot" : "slots"} you
+                  are filling yourself
+                </span>
+              )}
               <span>{workspace.events.length} captured interactions</span>
             </div>
+            {unansweredSwaps.length > 0 && (
+              <div className="dialog-unanswered">
+                <strong>
+                  {unansweredSwaps.length === 1
+                    ? "One swap has no reason yet."
+                    : `${unansweredSwaps.length} swaps have no reason yet.`}
+                </strong>
+                {unansweredSwaps.map((slot) => (
+                  <FeedbackPrompt
+                    key={slotKey(slot.sectionId, slot.slotIndex)}
+                    question={`${slot.sectionLabel}, pick ${slot.slotIndex + 1}: ${slot.title}`}
+                    disabled={saveState === "saving"}
+                    onChoose={(value) =>
+                      sendFeedback(slot.sectionId, slot.slotIndex, value)
+                    }
+                  />
+                ))}
+              </div>
+            )}
             <div className="dialog-actions">
               <button type="button" onClick={() => setConfirmingSubmit(false)}>
                 Keep editing

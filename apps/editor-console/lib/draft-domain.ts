@@ -12,7 +12,7 @@ import type {
   SubmissionSnapshot,
   TrainingPair,
 } from "@/lib/contracts";
-import { sectionIds, slotKey } from "@/lib/contracts";
+import { isSelfFilled, sectionIds, slotKey } from "@/lib/contracts";
 import { assessReplacement } from "@/lib/replacement-rules";
 
 function copy<T>(value: T): T {
@@ -47,6 +47,7 @@ export function createInitialDraft(
     alternatives: Object.fromEntries(
       build.sections.map((section) => [section.id, copy(section.alternatives)]),
     ) as DraftSnapshot["alternatives"],
+    selfFilledSlots: [],
     feedbackBySlot: {},
     history: [],
     updatedAt: new Date().toISOString(),
@@ -104,6 +105,11 @@ export function applyDraftCommand(
 
     if (!section || !selected || alternativeIndex === -1) {
       throw new Error("That replacement is no longer available.");
+    }
+    if (isSelfFilled(draft.selfFilledSlots, command.sectionId, command.slotIndex)) {
+      throw new Error(
+        "You are filling this slot yourself. Unmark it before choosing a replacement.",
+      );
     }
 
     const alternative = alternatives[alternativeIndex];
@@ -195,6 +201,26 @@ export function applyDraftCommand(
       slotIndex: command.slotIndex,
       candidateId: selected.id,
       value: command.value,
+    });
+  } else if (command.type === "self_fill") {
+    const selected = draft.selections[command.sectionId]?.[command.slotIndex];
+    if (!selected) {
+      throw new Error("That slot is no longer available.");
+    }
+
+    // The pick stays in the slot underneath, so unmarking brings it back.
+    const others = (draft.selfFilledSlots ?? []).filter(
+      (slot) =>
+        !(slot.sectionId === command.sectionId && slot.slotIndex === command.slotIndex),
+    );
+    draft.selfFilledSlots = command.selfFilled
+      ? [...others, { sectionId: command.sectionId, slotIndex: command.slotIndex }]
+      : others;
+    event = baseEvent(nextRevision, command, {
+      sectionId: command.sectionId,
+      slotIndex: command.slotIndex,
+      selfFilled: command.selfFilled,
+      candidateId: selected.id,
     });
   } else {
     const matchingCandidate = build.sections
@@ -458,8 +484,19 @@ export function createSubmission(
   const trainingPairs: TrainingPair[] = [];
   const replacements: SubmittedReplacement[] = [];
 
+  const selfFilledSlots = sectionIds.flatMap((sectionId) =>
+    workspace.draft.selections[sectionId]
+      .map((_, slotIndex) => ({ sectionId, slotIndex }))
+      .filter((slot) =>
+        isSelfFilled(workspace.draft.selfFilledSlots, slot.sectionId, slot.slotIndex),
+      ),
+  );
+
   for (const sectionId of sectionIds) {
     workspace.draft.selections[sectionId].forEach((selected, slotIndex) => {
+      // His own event goes in this slot, so a swap made here before he marked it says
+      // nothing about the final lineup: no replacement and no pair.
+      if (isSelfFilled(selfFilledSlots, sectionId, slotIndex)) return;
       const derived = deriveSubmittedReplacement(workspace, sectionId, slotIndex);
       if (!derived) return;
 
@@ -495,6 +532,7 @@ export function createSubmission(
     draftRevision: workspace.draft.revision + 1,
     submittedAt: options.submittedAt ?? new Date().toISOString(),
     finalSelections: copy(workspace.draft.selections),
+    selfFilledSlots,
     replacements,
     trainingPairs,
     incompleteEventCount: workspace.events.filter((event) => event.incomplete).length,

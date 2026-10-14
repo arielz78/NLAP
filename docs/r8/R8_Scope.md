@@ -39,8 +39,8 @@ integration suite. **Both issues remain open on GitHub.** `c45a7ad` is the last 
 
 **CI exists since 2026-10-11** (`.github/workflows/ci.yml`): every push runs the console's tests, lint
 and build, the `connectAirtable.js` guard test and the issue-producer tests, green on `master` at
-`b8b6a68`. ⚠️ The integration suite is still gated behind `R8_REQUIRE_INTEGRATION_DB=1` and has not been
-run against a database in this repo; CI reports it as skipped, not passed.
+`b8b6a68`. ⚠️ The integration suite is still gated behind `R8_REQUIRE_INTEGRATION_DB=1`; CI reports it as skipped,
+not passed. It has been run by hand once (2026-10-13, see below).
 
 **The console is hosted and serves a real build (2026-10-13).** It runs in production mode on Vercel
 against a Neon database, behind one shared login (HTTP Basic on every page and `/api` route; with no
@@ -102,11 +102,24 @@ console → a submission → `applySubmission.js` dry run (15 picks, matching th
 finalized before 2026-10-13 is still refused by the converter and is not rewritten; the v6b bundle came from
 a rebuild of that run's saved inputs, with a lineup byte-identical to the one sent.
 
+**Done 2026-10-13, third session:** item 7's live read is wired: `applySubmission.js` reads the latest
+submission for an issue date from the console's database with one read-only query, and refuses a submission
+the editor reopened and has not resubmitted. Run once against the hosted database (dry run): 15 picks,
+matching the published build. The console has the "I'm filling this myself" control (#152): a marked slot
+keeps its pick underneath, cannot be replaced until unmarked, and records no replacement and no preference
+pair; the submission lists the marked slots and the bridge skips them. The swap-reason question now also
+appears above the alternatives after a swap, and the submit dialog lists swaps with no reason (#153; what an
+unreasoned swap means is unchanged, Decision_Log §108). Migration `0003` (allows the `self_fill` event) is
+applied to the hosted database. Item 6: the PostgreSQL integration suite ran once by hand against a Neon
+branch copied from production, 3 passed. Item 4a: `runWeek.js` ran end to end on real data for 2026-10-22
+with `--skip-r1` (217 candidates scored, 88 to the model, no repairs), a rerun repeated no paid call, and the
+run converted and passed the `publish-build` dry run. That run was a rehearsal on a pool last refreshed
+2026-10-11; its R7 and run folders were deleted so the real week is not pinned to its snapshot.
+
 **Not yet run:** the writer's live `--apply` (item 3, #149), blurbs and export after a console submission,
-the PostgreSQL integration suite, and `runWeek.js` on a real week. The bridge's live database read is still
-a stub: the submission above was read through the console's own API and passed with `--submission`. The
-console has no "I'm filling this myself" control (#152). Three swaps made without tapping a reason produced
-no preference pairs, as designed; the reason control was not noticed during the test.
+`runWeek.js`'s R1 freshness stage (skipped in the rehearsal; n8n was down), and the "I'm filling this
+myself" control against the hosted database (tried in demo mode only). The swap warnings still count a slot
+marked self-filled. CI still reports the integration suite as skipped.
 
 **Next:** Ariel walks the editor through the console at their next meeting (item 12; decided 2026-10-13 in
 place of a written message; no date set). The first real week is the first issue after that meeting:

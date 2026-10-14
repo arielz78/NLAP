@@ -5,6 +5,10 @@
 //   node scripts/applySubmission.js --issue YYYY-MM-DD --build <bundle.json> --write              write the picks file
 //   node scripts/applySubmission.js --issue YYYY-MM-DD --build <bundle.json> --submission <file>  read a saved submission, not the database
 //
+// Without --submission it reads the latest submission for the issue date from the console's database,
+// with one read-only query. DATABASE_URL comes from the environment, then from the console's
+// .env.local (--console-env names another file).
+//
 // --build is the bundle.json the operator published for the issue (scripts/issue-build/to-bundle.js).
 // It names the build the submission must have been made against, and supplies each section's candidates.
 //
@@ -13,6 +17,7 @@
 //   - It never calls Airtable and has no --apply. Its only write is the picks file, under --write. It
 //     prints the writeIssuePicks.js command; the operator runs it (Decision_Log §96).
 //   - Refuses a submission whose issue or build identity differs from --issue / --build (R8_Scope W1).
+//   - Refuses a submission the editor reopened afterwards and has not submitted again (live read only).
 //   - Refuses a final lineup that cannot be written: not exactly five per section, or one event in two
 //     slots (the writer refuses a repeated ItemID).
 //   - Never refuses the editor's own choices. A repeated venue or series in a section is reported as a
@@ -30,6 +35,7 @@ const { QUOTAS, venueKey } = require("./buildIssues.js");
 
 const WRITER      = path.join(__dirname, "writeIssuePicks.js");
 const DEFAULT_OUT = path.join(__dirname, "../data/tracking/issue_apply");
+const CONSOLE_ENV = path.join(__dirname, "../apps/editor-console/.env.local");
 
 // Console section id (lib/contracts.ts sectionIds) → the Section value IssueItems carries.
 // Same pairs as scripts/issue-build/to-bundle.js. Local Aroma and Trust Me Recipe are not in the console.
@@ -53,19 +59,21 @@ const IDENTITY_FIELDS = [
 // Arguments
 // ---------------------------------------------------------------------------
 
-const USAGE = "Usage: node scripts/applySubmission.js --issue YYYY-MM-DD --build <bundle.json> [--submission <submission.json>] [--out-dir <dir>] [--write]";
+const USAGE = "Usage: node scripts/applySubmission.js --issue YYYY-MM-DD --build <bundle.json> [--submission <submission.json>] [--console-env <file>] [--out-dir <dir>] [--write]";
 
 function parseArgs(argv) {
-  const opts = { issueDate: null, buildFile: null, submissionFile: null, outDir: null, write: false };
+  const opts = { issueDate: null, buildFile: null, submissionFile: null, envFile: null, outDir: null, write: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === "--write")           opts.write = true;
-    else if (arg === "--issue")      opts.issueDate = argv[++i] ?? null;
-    else if (arg === "--build")      opts.buildFile = argv[++i] ?? null;
-    else if (arg === "--submission") opts.submissionFile = argv[++i] ?? null;
-    else if (arg === "--out-dir")    opts.outDir = argv[++i] ?? null;
+    if (arg === "--write")            opts.write = true;
+    else if (arg === "--issue")       opts.issueDate = argv[++i] ?? null;
+    else if (arg === "--build")       opts.buildFile = argv[++i] ?? null;
+    else if (arg === "--submission")  opts.submissionFile = argv[++i] ?? null;
+    else if (arg === "--console-env") opts.envFile = argv[++i] ?? null;
+    else if (arg === "--out-dir")     opts.outDir = argv[++i] ?? null;
     else throw new Error(`Unknown option ${arg}\n${USAGE}`);
   }
+  opts.envFile = path.resolve(opts.envFile ?? CONSOLE_ENV);
 
   if (!opts.issueDate || !/^\d{4}-\d{2}-\d{2}$/.test(opts.issueDate)) {
     throw new Error(`Missing or malformed issue date (expected YYYY-MM-DD)\n${USAGE}`);
@@ -109,31 +117,55 @@ function rowToSubmission(row) {
   };
 }
 
-// STUB — the live read. Not wired: there are no Neon credentials yet and this repo has no Postgres
-// client. It throws in both states so a run can never continue on a submission it did not read.
-// When wired it runs the query below, read-only, and returns rowToSubmission(rows[0]) or null:
-//
-//   SELECT s.submission_id, s.submit_client_event_id, s.draft_id, s.issue_build_id, s.issue_key,
-//          s.build_version, s.issue_revision, s.editor_id, s.draft_revision, s.submitted_at, s.snapshot
-//   FROM submissions s
-//   JOIN issue_builds b ON b.id = s.issue_build_id
-//   WHERE b.issue_date = $1::date
-//   ORDER BY s.submitted_at DESC
-//   LIMIT 1
-//
+// The console's database URL: the environment first, then the console's own env file (the one
+// publish-build reads). Returns undefined when neither has it.
+function resolveDatabaseUrl(env, envFile) {
+  const fromEnv = env.DATABASE_URL?.trim();
+  if (fromEnv) return fromEnv;
+  if (!envFile || !fs.existsSync(envFile)) return undefined;
+  const parsed = require("dotenv").parse(fs.readFileSync(envFile));
+  return parsed.DATABASE_URL?.trim() || undefined;
+}
+
 // It selects by issue date, not by build, on purpose: if the latest submission was made against
 // another build, the identity check below must see it and refuse.
-async function readLatestSubmissionFromPostgres({ issueDate }, env = process.env) {
-  if (!env.DATABASE_URL) {
+const LATEST_SUBMISSION_QUERY = `
+  SELECT s.submission_id, s.submit_client_event_id, s.draft_id, s.issue_build_id, s.issue_key,
+         s.build_version, s.issue_revision, s.editor_id, s.draft_revision, s.submitted_at, s.snapshot,
+         d.is_current AS draft_is_current
+  FROM submissions s
+  JOIN issue_builds b ON b.id = s.issue_build_id
+  JOIN drafts d ON d.id = s.draft_id
+  WHERE b.issue_date = $1::date
+  ORDER BY s.submitted_at DESC
+  LIMIT 1`;
+
+// Loaded here, not at the top: a --submission run and the tests need no database client.
+function connectNeon(url) {
+  return require("@neondatabase/serverless").neon(url);
+}
+
+// The live read: one read-only query, returning the latest submission for the issue date or null.
+// Reopening a submitted issue retires its draft (drafts.is_current = false) and opens a new one, so a
+// latest submission whose draft is no longer current is a lineup the editor has taken back.
+async function readLatestSubmissionFromPostgres({ issueDate }, env = process.env, connect = connectNeon) {
+  const url = env.DATABASE_URL?.trim();
+  if (!url) {
     throw new Error(
       `DATABASE_URL is not set — the live submission read for ${issueDate} is not configured. ` +
-      `Pass --submission <submission.json> to read a saved submission instead.`
+      `Set it in the environment or in the console's .env.local, or pass --submission <submission.json> ` +
+      `to read a saved submission instead.`
     );
   }
-  throw new Error(
-    `The live submission read is not wired yet (applySubmission.js readLatestSubmissionFromPostgres). ` +
-    `Pass --submission <submission.json> to read a saved submission instead.`
-  );
+  const rows = await connect(url).query(LATEST_SUBMISSION_QUERY, [issueDate]);
+  if (!rows.length) return null;
+  if (!rows[0].draft_is_current) {
+    throw new Error(
+      `Refusing submission ${rows[0].submission_id} for issue ${issueDate}: the editor reopened the issue ` +
+      `after submitting it and has not submitted again. Nothing was written.`
+    );
+  }
+  return rowToSubmission(rows[0]);
 }
 
 // ---------------------------------------------------------------------------
@@ -144,11 +176,10 @@ function slotName(sectionId, slotIndex) {
   return `${SECTION_LABELS[sectionId]} Slot ${slotIndex + 1}`;
 }
 
-// Reads the D0 markers. The console does not record them yet (ship-plan item 8 is open).
-// TODO(ariel): D0 is undecided in Decision_Log and absent from lib/contracts.ts. The field assumed
-// here is SubmissionSnapshot.selfFilledSlots: [{ sectionId, slotIndex }], slotIndex zero-based like
-// SubmittedReplacement, with the slot's entry in finalSelections left in place (or null) and ignored.
-// When Nate's console change lands, make this function read whatever it actually writes.
+// Reads the D0 markers (Decision_Log §106): SubmissionSnapshot.selfFilledSlots in lib/contracts.ts,
+// [{ sectionId, slotIndex }], slotIndex zero-based like SubmittedReplacement. The console leaves the
+// slot's pick in finalSelections underneath; it is not a pick and is ignored here. A submission made
+// before the console had the control carries no such field and marks nothing.
 function readSelfFilledSlots(submission, problems) {
   const marked = new Set();
   const list = submission.selfFilledSlots ?? [];
@@ -360,7 +391,7 @@ async function main(argv = process.argv.slice(2), deps = {}) {
   const log = deps.log ?? console.log;
   const readSubmission = deps.readSubmission ?? (opts.submissionFile
     ? async () => readJsonFile(opts.submissionFile, "Submission file")
-    : readLatestSubmissionFromPostgres);
+    : (args) => readLatestSubmissionFromPostgres(args, { DATABASE_URL: resolveDatabaseUrl(process.env, opts.envFile) }));
 
   const build = readJsonFile(opts.buildFile, "Build bundle");
   const submission = await readSubmission({ issueDate: opts.issueDate });
@@ -402,6 +433,7 @@ module.exports = {
   SECTION_LABELS,
   parseArgs,
   rowToSubmission,
+  resolveDatabaseUrl,
   readLatestSubmissionFromPostgres,
   mapSubmission,
   picksPathFor,

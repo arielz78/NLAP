@@ -1,7 +1,7 @@
 // applySubmission.test.js
 // Run: node --test scripts/applySubmission.test.js
-// Fixtures only: no database, no Airtable, no network. The submission reader is injected, and the
-// CLI runs read a fixture file through --submission.
+// Fixtures only: no database, no Airtable, no network. The submission reader is injected, the live
+// reader gets a stand-in database client, and the CLI runs read a fixture file through --submission.
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -429,12 +429,92 @@ test("rowToSubmission lets the row's columns win over the snapshot, as the conso
   assert.deepEqual(submission, makeSubmission());
 });
 
-test("the live Postgres reader fails loudly: unconfigured, and configured but unwired", async () => {
-  await assert.rejects(bridge.readLatestSubmissionFromPostgres({ issueDate: ISSUE_DATE }, {}), /DATABASE_URL is not set/);
+// The row the live query returns for makeSubmission(): the submission's columns plus its draft's is_current
+function makeRow(extra = {}) {
+  return {
+    submission_id:          "30000000-0000-4000-8000-000000000001",
+    submit_client_event_id: "40000000-0000-4000-8000-000000000001",
+    draft_id:               "20000000-0000-4000-8000-000000000001",
+    issue_build_id:         "10000000-0000-4000-8000-000000000001",
+    issue_key:              `vaughan-brief-${ISSUE_DATE}`,
+    build_version:          1,
+    issue_revision:         1,
+    editor_id:              "fixture-editor",
+    draft_revision:         2,
+    submitted_at:           new Date("2098-12-28T15:00:00.000Z"),
+    snapshot:               makeSubmission(),
+    draft_is_current:       true,
+    ...extra,
+  };
+}
+
+// A stand-in for the Neon client: records every query and returns the given rows
+function fakeConnect(rows, calls = []) {
+  return (url) => ({
+    query: async (text, params) => {
+      calls.push({ url, text, params });
+      return rows;
+    },
+  });
+}
+
+const LIVE_ENV = { DATABASE_URL: "postgres://fixture" };
+
+test("the live reader refuses to run without DATABASE_URL, and never connects", async () => {
+  const calls = [];
   await assert.rejects(
-    bridge.readLatestSubmissionFromPostgres({ issueDate: ISSUE_DATE }, { DATABASE_URL: "postgres://fixture" }),
-    /not wired/
+    bridge.readLatestSubmissionFromPostgres({ issueDate: ISSUE_DATE }, {}, fakeConnect([makeRow()], calls)),
+    /DATABASE_URL is not set/
   );
+  assert.equal(calls.length, 0);
+});
+
+test("the live reader returns the latest submission for the issue date", async () => {
+  const calls = [];
+  const submission = await bridge.readLatestSubmissionFromPostgres(
+    { issueDate: ISSUE_DATE }, LIVE_ENV, fakeConnect([makeRow()], calls)
+  );
+  assert.deepEqual(submission, makeSubmission());
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, "postgres://fixture");
+  assert.deepEqual(calls[0].params, [ISSUE_DATE]);
+});
+
+test("the live reader sends one read-only query", async () => {
+  const calls = [];
+  await bridge.readLatestSubmissionFromPostgres({ issueDate: ISSUE_DATE }, LIVE_ENV, fakeConnect([makeRow()], calls));
+  assert.match(calls[0].text, /^\s*SELECT\b/);
+  assert.doesNotMatch(calls[0].text, /\b(INSERT|UPDATE|DELETE|ALTER|DROP|TRUNCATE|CREATE)\b/i);
+  assert.doesNotMatch(calls[0].text, /;/);
+});
+
+test("the live reader returns null when the issue has no submission", async () => {
+  const submission = await bridge.readLatestSubmissionFromPostgres({ issueDate: ISSUE_DATE }, LIVE_ENV, fakeConnect([]));
+  assert.equal(submission, null);
+});
+
+test("a submission the editor reopened afterwards is refused", async () => {
+  await assert.rejects(
+    bridge.readLatestSubmissionFromPostgres(
+      { issueDate: ISSUE_DATE }, LIVE_ENV, fakeConnect([makeRow({ draft_is_current: false })])
+    ),
+    (err) => {
+      assert.match(err.message, /30000000-0000-4000-8000-000000000001/);
+      assert.match(err.message, /reopened/);
+      assert.match(err.message, /Nothing was written/);
+      return true;
+    }
+  );
+});
+
+test("DATABASE_URL comes from the environment first, then from the env file", (t) => {
+  const dir = tempDir(t);
+  const envFile = path.join(dir, ".env.local");
+  fs.writeFileSync(envFile, "EDITOR_IDENTITY=fixture\nDATABASE_URL=postgres://from-file\n");
+  assert.equal(bridge.resolveDatabaseUrl({ DATABASE_URL: "postgres://from-env" }, envFile), "postgres://from-env");
+  assert.equal(bridge.resolveDatabaseUrl({}, envFile), "postgres://from-file");
+  assert.equal(bridge.resolveDatabaseUrl({ DATABASE_URL: "  " }, envFile), "postgres://from-file");
+  assert.equal(bridge.resolveDatabaseUrl({}, path.join(dir, "missing.env")), undefined);
 });
 
 // ---------------------------------------------------------------------------
@@ -469,8 +549,9 @@ test("CLI: a refusal exits non-zero and writes nothing", (t) => {
 });
 
 test("CLI: without --submission the unconfigured database read exits non-zero", (t) => {
-  const { base } = cliFixture(t);
-  const res = runCli(base);
+  // --console-env names a file that does not exist, so this never reaches the console's real .env.local
+  const { base, dir } = cliFixture(t);
+  const res = runCli([...base, "--console-env", path.join(dir, "missing.env")]);
   assert.equal(res.status, 1);
   assert.match(res.stderr, /DATABASE_URL is not set/);
 });

@@ -73,6 +73,12 @@ export interface DraftHistoryEntry {
   summary: string;
 }
 
+/** A slot the editor fills with his own event, outside the console (Decision_Log §106). */
+export interface SelfFilledSlot {
+  sectionId: SectionId;
+  slotIndex: number;
+}
+
 export interface DraftSnapshot {
   id: string;
   issueBuildId: string;
@@ -83,6 +89,8 @@ export interface DraftSnapshot {
   status: DraftStatus;
   selections: Record<SectionId, Candidate[]>;
   alternatives: Record<SectionId, AlternativeCandidate[]>;
+  /** The pick stays in `selections` underneath. Absent on drafts saved before the field existed. */
+  selfFilledSlots?: SelfFilledSlot[];
   feedbackBySlot: Record<string, FeedbackValue>;
   history: DraftHistoryEntry[];
   updatedAt: string;
@@ -93,6 +101,7 @@ export type InteractionEventType =
   | "undo"
   | "feedback"
   | "source_open"
+  | "self_fill"
   | "submit"
   | "reopen";
 
@@ -154,6 +163,11 @@ export interface SubmissionSnapshot {
   draftRevision: number;
   submittedAt: string;
   finalSelections: Record<SectionId, Candidate[]>;
+  /**
+   * Slots whose entry in `finalSelections` is not a pick: the editor fills them himself.
+   * Absent on submissions made before the field existed.
+   */
+  selfFilledSlots?: SelfFilledSlot[];
   replacements: SubmittedReplacement[];
   trainingPairs: TrainingPair[];
   incompleteEventCount: number;
@@ -194,6 +208,12 @@ export type DraftCommand =
       candidateId: string;
       sourceUrl: string;
       context: "selected" | "alternative";
+    })
+  | (CommandBase & {
+      type: "self_fill";
+      sectionId: SectionId;
+      slotIndex: number;
+      selfFilled: boolean;
     });
 
 export interface CommandResult {
@@ -203,4 +223,14 @@ export interface CommandResult {
 
 export function slotKey(sectionId: SectionId, slotIndex: number) {
   return `${sectionId}:${slotIndex}`;
+}
+
+export function isSelfFilled(
+  slots: SelfFilledSlot[] | undefined,
+  sectionId: SectionId,
+  slotIndex: number,
+) {
+  return (slots ?? []).some(
+    (slot) => slot.sectionId === sectionId && slot.slotIndex === slotIndex,
+  );
 }
