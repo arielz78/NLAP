@@ -397,6 +397,26 @@ test("--lock patches exactly the written IDs with Lock=true and touches no other
   onlyReads(again.requests);
 });
 
+test("a self-filled slot leaves a gap: no row for it, the other slots keep their numbers, lock covers only the written rows", () => {
+  // Families Slot 3 marked "I'm filling this myself": applySubmission.js leaves it out of the picks file
+  const gapped = [1, 2, 4, 5].map((slot) => ({ IssueDate: ISSUE_DATE, ItemID: candId(slot), Section: "For Families", Slot: slot }));
+  const { file, receipt, state } = writePicksFile(gapped);
+
+  const res = runWriter(file, ["--apply"], "empty", state);
+  assert.strictEqual(res.status, 0, res.stderr);
+  const rows = postedRows(res.requests);
+  assert.deepStrictEqual(rows.map((r) => r.fields.Name), [1, 2, 4, 5].map((s) => `For Families Slot ${s} — ${ISSUE_DATE}`));
+  assert.deepStrictEqual(rows.map((r) => r.fields.Slot), [1, 2, 4, 5]);
+  assert.match(res.stdout, /4 records created\. Deletes: 0\./);
+
+  const writtenIds = JSON.parse(fs.readFileSync(receipt, "utf8")).rows.map((r) => r.id);
+  const lock = runWriter(file, ["--lock"], "empty", state);
+  assert.strictEqual(lock.status, 0, lock.stderr);
+  const patched = lock.requests.filter((r) => r.method === "PATCH").flatMap((r) => JSON.parse(r.body).records);
+  assert.deepStrictEqual(patched.map((p) => p.id), writtenIds);
+  assert.strictEqual(writtenIds.length, 4);
+});
+
 test("--lock never patches a written row that is already locked", () => {
   const { file, receipt, state } = writePicksFile();
   assert.strictEqual(runWriter(file, ["--apply"], "empty", state).status, 0);

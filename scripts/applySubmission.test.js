@@ -517,6 +517,24 @@ test("DATABASE_URL comes from the environment first, then from the env file", (t
   assert.equal(bridge.resolveDatabaseUrl({}, path.join(dir, "missing.env")), undefined);
 });
 
+test("the operator is told which database is read and where its URL came from, never the password", (t) => {
+  const dir = tempDir(t);
+  const envFile = path.join(dir, ".env.local");
+  fs.writeFileSync(envFile, "DATABASE_URL=postgres://user:secret@file-host.neon.tech/console_db\n");
+
+  const fromShell = bridge.describeDatabase({ DATABASE_URL: "postgres://user:secret@shell-host.neon.tech/other_db" }, envFile);
+  assert.match(fromShell, /shell-host\.neon\.tech\/other_db/);
+  assert.match(fromShell, /shell/);
+  assert.doesNotMatch(fromShell, /secret|user/);
+
+  const fromFile = bridge.describeDatabase({}, envFile);
+  assert.match(fromFile, /file-host\.neon\.tech\/console_db/);
+  assert.ok(fromFile.includes(envFile));
+  assert.doesNotMatch(fromFile, /secret/);
+
+  assert.match(bridge.describeDatabase({}, path.join(dir, "missing.env")), /no DATABASE_URL/);
+});
+
 // ---------------------------------------------------------------------------
 // CLI: exit codes
 // ---------------------------------------------------------------------------

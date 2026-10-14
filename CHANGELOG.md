@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-10-14
+- Newsletter copy is now generated one event at a time, so each blurb is tied to its event by code rather than by the model.
+- CI runs the editor console's database tests against a temporary Neon branch on every push.
+- Console swap warnings ignore slots the editor fills himself; the submission bridge reports which database it reads.
+
 ## 2026-10-13
 - Closed the remaining gaps before a first live week that did not need the editor. The submission bridge now reads the latest submitted lineup straight from the console's database, read-only, and refuses one that was reopened and never resubmitted.
 - Added an "I'm filling this myself" control to the review console, so a slot the editor fills from outside the candidate pool is recorded as such and skipped downstream, and made the swap-reason question hard to miss, including a reminder at submit.

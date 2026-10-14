@@ -116,6 +116,14 @@ with `--skip-r1` (217 candidates scored, 88 to the model, no repairs), a rerun r
 run converted and passed the `publish-build` dry run. That run was a rehearsal on a pool last refreshed
 2026-10-11; its R7 and run folders were deleted so the real week is not pinned to its snapshot.
 
+**Done 2026-10-14:** Swap warnings no longer count a slot marked "I'm filling this myself" (`674e296`; the
+editor's own pick in that slot is his to check). `generateBlurbs.js` makes one model call per event, so copy can
+only land on the row it was written for; it now has an offline test in CI. `applySubmission.js` prints which
+database it reads and where the URL came from. A writer test covers a self-filled gap in a section. Item 3's
+bounded review (#149) returned READY with no blockers, and a second review (Codex) agreed. Item 6: CI now runs
+the PostgreSQL suite on a throwaway Neon branch made from an empty `ci-empty` parent, unproven until its first
+GitHub run. Evidence for items 14 and 16 is on #147 and #133.
+
 **Not yet run:** the writer's live `--apply` (item 3, #149), blurbs and export after a console submission,
 `runWeek.js`'s R1 freshness stage (skipped in the rehearsal; n8n was down), and the "I'm filling this
 myself" control against the hosted database (tried in demo mode only). The swap warnings still count a slot

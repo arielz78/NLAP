@@ -22,12 +22,15 @@ const BASE_ID             = process.env.AIRTABLE_BASE_ID;
 const ISSUEITEMS_TABLE_ID = 'tblrz2fZYUhxpZph2';
 const DRY_RUN             = process.argv.includes('--dry-run');
 const TARGET_DATE         = process.argv.find(a => /^\d{4}-\d{2}-\d{2}$/.test(a));
-if (!TARGET_DATE) { console.error('Usage: node generateBlurbs.js YYYY-MM-DD [--dry-run]'); process.exit(1); }
 const MODEL               = 'gpt-5.4-nano';
 
-if (!AIRTABLE_KEY) throw new Error('AIRTABLE_API_KEY missing from NLAP_Airtable.env');
-if (!OPENAI_KEY)   throw new Error('OPENAI_API_KEY missing from NLAP_Airtable.env');
-if (!BASE_ID)      throw new Error('AIRTABLE_BASE_ID missing from NLAP_Airtable.env');
+// Checked in main(), not here, so the test file can require() this module.
+function checkConfig() {
+  if (!TARGET_DATE) { console.error('Usage: node generateBlurbs.js YYYY-MM-DD [--dry-run]'); process.exit(1); }
+  if (!AIRTABLE_KEY) throw new Error('AIRTABLE_API_KEY missing from NLAP_Airtable.env');
+  if (!OPENAI_KEY)   throw new Error('OPENAI_API_KEY missing from NLAP_Airtable.env');
+  if (!BASE_ID)      throw new Error('AIRTABLE_BASE_ID missing from NLAP_Airtable.env');
+}
 
 // ── Fetch timeout ──────────────────────────────────────────────────────────────
 function timedFetch(url, opts = {}, ms = 30000) {
@@ -141,13 +144,15 @@ function countWords(str) {
 }
 
 // ── LLM call ──────────────────────────────────────────────────────────────────
-async function callGPT(eventList, issueDate) {
+// One call per event. The code holds the row; the model never sees a row ID or a list index,
+// so a blurb cannot land on another event's row. CTAs already used are passed in instead.
+function buildPrompts(item, issueDate, usedCtas) {
   const systemPrompt = `You are a newsletter copywriter for the Vaughan Brief, a warm local events newsletter for the Greater Toronto Area. Audience: 75% women aged 35–60. Most popular section: For Families.
 
-For each event provided, generate a blurb with THREE parts:
+For the event provided, generate a blurb with THREE parts:
 1. A creative display title of ~6 words in Title Case — NOT the original event name verbatim. Rephrase to be engaging and specific. You may use an em dash (–) to add urgency or context (e.g. "– Last Chance", "– Free Admission", "– Kids Welcome"). Include an appropriate emoji at the start. Example: "🍁 Canada's Largest Maple Syrup Festival – Last Chance" or "🧭 Family Mapping & Orienteering at Kortright"
 2. A description of 10 words — aim for exactly 10, but 9 or 11 is acceptable
-3. A unique 2–3 word CTA — every CTA across the entire list must be distinct
+3. A 2–3 word CTA that is different from every CTA listed as already used
 
 Style rules:
 - Warm, community-focused, never salesy
@@ -157,20 +162,20 @@ Style rules:
 
 Return ONLY valid JSON — no markdown, no preamble:
 {
-  "blurbs": [
-    {
-      "index": 1,
-      "emoji": "🎭",
-      "displayTitle": "Creative Six-Word Title for This Event",
-      "description": "Exactly ten words that describe this specific event well",
-      "cta": "Book Now"
-    }
-  ]
+  "emoji": "🎭",
+  "displayTitle": "Creative Six-Word Title for This Event",
+  "description": "Exactly ten words that describe this specific event well",
+  "cta": "Book Now"
 }`;
 
-  const userPrompt = `Issue date: ${issueDate}\n\nGenerate blurbs for all ${eventList.length} events. Return JSON with a "blurbs" array.\n\n${eventList.map((e, i) =>
-    `${i + 1}. TITLE: ${e.title}\n   DESC: ${e.desc.slice(0, 600)}\n   SECTION: ${e.section}\n   CITY: ${e.city}`
-  ).join('\n\n')}`;
+  const used = usedCtas.length ? usedCtas.map(c => `"${c}"`).join(', ') : 'none';
+  const userPrompt = `Issue date: ${issueDate}\nCTAs already used in this issue: ${used}\n\nTITLE: ${item.title}\nDESC: ${item.desc.slice(0, 600)}\nSECTION: ${item.section}\nCITY: ${item.city}`;
+
+  return { systemPrompt, userPrompt };
+}
+
+async function callGPT(item, issueDate, usedCtas) {
+  const { systemPrompt, userPrompt } = buildPrompts(item, issueDate, usedCtas);
 
   const res = await timedFetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -188,7 +193,7 @@ Return ONLY valid JSON — no markdown, no preamble:
         { role: 'user',   content: userPrompt }
       ]
     })
-  }, 120000);
+  }, 60000);
 
   if (!res.ok) {
     const body = await res.text();
@@ -198,20 +203,64 @@ Return ONLY valid JSON — no markdown, no preamble:
   const data = await res.json();
   const raw  = data.choices[0].message.content;
 
-  let parsed;
+  let blurb;
   try {
-    const obj = JSON.parse(raw);
-    // Accept {blurbs:[]} or top-level array
-    parsed = Array.isArray(obj) ? obj : (obj.blurbs || Object.values(obj).find(Array.isArray) || []);
+    blurb = JSON.parse(raw);
   } catch (e) {
     throw new Error(`GPT JSON parse failed: ${e.message}\nRaw:\n${raw}`);
   }
+  if (!blurb || typeof blurb.description !== 'string' || typeof blurb.displayTitle !== 'string') {
+    throw new Error(`GPT returned no blurb fields.\nRaw:\n${raw}`);
+  }
+  return blurb;
+}
 
-  return parsed;
+// Calls the model once per item, in order, and validates each blurb. A failed call stops the run
+// (naming the row) rather than leaving one event without copy.
+async function blurbItems(itemsToBlurb, issueDate, callModel = callGPT, log = console.log) {
+  const ctaSeen = new Set();
+  const usedCtas = [];
+  const results = [];
+
+  for (const item of itemsToBlurb) {
+    let blurb;
+    try {
+      blurb = await callModel(item, issueDate, [...usedCtas]);
+    } catch (e) {
+      throw new Error(`Blurb for ${item.id} [${item.section} / Slot ${item.slot}] failed: ${e.message}`);
+    }
+
+    const wc         = countWords(blurb.description);
+    const wordOk     = wc >= 9 && wc <= 11;
+    const ctaDupe    = ctaSeen.has((blurb.cta || '').toLowerCase());
+    const ctaWords   = countWords(blurb.cta || '');
+    const ctaOk      = !ctaDupe && ctaWords >= 2 && ctaWords <= 3;
+
+    ctaSeen.add((blurb.cta || '').toLowerCase());
+    usedCtas.push(blurb.cta || '');
+
+    const flags = [
+      !wordOk  ? `WORD_COUNT:${wc}/10` : '',
+      ctaDupe  ? 'CTA_DUPLICATE'       : '',
+      !ctaOk && !ctaDupe ? `CTA_LENGTH:${ctaWords}` : ''
+    ].filter(Boolean).join(' | ');
+
+    const displayTitle = `${blurb.emoji} ${blurb.displayTitle}`;
+
+    log(`[${item.section} | Slot ${item.slot}]  ${wordOk ? '✅' : '⚠️ '} ${wc}w  CTA: "${blurb.cta}" ${ctaOk ? '✅' : '⚠️ '}`);
+    log(`  ${displayTitle}`);
+    log(`  "${blurb.description}"`);
+    log();
+
+    results.push({ id: item.id, displayTitle, description: blurb.description, cta: blurb.cta, flags, valid: wordOk && ctaOk });
+  }
+
+  return results;
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
+  checkConfig();
   console.log(`\n🎯 R4 Blurb Generator`);
   console.log(`   Issue: ${TARGET_DATE}${DRY_RUN ? '  [DRY RUN — no writes]' : ''}\n`);
 
@@ -280,46 +329,9 @@ async function main() {
     console.log(`     ${descStatus}`);
   });
 
-  // 6. Call LLM
-  console.log(`\n🤖 Calling ${MODEL} for ${itemsToBlurb.length} blurbs...`);
-  const blurbs = await callGPT(itemsToBlurb, TARGET_DATE);
-  console.log(`   Received ${blurbs.length} blurbs\n`);
-
-  // 7. Validate + build write payload
-  const ctaSeen = new Set();
-  const results = [];
-
-  for (const blurb of blurbs) {
-    const idx  = blurb.index - 1;
-    const item = itemsToBlurb[idx];
-    if (!item) {
-      console.warn(`⚠️  No item for index ${blurb.index}`);
-      continue;
-    }
-
-    const wc         = countWords(blurb.description);
-    const wordOk     = wc >= 9 && wc <= 11;
-    const ctaDupe    = ctaSeen.has((blurb.cta || '').toLowerCase());
-    const ctaWords   = countWords(blurb.cta || '');
-    const ctaOk      = !ctaDupe && ctaWords >= 2 && ctaWords <= 3;
-
-    ctaSeen.add((blurb.cta || '').toLowerCase());
-
-    const flags = [
-      !wordOk  ? `WORD_COUNT:${wc}/10` : '',
-      ctaDupe  ? 'CTA_DUPLICATE'       : '',
-      !ctaOk && !ctaDupe ? `CTA_LENGTH:${ctaWords}` : ''
-    ].filter(Boolean).join(' | ');
-
-    const displayTitle = `${blurb.emoji} ${blurb.displayTitle}`;
-
-    console.log(`[${item.section} | Slot ${item.slot}]  ${wordOk ? '✅' : '⚠️ '} ${wc}w  CTA: "${blurb.cta}" ${ctaOk ? '✅' : '⚠️ '}`);
-    console.log(`  ${displayTitle}`);
-    console.log(`  "${blurb.description}"`);
-    console.log();
-
-    results.push({ id: item.id, displayTitle, description: blurb.description, cta: blurb.cta, flags, valid: wordOk && ctaOk });
-  }
+  // 6–7. Call the model once per event, then validate
+  console.log(`\n🤖 Calling ${MODEL} once per event for ${itemsToBlurb.length} blurbs...\n`);
+  const results = await blurbItems(itemsToBlurb, TARGET_DATE);
 
   // 8. Write back
   if (DRY_RUN) {
@@ -344,7 +356,11 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error(`\n❌ Fatal: ${err.message}`);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(err => {
+    console.error(`\n❌ Fatal: ${err.message}`);
+    process.exit(1);
+  });
+}
+
+module.exports = { buildPrompts, blurbItems };

@@ -127,6 +127,20 @@ function resolveDatabaseUrl(env, envFile) {
   return parsed.DATABASE_URL?.trim() || undefined;
 }
 
+// For the operator, before the live read: host, database name and which source supplied the URL.
+// Never the user or password. A stale shell DATABASE_URL would otherwise be used without notice.
+function describeDatabase(env, envFile) {
+  const url = resolveDatabaseUrl(env, envFile);
+  if (!url) return `no DATABASE_URL in the shell or ${envFile}`;
+  const source = env.DATABASE_URL?.trim() ? "the shell's DATABASE_URL" : envFile;
+  try {
+    const u = new URL(url);
+    return `${u.hostname}${u.pathname} (from ${source})`;
+  } catch {
+    return `an unparseable DATABASE_URL (from ${source})`;
+  }
+}
+
 // It selects by issue date, not by build, on purpose: if the latest submission was made against
 // another build, the identity check below must see it and refuse.
 const LATEST_SUBMISSION_QUERY = `
@@ -394,6 +408,7 @@ async function main(argv = process.argv.slice(2), deps = {}) {
     : (args) => readLatestSubmissionFromPostgres(args, { DATABASE_URL: resolveDatabaseUrl(process.env, opts.envFile) }));
 
   const build = readJsonFile(opts.buildFile, "Build bundle");
+  if (!deps.readSubmission && !opts.submissionFile) log(`Database: ${describeDatabase(process.env, opts.envFile)}`);
   const submission = await readSubmission({ issueDate: opts.issueDate });
   if (!submission) throw new Error(`No submitted revision found for issue ${opts.issueDate}. Nothing was written.`);
 
@@ -434,6 +449,7 @@ module.exports = {
   parseArgs,
   rowToSubmission,
   resolveDatabaseUrl,
+  describeDatabase,
   readLatestSubmissionFromPostgres,
   mapSubmission,
   picksPathFor,
