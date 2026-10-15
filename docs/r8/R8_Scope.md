@@ -150,13 +150,14 @@ excluded (the held stale-row rule for VPL and OnRichmondHill, or one-off Rejecte
 **Done 2026-10-15, second session:** item 12 is done: Ariel walked the editor through the console
 (`meetings/2026-10-15.md`). For it, `runWeek.js` built 2026-10-22 (`--version demo`; one call, 4 hand repairs), and
 `to-bundle.js` → `publish-build --apply` published it to the hosted console **without a sign-off and without the
-database reset**, to run the way the finished version will. ⚠️ The 57 wrong-dated rows (#157) were not excluded and
-may be in that slate. The editor has not submitted yet. The meeting added ship-plan items 19 (several weeks open)
+database reset**, to run the way the finished version will. ⚠️ One of the 57 wrong-dated rows (#157) is a selected
+pick: reclRZj71TSBESMCL Photo Club (VPL, 2026-10-28, Golden Age; last updated by the pre-fix 16:29Z run). The editor has not submitted yet. The meeting added ship-plan items 19 (several weeks open)
 and 20 (typing a self-filled event in), and amended 17 (the export is a download in the console). **Open, not
 settled:** whether the database reset of 2026-10-13 still happens, now that the build the editor uses sits on the
 un-reset database.
 
-**Next:** when the editor says he has submitted 2026-10-22: `applySubmission.js` (dry run, then `--write`) →
+**Next:** check Photo Club's date at vaughanpl.info/programs/view/4041; if it is not 2026-10-28, the editor
+replaces that pick. Then, when the editor says he has submitted 2026-10-22: `applySubmission.js` (dry run, then `--write`) →
 item 3's first live `writeIssuePicks.js --apply --ensure-issue` (Ariel's go at that moment; #149 review READY) →
 `generateBlurbs.js 2026-10-22 --dry-run`, then the real run → `--lock` → `pushToBeehiiv.js` → send him the export. The ship plan's new §0 states the destination (an editor-run week) and
 stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
