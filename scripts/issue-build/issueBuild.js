@@ -5,7 +5,7 @@
 const fs=require('node:fs'), path=require('node:path'), crypto=require('node:crypto'), child=require('node:child_process');
 const ROOT=path.resolve(__dirname,'../..');
 const {buildIssues}=require(path.join(ROOT,'scripts/buildIssues.js'));
-const {isFormUrl,repair}=require('./repair.js');
+const {isFormUrl,repair,recordText}=require('./repair.js');
 const {extractDescription,sameEvent,skipPage,PAGE_TEXT_CAP}=require('./pageExtract.js');
 const {fetchDescription:fetchAllEvents}=require(path.join(ROOT,'scripts/fetchAllEventsDescriptions.js'));
 const {normTitle}=require('../r6/lib/util.js');
@@ -135,8 +135,7 @@ function validateRanking(r,candidates,history) {
   for(const s of r.sections){const seen=new Set();for(const row of s.ordered){
     assert(byId.has(row.id),'Unknown candidate '+row.id);assert(!seen.has(row.id),'Duplicate rank '+row.id);seen.add(row.id);selected.add(row.id);
     assert(row.reason.trim().length>0,'Missing reason');assert(row.history_refs.every(x=>refs.has(x)),'Unknown history reference');
-    const c=byId.get(row.id),text=[c.snapshot_fields['Event Title'],c.snapshot_fields.DescriptionRaw,c.page?.text].filter(Boolean).join('\n');
-    assert(!row.evidence_quote||text.includes(row.evidence_quote),'Unsupported exact quote '+row.id);
+    assert(!row.evidence_quote||recordText(byId.get(row.id)).includes(row.evidence_quote),'Unsupported exact quote '+row.id);
   }}
   const rejected=new Set();for(const row of r.exclusions){assert(byId.has(row.id),'Unknown excluded ID');assert(!selected.has(row.id),'Ranked and excluded '+row.id);assert(!rejected.has(row.id),'Duplicate exclusion');rejected.add(row.id);}
   return r;
@@ -187,7 +186,8 @@ function alternatives(issue,candidates,ranked,picks) {
       return {...row,replaceable_slots:slots};
     })]));
 }
-function codeIdentity(){return sha(CODE.map(n=>sha(fs.readFileSync(path.join(__dirname,n)))).concat(sha(fs.readFileSync(path.join(ROOT,'scripts/buildIssues.js')))).join('|'));}
+// A gitignored template absent on a fresh clone hashes as missing; prepare refuses to run without it, so a real run never has one.
+function codeIdentity(){return sha(CODE.map(n=>fs.existsSync(path.join(__dirname,n))?sha(fs.readFileSync(path.join(__dirname,n))):'missing:'+n).concat(sha(fs.readFileSync(path.join(ROOT,'scripts/buildIssues.js')))).join('|'));}
 function verifyInputs(dir,issue) {
   const manifest=read(dir,'preparation_manifest.json');
   assert(sha(fs.readFileSync(path.join(dir,'evidence_inputs.json')))===manifest.evidence_inputs_sha256,'Prepared input hash mismatch');
@@ -521,7 +521,8 @@ function finalize(dir,opts={}){
   // Read before anything is saved: an unreadable sibling manifest must stop the run while finalize can still be rerun.
   const buildVersion=nextBuildVersion(week.issue,finishedManifests(dir));
   const {ranking,receipt}=repair(parseResponse(body),{responseSha:sha(raw),formExcluded:formLinked(d),corrections,
-    correctionsSource:corrections?(opts.corrections?rel(opts.corrections):rel(path.join(dir,'corrections.json'))):null,knownIds:packet.candidates.map(c=>c.record_id)});
+    correctionsSource:corrections?(opts.corrections?rel(opts.corrections):rel(path.join(dir,'corrections.json'))):null,knownIds:packet.candidates.map(c=>c.record_id),
+    records:packet.candidates,historyRefs:packet.history.map(h=>h.ref)});
   let built;
   try{built=buildSlate(week,packet,ranking);}
   catch(e){
@@ -601,5 +602,5 @@ function main(argv){
   });
 }
 module.exports={SECTIONS,PICKS,ALTERNATIVES,POOL_FLOOR,HUMAN_REVIEW,ThinSupplyError,urlKey,sameOpportunity,historyFor,requestKey,validateRanking,allocate,alternatives,
-  shortlist,fetchPages,formLinked,assertPoolSupply,supplyProblems,buildSlate,fallbackDescription,seriesId,displayedEvents,finishedManifests,nextBuildVersion,weekContext,recentIssues,windowLabel,fill,templateValues,addDays,receiptText,parseArgs,runGuarded,TEMPLATES,EXAMPLES};
+  shortlist,fetchPages,formLinked,assertPoolSupply,supplyProblems,buildSlate,finalize,fallbackDescription,seriesId,displayedEvents,finishedManifests,nextBuildVersion,weekContext,recentIssues,windowLabel,fill,templateValues,addDays,receiptText,parseArgs,runGuarded,TEMPLATES,EXAMPLES};
 if(require.main===module)main(process.argv.slice(2));

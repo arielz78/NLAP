@@ -5,7 +5,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), child = require('node:child_process');
 const d = require('./issueBuild.js');
-const {repair, isFormUrl} = require('./repair.js');
+const {repair, isFormUrl, quoteMatch} = require('./repair.js');
 const [F,C,G] = d.SECTIONS;
 const GUIDANCE = {first_demo_issue:'2026-09-10', reviewed_demo_issues:['2026-09-10','2026-09-17','2026-09-24']};
 // Not included: an issue whose window spans the March clock change (e.g. 2027-03-04). buildIssues.js
@@ -263,4 +263,173 @@ test('thin supply exits non-zero (2); other failures exit 1; replay path loads n
  const loaded=run("d.runGuarded(()=>{});console.log(Object.keys(require.cache).filter(k=>/dotenv/.test(k)).length);");
  assert.equal(loaded.status,0); assert.equal(loaded.stdout.trim(),'0');
 });
+// ---- Ship-plan item 16a: mechanical repairs, run end to end through finalize. ----
+// Each fixture is a saved response with one defect injected. The defect shapes are the ones hand-repaired
+// on #133: dropped/extra id character (v4b, v5, v6), whitespace/case/curly-quote misquotes (v1, v2b, v4b,
+// v6, v6b), repeated sections (v4b identical copy, v6b empty copies), a history-ref year typo (v3). The
+// event text is synthetic; only the shape of each defect is copied.
+{
+ const os = require('node:os'), crypto = require('node:crypto');
+ const sha = x => crypto.createHash('sha256').update(x).digest('hex');
+ const rid = s => 'rec'+crypto.createHash('sha256').update(s).digest('base64').replace(/[^A-Za-z0-9]/g,'').slice(0,14);
+ const rec = (key, venue, extra={}) => {
+  const c = candidate(rid(key), venue, 'Event '+key);
+  c.snapshot_fields.DescriptionRaw = 'An afternoon programme number '+key+' with hands-on activities for everyone.';
+  Object.assign(c.snapshot_fields, extra);
+  return {...c, page:null, exact_url_publication_refs:null, weak_lexical_comparable_refs:[]};
+ };
+ const KEYS = ['f','c','g'].flatMap(k=>Array.from({length:10},(_,i)=>k+i));
+ const rows = () => KEYS.map(k=>rec(k, 'Venue '+k));
+ const id = k => rid(k);
+ // fullPool groups by the first letter of the id, so build the pool from the keys instead.
+ const poolOf = () => pool(...['f','c','g'].map(s=>KEYS.filter(k=>k[0]===s).map(id)));
+ const rowOf = (ranking, k) => ranking.sections.flatMap(s=>s.ordered).find(o=>o.id===id(k));
+ // A prepared run folder holding exactly what finalize reads, with the response written as the provider would return it.
+ function runFinalize(ranking, packetRows=rows(), history=[]){
+  const parent = fs.mkdtempSync(path.join(os.tmpdir(),'issue-build-16a-')), dir = path.join(parent,'run'); fs.mkdirSync(dir);
+  const write = (n,x) => fs.writeFileSync(path.join(dir,n), typeof x==='string'?x:JSON.stringify(x,null,2)+'\n');
+  const evidence = {issue_date:ISSUE, candidates:packetRows.map(c=>{const text='r7 text '+c.record_id;
+   return {record_id:c.record_id, snapshot_fields:c.snapshot_fields, r7:{...c.r7, title:c.snapshot_fields['Event Title'], url:c.snapshot_fields.URL, text, text_sha256:sha(text)}};}),
+   issueitems_snapshot:{records:[]}};
+  write('evidence_inputs.json', evidence);
+  write('preparation_manifest.json', {inputs:{}, evidence_inputs_sha256:sha(fs.readFileSync(path.join(dir,'evidence_inputs.json')))});
+  write('week.json', {...week(), snapshot:'2026-10-04_1222', history_warning:null});
+  write('ranking_packet.json', {...packetOf(packetRows), history});
+  const request = {model:'fixture'}; write('request.json', request);
+  write('request_manifest.json', {request_key:d.requestKey(request,'fixture-code'), code_sha256:'fixture-code',
+   packet_sha256:sha(fs.readFileSync(path.join(dir,'ranking_packet.json'))), form_url_exclusions:[], shortlist_form_url_matches:0, page_evidence:'none', pricing_source:'fixture'});
+  write('response.json', {status:'completed', id:'resp_fixture', model:'fixture', usage:{input_tokens:1000, output_tokens:100},
+   output:[{type:'message', content:[{type:'output_text', text:JSON.stringify(ranking)}]}]});
+  try { d.finalize(dir);
+   const manifest = JSON.parse(fs.readFileSync(path.join(dir,'run_manifest.json'),'utf8'));
+   return {manifest, receipt:manifest.repair_receipt, text:fs.readFileSync(path.join(dir,'RECEIPT.md'),'utf8'),
+    pool:JSON.parse(fs.readFileSync(path.join(dir,'ranked_pool.json'),'utf8'))};
+  } catch (e) { e.rendered = fs.existsSync(path.join(dir,'editor_preview.html')); throw e; }
+  finally { fs.rmSync(parent,{recursive:true,force:true}); }
+ }
+ const stops = (fn, pattern) => assert.throws(fn, e => {
+  assert.match(e.message, /failed validation after repair/); assert.match(e.message, pattern); assert.equal(e.rendered, false); return true;});
+ const mechanical = (receipt, type) => receipt.automatic.filter(a=>a.type===type);
+
+ test('16a: a clean response finalizes with no mechanical repair recorded',()=>{
+  const out = runFinalize(poolOf());
+  assert.equal(out.receipt.automatic.length, 0); assert.equal(out.receipt.changed, false);
+  assert.match(out.text, /Repairs to the model response: 0 automatic, 0 from the corrections file/);
+ });
+
+ // ---- Record-id typo ----
+ test('16a: a record id with one dropped or extra character is remapped when its quote is in that record',()=>{
+  const ranking = poolOf(), row = rowOf(ranking,'c3'), real = id('c3');
+  row.id = real.slice(0,3)+real.slice(4); // dropped character after "rec" (v4b, v5 shape)
+  row.evidence_quote = 'programme number c3 with hands-on';
+  const extra = poolOf(), row2 = rowOf(extra,'g7'); row2.id = id('g7')+'W'; row2.evidence_quote = 'programme number g7'; // extra trailing character (v6 shape)
+  for (const [r, from, to, section] of [[ranking,row.id,real,C],[extra,row2.id,id('g7'),G]]) {
+   const out = runFinalize(r), hits = mechanical(out.receipt,'record_id_typo');
+   assert.equal(hits.length, 1); assert.deepEqual([hits[0].from, hits[0].to, hits[0].section], [from, to, section]);
+   assert.ok(out.pool.sections.find(s=>s.section===section).ordered.some(o=>o.id===to));
+   assert.match(out.text, new RegExp('record_id_typo .*'+from)); assert.match(out.text, /1 automatic/);
+  }
+ });
+ test('16a: a record id typo stops the run when two real ids are one edit away',()=>{
+  // Two listings of one series whose ids differ in the last character, both carrying the quoted text.
+  const base = 'recAbCdEfGhIjKlM', twins = [rec('t1','Venue t1'), rec('t2','Venue t2')];
+  twins.forEach((t,i)=>{t.record_id = t.r7.record_id = base+(i+1);});
+  for (const t of twins) t.snapshot_fields.DescriptionRaw = 'Weekly series: watercolour basics for adults.';
+  const ranking = poolOf(), row = rowOf(ranking,'f2'); row.id = base; row.evidence_quote = 'watercolour basics';
+  stops(()=>runFinalize(ranking, [...rows(), ...twins]), new RegExp('Unknown candidate '+base));
+ });
+ test('16a: a record id typo stops the run when the quote is not in the one near id, or there is no quote',()=>{
+  const wrongQuote = poolOf(), a = rowOf(wrongQuote,'c3'); a.id = id('c3').slice(0,3)+id('c3').slice(4);
+  a.evidence_quote = 'programme number g5 with hands-on'; // text of another record: possibly the wrong real record
+  stops(()=>runFinalize(wrongQuote), /Unknown candidate/);
+  const noQuote = poolOf(), b = rowOf(noQuote,'c3'); b.id = id('c3').slice(0,3)+id('c3').slice(4); b.evidence_quote = '';
+  stops(()=>runFinalize(noQuote), /Unknown candidate/);
+  const twoEdits = poolOf(), e = rowOf(twoEdits,'c3'); e.id = id('c3').slice(0,3)+id('c3').slice(5); e.evidence_quote = 'programme number c3';
+  stops(()=>runFinalize(twoEdits), /Unknown candidate/);
+ });
+
+ // ---- Misquoted text ----
+ test('16a: a quote that differs from the source only in whitespace, case or typographic quotes is replaced with the source text',()=>{
+  const packetRows = rows(), by = k => packetRows.find(r=>r.record_id===id(k));
+  by('f1').snapshot_fields.DescriptionRaw = 'Pancake breakfast. Adults $12.00 \n Children (Under 12) $5.00'; // v6 newline shape
+  by('c1').snapshot_fields['Event Title'] = 'Classic Albums Night:  Side Two';                       // v4b double space
+  by('g1').snapshot_fields.DescriptionRaw = 'Come and "weave" connections with other thread-minded seniors'; // v2b curly quotes
+  by('g2').snapshot_fields.DescriptionRaw = 'Your own individual pasta-making station.';              // v1 case
+  const ranking = poolOf(), q = (k,quote) => { rowOf(ranking,k).evidence_quote = quote; };
+  q('f1','Adults $12.00 Children (Under 12) $5.00'); q('c1','Classic Albums Night: Side Two');
+  q('g1','“weave” connections with other thread-minded seniors'); q('g2','your own individual pasta-making station');
+  const out = runFinalize(ranking, packetRows), hits = mechanical(out.receipt,'quote_text_mismatch');
+  assert.equal(hits.length, 4);
+  const to = Object.fromEntries(hits.map(h=>[h.record_id,h.to]));
+  assert.deepEqual(to, {[id('f1')]:'Adults $12.00 \n Children (Under 12) $5.00', [id('c1')]:'Classic Albums Night:  Side Two',
+   [id('g1')]:'"weave" connections with other thread-minded seniors', [id('g2')]:'Your own individual pasta-making station'});
+  assert.equal(rowOf(out.pool,'c1').evidence_quote, 'Classic Albums Night:  Side Two');
+  assert.match(out.text, /quote_text_mismatch/); assert.match(out.text, /4 automatic/);
+ });
+ test('16a: a quote with an added word, an invented quote, or one that matches two different source spans stops the run',()=>{
+  const packetRows = rows(), by = k => packetRows.find(r=>r.record_id===id(k));
+  by('f1').snapshot_fields['Event Title'] = 'Storytelling and Creative Writing (Grades 3-4)';
+  const added = poolOf(); rowOf(added,'f1').evidence_quote = 'For Grades 3-4'; // v6/v6b shape: not whitespace, a different text
+  stops(()=>runFinalize(added, packetRows), new RegExp('Unsupported exact quote '+id('f1')));
+  const invented = poolOf(); rowOf(invented,'f1').evidence_quote = 'a three-hour class';
+  stops(()=>runFinalize(invented, packetRows), /Unsupported exact quote/);
+  by('c2').snapshot_fields.DescriptionRaw = 'Free entry. FREE parking.';
+  const twoSpans = poolOf(); rowOf(twoSpans,'c2').evidence_quote = 'free';
+  stops(()=>runFinalize(twoSpans, packetRows), new RegExp('Unsupported exact quote '+id('c2')));
+ });
+ test('16a: a quote after an emoji maps back to the right source text, and 10² never matches 102 (Codex, 2026-10-15)',()=>{
+  assert.deepEqual(quoteMatch('Tickets $10', '🎟 Show\ntickets $100 each.'), {to:'tickets $10'}); // was 'ickets $100'
+  assert.deepEqual(quoteMatch('Tickets $100', '🎟 Show\ntickets $100 each.'), {to:'tickets $100'});
+  assert.deepEqual(quoteMatch('family   fun day', '🎃🎃 Family fun day'), {to:'Family fun day'});
+  assert.deepEqual(quoteMatch('Fee 102 dollars', 'Fee 10² dollars'), {none:true});
+ });
+
+ // ---- Repeated section ----
+ test('16a: a repeated section is dropped when the copies are identical or all but one are empty',()=>{
+  const identical = poolOf(); identical.sections.push(JSON.parse(JSON.stringify(identical.sections[1]))); // v4b shape
+  const a = runFinalize(identical), hitsA = mechanical(a.receipt,'repeated_section');
+  assert.equal(hitsA.length, 1); assert.equal(hitsA[0].section, C); assert.equal(hitsA[0].copies, 2);
+  assert.match(a.text, /repeated_section · For Couples/);
+  const empties = poolOf(); empties.sections.push(...d.SECTIONS.map(section=>({section,ordered:[]}))); // v6b shape
+  empties.sections = [empties.sections[3], empties.sections[0], empties.sections[4], empties.sections[1], empties.sections[2], empties.sections[5]];
+  const b = runFinalize(empties);
+  assert.deepEqual(mechanical(b.receipt,'repeated_section').map(h=>h.section), d.SECTIONS);
+  assert.deepEqual(b.pool.sections.map(s=>[s.section,s.ordered.length]), d.SECTIONS.map(s=>[s,10]));
+ });
+ test('16a: two populated copies of a section that differ stop the run',()=>{
+  const ranking = poolOf(), copy = JSON.parse(JSON.stringify(ranking.sections[0])); copy.ordered.reverse(); ranking.sections.push(copy);
+  stops(()=>runFinalize(ranking), /Missing\/duplicate section/);
+ });
+
+ // ---- History-ref typo ----
+ const hist = ref => {const [date,section,slot] = ref.split('|'); return {ref, date, section, slot:Number(slot), url:'https://example.com/past/'+ref, displayTitle:'Past '+ref, description:null, description_truncated:false, click_observation:null};};
+ const OFFERED = '2025-08-28|For Couples|3|7', NEAR = '2026-08-27|For Couples|3|7', TYPO = '2026-08-28|For Couples|3|7';
+ test('16a: a history ref one character from exactly one ref offered for that record is remapped (v3 year typo)',()=>{
+  const packetRows = rows(); packetRows.find(r=>r.record_id===id('c4')).weak_lexical_comparable_refs = [OFFERED];
+  const ranking = poolOf(); rowOf(ranking,'c4').history_refs = [TYPO];
+  // NEAR is also one character away but is not offered for this record, so it does not compete.
+  const out = runFinalize(ranking, packetRows, [hist(OFFERED), hist(NEAR)]), hits = mechanical(out.receipt,'history_ref_typo');
+  assert.equal(hits.length, 1); assert.deepEqual([hits[0].record_id, hits[0].from, hits[0].to], [id('c4'), TYPO, OFFERED]);
+  assert.deepEqual(rowOf(out.pool,'c4').history_refs, [OFFERED]); assert.match(out.text, /history_ref_typo/);
+ });
+ test('16a: a history ref typo stops the run when two offered refs are one character away, or none is offered',()=>{
+  const both = rows(); both.find(r=>r.record_id===id('c4')).weak_lexical_comparable_refs = [OFFERED, NEAR];
+  const ranking = poolOf(); rowOf(ranking,'c4').history_refs = [TYPO];
+  stops(()=>runFinalize(ranking, both, [hist(OFFERED), hist(NEAR)]), /Unknown history reference/);
+  stops(()=>runFinalize(ranking, rows(), [hist(OFFERED), hist(NEAR)]), /Unknown history reference/);
+ });
+ test('16a: hand corrections apply first and leave nothing for the automatic repair to do',()=>{
+  const ranking = poolOf(); ranking.sections.push(JSON.parse(JSON.stringify(ranking.sections[1])));
+  const {receipt} = repair(ranking,{responseSha:'s',corrections:{source_response_sha256:'s',corrections:[{op:'drop_duplicate_section',section:C}]},knownIds:KEYS.map(id),records:rows()});
+  assert.equal(receipt.hand_corrections.length, 1); assert.equal(receipt.automatic.length, 0);
+ });
+ test('16a: a person\'s set_quote is never rewritten by the automatic quote repair (Codex, 2026-10-15)',()=>{
+  const packetRows = rows(); packetRows.find(r=>r.record_id===id('c2')).snapshot_fields.DescriptionRaw = 'Free entry for all.';
+  const ranking = poolOf(), row = rowOf(ranking,'c2'); row.evidence_quote = 'free entry!';
+  const {ranking:out, receipt} = repair(ranking,{responseSha:'s',corrections:{source_response_sha256:'s',
+   corrections:[{op:'set_quote',id:id('c2'),from:'free entry!',to:'FREE ENTRY'}]},knownIds:KEYS.map(id),records:packetRows});
+  assert.equal(receipt.automatic.length, 0);
+  assert.equal(rowOf(out,'c2').evidence_quote, 'FREE ENTRY');
+ });
+}
 console.log(cases+' acceptance cases passed.');
