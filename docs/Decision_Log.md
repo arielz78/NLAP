@@ -2571,3 +2571,19 @@ which plan the live weeks run on is Ariel's to revisit before the editor starts.
 
 **What this does not decide:** where the pipeline runs in Stage B. It cannot run on Vercel (long jobs, files
 kept between runs, n8n); whether that machine is always on or started on demand is open.
+
+---
+
+## 111. The Live n8n Export Is the Repo Copy of R1 (2026-10-15)
+
+**Decision:** `workflows/NLAP R1.json` is a Download of the live n8n workflow, replaced whole after each change,
+and live's "1"-suffixed node names are accepted as canonical. Ariel's call, 2026-10-15. Settles #141's
+`TODO(ariel)` (option a) and supersedes the 2026-08-06 call to keep the clean-named repo copy.
+
+**Why:** live had drifted from the repo in four places (the BiblioCommons TLS code node, Get EB Token, and on
+2026-10-15 the Eventbrite search and AllEvents token nodes), and hand-mirroring edits into a differently named
+copy is how the drift happened. Live is what runs; the repo should be a faithful copy of it.
+
+**Accepted cost:** the node names carry a meaningless "1". Removing it means renaming every node and every
+`$('…')` reference in code, which is parked as a separate, tested change. The connection's own export omits
+credential links, so the copy is taken with n8n's Download button, which keeps them.

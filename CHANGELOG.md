@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-10-15
+- Audited every event source against its own website and fixed six that were failing without an error: one source had been returning nothing for a month, another had been capped at a small curated subset, and three were putting some events on the wrong date. The upcoming week's candidate pool grew several-fold, with ingestion still running in about two minutes.
+- The weekly ranking step now repairs its own bookkeeping slips (a mistyped record id, a slightly misquoted line, a repeated section) when exactly one correction exists, after an independent review caught and fixed an offset bug in the quote matching.
+- The workflow file in the repository is now an exact export of the running pipeline, and the published-issue parser's fixes run in CI.
+
 ## 2026-10-14
 - Event-page enrichment: the ranking step now reads each event's own description from its page (per-site extraction, with redirects to the wrong page discarded) instead of raw page text that was mostly navigation.
 - Newsletter titles now carry exactly one emoji, enforced by a strict response schema and a backstop check, verified against the live model.
