@@ -2369,6 +2369,17 @@ for assessment semantics, not deleted); which validator or schema changes actual
 burden, since the two most obvious candidates were disproved during planning (see
 `docs/v1/V1_Ship_Plan.md` §8); and the convergence with `buildIssues.js` that §87 still requires.
 
+**Amended 2026-10-15 (ship-plan item 16a):** "repairs nothing" no longer holds. `finalize` now repairs four
+mechanical defects without a person: a repeated section, a record-id typo, a misquoted text and a history-ref
+typo, each only when exactly one correction exists; anything ambiguous still stops the run. Ariel approved the
+matching rules: a quote matches ignoring case, spacing, zero-width characters and typographic quotes and dashes,
+nothing else; an id typo is repaired only when the row's quote is found in that record; "one character away" is
+strict and case-sensitive; a history ref is repaired only against the refs offered for that record, with a
+check note. Every repair is named in the run's receipt. When a corrections file exists the automatic repairs do
+not run, so a person's correction is never rewritten. On past runs, 17 of the 21 mechanical hand repairs would
+have been automatic. Codex reviewed the change before merge and found one blocker, a quote offset error after
+emoji, fixed with a regression test.
+
 ---
 
 ## 103. Ship-and-Fix Over Pre-Hardening for V1; Hosting Stays With Nate (2026-10-07)
