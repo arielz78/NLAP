@@ -147,11 +147,18 @@ the issue build does not filter on `Last Auto Update`. Before the 10-22 `runWeek
 excluded (the held stale-row rule for VPL and OnRichmondHill, or one-off Rejected marks; #157). The walkthrough
 (#154) is unaffected.
 
-**Next:** Ariel walks the editor through the console at their next meeting (item 12; decided 2026-10-13 in
-place of a written message; no date set). The first real week is the first issue after that meeting:
-`runWeek.js` → `to-bundle.js` → reset and re-migrate the console database (with Ariel's go at that moment) →
-`publish-build`. Until then the emailed preview continues as before. Item 3's first live `--apply`
-still needs Ariel's go and its own bounded review. The ship plan's new §0 states the destination (an editor-run week) and
+**Done 2026-10-15, second session:** item 12 is done: Ariel walked the editor through the console
+(`meetings/2026-10-15.md`). For it, `runWeek.js` built 2026-10-22 (`--version demo`; one call, 4 hand repairs), and
+`to-bundle.js` → `publish-build --apply` published it to the hosted console **without a sign-off and without the
+database reset**, to run the way the finished version will. ⚠️ The 57 wrong-dated rows (#157) were not excluded and
+may be in that slate. The editor has not submitted yet. The meeting added ship-plan items 19 (several weeks open)
+and 20 (typing a self-filled event in), and amended 17 (the export is a download in the console). **Open, not
+settled:** whether the database reset of 2026-10-13 still happens, now that the build the editor uses sits on the
+un-reset database.
+
+**Next:** when the editor says he has submitted 2026-10-22: `applySubmission.js` (dry run, then `--write`) →
+item 3's first live `writeIssuePicks.js --apply --ensure-issue` (Ariel's go at that moment; #149 review READY) →
+`generateBlurbs.js 2026-10-22 --dry-run`, then the real run → `--lock` → `pushToBeehiiv.js` → send him the export. The ship plan's new §0 states the destination (an editor-run week) and
 stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
 **where V1 closes is not settled.** D0 is chosen (Decision_Log §106), so it no longer
 blocks items 9, 10 and 13. That doc
