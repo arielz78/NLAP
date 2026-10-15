@@ -2,28 +2,17 @@
   "name": "NLAP R1",
   "nodes": [
     {
-      "parameters": {},
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
-      "position": [
-        -1072,
-        832
-      ],
-      "id": "d1e3864e-8cc2-492b-9b87-464307e585eb",
-      "name": "When clicking ‘Execute workflow’"
-    },
-    {
       "parameters": {
-        "jsCode": "const out = [];\nfunction pickDescription(j) {\n  const rss =\n    j.DescriptionRaw ||        // added\n    j.contentSnippet ||\n    j.content ||\n    j.summary ||\n    j.description ||\n    j[\"content:encoded\"] ||\n    \"\";\n  const eb =\n    j.summary ||\n    (j.description && (j.description.text || j.description.html)) ||\n    j.structured_content ||\n    \"\";\n  const d = (eb || rss || \"\").toString().trim();\n  return d;\n}\nfor (const item of items) {\n  const j = item.json || {};\n  const title = (j.title || j.name || \"\").toString().trim();\n  const link = (j.link || j.url || \"\").toString().trim();\n  // Facebook manual-intake events arrive linkless (feed screenshots carry no URLs);\n  // let them through if they have a title. All other sources still require a link.\n  // Editor adds the link at selection; a pre-publish guard blocks featuring linkless.\n  if (!title || (!link && j.sourceCanonical !== 'Facebook')) continue;\n\n  // #112 / R7 Stage 0 - Eventbrite serves global events into city queries (#59/#81).\n  // This is an ALLOWLIST, not a blocklist, and that is deliberate. Measured 2026-07-28\n  // (n=624 pool records): the previously-written \".de/.fr/.co.uk/.sg\" list catches 29 and\n  // MISSES 9 more on .nl/.be/.com.au/.at/.ch. Enumerate the fact, not the instances - the\n  // same lesson as #109.\n  //   - eventbrite.com MUST stay: 20.6% includable (7 of 34). Folding it in kills 7 keepers.\n  //   - forms.gle is deliberately NOT blocked. The one pool record is \"Historic Unionville\n  //     Walking Tour\" - a Google Form is a registration mechanism small local organizers\n  //     use, not a geography or content signal.\n  //   - Checked: the foreign-TLD rows ARE largely online events, but they are French/German\n  //     B2B webinars, so being online does not rescue them.\n  if (link) {\n    const hostMatch = link.match(/^https?:\\/\\/(?:www\\.)?([^\\/]+)/i);\n    const host = hostMatch ? hostMatch[1].toLowerCase() : '';\n    if (/(^|\\.)eventbrite\\./.test(host) && !/(^|\\.)eventbrite\\.(ca|com)$/.test(host)) continue;\n  }\n\n  const isoDate = (j.isoDate || j.start_date || j.startDate || \"\").toString().trim();\n  const guid = (j.guid || j.eventbrite_event_id || j.id || \"\").toString().trim();\n  const DescriptionRaw = pickDescription(j);\n  out.push({\n    json: {\n      title,\n      link,\n      pubDate: (j.pubDate || \"\").toString(),\n      isoDate,\n      guid,\n      DescriptionRaw,\n      endDate: (j.endDate || ''),  // added\n      locationName: (j.locationName || \"\").toString(),\n      sourceCanonical: (j.sourceCanonical || \"\").toString(),\n      city: (j.city || ''),\n      // Discrete source-metadata fields (currently AllEvents only). This node rebuilds\n      // json from an allowlist, so these MUST be carried here or they're dropped before\n      // Build Upsert. Defaults keep them harmless for sources that don't set them.\n      organizer: (j.organizer || ''),\n      sourceScore: (j.sourceScore != null ? j.sourceScore : null),\n      categories: (j.categories || ''),\n      costRaw: (j.costRaw || ''),\n      _valid: true,\n    },\n  });\n}\nreturn out;\n"
+        "jsCode": "const out = [];\nfunction pickDescription(j) {\n  const rss =\n    j.DescriptionRaw ||        // added\n    j.contentSnippet ||\n    j.content ||\n    j.summary ||\n    j.description ||\n    j[\"content:encoded\"] ||\n    \"\";\n  const eb =\n    j.summary ||\n    (j.description && (j.description.text || j.description.html)) ||\n    j.structured_content ||\n    \"\";\n  const d = (eb || rss || \"\").toString().trim();\n  return d;\n}\nfor (const item of items) {\n  const j = item.json || {};\n  const title = (j.title || j.name || \"\").toString().trim();\n  const link = (j.link || j.url || \"\").toString().trim();\n  // Facebook manual-intake events arrive linkless (feed screenshots carry no URLs);\n  // let them through if they have a title. All other sources still require a link.\n  // Editor adds the link at selection; a pre-publish guard blocks featuring linkless.\n  if (!title || (!link && j.sourceCanonical !== 'Facebook')) continue;\n\n  // #112 / R7 Stage 0 - Eventbrite serves global events into city queries (#59/#81).\n  // ALLOWLIST, not a blocklist, deliberately: the old \".de/.fr/.co.uk/.sg\" list caught\n  // 29 foreign rows and MISSED 9 on .nl/.be/.com.au/.at/.ch (n=624, measured 2026-07-28).\n  // eventbrite.com MUST stay: 20.6% includable (7 of 34) - dropping it kills 7 keepers.\n  // forms.gle deliberately NOT blocked: a Google Form is a registration mechanism small\n  // local organizers use, not a geography signal.\n  if (link) {\n    const hostMatch = link.match(/^https?:\\/\\/(?:www\\.)?([^\\/]+)/i);\n    const host = hostMatch ? hostMatch[1].toLowerCase() : '';\n    if (/(^|\\.)eventbrite\\./.test(host) && !/(^|\\.)eventbrite\\.(ca|com)$/.test(host)) continue;\n  }\n\n  const isoDate = (j.isoDate || j.start_date || j.startDate || \"\").toString().trim();\n  const guid = (j.guid || j.eventbrite_event_id || j.id || \"\").toString().trim();\n  const DescriptionRaw = pickDescription(j);\n  out.push({\n    json: {\n      title,\n      link,\n      pubDate: (j.pubDate || \"\").toString(),\n      isoDate,\n      guid,\n      DescriptionRaw,\n      endDate: (j.endDate || ''),  // added\n      locationName: (j.locationName || \"\").toString(),\n      sourceCanonical: (j.sourceCanonical || \"\").toString(),\n      city: (j.city || ''),\n      // Discrete source-metadata fields (currently AllEvents only). This node rebuilds\n      // json from an allowlist, so these MUST be carried here or they're dropped before\n      // Build Upsert. Defaults keep them harmless for sources that don't set them.\n      organizer: (j.organizer || ''),\n      sourceScore: (j.sourceScore != null ? j.sourceScore : null),\n      categories: (j.categories || ''),\n      costRaw: (j.costRaw || ''),\n      _valid: true,\n    },\n  });\n}\nreturn out;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        752,
-        1696
+        3152,
+        3728
       ],
-      "id": "afa1c2eb-2646-4766-b832-ec9dcc9e7a31",
-      "name": "Clean/Filter"
+      "id": "087fb9d8-4be4-4aa0-8ead-79d0db7da640",
+      "name": "Clean/Filter1"
     },
     {
       "parameters": {
@@ -32,11 +21,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        944,
-        1552
+        3328,
+        3584
       ],
-      "id": "58fb575f-549c-48cd-9313-c59ef7075ab4",
-      "name": "Sort (Newest First)"
+      "id": "93a26c00-1609-4b77-8002-72d72596d11a",
+      "name": "Sort (Newest First)1"
     },
     {
       "parameters": {
@@ -46,11 +35,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1120,
-        1696
+        3504,
+        3728
       ],
-      "id": "2b22b3fd-cc87-43d6-af46-c62f13f42071",
-      "name": "Make UniqueEventID"
+      "id": "4b3ea90c-65bc-4a55-a360-39db9697d352",
+      "name": "Make UniqueEventID1"
     },
     {
       "parameters": {
@@ -80,11 +69,11 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        1408,
-        1696
+        3792,
+        3728
       ],
-      "id": "4952d047-6174-4952-b30c-9139532917b6",
-      "name": "Validity Filter"
+      "id": "3af9b6ab-d746-470d-844b-8e52f42db4e5",
+      "name": "Validity Filter1"
     },
     {
       "parameters": {
@@ -93,11 +82,11 @@
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        304,
-        608
+        2688,
+        2640
       ],
-      "id": "0feeaa3f-b40a-4440-b8e5-9feb06f33b8c",
-      "name": "Merge"
+      "id": "4aba1a23-74b8-4928-8636-129d9eae80d7",
+      "name": "Merge1"
     },
     {
       "parameters": {
@@ -107,57 +96,36 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1584,
-        1552
+        3968,
+        3584
       ],
-      "id": "3d367d30-6c83-4586-a76f-93c7fbefdd3a",
-      "name": "DateWindow"
+      "id": "1b97aed9-f5c9-4764-821e-a4c613fa6484",
+      "name": "DateWindow1"
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\n\nconst allEvents = [];\n\n// Geo allowlist (#59): Eventbrite's city-browse leaks neighbouring municipalities\n// (Newmarket, Aurora, Schomberg, Gormley, Whitchurch-Stouffville, Georgina, Toronto...)\n// into the target-city result set. Gate to the covered municipalities and canonicalize,\n// mirroring the AllEvents branch. Unmapped venue city = drop. (R5 / Decision_Log §52)\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan', 'Woodbridge': 'Vaughan', 'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan', 'Concord': 'Vaughan', 'Kleinburg': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill', 'Markham': 'Markham', 'Unionville': 'Markham',\n};\n\nfunction formatPrice(ta) {\n  if (!ta) return '';\n  if (ta.is_free) return 'Free';\n  const min = ta.minimum_ticket_price, max = ta.maximum_ticket_price;\n  if (!min && !max) return '';\n  if (min && max && min.display === max.display) return min.display;\n  if (min && max) return min.display + ' - ' + max.display;\n  return (min || max).display;\n}\n\nfor (const bucket of response.buckets || []) {\n  for (const event of bucket.events || []) {\n    const venue = event.primary_venue || {};\n    const venueName = (venue.name || '').trim();\n    const venueCity = ((venue.address && venue.address.city) || '').trim();\n    // Drop venueless events: Eventbrite's city-browse serves global online events to every\n    // city query, so a blank venue city has NO geographic anchor (mostly foreign/B2B webinars\n    // that were being silently stamped 'Vaughan' by Make UniqueEventID downstream). Unlike the\n    // local-library feed, this source gives no locality guarantee for a venueless event.\n    // (#81, R5 / Decision_Log §52)\n    if (!venueCity) continue;\n    // Geo allowlist gate (#59): keep only covered municipalities, canonicalize the rest.\n    const city = CITY_MAP[venueCity];\n    if (!city) continue;\n    // Sold-out gate (#84): a sold-out event has zero reader utility (can't be attended) -\n    // hard exclusion, not a data point to carry. Mirrors Chef Upstairs' existing bookedOut\n    // filter. (Decision_Log §54 addendum - capture vs filter test.)\n    const ta = event.ticket_availability;\n    if (ta && ta.is_sold_out === true) continue;\n    // Cost signal (#84) - reader-facing, kept as source-formatted text (Decision_Log §54).\n    const costRaw = formatPrice(ta);\n    // Category reshape (#84): tags[] mixes real taxonomy (EventbriteCategory/EventbriteFormat)\n    // with per-organizer marketing noise (OrganizerTag/*) - keep only the taxonomy prefixes.\n    const categories = (event.tags || [])\n      .filter(t => t.prefix === 'EventbriteCategory' || t.prefix === 'EventbriteFormat')\n      .map(t => t.display_name)\n      .filter(Boolean)\n      .join(', ');\n    allEvents.push({\n      json: {\n        ...event,\n        sourceCanonical: 'Eventbrite',\n        locationName: venueName,\n        city,\n        costRaw,\n        categories,\n      }\n    });\n  }\n}\n\nreturn allEvents;\n"
+        "jsCode": "const response = $input.first().json;\n\nconst allEvents = [];\n\n// Geo allowlist (#59): Eventbrite's city-browse leaks neighbouring municipalities\n// (Newmarket, Aurora, Schomberg, Gormley, Whitchurch-Stouffville, Georgina, Toronto...)\n// into the target-city result set. Gate to the covered municipalities and canonicalize,\n// mirroring the AllEvents branch. Unmapped venue city = drop. (R5 / Decision_Log §52)\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan', 'Woodbridge': 'Vaughan', 'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan', 'Concord': 'Vaughan', 'Kleinburg': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill', 'Markham': 'Markham', 'Unionville': 'Markham',\n};\n\nfunction formatPrice(ta) {\n  if (!ta) return '';\n  if (ta.is_free) return 'Free';\n  const min = ta.minimum_ticket_price, max = ta.maximum_ticket_price;\n  if (!min && !max) return '';\n  if (min && max && min.display === max.display) return min.display;\n  if (min && max) return min.display + ' - ' + max.display;\n  return (min || max).display;\n}\n\n// Eventbrite Search1 returns events.results (2026-10-15); city-browse returned buckets[].events[].\nconst events = response.events && response.events.results\n  ? response.events.results\n  : (response.buckets || []).flatMap((b) => b.events || []);\nfor (const event of events) {\n    const venue = event.primary_venue || {};\n    const venueName = (venue.name || '').trim();\n    const venueCity = ((venue.address && venue.address.city) || '').trim();\n    // Drop venueless events: Eventbrite's city-browse serves global online events to every\n    // city query, so a blank venue city has NO geographic anchor (mostly foreign/B2B webinars\n    // that were being silently stamped 'Vaughan' by Make UniqueEventID downstream). Unlike the\n    // local-library feed, this source gives no locality guarantee for a venueless event.\n    // (#81, R5 / Decision_Log §52)\n    if (!venueCity) continue;\n    // Geo allowlist gate (#59): keep only covered municipalities, canonicalize the rest.\n    const city = CITY_MAP[venueCity];\n    if (!city) continue;\n    // Sold-out gate (#84): a sold-out event has zero reader utility (can't be attended) -\n    // hard exclusion, not a data point to carry. Mirrors Chef Upstairs' existing bookedOut\n    // filter. (Decision_Log §54 addendum - capture vs filter test.)\n    const ta = event.ticket_availability;\n    if (ta && ta.is_sold_out === true) continue;\n    // Cost signal (#84) - reader-facing, kept as source-formatted text (Decision_Log §54).\n    const costRaw = formatPrice(ta);\n    // Category reshape (#84): tags[] mixes real taxonomy (EventbriteCategory/EventbriteFormat)\n    // with per-organizer marketing noise (OrganizerTag/*) - keep only the taxonomy prefixes.\n    const categories = (event.tags || [])\n      .filter(t => t.prefix === 'EventbriteCategory' || t.prefix === 'EventbriteFormat')\n      .map(t => t.display_name)\n      .filter(Boolean)\n      .join(', ');\n    allEvents.push({\n      json: {\n        ...event,\n        sourceCanonical: 'Eventbrite',\n        locationName: venueName,\n        city,\n        costRaw,\n        categories,\n      }\n    });\n}\n\nreturn allEvents;\n"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
-        0
+        2224,
+        2032
       ],
-      "id": "8ad1172d-0e9f-46d5-97a1-b5e52efe5276",
-      "name": "Eventbrite Normalize"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "https://www.eventbrite.com/api/v3/destination/city-browse/",
-        "sendHeaders": true,
-        "specifyHeaders": "json",
-        "jsonHeaders": "{\n  \"Content-Type\": \"application/json\",\n  \"Referer\": \"https://www.eventbrite.com/d/canada--york/events/\",\n  \"X-CSRFToken\": \"YOURTOKEN\",\n  \"Cookie\": \"csrftoken=YOURTOKEN\"\n}",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "{\n  \"place_id\": \"101740741\",\n  \"online_events_only\": false,\n  \"expand.destination_event\": [\n    \"event_sales_status\",\n    \"image\",\n    \"primary_venue\",\n    \"saves\",\n    \"series\",\n    \"ticket_availability\",\n    \"primary_organizer\"\n  ]\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.3,
-      "position": [
-        -384,
-        0
-      ],
-      "id": "67691cea-32b4-46b2-b253-95c3a850d9ec",
-      "name": "Eventbrite API"
+      "id": "062a2a0f-b89d-4e06-a4aa-9c4e351be22a",
+      "name": "Eventbrite Normalize1"
     },
     {
       "parameters": {
         "jsCode": "const sourceCanonical = 'McMichael';\nconst locationName = 'McMichael Canadian Art Collection';\n\n// IMPORTANT: the shared 'Make UniqueEventID' node downstream RECOMPUTES\n// uniqueEventID from this branch's `title` field using its own plain\n// lowercase+whitespace normalization — it overwrites whatever ID we compute\n// here. So the only way to land on the SAME id as the existing iCal-derived\n// records is to make `title` itself match — i.e. decode HTML entities to\n// STRAIGHT ascii quotes (matching the existing dataset convention), not to\n// their typographically-correct curly Unicode equivalents. Decoding to curly\n// quotes is \"more correct\" in isolation but produces a `title` that\n// Make UniqueEventID then normalizes into a DIFFERENT id than the existing\n// record — creating a duplicate. Consistency with the existing convention\n// wins over typographic purity here.\nfunction decodeEntities(str) {\n  if (!str) return str;\n  return str\n    .replace(/&#821[678];|&#x201[89][a-fA-F]?;|&lsquo;|&rsquo;/g, \"'\")\n    .replace(/&#822[01];|&#x201[CcDd];|&ldquo;|&rdquo;/g, '\"')\n    .replace(/&#8211;|&#8212;|&#x201[34];|&ndash;|&mdash;/g, '—')\n    .replace(/&#039;|&#39;|&apos;/g, \"'\")\n    .replace(/&#(\\d+);/g, (_, code) => String.fromCharCode(parseInt(code, 10)))\n    .replace(/&#x([0-9a-fA-F]+);/g, (_, code) => String.fromCharCode(parseInt(code, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&quot;/g, '\"')\n    .replace(/&nbsp;/g, ' ');\n}\n\nconst out = [];\nconst seen = new Set();\n\nfor (const inputItem of $input.all()) {\n  const response = inputItem.json;\n  const events = response.events || [];\n\n  for (const ev of events) {\n    const title = decodeEntities((ev.title || '').toString().trim());\n    const link = (ev.url || ev.website || '').toString().trim();\n    const startRaw = (ev.start_date || '').toString().trim();\n    if (!title || !startRaw) continue;\n\n    const isoDate = startRaw.replace(' ', 'T');\n    const dateOnly = startRaw.slice(0, 10);\n    const titleNorm = title.toLowerCase().replace(/\\s+/g, ' ');\n    const uniqueEventID = `${titleNorm}|${dateOnly}`;\n    if (seen.has(uniqueEventID)) continue;\n    seen.add(uniqueEventID);\n\n    const description = decodeEntities((ev.description || '').toString().trim());\n    const categories = (ev.categories || []).map(c => (c && c.name) ? c.name : '').filter(Boolean);\n    const DescriptionRaw = categories.length\n      ? `Categories: ${categories.join(', ')}\\n\\n${description}`\n      : description;\n\n    out.push({\n      json: {\n        title,\n        link,\n        event_name: title,\n        url: link,\n        isoDate,\n        start_date: dateOnly,\n        uniqueEventID,\n        city: 'Vaughan',\n        locationName,\n        sourceCanonical,\n        DescriptionRaw,\n        _valid: !!title && !!dateOnly && !!link,\n        _invalid_reason: !title ? 'missing_title' : (!dateOnly ? 'missing_date' : (!link ? 'missing_url' : ''))\n      }\n    });\n  }\n}\n\nreturn out;"
       },
-      "id": "abfa7a11-4c3d-4558-9ae0-6449609fa698",
-      "name": "McMichael Normalize",
+      "id": "f9102643-f526-41cc-a412-c0a175a63c95",
+      "name": "McMichael Normalize1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
-        160
+        2224,
+        2192
       ]
     },
     {
@@ -168,26 +136,26 @@
         "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"application/json, text/plain, */*\",\n  \"Referer\": \"https://mcmichael.com/events/\",\n  \"Sec-Fetch-Mode\": \"cors\",\n  \"Sec-Fetch-Site\": \"same-origin\",\n  \"Sec-Fetch-Dest\": \"empty\"\n}",
         "options": {}
       },
-      "id": "84359157-9652-466c-9a78-59b1b24e3b6f",
-      "name": "McMichael API p.1",
+      "id": "aebc8c56-698c-4357-b866-225fa17237a5",
+      "name": "McMichael API p.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -848,
-        160
+        1536,
+        2192
       ]
     },
     {
       "parameters": {
         "jsCode": "const PER_PAGE = 50;\nconst BASE_URL = 'https://mcmichael.com/wp-json/tribe/events/v1/events';\nconst totalPages = $input.first().json.total_pages || 1;\n\nconst urls = [];\nfor (let page = 1; page <= totalPages; page++) {\n  urls.push({ json: { url: `${BASE_URL}?page=${page}&per_page=${PER_PAGE}` } });\n}\nreturn urls;"
       },
-      "id": "7af8118e-63df-4dc9-8918-5cc06e1bf8da",
-      "name": "McMichael Build URLs",
+      "id": "432853fa-b331-49d8-9616-43113b4c39c8",
+      "name": "McMichael Build URLs1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -624,
-        160
+        1760,
+        2192
       ]
     },
     {
@@ -198,13 +166,13 @@
         "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"application/json, text/plain, */*\",\n  \"Referer\": \"https://mcmichael.com/events/\",\n  \"Sec-Fetch-Mode\": \"cors\",\n  \"Sec-Fetch-Site\": \"same-origin\",\n  \"Sec-Fetch-Dest\": \"empty\"\n}",
         "options": {}
       },
-      "id": "158e86a0-f1e0-4965-8a24-0aeb1f67ea31",
-      "name": "McMichael API Fetch",
+      "id": "12de97f3-0d3e-4819-af4b-bc26ffb09c49",
+      "name": "McMichael API Fetch1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -384,
-        160
+        2000,
+        2192
       ]
     },
     {
@@ -215,11 +183,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -384,
-        304
+        2000,
+        2336
       ],
-      "id": "471f5d6e-9486-4ceb-ab15-26d21d601c50",
-      "name": "TRCA RSS Fetch"
+      "id": "34c0fb4a-5599-491a-b6b5-be207726e71d",
+      "name": "TRCA RSS Fetch1"
     },
     {
       "parameters": {
@@ -228,50 +196,36 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
-        304
+        2224,
+        2336
       ],
-      "id": "3b65d69f-65c0-4767-bde1-6903fe9238b1",
-      "name": "TRCA RSS Normalize"
-    },
-    {
-      "parameters": {
-        "url": "https://markham.bibliocommons.com/events/rss/all",
-        "options": {}
-      },
-      "id": "9177afa1-fa43-4951-87ea-edb2beb8d8be",
-      "name": "BiblioCommons RSS Fetch",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
-      "position": [
-        -384,
-        464
-      ]
+      "id": "7e288a89-324b-4fb7-90ba-cc95cf092cf4",
+      "name": "TRCA RSS Normalize1"
     },
     {
       "parameters": {
         "jsCode": "const xml = $input.first().json.data;\n\nfunction decodeEntities(s) {\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&nbsp;/g, ' ');\n}\n\nfunction stripCdata(s) {\n  return s.replace(/^<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>$/, '$1').trim();\n}\n\nfunction stripHtml(s) {\n  return s.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n}\n\nconst CITY_MAP = {\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n  'Thornhill': 'Vaughan',\n  'Vaughan': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n};\n\nconst itemBlocks = [];\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nlet match;\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  itemBlocks.push(match[1]);\n}\n\nconst get = (block, tag) => {\n  const m = block.match(new RegExp(`<${tag}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\\\/${tag}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst getBC = (block, field) => {\n  const m = block.match(new RegExp(`<bc:${field}[^>]*>(?:<!\\\\[CDATA\\\\[([\\\\s\\\\S]*?)\\\\]\\\\]>|([\\\\s\\\\S]*?))<\\/bc:${field}>`));\n  return m ? (m[1] ?? m[2] ?? '').trim() : '';\n};\n\nconst getAudience = (block) => {\n  const matches = [...block.matchAll(/<category[^>]*domain=\"Audience\"[^>]*>(?:<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>|([\\s\\S]*?))<\\/category>/g)];\n  return matches.map(m => (m[1] ?? m[2] ?? '').trim()).filter(Boolean).join(', ');\n};\n\n// #84 - Type taxonomy (e.g. \"Storytime\"), separate from Audience. Feeds shared SourceCategories.\nconst getTypeCategory = (block) => {\n  const matches = [...block.matchAll(/<category[^>]*domain=\"Type\"[^>]*>(?:<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>|([\\s\\S]*?))<\\/category>/g)];\n  return matches.map(m => (m[1] ?? m[2] ?? '').trim()).filter(Boolean).join(', ');\n};\n\n// #84 - registration_info.is_full: a hard exclusion (sold-out event has zero reader utility),\n// same capture-vs-filter call as Eventbrite/Chef Upstairs (Decision_Log §54 addendum).\nconst isRegistrationFull = (block) => {\n  const ri = getBC(block, 'registration_info');\n  return /<bc:is_full>true<\\/bc:is_full>/.test(ri);\n};\n\n// Extract a sub-field from within bc:location XML\nconst getFromLocation = (locationXml, field) => {\n  const m = locationXml.match(new RegExp(`<bc:${field}[^>]*>([^<]*)<\\/bc:${field}>`));\n  return m ? m[1].trim() : '';\n};\n\nconst results = [];\n\nfor (const block of itemBlocks) {\n  const title = decodeEntities(get(block, 'title'));\n  const link = get(block, 'link');\n  const startRaw = getBC(block, 'start_date');\n  const endRaw = getBC(block, 'end_date');\n  const locationXml = getBC(block, 'location');\n  const descriptionRaw = stripCdata(get(block, 'description'));\n  const description = stripHtml(decodeEntities(descriptionRaw));\n  const audience = getAudience(block);\n  const categories = getTypeCategory(block);\n\n  if (!title || !startRaw) continue;\n  if (isRegistrationFull(block)) continue;\n\n  // The feed gives UTC times (2026-10-29T00:00:00Z is 8 PM on Oct 28 in Markham). Take the date\n  // in Toronto time; the UTC date moved every event at 8 PM or later to the next day (2026-10-15).\n  const localDate = (raw) => new Date(raw).toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });\n  const isoDate = `${localDate(startRaw)}T00:00:00`;\n  const endDate = endRaw ? localDate(endRaw) : '';\n\n  const rawLocationName = getFromLocation(locationXml, 'name');\n  const bcCity = getFromLocation(locationXml, 'city');\n\n  // A BiblioCommons online/virtual program carries an empty <bc:location> (no name, no city).\n  // The feed IS the Markham Public Library, so a venueless event here is a known-local virtual\n  // program — keep it (#81, R5; client: seniors value online programs like Yoga for Older Adults).\n  // A physical event must still map to a covered city, else drop (geo-leakage guard, Decision_Log §52/#59).\n  let city, locationName;\n  if (!rawLocationName) {\n    city = 'Online';\n    locationName = 'Online (Markham Public Library)';\n  } else {\n    city = CITY_MAP[bcCity] || null;\n    if (!city) continue;\n    locationName = rawLocationName;\n  }\n\n  const DescriptionRaw = audience\n    ? `Audience: ${audience}\\n\\n${description}`\n    : description;\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link,\n      url: link,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'BiblioCommons Markham',\n      DescriptionRaw,\n      categories,\n      _valid: !!(title && isoDate && link),\n    }\n  });\n}\n\nreturn results;\n"
       },
-      "id": "b495a1cd-ae20-49f3-a238-9a2da5efefdb",
-      "name": "BiblioCommons Normalize",
+      "id": "87916518-5b03-4046-83bf-7437907d0b26",
+      "name": "BiblioCommons Normalize1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
-        464
+        2224,
+        2496
       ]
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\n// #109 - venue.city is ambiguous ACROSS COUNTRIES. AllEvents' \"richmond hill\" branch\n// returns Richmond Hill GEORGIA and Richmond Hill NEW YORK alongside Richmond Hill ON,\n// and CITY_MAP passes all three because the city name is genuinely correct. Measured\n// 2026-07-27: 51 of 390 live records (13.1%) were US. venue.full_address is the\n// discriminator and the API always carries it (blank on 0 of 390).\nconst FOREIGN_ADDRESS = /(,\\s*(GA|NY|TX|FL|IL|VA|NC|SC|OH|PA|MI|WA|MA|NJ|MD|TN|AZ|CO|OR|MN|WI|IN|MO|AL|KY|LA|OK|CT|IA|MS|AR|KS|UT|NV|NM|NE|WV|ID|HI|ME|NH|RI|MT|DE|SD|ND|AK|VT|WY|DC)\\b)|(\\bUSA\\b)|(\\bUnited States\\b)/;\nconst DOMESTIC_ADDRESS = /(,\\s*ON\\b)|(\\bOntario\\b)|(\\bCanada\\b)|([A-Z]\\d[A-Z]\\s?\\d[A-Z]\\d)/i;\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  // #109 - reject only on POSITIVE foreign evidence, never on a missing address.\n  // A blank address is not a fact, and Stage 0 may act only on facts. The\n  // !DOMESTIC_ADDRESS clause exists because \", CA\" is both California and Canada.\n  const rawAddress = (venue.full_address || '').toString();\n  if (FOREIGN_ADDRESS.test(rawAddress) && !DOMESTIC_ADDRESS.test(rawAddress)) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  // Source metadata kept as DISCRETE fields (not concatenated into DescriptionRaw).\n  // AllEvents' API has no event-description field, so DescriptionRaw is left empty:\n  // (a) the old \"AllEvents Categories/Organizer/Score\" blob made richest-wins\n  //     survivorship pick AllEvents over a real-description source on raw length;\n  // (b) it polluted the R6 content-scoring signal. See Decision_Log section 51 + #70.\n  const baseCategories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n  // #84 - merge tags[]/formats[] (secondary taxonomy, e.g. \"festival\") into the shared\n  // SourceCategories field. Additive to the existing categories[], not a replacement.\n  const extraTags = [\n    ...(Array.isArray(ev.tags) ? ev.tags : []),\n    ...(Array.isArray(ev.formats) ? ev.formats : []),\n  ].filter(Boolean);\n  const categories = [baseCategories, ...extraTags].filter(Boolean).join(', ');\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const sourceScore = ev.score != null ? ev.score : null;\n  // #84 - AllEvents pre-formats its own price string (e.g. \"CAD 30 to 49\", \"Free\");\n  // richer/more populated than the sparse tickets{} object (2/225 in sample vs 141/225).\n  const costRaw = (ev.display_price_label || '').toString().trim();\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw: '',\n      organizer,\n      sourceScore,\n      categories,\n      costRaw,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;\n"
+        "jsCode": "const response = $input.first().json;\n// A refused request comes back as HTTP 200 {error:1, message:\"invalid_request\"} with no events, which\n// looked like a quiet week from 2026-09-12 to 2026-10-15. Stop the run instead.\nif (response.error) throw new Error(`AllEvents list request refused: ${response.message || 'error'}`);\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\n// #109 - venue.city is ambiguous ACROSS COUNTRIES. AllEvents' \"richmond hill\" branch\n// returns Richmond Hill GEORGIA and Richmond Hill NEW YORK alongside Richmond Hill ON,\n// and CITY_MAP passes all three because the city name is genuinely correct. Measured\n// 2026-07-27: 51 of 390 live records (13.1%) were US. venue.full_address is the\n// discriminator and the API always carries it (blank on 0 of 390).\nconst FOREIGN_ADDRESS = /(,\\s*(GA|NY|TX|FL|IL|VA|NC|SC|OH|PA|MI|WA|MA|NJ|MD|TN|AZ|CO|OR|MN|WI|IN|MO|AL|KY|LA|OK|CT|IA|MS|AR|KS|UT|NV|NM|NE|WV|ID|HI|ME|NH|RI|MT|DE|SD|ND|AK|VT|WY|DC)\\b)|(\\bUSA\\b)|(\\bUnited States\\b)/;\nconst DOMESTIC_ADDRESS = /(,\\s*ON\\b)|(\\bOntario\\b)|(\\bCanada\\b)|([A-Z]\\d[A-Z]\\s?\\d[A-Z]\\d)/i;\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  // #109 - reject only on POSITIVE foreign evidence, never on a missing address.\n  // A blank address is not a fact, and Stage 0 may act only on facts. The\n  // !DOMESTIC_ADDRESS clause exists because \", CA\" is both California and Canada.\n  const rawAddress = (venue.full_address || '').toString();\n  if (FOREIGN_ADDRESS.test(rawAddress) && !DOMESTIC_ADDRESS.test(rawAddress)) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  // Source metadata kept as DISCRETE fields (not concatenated into DescriptionRaw).\n  // AllEvents' API has no event-description field, so DescriptionRaw is left empty:\n  // (a) the old \"AllEvents Categories/Organizer/Score\" blob made richest-wins\n  //     survivorship pick AllEvents over a real-description source on raw length;\n  // (b) it polluted the R6 content-scoring signal. See Decision_Log section 51 + #70.\n  const baseCategories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n  // #84 - merge tags[]/formats[] (secondary taxonomy, e.g. \"festival\") into the shared\n  // SourceCategories field. Additive to the existing categories[], not a replacement.\n  const extraTags = [\n    ...(Array.isArray(ev.tags) ? ev.tags : []),\n    ...(Array.isArray(ev.formats) ? ev.formats : []),\n  ].filter(Boolean);\n  const categories = [baseCategories, ...extraTags].filter(Boolean).join(', ');\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const sourceScore = ev.score != null ? ev.score : null;\n  // #84 - AllEvents pre-formats its own price string (e.g. \"CAD 30 to 49\", \"Free\");\n  // richer/more populated than the sparse tickets{} object (2/225 in sample vs 141/225).\n  const costRaw = (ev.display_price_label || '').toString().trim();\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw: '',\n      organizer,\n      sourceScore,\n      categories,\n      costRaw,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;\n"
       },
-      "id": "4b50d632-b6eb-4b41-b9ef-7b940a1b73fe",
-      "name": "AllEvents Normalize",
+      "id": "9da4c693-e99e-450c-93c6-d183ed703224",
+      "name": "AllEvents Normalize1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
-        608
+        2224,
+        2640
       ]
     },
     {
@@ -280,19 +234,19 @@
         "url": "https://allevents.in/api/events/list",
         "sendHeaders": true,
         "specifyHeaders": "json",
-        "jsonHeaders": "{\n  \"Content-Type\": \"application/json\",\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\"\n}",
+        "jsonHeaders": "={{ JSON.stringify({\n  \"Content-Type\": \"application/json\",\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"X-Client-State\": $('AllEvents Token1').first().json.cst\n}) }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "{\n  \"city\": \"markham\",\n  \"country\": \"canada\",\n  \"page\": 0,\n  \"rows\": 500,\n  \"popular\": true,\n  \"venue\": [],\n  \"keywords\": \"\",\n  \"type\": \"\",\n  \"sdate\": \"\",\n  \"edate\": \"\",\n  \"ids\": []\n}",
         "options": {}
       },
-      "id": "f7e3fea2-13cf-4dbf-ba75-049e36b39007",
-      "name": "AllEvents API Markham",
+      "id": "86c36abb-18f9-4913-bcb2-f5ceea036d13",
+      "name": "AllEvents API Markham1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -384,
-        752
+        2000,
+        2784
       ]
     },
     {
@@ -301,32 +255,32 @@
         "url": "https://allevents.in/api/events/list",
         "sendHeaders": true,
         "specifyHeaders": "json",
-        "jsonHeaders": "{\n  \"Content-Type\": \"application/json\",\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\"\n}",
+        "jsonHeaders": "={{ JSON.stringify({\n  \"Content-Type\": \"application/json\",\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"X-Client-State\": $('AllEvents Token1').first().json.cst\n}) }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "{\n  \"city\": \"vaughan\",\n  \"country\": \"canada\",\n  \"page\": 0,\n  \"rows\": 500,\n  \"popular\": true,\n  \"venue\": [],\n  \"keywords\": \"\",\n  \"type\": \"\",\n  \"sdate\": \"\",\n  \"edate\": \"\",\n  \"ids\": []\n}",
         "options": {}
       },
-      "id": "d800b831-d996-4438-a6e8-056d2a2050bd",
-      "name": "AllEvents API Vaughan",
+      "id": "4f54baea-6496-4e4c-8cc8-ae6fb89ce4db",
+      "name": "AllEvents API Vaughan1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -384,
-        608
+        2000,
+        2640
       ]
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\n// #109 - venue.city is ambiguous ACROSS COUNTRIES. AllEvents' \"richmond hill\" branch\n// returns Richmond Hill GEORGIA and Richmond Hill NEW YORK alongside Richmond Hill ON,\n// and CITY_MAP passes all three because the city name is genuinely correct. Measured\n// 2026-07-27: 51 of 390 live records (13.1%) were US. venue.full_address is the\n// discriminator and the API always carries it (blank on 0 of 390).\nconst FOREIGN_ADDRESS = /(,\\s*(GA|NY|TX|FL|IL|VA|NC|SC|OH|PA|MI|WA|MA|NJ|MD|TN|AZ|CO|OR|MN|WI|IN|MO|AL|KY|LA|OK|CT|IA|MS|AR|KS|UT|NV|NM|NE|WV|ID|HI|ME|NH|RI|MT|DE|SD|ND|AK|VT|WY|DC)\\b)|(\\bUSA\\b)|(\\bUnited States\\b)/;\nconst DOMESTIC_ADDRESS = /(,\\s*ON\\b)|(\\bOntario\\b)|(\\bCanada\\b)|([A-Z]\\d[A-Z]\\s?\\d[A-Z]\\d)/i;\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  // #109 - reject only on POSITIVE foreign evidence, never on a missing address.\n  // A blank address is not a fact, and Stage 0 may act only on facts. The\n  // !DOMESTIC_ADDRESS clause exists because \", CA\" is both California and Canada.\n  const rawAddress = (venue.full_address || '').toString();\n  if (FOREIGN_ADDRESS.test(rawAddress) && !DOMESTIC_ADDRESS.test(rawAddress)) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  // Source metadata kept as DISCRETE fields (not concatenated into DescriptionRaw).\n  // AllEvents' API has no event-description field, so DescriptionRaw is left empty:\n  // (a) the old \"AllEvents Categories/Organizer/Score\" blob made richest-wins\n  //     survivorship pick AllEvents over a real-description source on raw length;\n  // (b) it polluted the R6 content-scoring signal. See Decision_Log section 51 + #70.\n  const baseCategories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n  // #84 - merge tags[]/formats[] (secondary taxonomy, e.g. \"festival\") into the shared\n  // SourceCategories field. Additive to the existing categories[], not a replacement.\n  const extraTags = [\n    ...(Array.isArray(ev.tags) ? ev.tags : []),\n    ...(Array.isArray(ev.formats) ? ev.formats : []),\n  ].filter(Boolean);\n  const categories = [baseCategories, ...extraTags].filter(Boolean).join(', ');\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const sourceScore = ev.score != null ? ev.score : null;\n  // #84 - AllEvents pre-formats its own price string (e.g. \"CAD 30 to 49\", \"Free\");\n  // richer/more populated than the sparse tickets{} object (2/225 in sample vs 141/225).\n  const costRaw = (ev.display_price_label || '').toString().trim();\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw: '',\n      organizer,\n      sourceScore,\n      categories,\n      costRaw,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;\n"
+        "jsCode": "const response = $input.first().json;\n// A refused request comes back as HTTP 200 {error:1, message:\"invalid_request\"} with no events, which\n// looked like a quiet week from 2026-09-12 to 2026-10-15. Stop the run instead.\nif (response.error) throw new Error(`AllEvents list request refused: ${response.message || 'error'}`);\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\n// #109 - venue.city is ambiguous ACROSS COUNTRIES. AllEvents' \"richmond hill\" branch\n// returns Richmond Hill GEORGIA and Richmond Hill NEW YORK alongside Richmond Hill ON,\n// and CITY_MAP passes all three because the city name is genuinely correct. Measured\n// 2026-07-27: 51 of 390 live records (13.1%) were US. venue.full_address is the\n// discriminator and the API always carries it (blank on 0 of 390).\nconst FOREIGN_ADDRESS = /(,\\s*(GA|NY|TX|FL|IL|VA|NC|SC|OH|PA|MI|WA|MA|NJ|MD|TN|AZ|CO|OR|MN|WI|IN|MO|AL|KY|LA|OK|CT|IA|MS|AR|KS|UT|NV|NM|NE|WV|ID|HI|ME|NH|RI|MT|DE|SD|ND|AK|VT|WY|DC)\\b)|(\\bUSA\\b)|(\\bUnited States\\b)/;\nconst DOMESTIC_ADDRESS = /(,\\s*ON\\b)|(\\bOntario\\b)|(\\bCanada\\b)|([A-Z]\\d[A-Z]\\s?\\d[A-Z]\\d)/i;\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  // #109 - reject only on POSITIVE foreign evidence, never on a missing address.\n  // A blank address is not a fact, and Stage 0 may act only on facts. The\n  // !DOMESTIC_ADDRESS clause exists because \", CA\" is both California and Canada.\n  const rawAddress = (venue.full_address || '').toString();\n  if (FOREIGN_ADDRESS.test(rawAddress) && !DOMESTIC_ADDRESS.test(rawAddress)) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  // Source metadata kept as DISCRETE fields (not concatenated into DescriptionRaw).\n  // AllEvents' API has no event-description field, so DescriptionRaw is left empty:\n  // (a) the old \"AllEvents Categories/Organizer/Score\" blob made richest-wins\n  //     survivorship pick AllEvents over a real-description source on raw length;\n  // (b) it polluted the R6 content-scoring signal. See Decision_Log section 51 + #70.\n  const baseCategories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n  // #84 - merge tags[]/formats[] (secondary taxonomy, e.g. \"festival\") into the shared\n  // SourceCategories field. Additive to the existing categories[], not a replacement.\n  const extraTags = [\n    ...(Array.isArray(ev.tags) ? ev.tags : []),\n    ...(Array.isArray(ev.formats) ? ev.formats : []),\n  ].filter(Boolean);\n  const categories = [baseCategories, ...extraTags].filter(Boolean).join(', ');\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const sourceScore = ev.score != null ? ev.score : null;\n  // #84 - AllEvents pre-formats its own price string (e.g. \"CAD 30 to 49\", \"Free\");\n  // richer/more populated than the sparse tickets{} object (2/225 in sample vs 141/225).\n  const costRaw = (ev.display_price_label || '').toString().trim();\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw: '',\n      organizer,\n      sourceScore,\n      categories,\n      costRaw,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;\n"
       },
-      "id": "f684525b-cacd-4aaf-9590-66f08370d570",
-      "name": "AllEvents Normalize2",
+      "id": "26f21fb0-bbbf-424d-8b6d-b82cb7c431aa",
+      "name": "AllEvents Normalize4",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
-        912
+        2224,
+        2944
       ]
     },
     {
@@ -335,45 +289,45 @@
         "url": "https://allevents.in/api/events/list",
         "sendHeaders": true,
         "specifyHeaders": "json",
-        "jsonHeaders": "{\n  \"Content-Type\": \"application/json\",\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\"\n}",
+        "jsonHeaders": "={{ JSON.stringify({\n  \"Content-Type\": \"application/json\",\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"X-Client-State\": $('AllEvents Token1').first().json.cst\n}) }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "{\n  \"city\": \"richmond hill\",\n  \"country\": \"canada\",\n  \"page\": 0,\n  \"rows\": 500,\n  \"popular\": true,\n  \"venue\": [],\n  \"keywords\": \"\",\n  \"type\": \"\",\n  \"sdate\": \"\",\n  \"edate\": \"\",\n  \"ids\": []\n}",
         "options": {}
       },
-      "id": "eaf75aea-8704-4d70-a240-4f33fc8df16c",
-      "name": "AllEvents API RHill",
+      "id": "9077e0c3-bfe0-411e-97bc-2f9f926989b5",
+      "name": "AllEvents API RHill1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -384,
-        912
+        2000,
+        2944
       ]
     },
     {
       "parameters": {
-        "jsCode": "const response = $input.first().json;\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\n// #109 - venue.city is ambiguous ACROSS COUNTRIES. AllEvents' \"richmond hill\" branch\n// returns Richmond Hill GEORGIA and Richmond Hill NEW YORK alongside Richmond Hill ON,\n// and CITY_MAP passes all three because the city name is genuinely correct. Measured\n// 2026-07-27: 51 of 390 live records (13.1%) were US. venue.full_address is the\n// discriminator and the API always carries it (blank on 0 of 390).\nconst FOREIGN_ADDRESS = /(,\\s*(GA|NY|TX|FL|IL|VA|NC|SC|OH|PA|MI|WA|MA|NJ|MD|TN|AZ|CO|OR|MN|WI|IN|MO|AL|KY|LA|OK|CT|IA|MS|AR|KS|UT|NV|NM|NE|WV|ID|HI|ME|NH|RI|MT|DE|SD|ND|AK|VT|WY|DC)\\b)|(\\bUSA\\b)|(\\bUnited States\\b)/;\nconst DOMESTIC_ADDRESS = /(,\\s*ON\\b)|(\\bOntario\\b)|(\\bCanada\\b)|([A-Z]\\d[A-Z]\\s?\\d[A-Z]\\d)/i;\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  // #109 - reject only on POSITIVE foreign evidence, never on a missing address.\n  // A blank address is not a fact, and Stage 0 may act only on facts. The\n  // !DOMESTIC_ADDRESS clause exists because \", CA\" is both California and Canada.\n  const rawAddress = (venue.full_address || '').toString();\n  if (FOREIGN_ADDRESS.test(rawAddress) && !DOMESTIC_ADDRESS.test(rawAddress)) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  // Source metadata kept as DISCRETE fields (not concatenated into DescriptionRaw).\n  // AllEvents' API has no event-description field, so DescriptionRaw is left empty:\n  // (a) the old \"AllEvents Categories/Organizer/Score\" blob made richest-wins\n  //     survivorship pick AllEvents over a real-description source on raw length;\n  // (b) it polluted the R6 content-scoring signal. See Decision_Log section 51 + #70.\n  const baseCategories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n  // #84 - merge tags[]/formats[] (secondary taxonomy, e.g. \"festival\") into the shared\n  // SourceCategories field. Additive to the existing categories[], not a replacement.\n  const extraTags = [\n    ...(Array.isArray(ev.tags) ? ev.tags : []),\n    ...(Array.isArray(ev.formats) ? ev.formats : []),\n  ].filter(Boolean);\n  const categories = [baseCategories, ...extraTags].filter(Boolean).join(', ');\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const sourceScore = ev.score != null ? ev.score : null;\n  // #84 - AllEvents pre-formats its own price string (e.g. \"CAD 30 to 49\", \"Free\");\n  // richer/more populated than the sparse tickets{} object (2/225 in sample vs 141/225).\n  const costRaw = (ev.display_price_label || '').toString().trim();\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw: '',\n      organizer,\n      sourceScore,\n      categories,\n      costRaw,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;\n"
+        "jsCode": "const response = $input.first().json;\n// A refused request comes back as HTTP 200 {error:1, message:\"invalid_request\"} with no events, which\n// looked like a quiet week from 2026-09-12 to 2026-10-15. Stop the run instead.\nif (response.error) throw new Error(`AllEvents list request refused: ${response.message || 'error'}`);\nconst events = response.data || [];\n\nfunction decodeEntities(s) {\n  if (!s) return '';\n  return s\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>');\n}\n\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan',\n  'Woodbridge': 'Vaughan',\n  'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan',\n  'Concord': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill',\n  'Markham': 'Markham',\n  'Unionville': 'Markham',\n};\n\n// #109 - venue.city is ambiguous ACROSS COUNTRIES. AllEvents' \"richmond hill\" branch\n// returns Richmond Hill GEORGIA and Richmond Hill NEW YORK alongside Richmond Hill ON,\n// and CITY_MAP passes all three because the city name is genuinely correct. Measured\n// 2026-07-27: 51 of 390 live records (13.1%) were US. venue.full_address is the\n// discriminator and the API always carries it (blank on 0 of 390).\nconst FOREIGN_ADDRESS = /(,\\s*(GA|NY|TX|FL|IL|VA|NC|SC|OH|PA|MI|WA|MA|NJ|MD|TN|AZ|CO|OR|MN|WI|IN|MO|AL|KY|LA|OK|CT|IA|MS|AR|KS|UT|NV|NM|NE|WV|ID|HI|ME|NH|RI|MT|DE|SD|ND|AK|VT|WY|DC)\\b)|(\\bUSA\\b)|(\\bUnited States\\b)/;\nconst DOMESTIC_ADDRESS = /(,\\s*ON\\b)|(\\bOntario\\b)|(\\bCanada\\b)|([A-Z]\\d[A-Z]\\s?\\d[A-Z]\\d)/i;\n\nconst results = [];\n\nfor (const ev of events) {\n  const venue = ev.venue || {};\n  const venueCity = (venue.city || '').trim();\n  const city = CITY_MAP[venueCity];\n  if (!city) continue;\n\n  // #109 - reject only on POSITIVE foreign evidence, never on a missing address.\n  // A blank address is not a fact, and Stage 0 may act only on facts. The\n  // !DOMESTIC_ADDRESS clause exists because \", CA\" is both California and Canada.\n  const rawAddress = (venue.full_address || '').toString();\n  if (FOREIGN_ADDRESS.test(rawAddress) && !DOMESTIC_ADDRESS.test(rawAddress)) continue;\n\n  const title = decodeEntities((ev.eventname || '').toString().trim());\n  const eventUrl = (ev.event_url || ev.share_url || '').toString().trim();\n  if (!title || !eventUrl) continue;\n\n  const startTs = ev.start_time;\n  if (!startTs) continue;\n  const isoDate = new Date(startTs * 1000).toISOString();\n\n  const endTs = ev.end_time;\n  const endDate = endTs ? new Date(endTs * 1000).toISOString().slice(0, 10) : '';\n\n  const fullAddress = decodeEntities((venue.full_address || '').toString().trim());\n  const locationName = fullAddress.split(',')[0].trim();\n\n  // Source metadata kept as DISCRETE fields (not concatenated into DescriptionRaw).\n  // AllEvents' API has no event-description field, so DescriptionRaw is left empty:\n  // (a) the old \"AllEvents Categories/Organizer/Score\" blob made richest-wins\n  //     survivorship pick AllEvents over a real-description source on raw length;\n  // (b) it polluted the R6 content-scoring signal. See Decision_Log section 51 + #70.\n  const baseCategories = Array.isArray(ev.categories)\n    ? ev.categories.filter(Boolean).join(', ')\n    : (ev.categories || '').toString();\n  // #84 - merge tags[]/formats[] (secondary taxonomy, e.g. \"festival\") into the shared\n  // SourceCategories field. Additive to the existing categories[], not a replacement.\n  const extraTags = [\n    ...(Array.isArray(ev.tags) ? ev.tags : []),\n    ...(Array.isArray(ev.formats) ? ev.formats : []),\n  ].filter(Boolean);\n  const categories = [baseCategories, ...extraTags].filter(Boolean).join(', ');\n  const organizer = decodeEntities(((ev.organizer && ev.organizer.name) || ev.organizer || '').toString().trim());\n  const sourceScore = ev.score != null ? ev.score : null;\n  // #84 - AllEvents pre-formats its own price string (e.g. \"CAD 30 to 49\", \"Free\");\n  // richer/more populated than the sparse tickets{} object (2/225 in sample vs 141/225).\n  const costRaw = (ev.display_price_label || '').toString().trim();\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link: eventUrl,\n      url: eventUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate,\n      locationName,\n      city,\n      sourceCanonical: 'AllEvents',\n      DescriptionRaw: '',\n      organizer,\n      sourceScore,\n      categories,\n      costRaw,\n      _valid: !!(title && isoDate && eventUrl),\n    }\n  });\n}\n\nreturn results;\n"
       },
-      "id": "4f889823-0d2b-461d-9f06-0584815990c7",
-      "name": "AllEvents Normalize3",
+      "id": "87e43784-2757-42c6-841a-a00deae677ba",
+      "name": "AllEvents Normalize5",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
-        752
+        2224,
+        2784
       ]
     },
     {
       "parameters": {
         "jsCode": "// Group DateWindow output into Airtable batch-upsert bodies (10 records/request).\n// Mirrors the old 'Upsert Candidates' field mapping exactly; matches on UniqueEventID.\n// Empty values are omitted (avoids 400 on empty date fields; never blanks an existing value).\nconst FIELD_MAP = {\n  'Event Title': 'event_name',\n  'City': 'city',\n  'URL': 'url',\n  'Start Date': 'start_date',\n  'End Date': 'endDate',\n  'DescriptionRaw': 'DescriptionRaw',\n  'UniqueEventID': 'uniqueEventID',\n  'LocationName': 'locationName',\n  'Source': 'sourceCanonical',\n  'Organizer': 'organizer',\n  'SourceScore': 'sourceScore',\n  'SourceCategories': 'categories',\n  'CostRaw': 'costRaw',\n};\nconst now = new Date().toISOString();\nfunction buildFields(j) {\n  const f = {};\n  for (const [col, key] of Object.entries(FIELD_MAP)) {\n    const v = j[key];\n    if (v !== undefined && v !== null && v !== '') f[col] = v;\n  }\n  f['Last Auto Update'] = now;\n  return f;\n}\n// Group by UniqueEventID across the whole run. Airtable rejects a batch that updates\n// the same record twice in one request, and re-upserting the same event is pointless.\nconst groups = new Map(); // id -> [all jsons with this id]\nfor (const i of items) {\n  const id = i.json.uniqueEventID;\n  if (!id) continue;\n  if (!groups.has(id)) groups.set(id, []);\n  groups.get(id).push(i.json);\n}\n// --- Survivorship: richest-wins golden record (Decision_Log section 51, #70) ---\n// Source-agnostic ordered comparator; replaces the old last-in-Merge-order wins.\n//   1. URL present beats URL absent  (demotes linkless records; keeps the featured-link path)\n//   2. tie -> longer DescriptionRaw  (serves the R6 content scorer; fires only between\n//                                     aggregators that both carry a URL, never for Facebook,\n//                                     whose intake schema has no description column)\n//   3. tie -> last in Merge order    (harmless fallback; preserves prior behaviour)\n// Never references sourceCanonical (portability rule). Lock=true rows are untouched:\n// Lock lives on IssueItems, not Candidates; editorial Candidate fields (Status, etc.)\n// are protected by being absent from FIELD_MAP (Decision_Log section 40).\nfunction richer(a, b) {\n  const au = (a.url || '').trim() ? 1 : 0;\n  const bu = (b.url || '').trim() ? 1 : 0;\n  if (au !== bu) return au > bu ? a : b;\n  const ad = (a.DescriptionRaw || '').length;\n  const bd = (b.DescriptionRaw || '').length;\n  if (ad !== bd) return ad > bd ? a : b;\n  return b;\n}\n// Why did `win` beat `loser`? Replays the same comparator tiers for the run log,\n// so maintenance can see the decision per collision (the loser is dropped here and\n// never reaches Airtable, so this is the ONLY place the reason can be observed).\nfunction winReason(win, loser) {\n  const wu = (win.url || '').trim() ? 1 : 0;\n  const lu = (loser.url || '').trim() ? 1 : 0;\n  if (wu !== lu) return 'URL';\n  if ((win.DescriptionRaw || '').length !== (loser.DescriptionRaw || '').length) return 'longer description';\n  return 'merge-order (tie)';\n}\n// Field-level merge for SUPPLEMENTARY metadata (#70 follow-up, extended #84). Record-level\n// richest-wins picks the base record (real description / primary URL); but discrete source\n// metadata (organizer / sourceScore / categories / costRaw) is only ever set by a source that\n// may LOSE the collision. So overlay those fields from any colliding record that has them, onto\n// the winner. Source-agnostic (by field presence, not source name) and only fills BLANKS on the\n// winner — it never overwrites a value the winner already carries.\nconst META_FIELDS = ['organizer', 'sourceScore', 'categories', 'costRaw'];\nconst isEmpty = (v) => v === undefined || v === null || v === '';\nconst seen = new Map(); // id -> surviving json (metadata-enriched)\nfor (const [id, arr] of groups) {\n  const win = arr.reduce((w, c) => richer(w, c));\n  for (const fld of META_FIELDS) {\n    if (isEmpty(win[fld])) {\n      const donor = arr.find((r) => !isEmpty(r[fld]));\n      if (donor) win[fld] = donor[fld];\n    }\n  }\n  seen.set(id, win);\n}\n// --- Collision diagnostics: which keys collapsed, why the winner won, is it benign? ---\n// Same UniqueEventID + SAME url  = genuinely the same event (benign collapse).\n// Same UniqueEventID + DIFFERENT urls = two different events merged on a coarse\n// title|date key (potential wrongful loss — inspect these).\nconst collisions = [...groups.entries()].filter(([, arr]) => arr.length > 1);\nconst collapsed = items.length - seen.size;\nconsole.log(`[dedup] ${items.length} items in -> ${seen.size} unique (${collapsed} collapsed across ${collisions.length} keys)`);\nlet urlDiffers = 0;\nfor (const [id, arr] of collisions) {\n  const urls = new Set(arr.map((r) => r.url));\n  const venues = new Set(arr.map((r) => (r.locationName || '').trim()).filter(Boolean));\n  const bad = urls.size > 1;\n  if (bad) urlDiffers++;\n  const win = seen.get(id);\n  console.log(`  x${arr.length} urls=${urls.size} venues=${venues.size} \"${id}\"${bad ? ' [URLS DIFFER - INSPECT]' : ''}`);\n  for (const r of arr) {\n    if (r === win) continue;\n    console.log(`      won: ${win.sourceCanonical || '(none)'} over ${r.sourceCanonical || '(none)'} (${winReason(win, r)})`);\n  }\n}\nconsole.log(`[dedup] ${urlDiffers} collision key(s) had DIFFERING urls (potential wrongful merge; 0 = all collapses benign)`);\n// --- DoD safety gate (#70): per-source count diff, before vs after survivorship. ---\n// Read with the documented asymmetry: a DROP for Facebook is expected/correct (its\n// collisions reattribute to richer aggregators); an aggregator losing records, or FB\n// collapsing to ~0, is the red flag.\nconst tally = (arr) => arr.reduce((m, j) => { const s = j.sourceCanonical || '(none)'; m[s] = (m[s] || 0) + 1; return m; }, {});\nconst before = tally(items.map((i) => i.json));\nconst after = tally([...seen.values()]);\nconst allSources = [...new Set([...Object.keys(before), ...Object.keys(after)])].sort();\nconsole.log('[dedup] per-source before -> after (survivorship):');\nfor (const s of allSources) console.log(`  ${s}: ${before[s] || 0} -> ${after[s] || 0}`);\n\nconst records = [...seen.values()].map((j) => ({ fields: buildFields(j) }));\nconst out = [];\nfor (let k = 0; k < records.length; k += 10) {\n  out.push({\n    json: {\n      records: records.slice(k, k + 10),\n      performUpsert: { fieldsToMergeOn: ['UniqueEventID'] },\n      typecast: true,\n    }\n  });\n}\nreturn out;\n"
       },
-      "id": "517c81b8-5761-4a7f-82a6-2dd9b34e4c51",
-      "name": "Build Upsert Batches",
+      "id": "07c4d6e7-9174-49cc-a63f-bb824cef54e7",
+      "name": "Build Upsert Batches1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1744,
-        1696
+        4128,
+        3728
       ]
     },
     {
@@ -393,13 +347,13 @@
           }
         }
       },
-      "id": "b72ff3ee-14d9-4790-b047-a23b2750d9c1",
-      "name": "Upsert Candidates (batched)",
+      "id": "4d2f3cd0-6565-47f5-a895-88ac6440c7af",
+      "name": "Upsert Candidates (batched)1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        1904,
-        1552
+        4288,
+        3584
       ],
       "credentials": {
         "airtableTokenApi": {
@@ -412,13 +366,13 @@
       "parameters": {
         "jsCode": "const now = new Date();\nconst fmt = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';\nconst m1 = new Date(now.getFullYear(), now.getMonth(), 1);\nconst m2 = new Date(now.getFullYear(), now.getMonth() + 1, 1);\nreturn [\n  { json: { search_date: fmt(m1) } },\n  { json: { search_date: fmt(m2) } },\n];"
       },
-      "id": "a54aff09-95c8-4538-b6ba-4b04a99eb304",
-      "name": "VisitVaughan Build Months",
+      "id": "ca116cc1-a9c5-4ddf-b186-dc795bd17a3c",
+      "name": "VisitVaughan Build Months1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -624,
-        1056
+        1760,
+        3088
       ]
     },
     {
@@ -450,39 +404,39 @@
         },
         "options": {}
       },
-      "id": "daa238bb-81f7-4893-a3ec-5000976215f2",
-      "name": "VisitVaughan Fetch",
+      "id": "394756e0-8a0f-48e3-8852-8310bacd2ced",
+      "name": "VisitVaughan Fetch1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -384,
-        1056
+        2000,
+        3088
       ]
     },
     {
       "parameters": {
         "jsCode": "const SOURCE = 'Visit Vaughan';\nfunction decodeEntities(s) {\n  return (s || '').toString()\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&nbsp;/g, ' ');\n}\nfunction stripHtml(s) {\n  return (s || '').toString().replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n}\nfunction clean(s) {\n  return decodeEntities(stripHtml(s)).trim();\n}\nconst CITY_MAP = {\n  'Vaughan': 'Vaughan', 'Woodbridge': 'Vaughan', 'Thornhill': 'Vaughan',\n  'Maple': 'Vaughan', 'Concord': 'Vaughan', 'Kleinburg': 'Vaughan',\n  'Richmond Hill': 'Richmond Hill', 'Markham': 'Markham', 'Unionville': 'Markham',\n};\nconst seen = new Set();\nconst results = [];\nfor (const item of $input.all()) {\n  const byDate = (item.json && item.json.results) || {};\n  for (const dateKey of Object.keys(byDate)) {\n    const list = (byDate[dateKey] && byDate[dateKey].list_items) || [];\n    for (const ev of list) {\n      const pid = ev.product_id;\n      if (pid != null) {\n        if (seen.has(pid)) continue;\n        seen.add(pid);\n      }\n      const title = clean(ev.product_name);\n      const link = (ev.product_link || '').toString().trim();\n      const startRaw = (ev.product_startdate || '').toString().trim();\n      if (!title || !link || !startRaw) continue;\n      const isoDate = startRaw.replace(' ', 'T');\n      const endRaw = (ev.product_enddate || '').toString().trim();\n      const endDate = endRaw ? endRaw.slice(0, 10) : '';\n      const rawCity = (ev.product_city || '').toString().trim();\n      const city = CITY_MAP[rawCity] || rawCity;\n      const venue = clean(ev.product_venue_name) || (ev.product_location_condensed || '').toString().trim();\n      const descParts = [];\n      if (ev.product_types) descParts.push('Visit Vaughan Types: ' + ev.product_types);\n      if (ev.product_cost) descParts.push('Visit Vaughan Cost: ' + clean(ev.product_cost));\n      const desc = clean(ev.product_description || ev.product_excerpt);\n      if (desc) descParts.push(desc);\n      const DescriptionRaw = descParts.join('\\n');\n      results.push({\n        json: {\n          title,\n          event_name: title,\n          link,\n          url: link,\n          isoDate,\n          start_date: isoDate,\n          endDate,\n          locationName: venue,\n          city,\n          sourceCanonical: SOURCE,\n          DescriptionRaw,\n          _valid: !!(title && isoDate && link),\n        }\n      });\n    }\n  }\n}\nreturn results;"
       },
-      "id": "da91a122-2dbe-4661-9f47-1340b0ff2cea",
-      "name": "VisitVaughan Normalize",
+      "id": "156958b6-5ec3-4d84-b45b-85d11768de4a",
+      "name": "VisitVaughan Normalize1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
-        1056
+        2224,
+        3088
       ]
     },
     {
       "parameters": {
         "jsCode": "const SOURCE = 'Unionville';\nconst CITY = 'Markham'; // Unionville is in Markham (include-tier); no geo-filter (B5 build, 2026-06-18)\n\nfunction decodeEntities(s) {\n  return (s || '').toString()\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&')\n    .replace(/&apos;/g, \"'\")\n    .replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<')\n    .replace(/&gt;/g, '>')\n    .replace(/&nbsp;/g, ' ');\n}\nfunction stripHtml(s) {\n  return (s || '').toString().replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();\n}\nfunction clean(s) {\n  return decodeEntities(stripHtml(s)).trim();\n}\n\nconst MONTHS = {\n  january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,\n  july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,\n};\n// Parse \"June 21, 2026\" -> \"2026-06-21\". Manual build avoids new Date() TZ off-by-one.\nfunction parseOneDate(s) {\n  const m = (s || '').match(/([A-Za-z]+)\\s+(\\d{1,2}),\\s+(\\d{4})/);\n  if (!m) return '';\n  const mo = MONTHS[m[1].toLowerCase()];\n  if (mo === undefined) return '';\n  return `${m[3]}-${String(mo + 1).padStart(2, '0')}-${String(m[2]).padStart(2, '0')}`;\n}\n\nconst html = ($input.first().json.data || '').toString();\n\n// Each card: <div class=\"news-card\" id=\"news-NNNN\" ...> ... </div>. Split on the\n// opening boundary; chunk[0] is pre-card noise, the rest are one card each.\nconst chunks = html.split('<div class=\"news-card\"').slice(1);\n\nconst field = (chunk, cls) => {\n  const m = chunk.match(new RegExp(`<div class=\"${cls}\">([\\\\s\\\\S]*?)</div>`));\n  return m ? m[1] : '';\n};\n\nconst results = [];\nfor (const chunk of chunks) {\n  const rawDate = field(chunk, 'card-date');\n  const parts = rawDate.split(/\\s+to\\s+/i); // ranges: \"June 6, 2026 to June 7, 2026\"\n  const startDate = parseOneDate(parts[0]);\n  const endDate = parts[1] ? parseOneDate(parts[1]) : '';\n\n  const title = clean(field(chunk, 'card-title'));\n  const locationName = clean(field(chunk, 'card-location'));\n  const cardTime = clean(field(chunk, 'card-time')); // free text, unparseable -> DescriptionRaw\n  const cardDesc = clean(field(chunk, 'card-desc'));\n\n  // href appears before class on the anchor; optional (rec events have no <a>).\n  const hrefMatch = chunk.match(/<a\\s+href=\"([^\"]+)\"[^>]*class=\"btn-learn-more\"/);\n  const link = hrefMatch ? decodeEntities(hrefMatch[1]).trim() : '';\n\n  // No-Z local datetime, matching the VisitVaughan convention (Toronto server TZ).\n  const isoDate = startDate ? `${startDate}T00:00:00` : '';\n\n  const descParts = [];\n  if (cardTime) descParts.push(`Time: ${cardTime}`);\n  if (cardDesc) descParts.push(cardDesc);\n  const DescriptionRaw = descParts.join('\\n');\n\n  results.push({\n    json: {\n      title,\n      event_name: title,\n      link,\n      url: link,\n      isoDate,\n      start_date: isoDate, // window filtered on START (recurring events span months)\n      endDate,\n      locationName,\n      city: CITY,\n      sourceCanonical: SOURCE,\n      DescriptionRaw,\n      _valid: !!(title && startDate && link), // linkless cards drop at Validity Filter\n    },\n  });\n}\n\nreturn results;"
       },
-      "id": "d621e014-bc6e-471b-abb9-9ff368f696c4",
-      "name": "Unionville Normalize",
+      "id": "4db08465-9f64-45a0-b47e-25d63f75e544",
+      "name": "Unionville Normalize1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
-        1200
+        2224,
+        3232
       ]
     },
     {
@@ -513,11 +467,11 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -384,
-        1200
+        2000,
+        3232
       ],
-      "id": "a151dd38-5fe5-4dfb-aee5-dccd00a3445c",
-      "name": "Unionville Fetch"
+      "id": "2c56ddae-19e2-48ef-93ed-91b7df190f35",
+      "name": "Unionville Fetch1"
     },
     {
       "parameters": {
@@ -535,13 +489,13 @@
         },
         "options": {}
       },
-      "id": "9bfe7551-2c52-4a42-9fb3-7eb2f1ba76d4",
-      "name": "Facebook Intake Fetch",
+      "id": "4bdcb828-f2c3-4cab-b701-6a7786da1ebd",
+      "name": "Facebook Intake Fetch1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -384,
-        1360
+        2000,
+        3392
       ],
       "credentials": {
         "airtableTokenApi": {
@@ -555,13 +509,13 @@
       "parameters": {
         "jsCode": "// Facebook manual-intake parser. Each FacebookIntake row = one weekly submission\n// (the single tab-separated table the client pastes from the VB_FACEBOOK_INTAKE\n// prompt). Emits one item per event in the canonical intermediate shape consumed by\n// Merge -> Clean/Filter -> Make UniqueEventID -> Validity Filter -> DateWindow.\n// Bad-row policy: skip malformed rows, keep the good ones, log diagnostics.\n// uniqueEventID + final _valid are RECOMPUTED downstream by Make UniqueEventID.\n\nconst COLUMNS = 6; // Title, StartDate, EndDate, LocationName, City, Link\nconst ALLOWED_CITIES = ['Vaughan', 'Markham', 'Richmond Hill', 'Toronto'];\nconst ISO = /^\\d{4}-\\d{2}-\\d{2}$/;\nfunction validISO(s) {\n  if (!ISO.test(s)) return false;\n  const d = new Date(s + 'T00:00:00Z');\n  return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;\n}\nfunction matchCity(raw) {\n  const v = (raw || '').trim();\n  if (!v) return '';\n  const h = ALLOWED_CITIES.find((c) => c.toLowerCase() === v.toLowerCase());\n  return h || null; // null = present but out-of-set (soft error)\n}\n\nconst records = ($input.first().json.records) || [];\nconst out = [];\nconst errors = [];\n\nfor (const rec of records) {\n  const blob = (rec.fields && rec.fields.Events) || '';\n  // Do NOT trim whole lines: a trailing tab marks an empty final cell (blank Link).\n  const lines = blob.split(/\\r?\\n/).filter((l) => l.trim().length > 0);\n  let start = 0;\n  if (lines.length && lines[0].split('\\t')[0].trim().toLowerCase() === 'title') start = 1;\n  for (let i = start; i < lines.length; i++) {\n    // Tolerate trailing-tab nondeterminism (study 2026-06-22; mirrors\n    // scripts/parseFacebookIntake.js): drop trailing EMPTY overflow cells and pad\n    // short rows to 6. A non-empty 7th cell is real corruption and still fails loud.\n    let cells = lines[i].split('\\t').map((c) => c.trim());\n    while (cells.length > COLUMNS && cells[cells.length - 1] === '') cells.pop();\n    if (cells.length > COLUMNS) {\n      errors.push('rec ' + rec.id + ' line ' + (i + 1) + ': ' + cells.length + ' cols, non-empty overflow - skipped');\n      continue;\n    }\n    while (cells.length < COLUMNS) cells.push('');\n    let [title, startDate, endDate, location, city, link] = cells;\n    if (!title) {\n      errors.push('rec ' + rec.id + ' line ' + (i + 1) + ': no title - skipped');\n      continue;\n    }\n    if (startDate && !validISO(startDate)) {\n      errors.push('rec ' + rec.id + ' line ' + (i + 1) + ' \"' + title + '\": bad StartDate \"' + startDate + '\" - skipped');\n      continue;\n    }\n    if (endDate && !validISO(endDate)) {\n      errors.push('rec ' + rec.id + ' \"' + title + '\": bad EndDate \"' + endDate + '\" - cleared');\n      endDate = '';\n    }\n    const cc = matchCity(city);\n    if (cc === null) {\n      errors.push('rec ' + rec.id + ' \"' + title + '\": city \"' + city + '\" not in set - cleared');\n      city = '';\n    } else {\n      city = cc;\n    }\n    const isoDate = startDate ? startDate + 'T00:00:00' : '';\n    out.push({\n      json: {\n        title,\n        event_name: title,\n        link,\n        url: link,\n        isoDate,\n        start_date: isoDate,\n        endDate,\n        locationName: location,\n        city,\n        sourceCanonical: 'Facebook',\n        DescriptionRaw: '',\n        _valid: !!(title && startDate && link),\n        _intakeRecordId: rec.id,\n      },\n    });\n  }\n}\nif (errors.length) console.log('[facebook-intake] skipped/cleaned:\\n' + errors.join('\\n'));\nconsole.log('[facebook-intake] ' + records.length + ' submission(s) -> ' + out.length + ' event item(s)');\nreturn out;"
       },
-      "id": "d1d6016a-d4c3-4155-99ab-f206dee5031b",
-      "name": "Facebook Parse",
+      "id": "2021734d-3fdf-4788-b8d9-097d20575f4e",
+      "name": "Facebook Parse1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -160,
-        1360
+        2224,
+        3392
       ],
       "notes": "Parses each submission's Events blob into per-event items (intermediate shape). Wire output -> Merge (new input index). uniqueEventID/_valid recomputed downstream."
     },
@@ -570,13 +524,13 @@
         "mode": "runOnceForEachItem",
         "jsCode": "// Facebook manual-intake exception: feed screenshots carry no event URLs, so FB\n// events arrive linkless and Make UniqueEventID flags them _valid=false (missing_url).\n// Let them through IF they have a date — the editor adds the link at selection time,\n// and a pre-publish guard blocks featuring a linkless item. All other sources still\n// require a URL. See GH #67 (DOM-extractor spike, deferred).\nif ($json.sourceCanonical === 'Facebook' && $json.start_date) {\n  return { ...$json, _valid: true, _invalid_reason: '' };\n}\nreturn $json;"
       },
-      "id": "f48316ae-7ba1-4663-b85a-f90daf03a95b",
-      "name": "Facebook Validity Override",
+      "id": "ca427d89-85dd-4d5c-a0bf-f561dd5aa415",
+      "name": "Facebook Validity Override1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1264,
-        1552
+        3648,
+        3584
       ],
       "notes": "Facebook intake exception: feed screenshots carry no event URLs, so FB events arrive linkless and Make UniqueEventID flags _valid=false (missing_url). Let them through if they have a date; the editor adds the link at selection, and a pre-publish guard blocks featuring a linkless item. All other sources still require a URL. See GH #67."
     },
@@ -584,13 +538,13 @@
       "parameters": {
         "jsCode": "// Fetch current + next month to cover the 30-day horizon (can cross a month boundary).\n// URL month is the lowercase English name (/2026/november). A numeric month (/2026/11) silently\n// returns the current month's page, which stamped October programs onto November dates (2026-10-15).\nconst BASE = 'https://www.vaughanpl.info/events_calendars/calendar';\nconst MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];\nconst now = new Date();\nconst m1 = new Date(now.getFullYear(), now.getMonth(), 1);\nconst m2 = new Date(now.getFullYear(), now.getMonth() + 1, 1);\nconst mk = (d) => ({ json: {\n  url: `${BASE}/${d.getFullYear()}/${MONTHS[d.getMonth()]}`,\n  year: d.getFullYear(),\n  month: d.getMonth() + 1,\n} });\nreturn [mk(m1), mk(m2)];\n"
       },
-      "id": "c0b62f77-6cbc-481a-a29d-53c11ab7d7ad",
-      "name": "VPL Build Months",
+      "id": "a8fa6e89-bf2a-4205-b65e-1dd35e809b47",
+      "name": "VPL Build Months1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -848,
-        1504
+        1536,
+        3536
       ]
     },
     {
@@ -601,26 +555,26 @@
         "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"text/html,application/xhtml+xml\"\n}",
         "options": {}
       },
-      "id": "8b9617ac-da64-4679-82bc-4c7e1f1b1e05",
-      "name": "VPL Calendar Fetch",
+      "id": "a64e7664-64c0-48f7-b3c6-a43beb7cea71",
+      "name": "VPL Calendar Fetch1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -624,
-        1504
+        1760,
+        3536
       ]
     },
     {
       "parameters": {
-        "jsCode": "const DAYS_AHEAD = 30; // mirror DateWindow; skip detail fetches it would drop\nconst today = new Date();\nconst startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());\nconst horizon = new Date(startOfToday); horizon.setDate(horizon.getDate() + DAYS_AHEAD);\n\nfunction decodeEntities(s) {\n  return (s || '').toString()\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&').replace(/&apos;/g, \"'\").replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');\n}\n\nconst builds = $('VPL Build Months').all();\nconst pages = $input.all();\nconst programs = new Map();\n\nfor (let p = 0; p < pages.length; p++) {\n  const html = (pages[p].json.data || '').toString();\n  const year = builds[p].json.year;\n  const month = builds[p].json.month;\n  // The page must be the month that was asked for. A wrong month would put every program on the\n  // wrong date and look normal, so stop the run instead (2026-10-15).\n  const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];\n  const header = (html.match(/<th colspan=\"5\" id=\"c\">([^<]*)<\\/th>/) || [])[1] || '';\n  const wanted = `${MONTH_NAMES[month - 1]} ${year}`;\n  if (header.trim() !== wanted) {\n    throw new Error(`VPL calendar page for ${wanted} shows \"${header.trim() || 'no month header'}\"; dates would be wrong, so the run stops.`);\n  }\n\n  const cellRe = /<div class=\"cell-number\">(\\d+)<\\/div>([\\s\\S]*?)(?=<div class=\"cell-number\">|<\\/td>)/g;\n  let cm;\n  while ((cm = cellRe.exec(html)) !== null) {\n    const day = parseInt(cm[1], 10);\n    const d = new Date(year, month - 1, day);\n    if (d < startOfToday || d > horizon) continue;\n    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;\n\n    const aRe = /<a href=\"\\/programs\\/view\\/(\\d+)\" title=\"([^\"]*)\" class=\"branch_[^\"]*\">([\\s\\S]*?)<\\/a>/g;\n    let am;\n    while ((am = aRe.exec(cm[2])) !== null) {\n      const id = am[1];\n      const titleAttr = decodeEntities(am[2]).trim();\n      const title = decodeEntities(am[3].replace(/<[^>]*>/g, '')).trim();\n      const tm = titleAttr.match(/^(\\d{1,2}:\\d{2}\\s*[AP]M)\\s+to\\s+\\d{1,2}:\\d{2}\\s*[AP]M\\s+(.+)$/i);\n      const startTime = tm ? tm[1].replace(/\\s+/g, ' ') : '';\n      const branch = tm ? tm[2].trim() : titleAttr;\n\n      if (!programs.has(id)) {\n        programs.set(id, { id, title, detailUrl: `https://www.vaughanpl.info/programs/view/${id}`, occ: [] });\n      }\n      const prog = programs.get(id);\n      // One occurrence per (program, date): \"a storytime that day\" is enough — same-day\n      // multi-branch collapses to the first branch seen (editorial decision 2026-06-24).\n      // Keeps VPL key = title|date, identical to every other source (no §59 divergence).\n      if (!prog.occ.some((o) => o.date === dateStr)) {\n        prog.occ.push({ date: dateStr, branch, startTime });\n      }\n    }\n  }\n}\n\nreturn [...programs.values()].map((p) => ({ json: p }));\n"
+        "jsCode": "const DAYS_AHEAD = 30; // mirror DateWindow; skip detail fetches it would drop\nconst today = new Date();\nconst startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());\nconst horizon = new Date(startOfToday); horizon.setDate(horizon.getDate() + DAYS_AHEAD);\n\nfunction decodeEntities(s) {\n  return (s || '').toString()\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&').replace(/&apos;/g, \"'\").replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');\n}\n\nconst builds = $('VPL Build Months1').all();\nconst pages = $input.all();\nconst programs = new Map();\n\nfor (let p = 0; p < pages.length; p++) {\n  const html = (pages[p].json.data || '').toString();\n  const year = builds[p].json.year;\n  const month = builds[p].json.month;\n  // The page must be the month that was asked for. A wrong month would put every program on the\n  // wrong date and look normal, so stop the run instead (2026-10-15).\n  const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];\n  const header = (html.match(/<th colspan=\"5\" id=\"c\">([^<]*)<\\/th>/) || [])[1] || '';\n  const wanted = `${MONTH_NAMES[month - 1]} ${year}`;\n  if (header.trim() !== wanted) {\n    throw new Error(`VPL calendar page for ${wanted} shows \"${header.trim() || 'no month header'}\"; dates would be wrong, so the run stops.`);\n  }\n\n  const cellRe = /<div class=\"cell-number\">(\\d+)<\\/div>([\\s\\S]*?)(?=<div class=\"cell-number\">|<\\/td>)/g;\n  let cm;\n  while ((cm = cellRe.exec(html)) !== null) {\n    const day = parseInt(cm[1], 10);\n    const d = new Date(year, month - 1, day);\n    if (d < startOfToday || d > horizon) continue;\n    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;\n\n    const aRe = /<a href=\"\\/programs\\/view\\/(\\d+)\" title=\"([^\"]*)\" class=\"branch_[^\"]*\">([\\s\\S]*?)<\\/a>/g;\n    let am;\n    while ((am = aRe.exec(cm[2])) !== null) {\n      const id = am[1];\n      const titleAttr = decodeEntities(am[2]).trim();\n      const title = decodeEntities(am[3].replace(/<[^>]*>/g, '')).trim();\n      const tm = titleAttr.match(/^(\\d{1,2}:\\d{2}\\s*[AP]M)\\s+to\\s+\\d{1,2}:\\d{2}\\s*[AP]M\\s+(.+)$/i);\n      const startTime = tm ? tm[1].replace(/\\s+/g, ' ') : '';\n      const branch = tm ? tm[2].trim() : titleAttr;\n\n      if (!programs.has(id)) {\n        programs.set(id, { id, title, detailUrl: `https://www.vaughanpl.info/programs/view/${id}`, occ: [] });\n      }\n      const prog = programs.get(id);\n      // One occurrence per (program, date): \"a storytime that day\" is enough — same-day\n      // multi-branch collapses to the first branch seen (editorial decision 2026-06-24).\n      // Keeps VPL key = title|date, identical to every other source (no §59 divergence).\n      if (!prog.occ.some((o) => o.date === dateStr)) {\n        prog.occ.push({ date: dateStr, branch, startTime });\n      }\n    }\n  }\n}\n\nreturn [...programs.values()].map((p) => ({ json: p }));\n"
       },
-      "id": "d5886a13-6cc9-4569-b8ad-cc11650b2149",
-      "name": "VPL Parse Calendar",
+      "id": "9c7a3057-edc9-4919-b506-53a4a93b0d36",
+      "name": "VPL Parse Calendar1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -384,
-        1504
+        2000,
+        3536
       ]
     },
     {
@@ -631,39 +585,39 @@
         "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"text/html,application/xhtml+xml\"\n}",
         "options": {}
       },
-      "id": "711b76bd-ceef-46dd-9f32-e3392d5930d4",
-      "name": "VPL Detail Fetch",
+      "id": "dcfc5c67-f1d9-4fbb-94ec-ae7b18fd2f29",
+      "name": "VPL Detail Fetch1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -160,
-        1504
+        2224,
+        3536
       ]
     },
     {
       "parameters": {
-        "jsCode": "const SOURCE = 'VPL';\nconst CITY = 'Vaughan';\n\nfunction decodeEntities(s) {\n  return (s || '').toString()\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&').replace(/&apos;/g, \"'\").replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');\n}\nfunction cleanDesc(raw) {\n  let s = (raw || '').replace(/<br\\s*\\/?>/gi, '\\n').replace(/<\\/p>/gi, '\\n').replace(/<[^>]*>/g, ' ');\n  s = decodeEntities(s);\n  return s.replace(/[ \\t]+/g, ' ').replace(/\\n{3,}/g, '\\n\\n').trim();\n}\nfunction extractDescription(html) {\n  let m = html.match(/<div class=\"description\">([\\s\\S]*?)<div class=\"share_span\">/);\n  if (!m) m = html.match(/<div class=\"description\">([\\s\\S]*?)<\\/div>/);\n  return cleanDesc(m ? m[1] : '');\n}\n\nconst meta = $('VPL Parse Calendar').all();\nconst pages = $input.all();\nconst out = [];\nfor (let i = 0; i < pages.length; i++) {\n  const html = (pages[i].json.data || '').toString();\n  const m = meta[i].json;\n  const desc = extractDescription(html);\n  for (const o of m.occ) {\n    const isoDate = `${o.date}T00:00:00`;\n    const parts = [];\n    if (o.startTime) parts.push(`Time: ${o.startTime}`);\n    if (desc) parts.push(desc);\n    out.push({ json: {\n      title: m.title,\n      event_name: m.title,\n      link: m.detailUrl,\n      url: m.detailUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate: '',\n      locationName: o.branch,\n      city: CITY,\n      sourceCanonical: SOURCE,\n      DescriptionRaw: parts.join('\\n\\n'),\n      _valid: !!(m.title && o.date && m.detailUrl),\n    } });\n  }\n}\nreturn out;\n"
+        "jsCode": "const SOURCE = 'VPL';\nconst CITY = 'Vaughan';\n\nfunction decodeEntities(s) {\n  return (s || '').toString()\n    .replace(/&#(\\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))\n    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))\n    .replace(/&amp;/g, '&').replace(/&apos;/g, \"'\").replace(/&quot;/g, '\"')\n    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');\n}\nfunction cleanDesc(raw) {\n  let s = (raw || '').replace(/<br\\s*\\/?>/gi, '\\n').replace(/<\\/p>/gi, '\\n').replace(/<[^>]*>/g, ' ');\n  s = decodeEntities(s);\n  return s.replace(/[ \\t]+/g, ' ').replace(/\\n{3,}/g, '\\n\\n').trim();\n}\nfunction extractDescription(html) {\n  let m = html.match(/<div class=\"description\">([\\s\\S]*?)<div class=\"share_span\">/);\n  if (!m) m = html.match(/<div class=\"description\">([\\s\\S]*?)<\\/div>/);\n  return cleanDesc(m ? m[1] : '');\n}\n\nconst meta = $('VPL Parse Calendar1').all();\nconst pages = $input.all();\nconst out = [];\nfor (let i = 0; i < pages.length; i++) {\n  const html = (pages[i].json.data || '').toString();\n  const m = meta[i].json;\n  const desc = extractDescription(html);\n  for (const o of m.occ) {\n    const isoDate = `${o.date}T00:00:00`;\n    const parts = [];\n    if (o.startTime) parts.push(`Time: ${o.startTime}`);\n    if (desc) parts.push(desc);\n    out.push({ json: {\n      title: m.title,\n      event_name: m.title,\n      link: m.detailUrl,\n      url: m.detailUrl,\n      isoDate,\n      start_date: isoDate,\n      endDate: '',\n      locationName: o.branch,\n      city: CITY,\n      sourceCanonical: SOURCE,\n      DescriptionRaw: parts.join('\\n\\n'),\n      _valid: !!(m.title && o.date && m.detailUrl),\n    } });\n  }\n}\nreturn out;\n"
       },
-      "id": "cd1e982b-316f-42c5-a081-b87fa83ede48",
-      "name": "VPL Normalize",
+      "id": "8d438a10-c7ed-4e2e-a789-484ee64e6d32",
+      "name": "VPL Normalize1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        80,
-        1504
+        2464,
+        3536
       ]
     },
     {
       "parameters": {
         "jsCode": "// onrichmondhill.com Drupal 7 events list view paginates page=0..5 (uncapped, ~46 events).\n// RSS feed is capped at 10, so we scrape the list instead (issue #77).\nconst BASE = 'https://www.onrichmondhill.com/?q=events';\nconst out = [{ json: { url: BASE, page: 0 } }];\nfor (let p = 1; p <= 5; p++) out.push({ json: { url: `${BASE}&page=${p}`, page: p } });\nreturn out;"
       },
-      "id": "6d9e45db-e120-4114-9bff-5abebbc2fd61",
-      "name": "OnRichmondHill Build Pages",
+      "id": "1d103ba6-f9c9-47b9-a199-35f6ba7e71ec",
+      "name": "OnRichmondHill Build Pages1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -848,
-        1664
+        1536,
+        3696
       ]
     },
     {
@@ -674,26 +628,26 @@
         "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"text/html,application/xhtml+xml\"\n}",
         "options": {}
       },
-      "id": "b5c5d8c8-e4ce-4005-bd6a-21b89fa7aab4",
-      "name": "OnRichmondHill List Fetch",
+      "id": "afb168a7-4207-4a43-af0c-35600061022d",
+      "name": "OnRichmondHill List Fetch1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -624,
-        1664
+        1760,
+        3696
       ]
     },
     {
       "parameters": {
         "jsCode": "function decodeEntities(s){return (s||'').toString().replace(/&#(\\d+);/g,(_,n)=>String.fromCodePoint(parseInt(n,10))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&amp;/g,'&').replace(/&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');}\nconst pages = $input.all();\nconst seen = new Set();\nconst out = [];\n// Slugs are percent-encoded when the title has an en-dash, curly apostrophe or accent\n// (spooky-village-%E2%80%93-...); [a-z0-9-]+ silently skipped them (2026-10-15).\nconst re = /<h[23][^>]*>\\s*<a href=\"\\/\\?q=([^\"]+)\"[^>]*>([\\s\\S]*?)<\\/a>/g;\nfor (const pg of pages) {\n  const html = (pg.json.data || '').toString();\n  let m;\n  while ((m = re.exec(html)) !== null) {\n    const slug = m[1];\n    if (seen.has(slug)) continue;\n    seen.add(slug);\n    const title = decodeEntities(m[2].replace(/<[^>]*>/g,'')).trim();\n    out.push({ json: { slug, title, detailUrl: `https://www.onrichmondhill.com/?q=${slug}` } });\n  }\n}\nreturn out;"
       },
-      "id": "a4eb9e40-f58d-4b50-8c04-191ab6d6550a",
-      "name": "OnRichmondHill Parse List",
+      "id": "937e8bcd-0dac-4248-9792-8e503d24191f",
+      "name": "OnRichmondHill Parse List1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -384,
-        1664
+        2000,
+        3696
       ]
     },
     {
@@ -704,39 +658,39 @@
         "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"text/html,application/xhtml+xml\"\n}",
         "options": {}
       },
-      "id": "35c1e310-2832-4413-ab4d-ecfa2fe50695",
-      "name": "OnRichmondHill Detail Fetch",
+      "id": "344a25af-2444-4a8f-b86b-e4f63e84ebb5",
+      "name": "OnRichmondHill Detail Fetch1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -160,
-        1664
+        2224,
+        3696
       ]
     },
     {
       "parameters": {
-        "jsCode": "const SOURCE='OnRichmondHill';\nconst CITY='Richmond Hill';\nfunction decodeEntities(s){return (s||'').toString().replace(/&#(\\d+);/g,(_,n)=>String.fromCodePoint(parseInt(n,10))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&amp;/g,'&').replace(/&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');}\nfunction cleanDesc(raw){let s=(raw||'').replace(/<br\\s*\\/?>/gi,'\\n').replace(/<\\/p>/gi,'\\n').replace(/<[^>]*>/g,' ');s=decodeEntities(s);return s.replace(/[ \\t]+/g,' ').replace(/\\n{3,}/g,'\\n\\n').trim();}\nconst meta=$('OnRichmondHill Parse List').all();\nconst pages=$input.all();\nconst out=[];\nfor(let i=0;i<pages.length;i++){\n  const html=(pages[i].json.data||'').toString();\n  const m=meta[i].json;\n  // The event's own date field. The page's sidebar lists other events with their own dates, and a\n  // single-date event carries date-display-single, not -start, so the first -start on the page was a\n  // sidebar event's. The date is the site's local date; toISOString() moved evening events a day (2026-10-15).\n  const at=html.indexOf('field-name-field-event-date');\n  if(at<0) continue; // no event date -> not an event node, drop\n  const next=html.indexOf('field-name-', at+30);\n  const own=html.slice(at, next>at ? next : at+2000);\n  const sm=own.match(/date-display-(?:single|start)[^>]*content=\"(\\d{4}-\\d{2}-\\d{2})T/);\n  if(!sm) continue;\n  const isoDate=`${sm[1]}T00:00:00`;\n  const em=own.match(/date-display-end[^>]*content=\"(\\d{4}-\\d{2}-\\d{2})T/);\n  const endDate=em? em[1]:'';\n  let loc='';\n  const lm=html.match(/field-name-field-event-location[\\s\\S]*?<div class=\"field-item[^\"]*\">\\s*(?:<a[^>]*>)?([^<]+)/);\n  if(lm) loc=decodeEntities(lm[1]).trim();\n  let desc='';\n  const bm=html.match(/field-name-body[\\s\\S]*?<div class=\"field-item even\"[^>]*>([\\s\\S]*?)<\\/div>\\s*<\\/div>\\s*<\\/div>/);\n  if(bm) desc=cleanDesc(bm[1]);\n  out.push({ json:{\n    title:m.title, event_name:m.title,\n    link:m.detailUrl, url:m.detailUrl,\n    isoDate, start_date:isoDate, endDate,\n    locationName:loc, city:CITY, sourceCanonical:SOURCE,\n    DescriptionRaw:desc,\n    _valid:!!(m.title && isoDate && m.detailUrl),\n  } });\n}\nreturn out;"
+        "jsCode": "const SOURCE='OnRichmondHill';\nconst CITY='Richmond Hill';\nfunction decodeEntities(s){return (s||'').toString().replace(/&#(\\d+);/g,(_,n)=>String.fromCodePoint(parseInt(n,10))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&amp;/g,'&').replace(/&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');}\nfunction cleanDesc(raw){let s=(raw||'').replace(/<br\\s*\\/?>/gi,'\\n').replace(/<\\/p>/gi,'\\n').replace(/<[^>]*>/g,' ');s=decodeEntities(s);return s.replace(/[ \\t]+/g,' ').replace(/\\n{3,}/g,'\\n\\n').trim();}\nconst meta=$('OnRichmondHill Parse List1').all();\nconst pages=$input.all();\nconst out=[];\nfor(let i=0;i<pages.length;i++){\n  const html=(pages[i].json.data||'').toString();\n  const m=meta[i].json;\n  // The event's own date field. The page's sidebar lists other events with their own dates, and a\n  // single-date event carries date-display-single, not -start, so the first -start on the page was a\n  // sidebar event's. The date is the site's local date; toISOString() moved evening events a day (2026-10-15).\n  const at=html.indexOf('field-name-field-event-date');\n  if(at<0) continue; // no event date -> not an event node, drop\n  const next=html.indexOf('field-name-', at+30);\n  const own=html.slice(at, next>at ? next : at+2000);\n  const sm=own.match(/date-display-(?:single|start)[^>]*content=\"(\\d{4}-\\d{2}-\\d{2})T/);\n  if(!sm) continue;\n  const isoDate=`${sm[1]}T00:00:00`;\n  const em=own.match(/date-display-end[^>]*content=\"(\\d{4}-\\d{2}-\\d{2})T/);\n  const endDate=em? em[1]:'';\n  let loc='';\n  const lm=html.match(/field-name-field-event-location[\\s\\S]*?<div class=\"field-item[^\"]*\">\\s*(?:<a[^>]*>)?([^<]+)/);\n  if(lm) loc=decodeEntities(lm[1]).trim();\n  let desc='';\n  const bm=html.match(/field-name-body[\\s\\S]*?<div class=\"field-item even\"[^>]*>([\\s\\S]*?)<\\/div>\\s*<\\/div>\\s*<\\/div>/);\n  if(bm) desc=cleanDesc(bm[1]);\n  out.push({ json:{\n    title:m.title, event_name:m.title,\n    link:m.detailUrl, url:m.detailUrl,\n    isoDate, start_date:isoDate, endDate,\n    locationName:loc, city:CITY, sourceCanonical:SOURCE,\n    DescriptionRaw:desc,\n    _valid:!!(m.title && isoDate && m.detailUrl),\n  } });\n}\nreturn out;"
       },
-      "id": "bd37e173-bb38-4682-b085-48b8be24e2db",
-      "name": "OnRichmondHill Normalize",
+      "id": "981e178b-a40e-4a2b-855d-05a461ff2998",
+      "name": "OnRichmondHill Normalize1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        80,
-        1664
+        2464,
+        3696
       ]
     },
     {
       "parameters": {
         "numberInputs": 6
       },
-      "id": "c1885588-f16d-49b4-874d-8c6f5dfa9841",
-      "name": "Merge 2",
+      "id": "5f87b0d5-429a-4331-96d6-f069a9908920",
+      "name": "Merge ",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3.2,
       "position": [
-        608,
-        1696
+        2992,
+        3728
       ]
     },
     {
@@ -747,26 +701,26 @@
         "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"application/atom+xml,application/xml,text/html\"\n}",
         "options": {}
       },
-      "id": "47121bd2-5488-48c9-a0ad-c37aab0412d4",
-      "name": "RichmondHill RSS Fetch",
+      "id": "f93f56a2-1b55-4c1d-a680-5525de2f4235",
+      "name": "RichmondHill RSS Fetch1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -624,
-        1840
+        1760,
+        3872
       ]
     },
     {
       "parameters": {
         "jsCode": "// richmondhill.ca municipal calendar (eSolutionsGroup), Atom feed /default/Rss (issue #78).\n// Feed gives title + date + detail URL (more complete than the Month-grid scrape, which\n// truncates busy days behind 'View More'). Civic governance events are dropped here at\n// ingestion (deterministic); fuzzier B2B/professional-dev is left for R2 classification.\nconst xmlData = ($input.first().json.data || '').toString();\nconst CIVIC = /Council|Committee|Advisory|Budget|Task Force|Adjustment|of the Whole|Heritage Richmond Hill|Audit Committee|Roadwatch|Public Meeting|Open House|Endowment|Precinct|Consolidation|Compliance|Master Plan/i;\nfunction decode(s){return (s||'').replace(/&amp;amp;/g,'&').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').trim();}\nconst entries=[...xmlData.matchAll(/<entry>([\\s\\S]*?)<\\/entry>/g)].map(m=>m[1]);\nconst out=[]; const seen=new Set();\nfor(const e of entries){\n  const tm=e.match(/<title type=\"text\">([^<]*?)\\s*\\((\\d+)\\/(\\d+)\\/(\\d+)\\)<\\/title>/);\n  const lm=e.match(/href=\"(https:\\/\\/calendar\\.richmondhill\\.ca\\/default\\/Detail\\/[^\"]+)\"/);\n  if(!tm||!lm) continue;                 // need title+date AND a real detail URL (drops empty-Detail entries)\n  const title=decode(tm[1]);\n  if(!title || CIVIC.test(title)) continue;\n  const date=`${tm[4]}-${tm[2].padStart(2,'0')}-${tm[3].padStart(2,'0')}`;\n  const detailUrl=lm[1];\n  const sm=detailUrl.match(/Detail\\/\\d{4}-\\d{2}-\\d{2}-(\\d{4})-/);\n  const time=sm?`${sm[1].slice(0,2)}:${sm[1].slice(2)}`:'00:00';\n  const isoDate=`${date}T${time}:00`;\n  const key=`${title}|${date}`;\n  if(seen.has(key)) continue; seen.add(key);\n  out.push({json:{title,date,isoDate,detailUrl}});\n}\nreturn out;\n"
       },
-      "id": "08b8fd5f-11c2-427a-9837-3b18b83085fb",
-      "name": "RichmondHill Parse Feed",
+      "id": "e47e9aae-7b56-403f-b52a-0d9c7b7e99c1",
+      "name": "RichmondHill Parse Feed1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -384,
-        1840
+        2000,
+        3872
       ]
     },
     {
@@ -777,27 +731,27 @@
         "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"text/html,application/xhtml+xml\"\n}",
         "options": {}
       },
-      "id": "515a4bef-cea3-4104-850e-7387bff65724",
-      "name": "RichmondHill Detail Fetch",
+      "id": "02cf2dc6-d4e1-4938-b2e7-b9aaaf211885",
+      "name": "RichmondHill Detail Fetch1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -160,
-        1840
+        2224,
+        3872
       ],
       "retryOnFail": true
     },
     {
       "parameters": {
-        "jsCode": "// Correlate Parse Feed meta (by index) with the Detail Fetch HTML.\n// LocationName from the detail page's Google-Maps link; venue name only (split on ',' or '('),\n// matching the AllEvents convention. City is RH by definition (single municipality).\nconst SOURCE='RichmondHill', CITY='Richmond Hill';\nfunction decode(s){return (s||'').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/%2c/gi,',').trim();}\nconst meta=$('RichmondHill Parse Feed').all();\nconst pages=$input.all();\nconst out=[];\nfor(let i=0;i<pages.length;i++){\n  const html=(pages[i].json.data||'').toString();\n  const m=meta[i].json;\n  let loc='';\n  const mm=html.match(/maps\\.google\\.com\\/\\?q=([^\"]+)/);\n  if(mm){ try{ loc=decode(decodeURIComponent(mm[1].replace(/\\+/g,' '))); }catch(_){ loc=''; } }\n  if(loc) loc=loc.split(/[,(]/)[0].trim();\n  out.push({json:{\n    title:m.title, event_name:m.title,\n    link:m.detailUrl, url:m.detailUrl,\n    isoDate:m.isoDate, start_date:m.isoDate, endDate:'',\n    locationName:loc, city:CITY, sourceCanonical:SOURCE,\n    DescriptionRaw:'',\n    _valid:!!(m.title && m.isoDate && m.detailUrl),\n  }});\n}\nreturn out;\n"
+        "jsCode": "// Correlate Parse Feed meta (by index) with the Detail Fetch HTML.\n// LocationName from the detail page's Google-Maps link; venue name only (split on ',' or '('),\n// matching the AllEvents convention. City is RH by definition (single municipality).\nconst SOURCE='RichmondHill', CITY='Richmond Hill';\nfunction decode(s){return (s||'').replace(/&amp;/g,'&').replace(/&#39;|&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/%2c/gi,',').trim();}\nconst meta=$('RichmondHill Parse Feed1').all();\nconst pages=$input.all();\nconst out=[];\nfor(let i=0;i<pages.length;i++){\n  const html=(pages[i].json.data||'').toString();\n  const m=meta[i].json;\n  let loc='';\n  const mm=html.match(/maps\\.google\\.com\\/\\?q=([^\"]+)/);\n  if(mm){ try{ loc=decode(decodeURIComponent(mm[1].replace(/\\+/g,' '))); }catch(_){ loc=''; } }\n  if(loc) loc=loc.split(/[,(]/)[0].trim();\n  out.push({json:{\n    title:m.title, event_name:m.title,\n    link:m.detailUrl, url:m.detailUrl,\n    isoDate:m.isoDate, start_date:m.isoDate, endDate:'',\n    locationName:loc, city:CITY, sourceCanonical:SOURCE,\n    DescriptionRaw:'',\n    _valid:!!(m.title && m.isoDate && m.detailUrl),\n  }});\n}\nreturn out;\n"
       },
-      "id": "41913989-b082-42ed-afd3-b842c53d1d19",
-      "name": "RichmondHill Normalize",
+      "id": "d16e42f3-4b5c-4b90-8bcb-e02163d305f9",
+      "name": "RichmondHill Normalize1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        80,
-        1840
+        2464,
+        3872
       ]
     },
     {
@@ -808,26 +762,26 @@
         "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"text/html,application/xhtml+xml\"\n}",
         "options": {}
       },
-      "id": "67e5eef7-dc54-458a-8e71-7feda94345b4",
-      "name": "Pinot's Fetch",
+      "id": "db327e2d-b541-434e-bcef-0ce35514e9ef",
+      "name": "Pinot's Fetch1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -160,
-        2000
+        2224,
+        4032
       ]
     },
     {
       "parameters": {
         "jsCode": "// Pinot's Palette Woodbridge - single-page SSR Doc scrape (Tier 4).\n// All 73 events render on /woodbridge with title+date inline; no detail hop.\n// Cards double-render (image-card + book-now-card); dedupe by event id, first wins.\n// Single venue -> City=Vaughan by definition. UniqueEventID built downstream by Make UniqueEventID.\nconst SOURCE='PinotsPalette', CITY='Vaughan', LOCATION=\"Pinot's Palette - Vaughan-Woodbridge\";\nconst MONTHS={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};\nfunction decodeEntities(s){return (s||'').toString().replace(/&#(\\d+);/g,(_,n)=>String.fromCodePoint(parseInt(n,10))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&amp;/g,'&').replace(/&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');}\nfunction parseDate(t){const m=(t||'').match(/\\w{3}\\s+(\\w{3})\\s+(\\d{1,2}),\\s+(\\d{4})/);if(!m)return '';const mon=MONTHS[m[1]];if(mon===undefined)return '';const dt=new Date(Date.UTC(+m[3],mon,+m[2],12,0,0));if(isNaN(dt.getTime()))return '';return dt.toISOString();}\nconst html=($input.first().json.data||'').toString();\nconst blocks=html.split('<figure');\nconst byId=new Map();\nfor(const b of blocks){\n  const idm=b.match(/\\/woodbridge\\/event\\/(\\d+)/); if(!idm) continue;\n  const id=idm[1];\n  const tm=b.match(/<h4 class=\"time\">([^<]+)<\\/h4>/);\n  const hm=b.match(/<h3>([^<]+)<\\/h3>/);\n  if(!tm||!hm) continue;\n  const title=decodeEntities(hm[1]).trim();\n  const isoDate=parseDate(tm[1]);\n  if(!title||!isoDate) continue;\n  if(byId.has(id)) continue;\n  const url='https://www.pinotspalette.com/woodbridge/event/'+id;\n  // #84 - cost signal, clean consistent \"$NN per guest\" format confirmed live.\n  const pm=b.match(/<h4 class=\"price\">([^<]+)<\\/h4>/);\n  const costRaw=pm?pm[1].trim():'';\n  byId.set(id,{json:{title,event_name:title,link:url,url,isoDate,start_date:isoDate,endDate:'',locationName:LOCATION,city:CITY,sourceCanonical:SOURCE,DescriptionRaw:'',costRaw,_valid:!!(title&&isoDate&&url)}});\n}\nreturn [...byId.values()];\n"
       },
-      "id": "937ec6cb-843c-4af1-bcc0-78cd007683cb",
-      "name": "Pinot's Normalize",
+      "id": "54487a93-e55d-4c46-9d2d-f04e308d5d1e",
+      "name": "Pinot's Normalize1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        80,
-        2000
+        2464,
+        4032
       ]
     },
     {
@@ -838,658 +792,755 @@
         "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"application/json\"\n}",
         "options": {}
       },
-      "id": "a647933d-cb83-4c5c-b2b3-f9269a8b5a7a",
-      "name": "Chef Upstairs Fetch",
+      "id": "05986a94-20c1-4055-8bbd-b7b3496a5bdf",
+      "name": "Chef Upstairs Fetch1",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -160,
-        2160
+        2224,
+        4192
       ]
     },
     {
       "parameters": {
         "jsCode": "// The Chef Upstairs (#80) - BookThatApp availability feed (Tier 1 JSON).\n// schedule.json?location=13173 returns the Vaughan studio's forward-dated class occurrences.\n// products.json has NO date; the date lives only in this booking feed (start[] array / select= ISO).\n// Each occurrence (a class on a specific date) = one event; recurring classes appear once per date.\n// Single Vaughan venue -> City=Vaughan. UniqueEventID built downstream by Make UniqueEventID.\n// DescriptionRaw is enriched from products.json body_html (joined on handle) - the schedule feed has\n// no description, and R6 scoring / R7 classification consume DescriptionRaw. Enrichment is non-critical:\n// if the products fetch fails or a handle is missing, DescriptionRaw falls back to '' and events still flow.\nconst SOURCE='ChefUpstairs', CITY='Vaughan', LOCATION='The Chef Upstairs - Vaughan', LOC_ID=13173;\n// Multi-day programs (camps / multi-week sessions / series) are a different event SHAPE than the\n// single-night classes the weekly newsletter runs. Client confirmed (2026-07-02 mtg) they want these\n// IN the pool too (will rarely pick them). One entry per program in the feed (start=first day, full\n// range in the title) -> no per-day spam; UniqueEventID=title|date keeps them distinct.\nconst DROP_MULTIDAY=false;\nconst MULTIDAY=/\\bcamp\\b|\\b\\d+\\s*week\\b|\\bweek\\s*\\d|\\b(fall|spring|winter|summer)\\s+session\\b|\\bseries\\b/i;\nfunction decodeEntities(s){return (s||'').toString().replace(/&#(\\d+);/g,(_,n)=>String.fromCodePoint(parseInt(n,10))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16))).replace(/&amp;/g,'&').replace(/&apos;/g,\"'\").replace(/&quot;/g,'\"').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ');}\nfunction htmlToText(h){return decodeEntities((h||'').toString().replace(/<\\s*(br|\\/p|\\/li|\\/h[1-6])\\s*>/gi,' ').replace(/<[^>]+>/g,' ')).replace(/\\s+/g,' ').trim().slice(0,1000);}\nfunction cleanTitle(t){let s=decodeEntities(t).replace(/\\s+/g,' ').trim();s=s.replace(/^Vaughan\\s*-\\s*/i,'');s=s.replace(/^(Adult|Kids|Teen|Parent and Child|Single)[^-:]*Cooking (Class|Classes|Camp)\\s*[-:]\\s*/i,'');s=s.replace(/^Food Lover[’'s]+[^-:]*Cooking Class\\s*[-:]\\s*/i,'');return s.trim();}\n// --- enrich: fetch products.json (2 pages, 250 cap) and map handle -> plaintext description ---\nconst byHandle={};\ntry{\n  for(const page of [1,2]){\n    const res=await this.helpers.httpRequest({url:'https://thechefupstairs.com/products.json?limit=250&page='+page,json:true,headers:{'User-Agent':'Mozilla/5.0','Accept':'application/json'}});\n    const ps=(res&&res.products)||[];\n    for(const p of ps){ if(!(p.handle in byHandle)) byHandle[p.handle]=htmlToText(p.body_html); }\n  }\n}catch(e){ /* non-critical: leave byHandle partial/empty, descriptions fall back to '' */ }\nconst response=$input.first().json;\nconst sched=(response.schedule)||[];\nconst out=[];\nfor(const ev of sched){\n  const locId=ev.locations&&ev.locations[0]&&ev.locations[0].id;\n  if(locId!==LOC_ID) continue;                 // Vaughan studio only (guard vs the fetch location filter)\n  if(ev.bookedOut===true) continue;            // drop sold-out (no valid CTA)\n  const rawTitle=(ev.title||'').toString();\n  if(DROP_MULTIDAY && MULTIDAY.test(rawTitle)) continue;  // drop camps/sessions (#80 toggle)\n  const a=ev.start; if(!Array.isArray(a)||a.length<5) continue;\n  const dt=new Date(Date.UTC(a[0],a[1]-1,a[2],a[3],a[4],0));  // start[] month is 1-indexed\n  if(isNaN(dt.getTime())) continue;\n  const isoDate=dt.toISOString();\n  const isMulti=MULTIDAY.test(rawTitle);\n  // cleanTitle strips the \"Kids/Teen ... Cooking Camp -\" boilerplate, which for a camp IS the subject\n  // (would leave only \"Week 5 - July 20-25\"). Multi-day: keep the descriptor, strip only the venue prefix.\n  const title=isMulti\n    ? decodeEntities(rawTitle).replace(/\\s+/g,' ').replace(/^Vaughan\\s*-\\s*/i,'').trim()\n    : cleanTitle(rawTitle);\n  const path=(ev.url||'').replace(/^https?:\\/\\/[^/]+/,'');\n  const url='https://thechefupstairs.com'+path;\n  if(!title||!isoDate||!url) continue;\n  const DescriptionRaw=byHandle[ev.handle]||'';\n  out.push({json:{title,event_name:title,link:url,url,isoDate,start_date:isoDate,endDate:'',locationName:LOCATION,city:CITY,sourceCanonical:SOURCE,DescriptionRaw,_valid:!!(title&&isoDate&&url)}});\n}\nreturn out;"
       },
-      "id": "8b96fdbb-dbed-493d-ad0d-f53b787cbe74",
-      "name": "Chef Normalize",
+      "id": "441966cb-4d04-4bc9-bd61-c86ddc75f047",
+      "name": "Chef Normalize1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        80,
-        2160
+        2464,
+        4192
+      ]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        736,
+        2976
+      ],
+      "id": "424ca0a4-48ea-4813-8304-822eadd8dad4",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "// BiblioCommons blocks Node's default TLS fingerprint with a 403.\n// Headers/User-Agent do not help - the block happens during the TLS\n// handshake, before any header is sent. Presenting Chrome's cipher\n// ordering gets a 200. Verified 2026-08-27.\nconst https = require('https');\n\nconst CIPHERS = [\n  'TLS_AES_128_GCM_SHA256',\n  'TLS_AES_256_GCM_SHA384',\n  'TLS_CHACHA20_POLY1305_SHA256',\n  'ECDHE-ECDSA-AES128-GCM-SHA256',\n  'ECDHE-RSA-AES128-GCM-SHA256',\n  'ECDHE-ECDSA-AES256-GCM-SHA384',\n  'ECDHE-RSA-AES256-GCM-SHA384',\n  'ECDHE-ECDSA-CHACHA20-POLY1305',\n  'ECDHE-RSA-CHACHA20-POLY1305',\n  'ECDHE-RSA-AES128-SHA',\n  'ECDHE-RSA-AES256-SHA',\n  'AES128-GCM-SHA256',\n  'AES256-GCM-SHA384',\n  'AES128-SHA',\n  'AES256-SHA'\n].join(':');\n\nconst URL = 'https://markham.bibliocommons.com/events/rss/all';\n\nconst xml = await new Promise((resolve, reject) => {\n  const req = https.get(\n    URL,\n    {\n      ciphers: CIPHERS,\n      minVersion: 'TLSv1.2',\n      headers: {\n        'User-Agent':\n          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',\n        Accept: 'application/rss+xml, application/xml;q=0.9, */*;q=0.8',\n        'Accept-Language': 'en-CA,en;q=0.9'\n      }\n    },\n    (res) => {\n      if (res.statusCode !== 200) {\n        res.resume();\n        reject(new Error('BiblioCommons fetch failed: HTTP ' + res.statusCode));\n        return;\n      }\n      let body = '';\n      res.setEncoding('utf8');\n      res.on('data', (c) => (body += c));\n      res.on('end', () => resolve(body));\n    }\n  );\n  req.on('error', reject);\n  req.setTimeout(30000, () => req.destroy(new Error('BiblioCommons fetch timed out')));\n});\n\n// Normalize1 reads $input.first().json.data - keep that shape.\nreturn [{ json: { data: xml } }];\n"
+      },
+      "id": "a233449e-2728-4e1d-ac9a-d9a7f53fae43",
+      "name": "BiblioCommons RSS Fetch1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        2496
+      ],
+      "notes": "Replaces an HTTP Request node. BiblioCommons' WAF blocks Node's default TLS cipher order (403) regardless of headers, so this presents Chrome's cipher ordering. Outputs { data: <xml> } to match what BiblioCommons Normalize1 reads."
+    },
+    {
+      "parameters": {
+        "url": "https://www.eventbrite.com/d/canada--york/events/",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"User-Agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36\",\n  \"Accept\": \"text/html\"\n}\n",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1760,
+        2032
+      ],
+      "id": "36567628-02d1-4b3d-9be1-705bdce9170e",
+      "name": "Get EB Token"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Eventbrite search (replaces city-browse, 2026-10-15). city-browse returns ~10 themed buckets of\n// ~8 events with no paging or dates (~80 events in all); this is the search the website uses, over\n// a box around Vaughan, Markham and Richmond Hill, every page, for the next DAYS_AHEAD days.\n// The box also catches Toronto, Brampton and Aurora: Normalize's CITY_MAP gate still decides.\n// Uses the csrftoken from Get EB Token, as city-browse did.\nconst https = require('https');\n\nconst DAYS_AHEAD = 30;\nconst BBOX = '-79.75,43.74,-79.15,44.00'; // west,south,east,north; padded: the southernmost in-area venue is at 43.769\nconst PAGE_SIZE = 50;     // the API clamps larger values to 50\nconst SERVE_CAP_PAGES = 19; // the API stops serving after ~19 pages; reaching it means events were cut off\n\nconst setCookie = $('Get EB Token').first().json.headers['set-cookie'] || [];\nconst token = (setCookie.join(';').match(/csrftoken=([^;]+)/) || [])[1];\nif (!token) throw new Error('Eventbrite: no csrftoken from Get EB Token');\nconst cookie = setCookie.map((c) => c.split(';')[0]).join('; ');\n\nconst ymd = (d) => d.toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });\n// Searched a week at a time: one 30-day search returned 104 in-area events for Oct 23 - Nov 1\n// where a 10-day search of the same box returned 178. Long ranges come back thinned, with no sign.\nconst CHUNK_DAYS = 7;\nconst start = new Date();\nconst chunks = [];\nfor (let d = 0; d < DAYS_AHEAD; d += CHUNK_DAYS) {\n  const a = new Date(start.getTime() + d * 86400000);\n  const b = new Date(start.getTime() + Math.min(d + CHUNK_DAYS - 1, DAYS_AHEAD) * 86400000);\n  chunks.push({ from: ymd(a), to: ymd(b) });\n}\n\nfunction post(range, page) {\n  const body = JSON.stringify({\n    event_search: { bbox: BBOX, date_range: range, dates: 'current_future',\n      dedup: false, page, page_size: PAGE_SIZE },\n    'expand.destination_event': ['primary_venue', 'ticket_availability', 'primary_organizer', 'image',\n      'event_sales_status', 'saves', 'series'],\n    browse_surface: 'search',\n  });\n  return new Promise((resolve, reject) => {\n    const req = https.request('https://www.eventbrite.com/api/v3/destination/search/', {\n      method: 'POST',\n      headers: {\n        'Content-Type': 'application/json',\n        'Content-Length': Buffer.byteLength(body),\n        'X-CSRFToken': token,\n        Cookie: cookie,\n        Referer: 'https://www.eventbrite.com/d/canada--york/events/',\n        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',\n      },\n    }, (res) => {\n      let data = '';\n      res.setEncoding('utf8');\n      res.on('data', (c) => (data += c));\n      res.on('end', () => {\n        if (res.statusCode !== 200) return reject(new Error(`Eventbrite search page ${page}: HTTP ${res.statusCode}`));\n        try { resolve(JSON.parse(data)); } catch (e) { reject(new Error(`Eventbrite search page ${page}: not JSON`)); }\n      });\n    });\n    req.on('error', reject);\n    req.setTimeout(30000, () => req.destroy(new Error(`Eventbrite search page ${page} timed out`)));\n    req.end(body);\n  });\n}\n\n// A page takes about 4 s to come back, so pages are fetched four at a time: one at a time, the\n// ~29 pages took about 2.5 minutes (2026-10-15).\nconst CONCURRENCY = 4;\nasync function inBatches(tasks) {\n  const out = [];\n  let next = 0;\n  const worker = async () => { while (next < tasks.length) { const k = next++; out[k] = await tasks[k](); } };\n  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, tasks.length) }, worker));\n  return out;\n}\n\nconst byId = new Map();\nconst add = (r) => { for (const e of (r.events && r.events.results) || []) if (e && e.id && !byId.has(e.id)) byId.set(e.id, e); };\n// Page 1 of every week first: it says how many pages that week has.\nconst firsts = await inBatches(chunks.map((range) => () => post(range, 1)));\nconst pagesPerChunk = firsts.map((r) => (r.events && r.events.pagination && r.events.pagination.page_count) || 1);\npagesPerChunk.forEach((count, i) => {\n  if (count >= SERVE_CAP_PAGES) {\n    throw new Error(`Eventbrite search for ${chunks[i].from}..${chunks[i].to} hit the ${SERVE_CAP_PAGES}-page serve cap; events would be missing. Shorten CHUNK_DAYS.`);\n  }\n});\nfirsts.forEach(add);\nconst rest = [];\nchunks.forEach((range, i) => { for (let p = 2; p <= pagesPerChunk[i]; p++) rest.push(() => post(range, p)); });\n(await inBatches(rest)).forEach(add);\nif (byId.size === 0) throw new Error('Eventbrite search returned no events; the request has probably changed.');\n\n// Normalize reads events.results.\nreturn [{ json: { events: { results: [...byId.values()] }, pages: pagesPerChunk } }];\n"
+      },
+      "id": "b5219939-a52b-47a4-9644-e21f4a08e8a4",
+      "name": "Eventbrite Search1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        2032
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// AllEvents' list API refuses requests without an X-Client-State header since about 2026-09-12: it\n// answers HTTP 200 {\"error\":1,\"message\":\"invalid_request\"} with no events. The token sits in every\n// city page as window.__cst, lasts 10 minutes and is tied to the caller's IP, so it is fetched fresh\n// on every run, from this machine, right before the three list requests (2026-10-15).\nconst https = require('https');\nconst UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';\n\nconst html = await new Promise((resolve, reject) => {\n  const req = https.get('https://allevents.in/vaughan-on/all', { headers: { 'User-Agent': UA, Accept: 'text/html' } }, (res) => {\n    if (res.statusCode !== 200) { res.resume(); return reject(new Error(`AllEvents token page: HTTP ${res.statusCode}`)); }\n    let body = '';\n    res.setEncoding('utf8');\n    res.on('data', (c) => (body += c));\n    res.on('end', () => resolve(body));\n  });\n  req.on('error', reject);\n  req.setTimeout(30000, () => req.destroy(new Error('AllEvents token page timed out')));\n});\n\nconst m = html.match(/window\\.__cst\\s*=\\s*\"([^\"]+)\"/);\nif (!m) throw new Error('AllEvents: no X-Client-State token (window.__cst) on /vaughan-on/all; the site has changed again.');\nreturn [{ json: { cst: m[1] } }];\n"
+      },
+      "id": "c7203b56-639f-49c6-a884-77fa4c37c74b",
+      "name": "AllEvents Token1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1808,
+        2784
       ]
     }
   ],
   "pinData": {},
   "connections": {
-    "When clicking ‘Execute workflow’": {
+    "Clean/Filter1": {
       "main": [
         [
           {
-            "node": "Eventbrite API",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "McMichael API p.1",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "TRCA RSS Fetch",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "BiblioCommons RSS Fetch",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "AllEvents API Vaughan",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "AllEvents API Markham",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "AllEvents API RHill",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "VisitVaughan Build Months",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Unionville Fetch",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Facebook Intake Fetch",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "VPL Build Months",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "OnRichmondHill Build Pages",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "RichmondHill RSS Fetch",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Pinot's Fetch",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Chef Upstairs Fetch",
+            "node": "Sort (Newest First)1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Clean/Filter": {
+    "Sort (Newest First)1": {
       "main": [
         [
           {
-            "node": "Sort (Newest First)",
+            "node": "Make UniqueEventID1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Sort (Newest First)": {
+    "Make UniqueEventID1": {
       "main": [
         [
           {
-            "node": "Make UniqueEventID",
+            "node": "Facebook Validity Override1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Validity Filter": {
+    "Validity Filter1": {
       "main": [
         [
           {
-            "node": "DateWindow",
+            "node": "DateWindow1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Eventbrite API": {
+    "Merge1": {
       "main": [
         [
           {
-            "node": "Eventbrite Normalize",
+            "node": "Merge ",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Eventbrite Normalize": {
+    "DateWindow1": {
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Build Upsert Batches1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "McMichael API p.1": {
+    "Eventbrite Normalize1": {
       "main": [
         [
           {
-            "node": "McMichael Build URLs",
+            "node": "Merge1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "McMichael Build URLs": {
+    "McMichael Normalize1": {
       "main": [
         [
           {
-            "node": "McMichael API Fetch",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "McMichael API Fetch": {
-      "main": [
-        [
-          {
-            "node": "McMichael Normalize",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "McMichael Normalize": {
-      "main": [
-        [
-          {
-            "node": "Merge",
+            "node": "Merge1",
             "type": "main",
             "index": 1
           }
         ]
       ]
     },
-    "TRCA RSS Fetch": {
+    "McMichael API p.": {
       "main": [
         [
           {
-            "node": "TRCA RSS Normalize",
+            "node": "McMichael Build URLs1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "TRCA RSS Normalize": {
+    "McMichael Build URLs1": {
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "McMichael API Fetch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "McMichael API Fetch1": {
+      "main": [
+        [
+          {
+            "node": "McMichael Normalize1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TRCA RSS Fetch1": {
+      "main": [
+        [
+          {
+            "node": "TRCA RSS Normalize1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TRCA RSS Normalize1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
             "type": "main",
             "index": 2
           }
         ]
       ]
     },
-    "BiblioCommons RSS Fetch": {
+    "BiblioCommons Normalize1": {
       "main": [
         [
           {
-            "node": "BiblioCommons Normalize",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "BiblioCommons Normalize": {
-      "main": [
-        [
-          {
-            "node": "Merge",
+            "node": "Merge1",
             "type": "main",
             "index": 3
           }
         ]
       ]
     },
-    "AllEvents Normalize": {
+    "AllEvents Normalize1": {
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Merge1",
             "type": "main",
             "index": 4
           }
         ]
       ]
     },
-    "AllEvents API Markham": {
+    "AllEvents API Markham1": {
       "main": [
         [
           {
-            "node": "AllEvents Normalize3",
+            "node": "AllEvents Normalize5",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "AllEvents API Vaughan": {
+    "AllEvents API Vaughan1": {
       "main": [
         [
           {
-            "node": "AllEvents Normalize",
+            "node": "AllEvents Normalize1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "AllEvents API RHill": {
+    "AllEvents Normalize4": {
       "main": [
         [
           {
-            "node": "AllEvents Normalize2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "AllEvents Normalize3": {
-      "main": [
-        [
-          {
-            "node": "Merge",
-            "type": "main",
-            "index": 5
-          }
-        ]
-      ]
-    },
-    "AllEvents Normalize2": {
-      "main": [
-        [
-          {
-            "node": "Merge",
+            "node": "Merge1",
             "type": "main",
             "index": 6
           }
         ]
       ]
     },
-    "DateWindow": {
+    "AllEvents API RHill1": {
       "main": [
         [
           {
-            "node": "Build Upsert Batches",
+            "node": "AllEvents Normalize4",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Build Upsert Batches": {
+    "AllEvents Normalize5": {
       "main": [
         [
           {
-            "node": "Upsert Candidates (batched)",
+            "node": "Merge1",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Build Upsert Batches1": {
+      "main": [
+        [
+          {
+            "node": "Upsert Candidates (batched)1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "VisitVaughan Build Months": {
+    "VisitVaughan Build Months1": {
       "main": [
         [
           {
-            "node": "VisitVaughan Fetch",
+            "node": "VisitVaughan Fetch1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "VisitVaughan Fetch": {
+    "VisitVaughan Fetch1": {
       "main": [
         [
           {
-            "node": "VisitVaughan Normalize",
+            "node": "VisitVaughan Normalize1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "VisitVaughan Normalize": {
+    "VisitVaughan Normalize1": {
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Merge1",
             "type": "main",
             "index": 7
           }
         ]
       ]
     },
-    "Unionville Normalize": {
+    "Unionville Normalize1": {
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Merge1",
             "type": "main",
             "index": 8
           }
         ]
       ]
     },
-    "Unionville Fetch": {
+    "Unionville Fetch1": {
       "main": [
         [
           {
-            "node": "Unionville Normalize",
+            "node": "Unionville Normalize1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Facebook Intake Fetch": {
+    "Facebook Intake Fetch1": {
       "main": [
         [
           {
-            "node": "Facebook Parse",
+            "node": "Facebook Parse1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Facebook Parse": {
+    "Facebook Parse1": {
       "main": [
         [
           {
-            "node": "Merge",
+            "node": "Merge1",
             "type": "main",
             "index": 9
           }
         ]
       ]
     },
-    "Make UniqueEventID": {
+    "Facebook Validity Override1": {
       "main": [
         [
           {
-            "node": "Facebook Validity Override",
+            "node": "Validity Filter1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Facebook Validity Override": {
+    "VPL Build Months1": {
       "main": [
         [
           {
-            "node": "Validity Filter",
+            "node": "VPL Calendar Fetch1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "VPL Build Months": {
+    "VPL Calendar Fetch1": {
       "main": [
         [
           {
-            "node": "VPL Calendar Fetch",
+            "node": "VPL Parse Calendar1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "VPL Calendar Fetch": {
+    "VPL Parse Calendar1": {
       "main": [
         [
           {
-            "node": "VPL Parse Calendar",
+            "node": "VPL Detail Fetch1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "VPL Parse Calendar": {
+    "VPL Detail Fetch1": {
       "main": [
         [
           {
-            "node": "VPL Detail Fetch",
+            "node": "VPL Normalize1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "VPL Detail Fetch": {
+    "VPL Normalize1": {
       "main": [
         [
           {
-            "node": "VPL Normalize",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Merge": {
-      "main": [
-        [
-          {
-            "node": "Merge 2",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "VPL Normalize": {
-      "main": [
-        [
-          {
-            "node": "Merge 2",
+            "node": "Merge ",
             "type": "main",
             "index": 1
           }
         ]
       ]
     },
-    "OnRichmondHill Build Pages": {
+    "OnRichmondHill Build Pages1": {
       "main": [
         [
           {
-            "node": "OnRichmondHill List Fetch",
+            "node": "OnRichmondHill List Fetch1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "OnRichmondHill List Fetch": {
+    "OnRichmondHill List Fetch1": {
       "main": [
         [
           {
-            "node": "OnRichmondHill Parse List",
+            "node": "OnRichmondHill Parse List1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "OnRichmondHill Parse List": {
+    "OnRichmondHill Parse List1": {
       "main": [
         [
           {
-            "node": "OnRichmondHill Detail Fetch",
+            "node": "OnRichmondHill Detail Fetch1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "OnRichmondHill Detail Fetch": {
+    "OnRichmondHill Detail Fetch1": {
       "main": [
         [
           {
-            "node": "OnRichmondHill Normalize",
+            "node": "OnRichmondHill Normalize1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Merge 2": {
+    "OnRichmondHill Normalize1": {
       "main": [
         [
           {
-            "node": "Clean/Filter",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OnRichmondHill Normalize": {
-      "main": [
-        [
-          {
-            "node": "Merge 2",
+            "node": "Merge ",
             "type": "main",
             "index": 2
           }
         ]
       ]
     },
-    "RichmondHill RSS Fetch": {
+    "Merge ": {
       "main": [
         [
           {
-            "node": "RichmondHill Parse Feed",
+            "node": "Clean/Filter1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "RichmondHill Parse Feed": {
+    "RichmondHill RSS Fetch1": {
       "main": [
         [
           {
-            "node": "RichmondHill Detail Fetch",
+            "node": "RichmondHill Parse Feed1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "RichmondHill Detail Fetch": {
+    "RichmondHill Parse Feed1": {
       "main": [
         [
           {
-            "node": "RichmondHill Normalize",
+            "node": "RichmondHill Detail Fetch1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "RichmondHill Normalize": {
+    "RichmondHill Detail Fetch1": {
       "main": [
         [
           {
-            "node": "Merge 2",
+            "node": "RichmondHill Normalize1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RichmondHill Normalize1": {
+      "main": [
+        [
+          {
+            "node": "Merge ",
             "type": "main",
             "index": 3
           }
         ]
       ]
     },
-    "Pinot's Fetch": {
+    "Pinot's Fetch1": {
       "main": [
         [
           {
-            "node": "Pinot's Normalize",
+            "node": "Pinot's Normalize1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Pinot's Normalize": {
+    "Pinot's Normalize1": {
       "main": [
         [
           {
-            "node": "Merge 2",
+            "node": "Merge ",
             "type": "main",
             "index": 4
           }
         ]
       ]
     },
-    "Chef Upstairs Fetch": {
+    "Chef Upstairs Fetch1": {
       "main": [
         [
           {
-            "node": "Chef Normalize",
+            "node": "Chef Normalize1",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Chef Normalize": {
+    "Chef Normalize1": {
       "main": [
         [
           {
-            "node": "Merge 2",
+            "node": "Merge ",
             "type": "main",
             "index": 5
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "McMichael API p.",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "TRCA RSS Fetch1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "VisitVaughan Build Months1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Facebook Intake Fetch1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "VPL Build Months1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "OnRichmondHill Build Pages1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "RichmondHill RSS Fetch1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Pinot's Fetch1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Chef Upstairs Fetch1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "BiblioCommons RSS Fetch1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get EB Token",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Unionville Fetch1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AllEvents Token1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BiblioCommons RSS Fetch1": {
+      "main": [
+        [
+          {
+            "node": "BiblioCommons Normalize1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get EB Token": {
+      "main": [
+        [
+          {
+            "node": "Eventbrite Search1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eventbrite Search1": {
+      "main": [
+        [
+          {
+            "node": "Eventbrite Normalize1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AllEvents Token1": {
+      "main": [
+        [
+          {
+            "node": "AllEvents API Vaughan1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AllEvents API Markham1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AllEvents API RHill1",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -1503,7 +1554,7 @@
     "callerPolicy": "workflowsFromSameOwner",
     "availableInMCP": true
   },
-  "versionId": "014dbdec-77a1-4258-ba3f-c80ab1641637",
+  "versionId": "1226ca8a-e559-4833-938d-dc7101d2c2ed",
   "meta": {
     "templateCredsSetupCompleted": true,
     "aiBuilderAssisted": true,
