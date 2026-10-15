@@ -235,6 +235,10 @@ jobs:
       - name: Test weekly comparison
         run: node --test scripts/weeklyComparison.test.js
 
+      # Inline HTML excerpts only: no Beehiiv request, no credentials.
+      - name: Test Beehiiv history parser
+        run: node --test scripts/fetchBeehiivHistory.test.js
+
       # Fixture HTML only: no page is fetched.
       - name: Test page extraction
         run: node --test scripts/issue-build/pageExtract.test.js
