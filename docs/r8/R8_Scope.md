@@ -140,6 +140,13 @@ myself" control against the hosted database (tried in demo mode only), and item 
 vitest's 5-second default while applying every migration to a cold branch; with a 30-second limit (`d803dd8`)
 all 3 tests pass on a throwaway Neon branch, so the integration suite now runs on every push.
 
+**Done 2026-10-15:** six R1 sources were failing silently and are fixed in live n8n (source sheet PL 2026-10-15;
+the repo copy is the live export, Decision_Log §111). Item 16a is merged (Decision_Log §102 amendment). ⚠️ **The
+10-22 window still holds 57 pre-fix rows with wrong dates** (56 VPL, 1 OnRichmondHill): R1 never deletes, and
+the issue build does not filter on `Last Auto Update`. Before the 10-22 `runWeek`, Ariel chooses how they are
+excluded (the held stale-row rule for VPL and OnRichmondHill, or one-off Rejected marks; #157). The walkthrough
+(#154) is unaffected.
+
 **Next:** Ariel walks the editor through the console at their next meeting (item 12; decided 2026-10-13 in
 place of a written message; no date set). The first real week is the first issue after that meeting:
 `runWeek.js` → `to-bundle.js` → reset and re-migrate the console database (with Ariel's go at that moment) →
