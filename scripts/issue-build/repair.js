@@ -83,13 +83,16 @@ function withinOneEdit(a,b){
 // What "the same text" means for a quote: case, runs of whitespace (spaces, newlines, non-breaking spaces),
 // zero-width characters, and typographic quotes, apostrophes and dashes are ignored. Nothing else is.
 // Each normalized character remembers the span of source text it came from, so a match maps back to the exact source.
+// from/to hold one entry per UTF-16 code unit of out, because indexOf on out counts code units: one entry per
+// character put every quote after an emoji one position off ('Tickets $10' came back as 'ickets $100'; Codex, 2026-10-15).
+// No NFKC: it also folded 10² into 102, which is more than case, spacing and typography.
 function normalized(s){
   let out='';const from=[],to=[];let at=0;
   for(const ch of String(s)){
-    let t=ch.normalize('NFKC').replace(/[​-‍⁠﻿]/g,'').replace(/[‘’‚‛′]/g,"'")
+    let t=ch.replace(/[​-‍⁠﻿]/g,'').replace(/[‘’‚‛′]/g,"'")
       .replace(/[“”„‟″]/g,'"').replace(/[‐-―−]/g,'-').toLowerCase();
     if(/^\s+$/.test(t))t=out===''||out.endsWith(' ')?'':' ';
-    for(const c of t){out+=c;from.push(at);to.push(at+ch.length);}
+    for(const c of t){out+=c;for(let u=0;u<c.length;u++){from.push(at);to.push(at+ch.length);}}
     at+=ch.length;
   }
   return {out,from,to};
@@ -202,8 +205,10 @@ function repair(ranking,{responseSha,formExcluded=[],corrections=null,correction
       hand.push({...c,effect});
     });
   }
-  // After the hand corrections, so a person's repair always wins and existing corrections files still apply.
-  automatic.push(...mechanical(rank,records,historyRefs));
+  // Only when no person has corrected this response: run after a corrections file, the quote repair rewrote a
+  // person's set_quote ('FREE ENTRY' became 'Free entry'; Codex, 2026-10-15). With a corrections file, whatever
+  // the person left is checked by validation as it stands.
+  if(!corrections)automatic.push(...mechanical(rank,records,historyRefs));
   const receipt={source_response_sha256:responseSha,corrections_file:correctionsSource,
     changed:automatic.length+hand.length>0,automatic,hand_corrections:hand,rows_before:before,rows_after:count(rank),
     reviewed_ranking_sha256:sha(JSON.stringify(rank,null,2)+'\n'),

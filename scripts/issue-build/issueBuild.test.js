@@ -5,7 +5,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), path = require('node:path'), child = require('node:child_process');
 const d = require('./issueBuild.js');
-const {repair, isFormUrl} = require('./repair.js');
+const {repair, isFormUrl, quoteMatch} = require('./repair.js');
 const [F,C,G] = d.SECTIONS;
 const GUIDANCE = {first_demo_issue:'2026-09-10', reviewed_demo_issues:['2026-09-10','2026-09-17','2026-09-24']};
 // Not included: an issue whose window spans the March clock change (e.g. 2027-03-04). buildIssues.js
@@ -377,6 +377,12 @@ test('thin supply exits non-zero (2); other failures exit 1; replay path loads n
   const twoSpans = poolOf(); rowOf(twoSpans,'c2').evidence_quote = 'free';
   stops(()=>runFinalize(twoSpans, packetRows), new RegExp('Unsupported exact quote '+id('c2')));
  });
+ test('16a: a quote after an emoji maps back to the right source text, and 10² never matches 102 (Codex, 2026-10-15)',()=>{
+  assert.deepEqual(quoteMatch('Tickets $10', '🎟 Show\ntickets $100 each.'), {to:'tickets $10'}); // was 'ickets $100'
+  assert.deepEqual(quoteMatch('Tickets $100', '🎟 Show\ntickets $100 each.'), {to:'tickets $100'});
+  assert.deepEqual(quoteMatch('family   fun day', '🎃🎃 Family fun day'), {to:'Family fun day'});
+  assert.deepEqual(quoteMatch('Fee 102 dollars', 'Fee 10² dollars'), {none:true});
+ });
 
  // ---- Repeated section ----
  test('16a: a repeated section is dropped when the copies are identical or all but one are empty',()=>{
@@ -416,6 +422,14 @@ test('thin supply exits non-zero (2); other failures exit 1; replay path loads n
   const ranking = poolOf(); ranking.sections.push(JSON.parse(JSON.stringify(ranking.sections[1])));
   const {receipt} = repair(ranking,{responseSha:'s',corrections:{source_response_sha256:'s',corrections:[{op:'drop_duplicate_section',section:C}]},knownIds:KEYS.map(id),records:rows()});
   assert.equal(receipt.hand_corrections.length, 1); assert.equal(receipt.automatic.length, 0);
+ });
+ test('16a: a person\'s set_quote is never rewritten by the automatic quote repair (Codex, 2026-10-15)',()=>{
+  const packetRows = rows(); packetRows.find(r=>r.record_id===id('c2')).snapshot_fields.DescriptionRaw = 'Free entry for all.';
+  const ranking = poolOf(), row = rowOf(ranking,'c2'); row.evidence_quote = 'free entry!';
+  const {ranking:out, receipt} = repair(ranking,{responseSha:'s',corrections:{source_response_sha256:'s',
+   corrections:[{op:'set_quote',id:id('c2'),from:'free entry!',to:'FREE ENTRY'}]},knownIds:KEYS.map(id),records:packetRows});
+  assert.equal(receipt.automatic.length, 0);
+  assert.equal(rowOf(out,'c2').evidence_quote, 'FREE ENTRY');
  });
 }
 console.log(cases+' acceptance cases passed.');
