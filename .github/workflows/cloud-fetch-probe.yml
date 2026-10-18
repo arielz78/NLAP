@@ -1,0 +1,21 @@
+name: Cloud fetch probe
+
+# Manual only. Repeats every R1 source's first fetch from a GitHub-hosted runner to see whether
+# the sources answer a datacenter IP. Read-only; no secrets. See scripts/probeCloudFetch.js.
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/probeCloudFetch.js --json probe.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cloud-fetch-probe
+          path: probe.json
