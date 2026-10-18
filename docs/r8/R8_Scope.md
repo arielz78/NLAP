@@ -171,7 +171,7 @@ comes from the homepage. Nothing of Stage B is built.
 
 **Next:** Photo Club was swapped out by Ariel on 2026-10-18 (→ Pumpkin Petal Floral Workshop, reason "Original
 listing is broken"; draft still unsubmitted). When the editor submits 2026-10-22: `applySubmission.js` (dry run, then `--write`) → `writeIssuePicks.js --apply
---ensure-issue` (Ariel's go; item 20's writer change needs its wrap review first) → `generateBlurbs.js` → `--lock` →
+--ensure-issue` (Ariel's go; item 20's writer change wrap-reviewed READY 2026-10-18, range 4dc67cb..5bf96cd) → `generateBlurbs.js` → `--lock` →
 `pushToBeehiiv.js` → send him the export. Stage B starts with choosing the server host (item 15). The ship plan's new §0 states the destination (an editor-run week) and
 stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
 **where V1 closes is not settled.** D0 is chosen (Decision_Log §106), so it no longer
