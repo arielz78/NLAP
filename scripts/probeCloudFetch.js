@@ -147,6 +147,40 @@ const PROBES = {
   },
 };
 
+// --eventbrite: which Eventbrite doors are shut from this IP? Prints status, blocking-layer headers
+// and the start of each body, so the block can be identified (2026-10-18: the token page gave 405
+// from a GitHub runner and 200 from the laptop).
+const BROWSER = {
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-CA,en;q=0.9',
+  'Sec-Ch-Ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+  'Sec-Ch-Ua-Mobile': '?0', 'Sec-Ch-Ua-Platform': '"Windows"',
+  'Sec-Fetch-Dest': 'document', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'none', 'Sec-Fetch-User': '?1',
+  'Upgrade-Insecure-Requests': '1',
+};
+const EVENTBRITE_VARIANTS = {
+  'token page, R1 headers': () => request('https://www.eventbrite.com/d/canada--york/events/', { headers: { Accept: 'text/html' } }),
+  'token page, browser headers': () => request('https://www.eventbrite.com/d/canada--york/events/', { headers: BROWSER }),
+  'token page, Chrome ciphers': () => request('https://www.eventbrite.com/d/canada--york/events/', { headers: BROWSER, ciphers: CHROME_CIPHERS }),
+  'eventbrite.ca page': () => request('https://www.eventbrite.ca/d/canada--york/events/', { headers: BROWSER }),
+  'homepage': () => request('https://www.eventbrite.com/', { headers: BROWSER }),
+  'search API, no token': () => request('https://www.eventbrite.com/api/v3/destination/search/', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event_search: { bbox: '-79.75,43.74,-79.15,44.00', dates: 'current_future', page: 1, page_size: 5 }, browse_surface: 'search' }) }),
+  'official API host (expects 401)': () => request('https://www.eventbriteapi.com/v3/users/me/'),
+};
+
+async function probeEventbrite() {
+  for (const [name, fn] of Object.entries(EVENTBRITE_VARIANTS)) {
+    const r = await fn();
+    const h = r.headers || {};
+    const layer = ['server', 'x-amzn-waf-action', 'cf-ray', 'x-akamai-request-id', 'x-cache', 'via']
+      .filter((k) => h[k]).map((k) => `${k}=${String(h[k]).slice(0, 60)}`).join(' ');
+    const csrf = /csrftoken=/.test((h['set-cookie'] || []).join(';')) ? ' csrftoken' : '';
+    console.log(`\n## ${name}\nHTTP ${r.status}  ${r.body.length} B${csrf}  ${r.error || ''}\n${layer}\n${r.body.slice(0, 300).replace(/\s+/g, ' ')}`);
+  }
+}
+
 function verdict(r) {
   if (r.status === 0) return 'ERROR';
   if (BLOCK_RE.test(r.body.slice(0, 5000)) && !(r.items > 0)) return 'BLOCKED?';
@@ -155,6 +189,7 @@ function verdict(r) {
 }
 
 async function main() {
+  if (process.argv.includes('--eventbrite')) return probeEventbrite();
   const out = [];
   for (const [name, fn] of Object.entries(PROBES)) {
     let r;
