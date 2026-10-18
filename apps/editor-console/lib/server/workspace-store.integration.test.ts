@@ -363,14 +363,40 @@ describe.skipIf(!canRun)("PostgreSQL editor-console API boundary", () => {
     ]);
     expect(reloaded?.events.map((event) => event.type)).toEqual(["self_fill"]);
 
-    const submitted = await store.submitDraft(
+    // Without a typed event the slot cannot be submitted (Decision_Log §113)
+    await expect(
+      store.submitDraft(
+        initial.draft.id,
+        marked.draft.revision,
+        crypto.randomUUID(),
+        new Date().toISOString(),
+      ),
+    ).rejects.toThrow(/title, link and date/);
+
+    const ownEvent = {
+      title: "Harvest Lantern Walk",
+      url: "https://example.org/lantern-walk",
+      date: "2026-10-25",
+    };
+    const typed = await store.applyCommand(
       initial.draft.id,
       marked.draft.revision,
+      command({
+        type: "self_fill" as const,
+        sectionId: "couples" as const,
+        slotIndex: 2,
+        selfFilled: true,
+        event: ownEvent,
+      }),
+    );
+    const submitted = await store.submitDraft(
+      initial.draft.id,
+      typed.draft.revision,
       crypto.randomUUID(),
       new Date().toISOString(),
     );
     expect(submitted.submission.selfFilledSlots).toEqual([
-      { sectionId: "couples", slotIndex: 2 },
+      { sectionId: "couples", slotIndex: 2, event: ownEvent },
     ]);
     expect(submitted.submission.finalSelections.couples).toHaveLength(5);
   });
