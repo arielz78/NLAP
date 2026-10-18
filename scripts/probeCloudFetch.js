@@ -168,6 +168,26 @@ const EVENTBRITE_VARIANTS = {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ event_search: { bbox: '-79.75,43.74,-79.15,44.00', dates: 'current_future', page: 1, page_size: 5 }, browse_surface: 'search' }) }),
   'official API host (expects 401)': () => request('https://www.eventbriteapi.com/v3/users/me/'),
+  // The browse page is behind an AWS WAF captcha from a GitHub runner; the homepage is not. Does a
+  // homepage token carry a real search?
+  'search with homepage token': async () => {
+    const home = await request('https://www.eventbrite.com/', { headers: BROWSER });
+    const setCookie = home.headers['set-cookie'] || [];
+    const token = (setCookie.join(';').match(/csrftoken=([^;]+)/) || [])[1];
+    if (!token) return { ...home, body: 'no csrftoken on homepage' };
+    const ymd = (x) => x.toLocaleDateString('en-CA', { timeZone: 'America/Toronto' });
+    const d = new Date();
+    const r = await request('https://www.eventbrite.com/api/v3/destination/search/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token,
+        Cookie: setCookie.map((c) => c.split(';')[0]).join('; '), Referer: 'https://www.eventbrite.com/d/canada--york/events/' },
+      body: JSON.stringify({ event_search: { bbox: '-79.75,43.74,-79.15,44.00',
+        date_range: { from: ymd(d), to: ymd(new Date(d.getTime() + 6 * 864e5)) },
+        dates: 'current_future', dedup: false, page: 1, page_size: 50 }, browse_surface: 'search' }),
+    });
+    const n = tryJson(r.body)?.events?.results?.length;
+    return { ...r, body: `events returned: ${n ?? 'none'} | ${r.body.slice(0, 200)}` };
+  },
 };
 
 async function probeEventbrite() {
