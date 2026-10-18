@@ -25,7 +25,7 @@ After every R8 session:
 
 ---
 
-## 0. Status (2026-10-13)
+## 0. Status (2026-10-18)
 
 R8 is open ahead of the R6 gate, on a delivery commitment to the editor. R7 is closeout-only and
 off the critical path.
@@ -156,10 +156,19 @@ and 20 (typing a self-filled event in), and amended 17 (the export is a download
 settled:** whether the database reset of 2026-10-13 still happens, now that the build the editor uses sits on the
 un-reset database.
 
-**Next:** check Photo Club's date at vaughanpl.info/programs/view/4041; if it is not 2026-10-28, the editor
-replaces that pick. Then, when the editor says he has submitted 2026-10-22: `applySubmission.js` (dry run, then `--write`) →
-item 3's first live `writeIssuePicks.js --apply --ensure-issue` (Ariel's go at that moment; #149 review READY) →
-`generateBlurbs.js 2026-10-22 --dry-run`, then the real run → `--lock` → `pushToBeehiiv.js` → send him the export. The ship plan's new §0 states the destination (an editor-run week) and
+**Done 2026-10-18:** the three Stage B calls are made: Confirm runs the write-back on the server and a failed run
+resumes (Decision_Log §112, reverses §96); a self-filled slot takes a typed title, link and date and becomes an
+`Editor` Candidates row (§113, amends §106); judgment errors are fixed in code where checkable and warned otherwise,
+with no reviewer before the editor (§114, item 16b). Item 20 is built and tested, not yet run live: console fields
+and the submit block, `applySubmission.js` passes the typed event, `writeIssuePicks.js` creates or reuses the
+Candidates row before the IssueItems row. §113's pool-exclusion guard is not built (#160). Photo Club's page says
+2026-11-23, so that pick is wrong-dated; the editor has not opened the console since the walkthrough (Neon, last
+activity 2026-10-15 3:21 PM). Nate is no longer on the project; items listed as his (11, 15, 17) are Ariel's.
+
+**Next:** swap Photo Club out of the 10-22 build (editor or Ariel, reason "Original listing is broken"). Then, when
+the editor submits 2026-10-22: `applySubmission.js` (dry run, then `--write`) → `writeIssuePicks.js --apply
+--ensure-issue` (Ariel's go; item 20's writer change needs its wrap review first) → `generateBlurbs.js` → `--lock` →
+`pushToBeehiiv.js` → send him the export. Stage B starts with choosing the server host (item 15). The ship plan's new §0 states the destination (an editor-run week) and
 stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
 **where V1 closes is not settled.** D0 is chosen (Decision_Log §106), so it no longer
 blocks items 9, 10 and 13. That doc

@@ -10,6 +10,7 @@ import type {
   InteractionEvent,
   ReplacementAssessment,
   SectionId,
+  SelfFilledEvent,
   SubmissionSnapshot,
 } from "@/lib/contracts";
 import { isSelfFilled, slotKey } from "@/lib/contracts";
@@ -17,6 +18,7 @@ import {
   applyDraftCommand,
   createReopenedDraft,
   createSubmission,
+  selfFilledEventComplete,
 } from "@/lib/draft-domain";
 import { assessReplacement } from "@/lib/replacement-rules";
 import { formatSchedule } from "@/lib/format-schedule";
@@ -140,17 +142,90 @@ function FeedbackPrompt({
   );
 }
 
+const emptyOwnEvent: SelfFilledEvent = { title: "", url: "", date: "", description: "" };
+
+// The event he fills a slot with himself (Decision_Log §113). Title, link and date are
+// required before submit; the description is optional.
+function SelfFillForm({
+  saved,
+  disabled,
+  onSave,
+}: {
+  saved?: SelfFilledEvent;
+  disabled: boolean;
+  onSave: (event: SelfFilledEvent) => void;
+}) {
+  const [value, setValue] = useState<SelfFilledEvent>(saved ?? emptyOwnEvent);
+  const savedValue = saved ?? emptyOwnEvent;
+  const unsaved = (["title", "url", "date", "description"] as const).some(
+    (key) => (value[key] ?? "") !== (savedValue[key] ?? ""),
+  );
+  const complete = selfFilledEventComplete(saved);
+
+  function field(key: keyof SelfFilledEvent) {
+    return {
+      value: value[key] ?? "",
+      disabled,
+      onChange: (event: { target: { value: string } }) =>
+        setValue((current) => ({ ...current, [key]: event.target.value })),
+    };
+  }
+
+  return (
+    <form
+      className="self-fill-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const trimmed = {
+          title: value.title.trim(),
+          url: value.url.trim(),
+          date: value.date.trim(),
+          ...(value.description?.trim() ? { description: value.description.trim() } : {}),
+        };
+        onSave(trimmed);
+      }}
+    >
+      <p className="self-fill-form-note">
+        {complete && !unsaved
+          ? "Saved. This event goes into the export in this slot."
+          : "Your event for this slot. Title, link and date are needed to submit."}
+      </p>
+      <label>
+        Title
+        <input type="text" maxLength={200} required {...field("title")} />
+      </label>
+      <label>
+        Link
+        <input type="url" placeholder="https://" required {...field("url")} />
+      </label>
+      <label>
+        Date
+        <input type="date" required {...field("date")} />
+      </label>
+      <label>
+        One-line description (optional)
+        <input type="text" maxLength={500} {...field("description")} />
+      </label>
+      <button type="submit" disabled={disabled || !unsaved}>
+        Save event
+      </button>
+    </form>
+  );
+}
+
 function SelectedCard({
   candidate,
   position,
   active,
   changed,
   selfFilled,
+  ownEvent,
   feedback,
   disabled,
   onSelect,
   onFeedback,
   onSelfFill,
+  onSaveOwnEvent,
   onSourceOpen,
 }: {
   candidate: Candidate;
@@ -158,11 +233,13 @@ function SelectedCard({
   active: boolean;
   changed: boolean;
   selfFilled: boolean;
+  ownEvent?: SelfFilledEvent;
   feedback?: FeedbackValue;
   disabled: boolean;
   onSelect: () => void;
   onFeedback: (value: FeedbackValue) => void;
   onSelfFill: (selfFilled: boolean) => void;
+  onSaveOwnEvent: (event: SelfFilledEvent) => void;
   onSourceOpen: (
     candidate: Candidate,
     context: "selected" | "alternative",
@@ -207,6 +284,9 @@ function SelectedCard({
             {selfFilled ? "Use this pick after all" : "I’m filling this myself"}
           </button>
         </div>
+        {selfFilled && (
+          <SelfFillForm saved={ownEvent} disabled={disabled} onSave={onSaveOwnEvent} />
+        )}
         {changed && !selfFilled && (
           <FeedbackPrompt
             value={feedback}
@@ -386,6 +466,15 @@ export function EditorConsole({
       workspace.draft.feedbackBySlot[slotKey(slot.sectionId, slot.slotIndex)] ===
       undefined,
   );
+  // A marked slot whose own event is not complete yet; submit refuses while any exist.
+  const incompleteSelfFills = (selfFilledSlots ?? [])
+    .filter((slot) => !selfFilledEventComplete(slot.event))
+    .map((slot) => ({
+      ...slot,
+      sectionLabel:
+        workspace.build.sections.find((section) => section.id === slot.sectionId)?.label ??
+        slot.sectionId,
+    }));
   const activeSwapUnanswered = unansweredSwaps.some(
     (slot) => slot.sectionId === activeSection && slot.slotIndex === activeSlotIndex,
   );
@@ -787,6 +876,11 @@ export function EditorConsole({
                   }
                   changed={candidate.id !== original?.id}
                   selfFilled={isSelfFilled(selfFilledSlots, activeSection, index)}
+                  ownEvent={
+                    selfFilledSlots?.find(
+                      (slot) => slot.sectionId === activeSection && slot.slotIndex === index,
+                    )?.event
+                  }
                   feedback={
                     workspace.draft.feedbackBySlot[slotKey(activeSection, index)]
                   }
@@ -802,6 +896,16 @@ export function EditorConsole({
                       sectionId: activeSection,
                       slotIndex: index,
                       selfFilled,
+                    })
+                  }
+                  onSaveOwnEvent={(event) =>
+                    void dispatchCommand({
+                      ...commandBase(),
+                      type: "self_fill",
+                      sectionId: activeSection,
+                      slotIndex: index,
+                      selfFilled: true,
+                      event,
                     })
                   }
                   onSourceOpen={openSource}
@@ -943,11 +1047,26 @@ export function EditorConsole({
                 ))}
               </div>
             )}
+            {incompleteSelfFills.length > 0 && (
+              <div className="dialog-unanswered">
+                <strong>Add a title, link and date for your own event, or use the pick after all:</strong>
+                {incompleteSelfFills.map((slot) => (
+                  <span key={slotKey(slot.sectionId, slot.slotIndex)}>
+                    {slot.sectionLabel}, pick {slot.slotIndex + 1}
+                  </span>
+                ))}
+              </div>
+            )}
             <div className="dialog-actions">
               <button type="button" onClick={() => setConfirmingSubmit(false)}>
                 Keep editing
               </button>
-              <button type="button" className="confirm-submit" onClick={submitDraft}>
+              <button
+                type="button"
+                className="confirm-submit"
+                disabled={incompleteSelfFills.length > 0}
+                onClick={submitDraft}
+              >
                 {isDemo ? "Simulate submit" : "Submit lineup"}
                 <Icon name="arrow" />
               </button>

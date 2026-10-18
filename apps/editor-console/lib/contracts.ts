@@ -73,10 +73,21 @@ export interface DraftHistoryEntry {
   summary: string;
 }
 
-/** A slot the editor fills with his own event, outside the console (Decision_Log §106). */
+/** The event the editor types into a slot he fills himself (Decision_Log §113). */
+export interface SelfFilledEvent {
+  title: string;
+  url: string;
+  /** Date only, YYYY-MM-DD. */
+  date: string;
+  description?: string;
+}
+
+/** A slot the editor fills with his own event, outside the pool (Decision_Log §106, §113). */
 export interface SelfFilledSlot {
   sectionId: SectionId;
   slotIndex: number;
+  /** Absent until he types it in. Submit refuses a marked slot without a complete one. */
+  event?: SelfFilledEvent;
 }
 
 export interface DraftSnapshot {
@@ -214,6 +225,8 @@ export type DraftCommand =
       sectionId: SectionId;
       slotIndex: number;
       selfFilled: boolean;
+      /** Sent when he saves what he typed; marking without it keeps any earlier details. */
+      event?: SelfFilledEvent;
     });
 
 export interface CommandResult {

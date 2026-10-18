@@ -5,6 +5,7 @@ import type {
   EditorWorkspace,
   InteractionEvent,
   IssueBuild,
+  SelfFilledEvent,
 } from "./contracts";
 import {
   applyDraftCommand,
@@ -36,6 +37,13 @@ function workspace(
     ...additional,
   };
 }
+
+const ownEvent: SelfFilledEvent = {
+  title: "Harvest Lantern Walk",
+  url: "https://example.org/lantern-walk",
+  date: "2026-10-25",
+  description: "Evening walk through the conservation area.",
+};
 
 function submit(
   value: EditorWorkspace,
@@ -358,6 +366,7 @@ describe("slots the editor fills himself", () => {
     slotIndex: number,
     selfFilled: boolean,
     sectionId: "families" | "couples" | "golden-age" = "families",
+    event?: SelfFilledEvent,
   ) {
     return applyDraftCommand(mockIssueBuild, draft, {
       ...eventBase(),
@@ -365,6 +374,7 @@ describe("slots the editor fills himself", () => {
       sectionId,
       slotIndex,
       selfFilled,
+      ...(event ? { event } : {}),
     });
   }
 
@@ -435,17 +445,17 @@ describe("slots the editor fills himself", () => {
 
   it("lists marked slots on the submission in section and slot order", () => {
     const initial = createInitialDraft(mockIssueBuild);
-    const first = selfFill(initial, 4, true, "golden-age");
-    const second = selfFill(first.draft, 3, true, "families");
-    const third = selfFill(second.draft, 1, true, "families");
+    const first = selfFill(initial, 4, true, "golden-age", ownEvent);
+    const second = selfFill(first.draft, 3, true, "families", ownEvent);
+    const third = selfFill(second.draft, 1, true, "families", ownEvent);
     const submission = submit(
       workspace(third.draft, [first.event, second.event, third.event]),
     );
 
     expect(submission.selfFilledSlots).toEqual([
-      { sectionId: "families", slotIndex: 1 },
-      { sectionId: "families", slotIndex: 3 },
-      { sectionId: "golden-age", slotIndex: 4 },
+      { sectionId: "families", slotIndex: 1, event: ownEvent },
+      { sectionId: "families", slotIndex: 3, event: ownEvent },
+      { sectionId: "golden-age", slotIndex: 4, event: ownEvent },
     ]);
     expect(submission.finalSelections.families).toHaveLength(5);
   });
@@ -473,7 +483,7 @@ describe("slots the editor fills himself", () => {
     const preferA = prefer(swapA.draft, 0);
     const swapB = swap(preferA.draft, 1, "fam-08");
     const preferB = prefer(swapB.draft, 1);
-    const marked = selfFill(preferB.draft, 0, true);
+    const marked = selfFill(preferB.draft, 0, true, "families", ownEvent);
     const submission = submit(
       workspace(marked.draft, [
         swapA.event,
@@ -494,6 +504,81 @@ describe("slots the editor fills himself", () => {
         preferredCandidateId: "fam-08",
         feedback: "preferred",
       },
+    ]);
+  });
+});
+
+describe("typing in a self-filled event (Decision_Log §113)", () => {
+  function fill(
+    draft: DraftSnapshot,
+    slotIndex: number,
+    selfFilled: boolean,
+    event?: SelfFilledEvent,
+  ) {
+    return applyDraftCommand(mockIssueBuild, draft, {
+      ...eventBase(),
+      type: "self_fill",
+      sectionId: "couples",
+      slotIndex,
+      selfFilled,
+      ...(event ? { event } : {}),
+    });
+  }
+
+  it("stores the typed event on the slot and in the recorded event", () => {
+    const marked = fill(createInitialDraft(mockIssueBuild), 2, true);
+    const typed = fill(marked.draft, 2, true, ownEvent);
+
+    expect(typed.draft.selfFilledSlots).toEqual([
+      { sectionId: "couples", slotIndex: 2, event: ownEvent },
+    ]);
+    expect(typed.event.payload).toMatchObject({ selfFilled: true, event: ownEvent });
+  });
+
+  it("keeps typed details when the slot is marked again without them", () => {
+    const typed = fill(createInitialDraft(mockIssueBuild), 2, true, ownEvent);
+    const remarked = fill(typed.draft, 2, true);
+
+    expect(remarked.draft.selfFilledSlots).toEqual([
+      { sectionId: "couples", slotIndex: 2, event: ownEvent },
+    ]);
+  });
+
+  it("unmarking the slot drops what was typed", () => {
+    const typed = fill(createInitialDraft(mockIssueBuild), 2, true, ownEvent);
+    const unmarked = fill(typed.draft, 2, false);
+    const marked = fill(unmarked.draft, 2, true);
+
+    expect(unmarked.draft.selfFilledSlots).toEqual([]);
+    expect(marked.draft.selfFilledSlots).toEqual([{ sectionId: "couples", slotIndex: 2 }]);
+  });
+
+  it("refuses to submit while a marked slot is missing title, link or date", () => {
+    const marked = fill(createInitialDraft(mockIssueBuild), 2, true);
+    expect(() => submit(workspace(marked.draft, [marked.event]))).toThrow(
+      /Couples slot 3/,
+    );
+
+    for (const missing of ["title", "url", "date"] as const) {
+      const partial = { ...ownEvent, [missing]: "  " };
+      const typed = fill(createInitialDraft(mockIssueBuild), 2, true, partial);
+      expect(() => submit(workspace(typed.draft, [typed.event]))).toThrow(
+        /title, link and date/,
+      );
+    }
+  });
+
+  it("submits once every marked slot is complete; the description is optional", () => {
+    const withoutDescription: SelfFilledEvent = {
+      title: ownEvent.title,
+      url: ownEvent.url,
+      date: ownEvent.date,
+    };
+    const typed = fill(createInitialDraft(mockIssueBuild), 2, true, withoutDescription);
+    const submission = submit(workspace(typed.draft, [typed.event]));
+
+    expect(submission.selfFilledSlots).toEqual([
+      { sectionId: "couples", slotIndex: 2, event: withoutDescription },
     ]);
   });
 });

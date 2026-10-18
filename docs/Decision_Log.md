@@ -2587,3 +2587,89 @@ copy is how the drift happened. Live is what runs; the repo should be a faithful
 **Accepted cost:** the node names carry a meaningless "1". Removing it means renaming every node and every
 `$('…')` reference in code, which is parked as a separate, tested change. The connection's own export omits
 credential links, so the copy is taken with n8n's Download button, which keeps them.
+
+---
+
+## 112. Confirm Runs the Write-Back on the Server; a Failed Run Resumes (2026-10-18)
+
+**Decision:** the editor's **Confirm** starts the existing sequence on the Stage B server: `applySubmission.js`
+→ `writeIssuePicks.js --apply --ensure-issue` → `generateBlurbs.js` → `writeIssuePicks.js --lock` →
+`pushToBeehiiv.js`, with the export delivered to him in the console. The scripts and their order are unchanged;
+only who starts them changes. A run that fails partway is **resumed** by running Confirm again: the write
+creates only the slots its receipt does not already hold, blurbs are written only on unlocked rows, and lock
+and export follow. Ariel's call, 2026-10-18, taking the recommended option over stop-and-alert. Reverses §96.
+
+**Why §96 no longer holds:** it rested on two things. The silent one, `connectAirtable.js` deleting unlocked
+IssueItems and rebuilding them over the editor's picks, is closed: a direct run refuses any issue that already
+has IssueItems unless `--rebuild` is passed (ship-plan item 2). The other was keeping the dangerous sequence
+with the contributor who knew the pipeline rather than the console's developer; Nate is no longer on the
+project, so both sides are Ariel's. The ordering constraint §96 identified (lock after blurbs, or the rows
+never get copy and the export refuses) is kept, not removed. §96's third path, re-pointing an existing row's
+`Candidate` and keeping stale copy, cannot occur: the writer only creates rows.
+
+**Why resume rather than stop:** the destination is an editor-run week, so a failure he cannot clear himself
+stops the issue until Ariel is reachable. Resume needs no new state: the writer already saves a receipt,
+including a partial one, and `Lock` already marks the rows that are finished.
+
+**What this requires before item 17 ships:** the writer must accept a rerun whose existing rows all match its
+receipt (today it refuses any existing row), and still refuse a row it did not write. Every failed run also
+reaches Ariel once item 18 exists; resume does not make a failure silent.
+
+**What this does not decide:** whether a submission the editor reopens after a completed Confirm can be
+re-applied. The ship plan's §0 says it is not: after the paste, changes happen in Beehiiv.
+
+---
+
+## 113. A Self-Filled Event Is Typed In and Becomes a Candidate (2026-10-18)
+
+**Decision:** in a slot marked "I'm filling this myself" the editor types the event's **title, link and date**
+(all three required) and, optionally, a one-line description. Submit is blocked while a marked slot is missing
+any required field; unmarking the slot clears the block. On Confirm, the writer creates a Candidates row for the
+event with `Source = "Editor"` and `UniqueEventID` = `title|date` (the existing key), then the IssueItems row
+linked to it, both in the same create-only, receipt-tracked step, so a resumed run (§112) does not create
+either twice. Blurbs and export then run unchanged. Ariel's call, 2026-10-18. Amends §106 (D0 option a): a
+self-filled slot is now written and exported, not skipped.
+
+**Why a Candidates row rather than fields on IssueItems:** every downstream step reads the event through
+IssueItems → Candidate, so this needs no second path in `generateBlurbs.js` or `pushToBeehiiv.js`. It also
+records each event the pool missed, which is the coverage gap the 2026-09-17 comparison measured (6 of 15 picks
+were never candidates, Decision_Log §100).
+
+**Guards:** rows with `Source = "Editor"` are excluded from R7's training labels and from the producer's ranking
+pool; the editor chose them, the system did not. If R1 later ingests the same event, the shared `title|date` key
+matches it rather than duplicating it.
+
+**What this does not decide:** whether a self-filled event yields a preference signal for the ranker (today a
+marked slot yields none, §108), or whether the console checks the typed date against the issue window.
+
+---
+
+## 114. Judgment Errors Are Fixed in Code Where Checkable, Warned Otherwise; No Reviewer Before the Editor (2026-10-18)
+
+**Decision (ship-plan item 16b):** the five judgment-error types (13 of 38 hand repairs, #133) are handled
+without a human check before the editor sees the slate:
+
+| Error | Handling |
+|---|---|
+| Same record in two sections (ranked lists) | **Fixed:** kept in the higher-ranked place, removed from the other |
+| Wrong real record (the reason describes a different event than the id points to) | **Fixed:** the pick is dropped |
+| Reason rejects its own pick ("not recommended", "do not use") | **Fixed:** the pick is dropped. The reason is the model's assessment; ranking it was the error |
+| Ignored guidance | **Prevented:** every guidance rule that can be stated as a check (venue, organizer, section, once-per-section) becomes a filter on the pool before the ranking call. Guidance that cannot be checked stays in the prompt |
+| Recent repeat | **Warned, never removed:** the console shows the date it last ran. The editor repeats events that performed well |
+
+A dropped pick is replaced by the section's next alternative that passes the same checks, and the build's
+receipt names each fix. If a section runs out of alternatives, the run stops as it does for thin supply.
+Ariel's call, 2026-10-18.
+
+**Why no reviewer:** the editor already reviews every pick in the console, so a check before him only repeats his
+work for errors he can see. The errors he cannot see quickly, a reason belonging to another event or a pick its
+own reason rejects, are the ones fixed in code.
+
+**Why repeats are warned, not filtered:** the editor's rule is to repeat an event if it performed well. A click
+threshold could encode that, but the click data ends 2026-06-25 (#139) and covers only published events, so it
+would be fitted to thin, stale data; showing the last-run date lets him apply his own rule at a glance.
+Revisit when #139 is refreshed.
+
+**What this does not decide:** how "wrong real record" is detected beyond comparing the reason's quoted title to
+the record's title, or which phrases count as a self-rejecting reason; both are fixed in code against the 13
+logged cases.

@@ -8,6 +8,9 @@ import type {
   IssueBuild,
   OrderingProvenance,
   ReplacementAssessment,
+  SectionId,
+  SelfFilledEvent,
+  SelfFilledSlot,
   SubmittedReplacement,
   SubmissionSnapshot,
   TrainingPair,
@@ -209,19 +212,29 @@ export function applyDraftCommand(
       throw new Error("That slot is no longer available.");
     }
 
-    // The pick stays in the slot underneath, so unmarking brings it back.
-    const others = (draft.selfFilledSlots ?? []).filter(
-      (slot) =>
-        !(slot.sectionId === command.sectionId && slot.slotIndex === command.slotIndex),
-    );
+    // The pick stays in the slot underneath, so unmarking brings it back. Unmarking also
+    // drops what he typed; marking again without details keeps the earlier ones.
+    const isThisSlot = (slot: SelfFilledSlot) =>
+      slot.sectionId === command.sectionId && slot.slotIndex === command.slotIndex;
+    const existing = (draft.selfFilledSlots ?? []).find(isThisSlot);
+    const others = (draft.selfFilledSlots ?? []).filter((slot) => !isThisSlot(slot));
+    const typed = command.event ?? existing?.event;
     draft.selfFilledSlots = command.selfFilled
-      ? [...others, { sectionId: command.sectionId, slotIndex: command.slotIndex }]
+      ? [
+          ...others,
+          {
+            sectionId: command.sectionId,
+            slotIndex: command.slotIndex,
+            ...(typed ? { event: copy(typed) } : {}),
+          },
+        ]
       : others;
     event = baseEvent(nextRevision, command, {
       sectionId: command.sectionId,
       slotIndex: command.slotIndex,
       selfFilled: command.selfFilled,
       candidateId: selected.id,
+      ...(command.selfFilled && command.event ? { event: copy(command.event) } : {}),
     });
   } else {
     const matchingCandidate = build.sections
@@ -473,6 +486,14 @@ export function createReopenedDraft(
   };
 }
 
+export function selfFilledEventComplete(event: SelfFilledEvent | undefined) {
+  return Boolean(event && event.title.trim() && event.url.trim() && event.date.trim());
+}
+
+function sectionLabel(build: IssueBuild, sectionId: SectionId) {
+  return build.sections.find((section) => section.id === sectionId)?.label ?? sectionId;
+}
+
 export function createSubmission(
   workspace: EditorWorkspace,
   options: {
@@ -486,12 +507,24 @@ export function createSubmission(
   const replacements: SubmittedReplacement[] = [];
 
   const selfFilledSlots = sectionIds.flatMap((sectionId) =>
-    workspace.draft.selections[sectionId]
-      .map((_, slotIndex) => ({ sectionId, slotIndex }))
-      .filter((slot) =>
-        isSelfFilled(workspace.draft.selfFilledSlots, slot.sectionId, slot.slotIndex),
-      ),
+    workspace.draft.selections[sectionId].flatMap((_, slotIndex) => {
+      const marked = (workspace.draft.selfFilledSlots ?? []).find(
+        (slot) => slot.sectionId === sectionId && slot.slotIndex === slotIndex,
+      );
+      return marked ? [copy(marked)] : [];
+    }),
   );
+
+  // His own event must reach the export, so a marked slot needs all three (Decision_Log §113).
+  const missing = selfFilledSlots.filter((slot) => !selfFilledEventComplete(slot.event));
+  if (missing.length > 0) {
+    const names = missing
+      .map((slot) => `${sectionLabel(workspace.build, slot.sectionId)} slot ${slot.slotIndex + 1}`)
+      .join(", ");
+    throw new Error(
+      `Add a title, link and date for the event you are filling yourself (${names}), or use the pick after all.`,
+    );
+  }
 
   for (const sectionId of sectionIds) {
     workspace.draft.selections[sectionId].forEach((selected, slotIndex) => {

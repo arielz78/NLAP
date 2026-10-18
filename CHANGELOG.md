@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-10-18
+- Settled how the console's Confirm step will run the write-back unattended (resuming safely after a failure), how editor-supplied events enter the pipeline, and which model mistakes are fixed automatically versus flagged for the editor.
+- Editors can now type in an event they found themselves (title, link, date) for any slot; it flows through to the database, the generated copy and the newsletter export, reusing the existing record when the pipeline already knows the event.
+
 ## 2026-10-15
 - First live walkthrough of the editor console with the newsletter's editor, on next week's real issue: the weekly build ran end to end and was published to the hosted console the way the finished, unattended version will run. The editor's requests (planning several weeks ahead, entering their own events, receiving the export directly) were added to the release plan.
 - Audited every event source against its own website and fixed six that were failing without an error: one source had been returning nothing for a month, another had been capped at a small curated subset, and three were putting some events on the wrong date. The upcoming week's candidate pool grew several-fold, with ingestion still running in about two minutes.

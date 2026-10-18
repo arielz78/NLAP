@@ -41,6 +41,11 @@ function initialState(scenario) {
     id: candId(i + 1),
     fields: { "Event Title": `Event ${i + 1}`, "Start Date": "2099-01-03", URL: `https://example.com/${i + 1}`, Status: "New" },
   }));
+  // An event R1 already holds, for the own-event dedup test (Decision_Log §113)
+  candidates.push({
+    id: "recCANDEXISTWALK1",
+    fields: { "Event Title": "Existing Walk", "Start Date": "2099-01-05", URL: "https://example.com/walk", Status: "New", UniqueEventID: "existing walk|2099-01-05" },
+  });
   if (scenario === "no-issue") return { issues: [past], issueItems: [pastRow], candidates, seq: 0 };
 
   const issueItems = [
@@ -67,8 +72,16 @@ function installStub() {
     if (method === "GET" && pathname.endsWith(TABLES.issues))     return { records: state.issues };
     if (method === "GET" && pathname.endsWith(TABLES.issueItems)) return { records: state.issueItems };
     if (method === "GET" && pathname.endsWith(TABLES.candidates)) {
-      const ids = [...(searchParams.get("filterByFormula") ?? "").matchAll(/RECORD_ID\(\)='([^']+)'/g)].map((m) => m[1]);
-      return { records: state.candidates.filter((c) => ids.includes(c.id)) };
+      const formula = searchParams.get("filterByFormula") ?? "";
+      const ids = [...formula.matchAll(/RECORD_ID\(\)='([^']+)'/g)].map((m) => m[1]);
+      const uids = [...formula.matchAll(/\{UniqueEventID\}="((?:[^"\\]|\\.)*)"/g)].map((m) => m[1].replace(/\\(.)/g, "$1"));
+      return { records: state.candidates.filter((c) => ids.includes(c.id) || uids.includes(c.fields.UniqueEventID)) };
+    }
+    if (method === "POST" && pathname.endsWith(TABLES.candidates)) {
+      const created = JSON.parse(body).records.map((r) => ({ id: `recNEWCAND${String(++state.seq).padStart(7, "0")}`, fields: r.fields }));
+      state.candidates.push(...created);
+      save();
+      return { records: created };
     }
     if (method === "POST" && pathname.endsWith(TABLES.issues)) {
       const created = JSON.parse(body).records.map((r) => ({ id: `recNEWISSUE${++state.seq}`, fields: r.fields }));
@@ -415,6 +428,104 @@ test("a self-filled slot leaves a gap: no row for it, the other slots keep their
   const patched = lock.requests.filter((r) => r.method === "PATCH").flatMap((r) => JSON.parse(r.body).records);
   assert.deepStrictEqual(patched.map((p) => p.id), writtenIds);
   assert.strictEqual(writtenIds.length, 4);
+});
+
+// ---------------------------------------------------------------------------
+// Own events: a slot the editor filled himself, typed in (Decision_Log §113)
+// ---------------------------------------------------------------------------
+
+const OWN_EVENT = {
+  title: "Harvest Lantern Walk",
+  url: "https://example.org/lantern-walk",
+  date: "2099-01-04",
+  description: "Evening walk through the conservation area.",
+};
+const ownPick = (slot, event = OWN_EVENT) => ({ IssueDate: ISSUE_DATE, Section: "For Couples", Slot: slot, OwnEvent: event });
+const postedCandidates = (requests) => requests
+  .filter((r) => r.method === "POST" && r.url.endsWith(TABLES.candidates))
+  .map((r) => JSON.parse(r.body));
+
+test("own event, dry run: listed as a new Candidate and a row — reads only, no receipt", () => {
+  const { file, receipt } = writePicksFile([PICKS[0], ownPick(3)]);
+  const res = runWriter(file, [], "empty");
+  assert.strictEqual(res.status, 0, res.stderr);
+  onlyReads(res.requests);
+  assert.match(res.stdout, /OWN For Couples Slot 3 .* new Candidate "Harvest Lantern Walk" \(2099-01-04\)/);
+  assert.match(res.stdout, /Would create 1 Candidates and 2 IssueItems\. Deletes: 0\./);
+  assert.ok(!fs.existsSync(receipt));
+});
+
+test("own event, --apply: creates one Editor Candidate, then a row linked to it; receipt records both", () => {
+  const { file, receipt, state } = writePicksFile([PICKS[0], ownPick(3)]);
+  const res = runWriter(file, ["--apply"], "empty", state);
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.ok(!methods(res.requests).includes("DELETE"));
+
+  const [create] = postedCandidates(res.requests);
+  assert.strictEqual(postedCandidates(res.requests).length, 1);
+  assert.strictEqual(create.typecast, true);
+  assert.deepStrictEqual(create.records.map((r) => r.fields), [{
+    "Event Title":   "Harvest Lantern Walk",
+    Source:          "Editor",
+    UniqueEventID:   "harvest lantern walk|2099-01-04",
+    "Start Date":    "2099-01-04",
+    URL:             "https://example.org/lantern-walk",
+    DescriptionRaw:  "Evening walk through the conservation area.",
+  }]);
+
+  // The Candidates create comes before the IssueItems create, and the row links the new record
+  const order = res.requests.filter((r) => r.method === "POST").map((r) => r.url.endsWith(TABLES.candidates) ? "cand" : "item");
+  assert.deepStrictEqual(order, ["cand", "item"]);
+  const written = JSON.parse(fs.readFileSync(receipt, "utf8"));
+  const newId = written.candidates[0].id;
+  assert.match(newId, /^recNEWCAND/);
+  const ownRow = postedRows(res.requests).find((r) => r.fields.Slot === 3);
+  assert.deepStrictEqual(ownRow.fields.Candidate, [newId]);
+  assert.strictEqual(ownRow.fields.CandidateStartDate, "2099-01-04");
+  assert.strictEqual(ownRow.fields.CandidateURL, "https://example.org/lantern-walk");
+  assert.strictEqual(ownRow.fields.Name, `For Couples Slot 3 — ${ISSUE_DATE}`);
+  assert.deepStrictEqual(written.candidates, [{ id: newId, UniqueEventID: "harvest lantern walk|2099-01-04", Name: `For Couples Slot 3 — ${ISSUE_DATE}` }]);
+  assert.strictEqual(written.rows.length, 2);
+  assert.strictEqual(written.complete, true);
+
+  // Lock covers the own-event row like any other written row
+  const lock = runWriter(file, ["--lock"], "empty", state);
+  assert.strictEqual(lock.status, 0, lock.stderr);
+  const patched = lock.requests.filter((r) => r.method === "PATCH").flatMap((r) => JSON.parse(r.body).records);
+  assert.deepStrictEqual(patched.map((p) => p.id), written.rows.map((r) => r.id));
+});
+
+test("own event already in Candidates (same title|date key): linked, not created again", () => {
+  const { file, receipt, state } = writePicksFile([ownPick(2, { title: "  Existing   WALK ", url: "https://example.com/walk", date: "2099-01-05" })]);
+  const res = runWriter(file, ["--apply"], "empty", state);
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.strictEqual(postedCandidates(res.requests).length, 0);
+  assert.deepStrictEqual(postedRows(res.requests)[0].fields.Candidate, ["recCANDEXISTWALK1"]);
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(receipt, "utf8")).candidates, []);
+  assert.match(res.stdout, /existing Candidate recCANDEXISTWALK1/);
+});
+
+test("a malformed own event, or a pick with both ItemID and OwnEvent, is refused before any request", () => {
+  for (const bad of [
+    ownPick(1, { ...OWN_EVENT, title: "" }),
+    ownPick(1, { ...OWN_EVENT, url: "not-a-url" }),
+    ownPick(1, { ...OWN_EVENT, date: "2099-13-01" }),
+    { ...ownPick(1), ItemID: candId(1) },
+  ]) {
+    const { file } = writePicksFile([bad]);
+    const res = runWriter(file, ["--apply"], "empty");
+    assert.notStrictEqual(res.status, 0, JSON.stringify(bad));
+    assert.strictEqual(res.requests.length, 0, JSON.stringify(bad));
+    assert.match(res.stderr, /nothing was written/i);
+  }
+});
+
+test("two own events with the same title and date in one file are refused before any request", () => {
+  const { file } = writePicksFile([ownPick(1), ownPick(2)]);
+  const res = runWriter(file, ["--apply"], "empty");
+  assert.notStrictEqual(res.status, 0);
+  assert.strictEqual(res.requests.length, 0);
+  assert.match(res.stderr, /same event as pick 1/);
 });
 
 test("--lock never patches a written row that is already locked", () => {

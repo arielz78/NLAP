@@ -8,6 +8,8 @@
 //
 // The picks file is { picks: [{ IssueDate, ItemID, Section, Slot }] } (allocation.json from
 // scripts/issue-build/) or a bare array of the same objects — the shape buildIssues() returns.
+// A pick may instead carry OwnEvent: { title, url, date, description? } and no ItemID: an event the
+// editor typed into a slot he filled himself (Decision_Log §113, written by applySubmission.js).
 //
 // Contract:
 //   - Create-only. It never deletes and never updates an existing row in any mode; --lock is the one
@@ -19,6 +21,9 @@
 //   - --apply writes a receipt next to the picks file (<picks>.write_receipt.json) holding the created
 //     record IDs. --lock reads it. A receipt is never overwritten.
 //   - Trust Me Recipe is manual only: a picks file containing it is refused.
+//   - An own event is linked to the Candidates row with the same UniqueEventID (title|date, R1's key)
+//     when one exists; otherwise --apply creates one with Source "Editor" before the IssueItems rows,
+//     and records it in the receipt. It never updates an existing Candidates row.
 
 require("dotenv").config({ path: require("path").join(__dirname, "../NLAP_Airtable.env") });
 const fs = require("fs");
@@ -26,6 +31,11 @@ const path = require("path");
 const crypto = require("crypto");
 const { TABLES, airtableFetch, fetchAllRecords } = require("./connectAirtable.js");
 const { QUOTAS } = require("./buildIssues.js");
+// R1's UniqueEventID normalization; the same norm() the n8n node and the Facebook intake use
+const { computeUniqueEventID } = require("./parseFacebookIntake.js");
+
+// What an own event's Candidates row carries in Source (Decision_Log §113)
+const OWN_EVENT_SOURCE = "Editor";
 
 const BASE_ID = process.env.AIRTABLE_BASE_ID;
 const MANUAL_ONLY_SECTION = "Trust Me Recipe";
@@ -87,6 +97,22 @@ function receiptPathFor(picksFile) {
   return path.join(dir, `${name}.write_receipt.json`);
 }
 
+function isValidIsoDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const d = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
+}
+
+function ownEventProblems(event) {
+  if (!event || typeof event !== "object") return ["is not an object"];
+  const wrong = [];
+  if (typeof event.title !== "string" || !event.title.trim()) wrong.push("has no title");
+  if (typeof event.url !== "string" || !/^https?:\/\/\S+$/i.test(event.url.trim())) wrong.push(`url ${JSON.stringify(event.url)} is not an http(s) URL`);
+  if (!isValidIsoDate(event.date)) wrong.push(`date ${JSON.stringify(event.date)} is not YYYY-MM-DD`);
+  if (event.description !== undefined && typeof event.description !== "string") wrong.push("description is not text");
+  return wrong;
+}
+
 // Reads and validates the picks file. Throws one error naming every problem; makes no requests.
 function readPicks(picksFile, issueDate) {
   if (!fs.existsSync(picksFile)) throw new Error(`Picks file not found: ${picksFile}`);
@@ -104,9 +130,13 @@ function readPicks(picksFile, issueDate) {
   const problems = [];
   const seenSlots = new Set();
   const seenItems = new Set();
+  const seenOwn = new Map();
   const picks = list.map((p, i) => {
     const label = `pick ${i + 1}`;
-    const pick = { IssueDate: p?.IssueDate, ItemID: p?.ItemID, Section: p?.Section, Slot: p?.Slot };
+    const isOwn = p?.OwnEvent !== undefined;
+    const pick = isOwn
+      ? { IssueDate: p?.IssueDate, OwnEvent: p.OwnEvent, Section: p?.Section, Slot: p?.Slot }
+      : { IssueDate: p?.IssueDate, ItemID: p?.ItemID, Section: p?.Section, Slot: p?.Slot };
 
     if (pick.Section === MANUAL_ONLY_SECTION) {
       problems.push(`${label}: ${MANUAL_ONLY_SECTION} is manual only and is never written by this script`);
@@ -118,15 +148,27 @@ function readPicks(picksFile, issueDate) {
     if (pick.IssueDate !== issueDate) {
       problems.push(`${label}: IssueDate ${JSON.stringify(pick.IssueDate)} does not match --issue ${issueDate}`);
     }
-    if (typeof pick.ItemID !== "string" || !/^rec[A-Za-z0-9]{14}$/.test(pick.ItemID)) {
+    if (isOwn) {
+      if (p?.ItemID !== undefined) problems.push(`${label}: has both an ItemID and an OwnEvent`);
+      const wrong = ownEventProblems(pick.OwnEvent);
+      if (wrong.length) {
+        problems.push(`${label}: OwnEvent ${wrong.join("; ")}`);
+      } else {
+        const uid = computeUniqueEventID(pick.OwnEvent.title, pick.OwnEvent.date);
+        if (seenOwn.has(uid)) problems.push(`${label}: same event as ${seenOwn.get(uid)} (${uid})`);
+        seenOwn.set(uid, label);
+      }
+    } else if (typeof pick.ItemID !== "string" || !/^rec[A-Za-z0-9]{14}$/.test(pick.ItemID)) {
       problems.push(`${label}: ItemID ${JSON.stringify(pick.ItemID)} is not an Airtable record ID`);
     }
 
     const slotKey = `${pick.Section}|${pick.Slot}`;
     if (seenSlots.has(slotKey)) problems.push(`${label}: ${pick.Section} Slot ${pick.Slot} appears more than once in the file`);
     seenSlots.add(slotKey);
-    if (seenItems.has(pick.ItemID)) problems.push(`${label}: ItemID ${pick.ItemID} appears more than once in the file`);
-    seenItems.add(pick.ItemID);
+    if (!isOwn) {
+      if (seenItems.has(pick.ItemID)) problems.push(`${label}: ItemID ${pick.ItemID} appears more than once in the file`);
+      seenItems.add(pick.ItemID);
+    }
 
     return pick;
   });
@@ -172,7 +214,7 @@ async function fetchRowsForDate(issueDate, issueId) {
 // Fetched by record ID, not through the R3 eligible view: confirmed picks are not required to be
 // Status=Approved, so the view connectAirtable's fetchCandidates() reads would miss them.
 async function fetchPickCandidates(picks) {
-  const ids = picks.map((p) => p.ItemID);
+  const ids = picks.filter((p) => !p.OwnEvent).map((p) => p.ItemID);
   const map = {};
   for (let i = 0; i < ids.length; i += 20) {
     const batch = ids.slice(i, i + 20);
@@ -189,6 +231,37 @@ async function fetchPickCandidates(picks) {
     }
   }
   return map;
+}
+
+// An Airtable formula string literal: double-quoted, with backslash and double quote escaped
+function formulaString(value) {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+// Resolves each own event to the Candidates row R1 (or an earlier week) already holds under the same
+// UniqueEventID, or plans a new one. Read-only. Returns [{ pick, uid, existingId | null, fields }].
+async function resolveOwnEvents(picks) {
+  const own = picks.filter((p) => p.OwnEvent);
+  const existing = {};
+  for (let i = 0; i < own.length; i += 20) {
+    const batch = own.slice(i, i + 20).map((p) => computeUniqueEventID(p.OwnEvent.title, p.OwnEvent.date));
+    const formula = `OR(${batch.map((uid) => `{UniqueEventID}=${formulaString(uid)}`).join(",")})`;
+    const records = await fetchAllRecords(TABLES.candidates, { filterByFormula: formula });
+    for (const r of records) existing[r.fields["UniqueEventID"]] ??= r.id;
+  }
+  return own.map((pick) => {
+    const { title, url, date, description } = pick.OwnEvent;
+    const uid = computeUniqueEventID(title, date);
+    const fields = {
+      "Event Title":  title.trim(),
+      Source:         OWN_EVENT_SOURCE,
+      UniqueEventID:  uid,
+      "Start Date":   date,
+      URL:            url.trim(),
+      ...(description?.trim() ? { DescriptionRaw: description.trim() } : {}),
+    };
+    return { pick, uid, existingId: existing[uid] ?? null, fields };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -223,6 +296,13 @@ function collectWarnings(picks, candidateMap, existingRows, issueDate) {
   const windowEnd   = addDays(issueDate, 10);
   const venueSeen = {};
   for (const pick of picks) {
+    // An own event has only a date to check: no Candidates record yet and no venue
+    if (pick.OwnEvent) {
+      if (pick.OwnEvent.date < windowStart || pick.OwnEvent.date > windowEnd) {
+        warnings.push(`${itemName(pick)}: own event date ${pick.OwnEvent.date} is outside the issue window ${windowStart} to ${windowEnd}`);
+      }
+      continue;
+    }
     const c = candidateMap[pick.ItemID];
     const start = c["Start Date"] ? String(c["Start Date"]).slice(0, 10) : null;
     if (!start) {
@@ -257,22 +337,56 @@ function fmtLocalDateTime() {
   });
 }
 
-// Same fields, in the same shape, as connectAirtable's writeIssueItems()
-function buildRows(picks, issueId, candidateMap) {
+// Same fields, in the same shape, as connectAirtable's writeIssueItems(). An own event's pick has no
+// ItemID until its Candidates row exists; ownIds maps its Name to that record (placeholder in a dry run).
+function buildRows(picks, issueId, candidateMap, ownIds = {}) {
   const addedAt = fmtLocalDateTime();
-  return picks.map((pick) => ({
-    fields: {
-      Name:                 itemName(pick),
-      Section:              pick.Section,
-      Slot:                 pick.Slot,
-      SectionOrder:         SECTION_ORDER[pick.Section] ?? 99,
-      Issue:                [issueId],
-      Candidate:            [pick.ItemID],
-      CandidateStartDate:   candidateMap[pick.ItemID]["Start Date"] ?? null,
-      CandidateURL:         candidateMap[pick.ItemID].URL ?? null,
-      "Added to Base":      addedAt,
-    },
-  }));
+  return picks.map((pick) => {
+    const candidateId = pick.OwnEvent ? ownIds[itemName(pick)] : pick.ItemID;
+    return {
+      fields: {
+        Name:                 itemName(pick),
+        Section:              pick.Section,
+        Slot:                 pick.Slot,
+        SectionOrder:         SECTION_ORDER[pick.Section] ?? 99,
+        Issue:                [issueId],
+        Candidate:            [candidateId],
+        CandidateStartDate:   pick.OwnEvent ? pick.OwnEvent.date : (candidateMap[pick.ItemID]["Start Date"] ?? null),
+        CandidateURL:         pick.OwnEvent ? pick.OwnEvent.url.trim() : (candidateMap[pick.ItemID].URL ?? null),
+        "Added to Base":      addedAt,
+      },
+    };
+  });
+}
+
+// Creates the planned own-event Candidates rows (Airtable max 10 per request). The receipt is saved
+// after every batch, so a failure partway still records what was created. typecast lets Airtable
+// accept "Editor" in Source if the option does not exist yet.
+async function createOwnCandidates(planned, receiptPath, receipt) {
+  for (let i = 0; i < planned.length; i += 10) {
+    const batch = planned.slice(i, i + 10);
+    try {
+      const result = await airtableFetch(`${BASE_ID}/${TABLES.candidates}`, {
+        method: "POST",
+        body: JSON.stringify({ records: batch.map((o) => ({ fields: o.fields })), typecast: true }),
+      });
+      if (result.records.length !== batch.length) {
+        throw new Error(`Airtable returned ${result.records.length} records for a batch of ${batch.length}`);
+      }
+      result.records.forEach((r, j) => {
+        receipt.candidates.push({ id: r.id, UniqueEventID: batch[j].uid, Name: itemName(batch[j].pick) });
+      });
+      saveReceipt(receiptPath, receipt);
+    } catch (err) {
+      saveReceipt(receiptPath, receipt);
+      console.error(
+        `Candidates batch ${Math.floor(i / 10) + 1} failed. ` +
+        `${receipt.candidates.length} of ${planned.length} own-event Candidates already created ` +
+        `(${receipt.candidates.map((c) => c.id).join(", ")}); no IssueItems written. Partial receipt: ${receiptPath}`
+      );
+      throw err;
+    }
+  }
 }
 
 async function createIssueRecord(issueDate) {
@@ -437,7 +551,7 @@ async function main(argv = process.argv.slice(2)) {
 
   console.log("Fetching the picks' Candidates...");
   const candidateMap = await fetchPickCandidates(picks);
-  const missing = picks.filter((p) => !candidateMap[p.ItemID]);
+  const missing = picks.filter((p) => !p.OwnEvent && !candidateMap[p.ItemID]);
   if (missing.length) {
     throw new Error(
       `Refusing to write: ${missing.length} picks have no Candidates record:\n  ` +
@@ -448,16 +562,28 @@ async function main(argv = process.argv.slice(2)) {
 
   for (const w of collectWarnings(picks, candidateMap, existingRows, opts.issueDate)) console.warn(`Warning: ${w}`);
 
+  // Own events (Decision_Log §113): link an existing Candidates row with the same key, or plan one
+  const ownEvents = await resolveOwnEvents(picks);
+  const plannedCandidates = ownEvents.filter((o) => !o.existingId);
+  const ownIds = Object.fromEntries(ownEvents.map((o) => [itemName(o.pick), o.existingId ?? "(new Candidate)"]));
+  for (const o of ownEvents) {
+    console.log(
+      `OWN ${itemName(o.pick)} → ` +
+      (o.existingId ? `existing Candidate ${o.existingId}` : `new Candidate "${o.fields["Event Title"]}" (${o.fields["Start Date"]})`) +
+      ` — ${o.uid}`
+    );
+  }
+
   // The rows, exactly as they will be POSTed (the Issue link is a placeholder until the record exists)
-  const rows = buildRows(picks, issueId ?? "(created by --ensure-issue)", candidateMap);
+  const rows = buildRows(picks, issueId ?? "(created by --ensure-issue)", candidateMap, ownIds);
   console.log(`Issues record: ${issueId ?? "none"}`);
   console.log(`Existing IssueItems for ${opts.issueDate}: ${existingRows.length} (${existingRows.filter((r) => r.locked).length} locked) — none are touched`);
   console.log(`Rows to create (${rows.length}):`);
-  console.table(rows.map((r) => ({
+  console.table(rows.map((r, i) => ({
     Name:      r.fields.Name,
     Candidate: r.fields.Candidate[0],
     Start:     r.fields.CandidateStartDate,
-    Title:     candidateMap[r.fields.Candidate[0]].title.slice(0, 50),
+    Title:     (picks[i].OwnEvent ? picks[i].OwnEvent.title : candidateMap[r.fields.Candidate[0]].title).slice(0, 50),
   })));
   for (const r of rows) console.log(`ROW ${JSON.stringify(r.fields)}`);
 
@@ -477,7 +603,8 @@ async function main(argv = process.argv.slice(2)) {
 
   if (!opts.apply) {
     if (!issueId) console.log(`Would create the Issues record for ${opts.issueDate} (--ensure-issue).`);
-    console.log(`Dry run — nothing written. Would create ${rows.length} IssueItems. Deletes: 0. Re-run with --apply to write.`);
+    const candidatesPart = plannedCandidates.length ? `${plannedCandidates.length} Candidates and ` : "";
+    console.log(`Dry run — nothing written. Would create ${candidatesPart}${rows.length} IssueItems. Deletes: 0. Re-run with --apply to write.`);
     return { mode: "dry-run", rows };
   }
 
@@ -498,8 +625,17 @@ async function main(argv = process.argv.slice(2)) {
     baseId:        BASE_ID,
     tableId:       TABLES.issueItems,
     complete:      false,
+    candidates:    [],
     rows:          [],
   };
+
+  if (plannedCandidates.length) {
+    console.log(`Creating ${plannedCandidates.length} own-event Candidates...`);
+    await createOwnCandidates(plannedCandidates, receiptPath, receipt);
+    for (const created of receipt.candidates) ownIds[created.Name] = created.id;
+    const linked = buildRows(picks, issueId, candidateMap, ownIds);
+    rows.forEach((r, i) => { r.fields.Candidate = linked[i].fields.Candidate; });
+  }
 
   console.log("Writing IssueItems to Airtable...");
   await createRows(rows, receiptPath, receipt);

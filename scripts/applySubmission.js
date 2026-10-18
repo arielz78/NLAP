@@ -24,7 +24,10 @@
 //     warning and the picks go through; he was warned in the console and went ahead.
 //   - Refuses a submission that was already applied: writeIssuePicks.js --apply leaves a receipt beside
 //     the picks file, and the picks file path is fixed by the submission ID.
-//   - Slots the editor marked "I'm filling this myself" (ship-plan D0) produce no pick and are listed.
+//   - Slots the editor marked "I'm filling this myself" (ship-plan D0) with a typed event (Decision_Log
+//     §113) become own-event picks { IssueDate, Section, Slot, OwnEvent: { title, url, date,
+//     description? } }; the writer creates their Candidates rows. A marked slot with no typed event
+//     (a submission made before §113) produces no pick and is listed as skipped.
 //   - Every refusal names every problem and happens before the picks file is written.
 //   - A rerun writes the same bytes. An existing picks file that differs is never overwritten.
 
@@ -190,12 +193,39 @@ function slotName(sectionId, slotIndex) {
   return `${SECTION_LABELS[sectionId]} Slot ${slotIndex + 1}`;
 }
 
-// Reads the D0 markers (Decision_Log §106): SubmissionSnapshot.selfFilledSlots in lib/contracts.ts,
-// [{ sectionId, slotIndex }], slotIndex zero-based like SubmittedReplacement. The console leaves the
-// slot's pick in finalSelections underneath; it is not a pick and is ignored here. A submission made
-// before the console had the control carries no such field and marks nothing.
+function isValidIsoDate(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const d = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
+}
+
+// The event the editor typed into a self-filled slot (Decision_Log §113). Returns the OwnEvent the
+// writer reads, or pushes a problem naming the slot. The console requires all three fields before
+// submit; this re-checks, because the writer creates a Candidates row from it.
+function readOwnEvent(event, name, problems) {
+  const title = typeof event?.title === "string" ? event.title.trim() : "";
+  const url = typeof event?.url === "string" ? event.url.trim() : "";
+  const date = typeof event?.date === "string" ? event.date.trim() : "";
+  const description = typeof event?.description === "string" ? event.description.trim() : "";
+  const wrong = [];
+  if (!title) wrong.push("no title");
+  if (!/^https?:\/\/\S+$/i.test(url)) wrong.push(`link ${JSON.stringify(url)} is not an http(s) URL`);
+  if (!isValidIsoDate(date)) wrong.push(`date ${JSON.stringify(date)} is not YYYY-MM-DD`);
+  if (wrong.length) {
+    problems.push(`${name}: the typed event cannot be written — ${wrong.join("; ")}`);
+    return null;
+  }
+  return { title, url, date, ...(description ? { description } : {}) };
+}
+
+// Reads the D0 markers (Decision_Log §106, §113): SubmissionSnapshot.selfFilledSlots in lib/contracts.ts,
+// [{ sectionId, slotIndex, event? }], slotIndex zero-based like SubmittedReplacement. The console leaves
+// the slot's pick in finalSelections underneath; it is not a pick and is ignored here. A marker with a
+// typed event becomes an own-event pick; one without (a submission made before §113) leaves a gap. A
+// submission made before the console had the control carries no such field and marks nothing.
+// Returns Map("sectionId:slotIndex" → the marker's event, or undefined).
 function readSelfFilledSlots(submission, problems) {
-  const marked = new Set();
+  const marked = new Map();
   const list = submission.selfFilledSlots ?? [];
   if (!Array.isArray(list)) {
     problems.push(`selfFilledSlots is not an array`);
@@ -210,7 +240,7 @@ function readSelfFilledSlots(submission, problems) {
     } else if (marked.has(`${m.sectionId}:${m.slotIndex}`)) {
       problems.push(`selfFilledSlots[${i}]: ${slotName(m.sectionId, m.slotIndex)} is marked more than once`);
     } else {
-      marked.add(`${m.sectionId}:${m.slotIndex}`);
+      marked.set(`${m.sectionId}:${m.slotIndex}`, m.event);
     }
   });
   return marked;
@@ -283,9 +313,17 @@ function mapSubmission(submission, build, issueDate) {
     const seriesSeen = {};
     selections.forEach((candidate, slotIndex) => {
       const name = slotName(sectionId, slotIndex);
-      // D0: the editor fills this slot in Beehiiv. Whatever sits in it is not a pick and is not checked.
-      if (selfFilled.has(`${sectionId}:${slotIndex}`)) {
-        skipped.push({ Section: label, Slot: slotIndex + 1 });
+      // D0: the editor fills this slot himself. Whatever pick sits in it is not checked. With a typed
+      // event (§113) the slot is written with that event; without one it is left as a gap.
+      const key = `${sectionId}:${slotIndex}`;
+      if (selfFilled.has(key)) {
+        const typed = selfFilled.get(key);
+        if (typed === undefined || typed === null) {
+          skipped.push({ Section: label, Slot: slotIndex + 1 });
+          return;
+        }
+        const ownEvent = readOwnEvent(typed, name, problems);
+        if (ownEvent) picks.push({ IssueDate: issueDate, Section: label, Slot: slotIndex + 1, OwnEvent: ownEvent });
         return;
       }
       if (!candidate || typeof candidate !== "object") {
@@ -422,7 +460,11 @@ async function main(argv = process.argv.slice(2), deps = {}) {
   log(`${opts.write ? "WRITE" : "DRY RUN"} — submission ${submission.submissionId} (revision ${submission.revision ?? "?"}) for issue ${opts.issueDate}`);
   log(`Build: version ${build.buildVersion}, bundle ${build.bundleHash} — matches the submission`);
   log(`Picks (${picks.length}):`);
-  for (const p of picks) log(`  ${p.Section} Slot ${p.Slot} → ${p.ItemID}`);
+  for (const p of picks) {
+    log(p.OwnEvent
+      ? `  ${p.Section} Slot ${p.Slot} → own event "${p.OwnEvent.title}" (${p.OwnEvent.date})`
+      : `  ${p.Section} Slot ${p.Slot} → ${p.ItemID}`);
+  }
   log(`Self-filled slots skipped (${skipped.length})${skipped.length ? ":" : ""}`);
   for (const s of skipped) log(`  ${s.Section} Slot ${s.Slot}`);
   log(`Repeats the editor kept (${warnings.length})${warnings.length ? ":" : ""}`);

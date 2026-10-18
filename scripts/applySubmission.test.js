@@ -332,6 +332,67 @@ test("a submission with every slot self-filled is refused", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Typed-in events in self-filled slots (Decision_Log §113)
+// ---------------------------------------------------------------------------
+
+const OWN_EVENT = {
+  title: "Harvest Lantern Walk",
+  url: "https://example.org/lantern-walk",
+  date: "2099-01-04",
+  description: "Evening walk through the conservation area.",
+};
+
+test("a self-filled slot with a typed event becomes an own-event pick in its own slot", async (t) => {
+  const submission = makeSubmission(makeBuild(), {
+    selfFilledSlots: [{ sectionId: "couples", slotIndex: 2, event: OWN_EVENT }],
+  });
+  const { result, output } = await runMain(t, { submission, write: true });
+
+  assert.equal(result.picks.length, 15);
+  const own = result.picks.find((p) => p.Section === "For Couples" && p.Slot === 3);
+  assert.deepEqual(own, { IssueDate: ISSUE_DATE, Section: "For Couples", Slot: 3, OwnEvent: OWN_EVENT });
+  assert.deepEqual(result.skipped, []);
+  assert.match(output, /For Couples Slot 3 → own event "Harvest Lantern Walk" \(2099-01-04\)/);
+  assert.deepEqual(JSON.parse(fs.readFileSync(result.picksFile, "utf8")).picks, result.picks);
+});
+
+test("a typed event without a description is carried without one", () => {
+  const { description: _unused, ...plain } = OWN_EVENT;
+  const submission = makeSubmission(makeBuild(), {
+    selfFilledSlots: [{ sectionId: "families", slotIndex: 0, event: plain }],
+  });
+  const own = bridge.mapSubmission(submission, makeBuild(), ISSUE_DATE).picks.find((p) => p.OwnEvent);
+  assert.deepEqual(own.OwnEvent, plain);
+});
+
+test("an incomplete or malformed typed event is refused, naming the slot", () => {
+  for (const bad of [
+    { ...OWN_EVENT, title: " " },
+    { ...OWN_EVENT, url: "" },
+    { ...OWN_EVENT, url: "example.org/no-scheme" },
+    { ...OWN_EVENT, date: "" },
+    { ...OWN_EVENT, date: "2099-02-30" },
+  ]) {
+    const submission = makeSubmission(makeBuild(), {
+      selfFilledSlots: [{ sectionId: "golden-age", slotIndex: 4, event: bad }],
+    });
+    assert.throws(
+      () => bridge.mapSubmission(submission, makeBuild(), ISSUE_DATE),
+      /For Golden Age Readers Slot 5: the typed event/,
+      JSON.stringify(bad),
+    );
+  }
+});
+
+test("every slot self-filled with typed events is written, not refused", () => {
+  const all = SECTIONS.flatMap(([id]) => [0, 1, 2, 3, 4].map((slotIndex) => ({ sectionId: id, slotIndex, event: OWN_EVENT })));
+  const submission = makeSubmission(makeBuild(), { selfFilledSlots: all });
+  const { picks } = bridge.mapSubmission(submission, makeBuild(), ISSUE_DATE);
+  assert.equal(picks.length, 15);
+  assert.ok(picks.every((p) => p.OwnEvent && !p.ItemID));
+});
+
+// ---------------------------------------------------------------------------
 // Further refusals
 // ---------------------------------------------------------------------------
 
