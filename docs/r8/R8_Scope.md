@@ -165,6 +165,10 @@ Candidates row before the IssueItems row. §113's pool-exclusion guard is not bu
 2026-11-23, so that pick is wrong-dated; the editor has not opened the console since the walkthrough (Neon, last
 activity 2026-10-15 3:21 PM). Nate is no longer on the project; items listed as his (11, 15, 17) are Ariel's.
 
+**Decided 2026-10-18 (later session):** Stage B runs on GitHub Actions; the console stays on Vercel
+(Decision_Log §115). A probe from a GitHub runner reached 11 of 12 sources; Eventbrite works once its token
+comes from the homepage. Nothing of Stage B is built.
+
 **Next:** Photo Club was swapped out by Ariel on 2026-10-18 (→ Pumpkin Petal Floral Workshop, reason "Original
 listing is broken"; draft still unsubmitted). When the editor submits 2026-10-22: `applySubmission.js` (dry run, then `--write`) → `writeIssuePicks.js --apply
 --ensure-issue` (Ariel's go; item 20's writer change needs its wrap review first) → `generateBlurbs.js` → `--lock` →

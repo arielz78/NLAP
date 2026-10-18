@@ -2673,3 +2673,39 @@ Revisit when #139 is refreshed.
 **What this does not decide:** how "wrong real record" is detected beyond comparing the reason's quoted title to
 the record's title, or which phrases count as a self-rejecting reason; both are fixed in code against the 13
 logged cases.
+
+---
+
+## 115. Stage B Runs on GitHub Actions; the Console Stays on Vercel (2026-10-18)
+
+**Decision (ship-plan item 15):** the work behind **Build this week** and **Confirm** runs on GitHub-hosted
+Actions runners, started from the console. The console stays on Vercel and Neon. Ariel's call, 2026-10-18,
+after two independent model reviews (Claude, ChatGPT, given the same facts and no preferred answer) both
+ranked GitHub Actions first and a small paid VM second.
+
+**Why:** the repo is public, so standard runners cost $0 with no minute cap; each run is a fresh machine, so
+there is no server to patch; and the work runs once a week and idles otherwise. Rejected: an Oracle Always
+Free VM (it reclaims idle instances, and this one idles six days a week); Docker on the editor's laptop (his
+machine has to be awake, holds the keys, and he becomes the one who fixes it); a paid VM (about 5 fewer
+setup hours for about US$7/month and ongoing maintenance; the buttons, resume and alerts are the same work
+either way).
+
+**Evidence (`scripts/probeCloudFetch.js`, `.github/workflows/cloud-fetch-probe.yml`):** every R1 source's first
+fetch, repeated from a GitHub runner with a content check, returned events for 11 of 12 sources, matching the
+laptop's 12 of 12. Eventbrite's browse page sits behind an AWS WAF captcha for a datacenter IP (HTTP 405,
+`x-amzn-waf-action=captcha`); its homepage does not, and a csrftoken taken from the homepage carries the
+search API from the runner (50 events, same as the laptop). Live R1 still takes the token from the browse
+page; that change goes in with the move, not before.
+
+**What this requires (from both reviews):** the pipeline's local state (R7's cached files, the run folder
+Build hands to Confirm, the writer's receipt) moves to Neon, because a runner keeps no disk. Confirm's resume
+must check Airtable rather than trust the receipt: a crash after the write and before the receipt is saved
+leaves the receipt wrong on any host. That amends §112's requirement and is Ariel's call (what counts as an
+already-done slot); not decided here.
+
+**Accepted risk:** Vercel Hobby's terms exclude commercial use, and Vaughan Brief is commercial. Ariel accepts
+it knowingly (2026-10-18); if Vercel pauses the project, the emailed preview and the laptop path still run,
+and moving the console to a free host that allows commercial use is a few hours.
+
+**What this does not decide:** whether R1 stays in n8n on the runner or is ported to plain Node, and the
+order of the Stage B work against the editor's export-as-download ask.

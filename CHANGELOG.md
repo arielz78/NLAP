@@ -5,6 +5,7 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
 ## 2026-10-18
+- Chose a zero-cost host for the console's future one-click weekly build, after testing every event source from a cloud runner: all but one answered as-is, and the remaining one works with a small change found during the same test.
 - Settled how the console's Confirm step will run the write-back unattended (resuming safely after a failure), how editor-supplied events enter the pipeline, and which model mistakes are fixed automatically versus flagged for the editor.
 - Editors can now type in an event they found themselves (title, link, date) for any slot; it flows through to the database, the generated copy and the newsletter export, reusing the existing record when the pipeline already knows the event.
 
