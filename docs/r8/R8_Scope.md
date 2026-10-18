@@ -165,8 +165,8 @@ Candidates row before the IssueItems row. §113's pool-exclusion guard is not bu
 2026-11-23, so that pick is wrong-dated; the editor has not opened the console since the walkthrough (Neon, last
 activity 2026-10-15 3:21 PM). Nate is no longer on the project; items listed as his (11, 15, 17) are Ariel's.
 
-**Next:** swap Photo Club out of the 10-22 build (editor or Ariel, reason "Original listing is broken"). Then, when
-the editor submits 2026-10-22: `applySubmission.js` (dry run, then `--write`) → `writeIssuePicks.js --apply
+**Next:** Photo Club was swapped out by Ariel on 2026-10-18 (→ Pumpkin Petal Floral Workshop, reason "Original
+listing is broken"; draft still unsubmitted). When the editor submits 2026-10-22: `applySubmission.js` (dry run, then `--write`) → `writeIssuePicks.js --apply
 --ensure-issue` (Ariel's go; item 20's writer change needs its wrap review first) → `generateBlurbs.js` → `--lock` →
 `pushToBeehiiv.js` → send him the export. Stage B starts with choosing the server host (item 15). The ship plan's new §0 states the destination (an editor-run week) and
 stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
