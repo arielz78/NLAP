@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
+import { notifySubmission } from "@/lib/server/notify-submission";
 import {
   StaleDraftError,
   submitPostgresDraft,
@@ -32,14 +33,14 @@ export async function POST(
   }
 
   try {
-    return NextResponse.json(
-      await submitPostgresDraft(
-        draftId.data,
-        parsed.data.expectedRevision,
-        parsed.data.clientEventId,
-        parsed.data.occurredAt,
-      ),
+    const result = await submitPostgresDraft(
+      draftId.data,
+      parsed.data.expectedRevision,
+      parsed.data.clientEventId,
+      parsed.data.occurredAt,
     );
+    after(() => notifySubmission(result.submission));
+    return NextResponse.json(result);
   } catch (error) {
     const status =
       error instanceof StaleDraftError
