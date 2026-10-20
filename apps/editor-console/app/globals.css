@@ -840,6 +840,7 @@ svg {
 .self-fill-form {
   position: relative;
   z-index: 2;
+  pointer-events: auto;
   display: grid;
   gap: 0.45rem;
   margin-top: 0.75rem;
