@@ -169,10 +169,16 @@ activity 2026-10-15 3:21 PM). Nate is no longer on the project; items listed as 
 (Decision_Log §115). A probe from a GitHub runner reached 11 of 12 sources; Eventbrite works once its token
 comes from the homepage. Nothing of Stage B is built.
 
-**Next:** Photo Club was swapped out by Ariel on 2026-10-18 (→ Pumpkin Petal Floral Workshop, reason "Original
-listing is broken"; draft still unsubmitted). When the editor submits 2026-10-22: `applySubmission.js` (dry run, then `--write`) → `writeIssuePicks.js --apply
---ensure-issue` (Ariel's go; item 20's writer change wrap-reviewed READY 2026-10-18, range 4dc67cb..5bf96cd) → `generateBlurbs.js` → `--lock` →
-`pushToBeehiiv.js` → send him the export. Stage B starts with choosing the server host (item 15). The ship plan's new §0 states the destination (an editor-run week) and
+**Done 2026-10-22:** the editor made the first real submission (2026-10-22, revision 1, 15 picks; the
+`applySubmission.js` dry run matched the published build). He published 2026-10-22 in Beehiiv without our export; the
+write-back, blurbs and export for it did not run. The console emails Ariel on every submission (`bfc9978`, verified
+live). The self-fill form now accepts input (`dbdc5d8`; a CSS bug the unit tests could not see). The 2026-10-29 build
+(v9) is published to the console, after v8 ran on a 9-issue history from a bad Beehiiv fetch; the history fetch is now
+incremental and never shrinks (`1812453`). `runWeek` measured at ~2 min, mostly the model call; scheduling R1 is on #161.
+
+**Next:** when the editor submits 2026-10-29: `applySubmission.js --write` → `writeIssuePicks.js --apply
+--ensure-issue` (#149, Ariel's go; item 20's writer change wrap-reviewed READY 2026-10-18, range 4dc67cb..5bf96cd) →
+`generateBlurbs.js` → `--lock` → `pushToBeehiiv.js` → send him the export, before he publishes. Stage B is on #161. The ship plan's new §0 states the destination (an editor-run week) and
 stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
 **where V1 closes is not settled.** D0 is chosen (Decision_Log §106), so it no longer
 blocks items 9, 10 and 13. That doc
