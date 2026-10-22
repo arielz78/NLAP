@@ -81,3 +81,26 @@ test("bug 3 (regression guard): an event link whose UTM tags name vaughanbrief.c
     ["For Families", 3, "https://reptilia.org/"],
   ]);
 });
+
+// ---- Incremental fetch guards (2026-10-22: a bad page wrote 9 issues over 93) ----
+const { fetchPage, mergeHistory } = require("./fetchBeehiivHistory.js");
+const issue = (slug, date) => ({ slug, date, subject: slug, events: [{ section: "For Families", slot: 1, url: "https://x/" + slug }] });
+
+test("merge adds new issues, replaces same-slug ones, and keeps every stored issue", () => {
+  const stored = [issue("a", "2026-10-08"), issue("b", "2026-10-15")];
+  const edited = { ...issue("b", "2026-10-15"), subject: "edited" };
+  const merged = mergeHistory(stored, [edited, issue("c", "2026-10-22")]);
+  assert.deepEqual(merged.map(i => i.slug), ["a", "b", "c"]);
+  assert.equal(merged[1].subject, "edited");
+  assert.deepEqual(mergeHistory(stored, []).map(i => i.slug), ["a", "b"]);
+});
+
+test("a page that is not a list of posts is retried, then stops the run", async () => {
+  const bad = { ok: true, json: async () => ({ errors: ["x"] }), text: async () => "" };
+  const good = { ok: true, json: async () => ({ data: [], total_pages: 1 }), text: async () => "" };
+  let calls = 0;
+  const flaky = async () => (++calls < 3 ? bad : good);
+  assert.deepEqual(await fetchPage(1, flaky, 3, 0), { data: [], total_pages: 1 });
+  assert.equal(calls, 3);
+  await assert.rejects(fetchPage(1, async () => bad, 3, 0), /failed 3 times; nothing written/);
+});

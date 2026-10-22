@@ -1,8 +1,10 @@
 // Fetches all published Vaughan Brief issues via Beehiiv API.
 // Extracts (date, section, slot, url, emoji, displayTitle, description, cta) per event.
 // Output: data/beehiiv/issue_history.json
+// Incremental: fetches the newest posts and merges them into the stored file, which never shrinks.
+// --full refetches every post (re-parses old issues after a parser change), still merged.
 //
-// Run: node scripts/fetchBeehiivHistory.js
+// Run: node scripts/fetchBeehiivHistory.js [--full]
 // Test (offline, parser only): node --test scripts/fetchBeehiivHistory.test.js
 
 const fs = require('fs');
@@ -111,57 +113,83 @@ function parseIssue(html) {
   return events;
 }
 
-async function fetchPage(page) {
-  const res = await fetch(
-    `https://api.beehiiv.com/v2/publications/${PUB_ID}/posts` +
-    `?limit=10&page=${page}&status=confirmed&expand[]=free_email_content`,
-    { headers: { Authorization: `Bearer ${KEY}` } }
-  );
-  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
-  return res.json();
+// One page of posts, newest first. A page that is not a list of posts is retried, then the run
+// stops: a bad page once wrote a 9-issue history over a 93-issue one, silently (2026-10-22).
+async function fetchPage(page, fetchImpl = fetch, tries = 3, waitMs = 1000) {
+  let last;
+  for (let attempt = 1; attempt <= tries; attempt++) {
+    try {
+      const res = await fetchImpl(
+        `https://api.beehiiv.com/v2/publications/${PUB_ID}/posts` +
+        `?limit=10&page=${page}&status=confirmed&expand[]=free_email_content&order_by=publish_date&direction=desc`,
+        { headers: { Authorization: `Bearer ${KEY}` } }
+      );
+      if (!res.ok) throw new Error(`API error ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      const body = await res.json();
+      if (!Array.isArray(body.data) || !Number.isInteger(body.total_pages)) {
+        throw new Error(`page ${page} is not a list of posts (keys: ${Object.keys(body || {}).join(', ')})`);
+      }
+      return body;
+    } catch (err) {
+      last = err;
+      if (attempt < tries) await new Promise(r => setTimeout(r, waitMs * attempt));
+    }
+  }
+  throw new Error(`Beehiiv page ${page} failed ${tries} times; nothing written. Last error: ${last.message}`);
 }
 
-async function main() {
+function toIssue(post) {
+  const html = post.content?.free?.email;
+  const events = html ? parseIssue(html) : [];
+  if (events.length === 0) return null;
+  return {
+    date: post.publish_date ? new Date(post.publish_date * 1000).toISOString().slice(0, 10) : null,
+    subject: post.subject_line,
+    slug: post.slug,
+    events,
+  };
+}
+
+// Fresh issues replace stored ones with the same slug; stored issues are never dropped, so the
+// result can only grow. A post that parsed to nothing never replaces a stored issue.
+function mergeHistory(stored, fresh) {
+  const bySlug = new Map(stored.map(i => [i.slug, i]));
+  for (const issue of fresh) bySlug.set(issue.slug, issue);
+  const merged = [...bySlug.values()].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  if (merged.length < stored.length) throw new Error(`merged history has ${merged.length} issues, fewer than the ${stored.length} stored; nothing written`);
+  return merged;
+}
+
+async function main(argv = process.argv.slice(2)) {
   require('dotenv').config({ path: path.join(__dirname, '../NLAP_Airtable.env') });
   KEY = process.env.BEEHIIV_API_KEY;
   if (!KEY) throw new Error('BEEHIIV_API_KEY not set in NLAP_Airtable.env');
-  console.log('Fetching all published posts...');
-  const first = await fetchPage(1);
-  const totalPages = first.total_pages;
-  let posts = first.data;
-
-  for (let page = 2; page <= totalPages; page++) {
-    await new Promise(r => setTimeout(r, 300));
-    const data = await fetchPage(page);
-    posts = posts.concat(data.data);
-    console.log(`  Page ${page}/${totalPages} — ${posts.length} posts so far`);
-  }
-
-  console.log(`\nTotal posts fetched: ${posts.length}`);
-
-  const history = [];
-  let skipped = 0;
-
-  for (const post of posts) {
-    const html = post.content?.free?.email;
-    if (!html) { skipped++; continue; }
-
-    const events = parseIssue(html);
-    if (events.length === 0) { skipped++; continue; }
-
-    history.push({
-      date: post.publish_date ? new Date(post.publish_date * 1000).toISOString().slice(0, 10) : null,
-      subject: post.subject_line,
-      slug: post.slug,
-      events,
-    });
-  }
-
-  history.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const full = argv.includes('--full');
 
   const outDir = path.join(__dirname, '../data/beehiiv');
-  fs.mkdirSync(outDir, { recursive: true });
   const outPath = path.join(outDir, 'issue_history.json');
+  const stored = fs.existsSync(outPath) ? JSON.parse(fs.readFileSync(outPath, 'utf8')) : [];
+  const known = new Set(stored.map(i => i.slug));
+
+  // Newest first. Page 1 is always refetched, so a late edit in Beehiiv to a recent issue is picked
+  // up; later pages only while every post on the page before was new to the stored history.
+  console.log(full || stored.length === 0 ? 'Fetching all published posts...' : `Fetching posts newer than the ${stored.length} stored issues...`);
+  const posts = [];
+  for (let page = 1; ; page++) {
+    if (page > 1) await new Promise(r => setTimeout(r, 300));
+    const body = await fetchPage(page);
+    posts.push(...body.data);
+    console.log(`  Page ${page}/${body.total_pages} — ${posts.length} posts so far`);
+    const reachedStored = body.data.some(p => known.has(p.slug));
+    if (page >= body.total_pages || (!full && stored.length > 0 && reachedStored)) break;
+  }
+
+  const fresh = posts.map(toIssue).filter(Boolean);
+  const skipped = posts.length - fresh.length;
+  const history = mergeHistory(stored, fresh);
+  console.log(`\nPosts fetched: ${posts.length} · new issues: ${history.length - stored.length}`);
+
+  fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify(history, null, 2));
 
   const totalEvents = history.reduce((sum, i) => sum + i.events.length, 0);
@@ -172,14 +200,14 @@ async function main() {
     })
   );
 
-  console.log(`\nIssues parsed: ${history.length} (${skipped} skipped — no content or no sections)`);
+  console.log(`\nIssues stored: ${history.length} (${skipped} fetched posts skipped — no content or no sections)`);
   console.log(`Total (section, url) pairs: ${totalEvents}`);
   console.log('\nBy section:');
   Object.entries(sectionCounts).forEach(([s, c]) => console.log(`  ${s}: ${c}`));
   console.log(`\nSaved to ${outPath}`);
 }
 
-module.exports = { parseIssue, stripUtm, isEventUrl };
+module.exports = { parseIssue, stripUtm, isEventUrl, fetchPage, mergeHistory };
 
 if (require.main === module) {
   main().catch((err) => {

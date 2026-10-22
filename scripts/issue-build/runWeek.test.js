@@ -60,7 +60,7 @@ function world(over={}) {
     return {status:0,stderr:''};
   };
   s.run = (opts={},...date) => {s.calls=[]; s.lines=[]; s.errors=[]; const issue=date.length?date[0]:ISSUE;
-    return w.runWeek(issue,opts,{root,exec:s.exec,now:()=>s.now,log:x=>s.lines.push(x),error:x=>s.errors.push(x)});};
+    return w.runWeek(issue,opts,{root,exec:s.exec,now:()=>s.now,...(s.clock?{clock:s.clock}:{}),log:x=>s.lines.push(x),error:x=>s.errors.push(x)});};
   s.stages = () => s.calls.map(c=>c.stage);
   s.status = (result,stage) => result.results.find(r=>r.stage===stage).status;
   return s;
@@ -115,9 +115,16 @@ test('sign-off is never run and never recorded',()=>{
 test('the summary lists every stage as ran, skipped, failed or not reached',()=>{
   const s=world({failAt:'r7-score'}), r=s.run();
   const text=s.lines.join('\n');
-  for (const stage of w.STAGES) assert.match(text,new RegExp('\\n  '+stage+'\\s+(ran|skipped|failed|not reached)'));
+  for (const stage of w.STAGES) assert.match(text,new RegExp('\\n  '+stage+'\\s+([\\d.]+ s\\s+)?(ran|skipped|failed|not reached)'));
   assert.match(text,/FAILED at r7-score\./);
   assert.deepEqual(r.results.map(x=>x.status),['ran','ran','ran','failed','not reached','not reached','not reached']);
+});
+test('the summary times every stage that started, and the total',()=>{
+  const s=world({failAt:'r7-score'}); let t=0; s.clock=()=>(t+=1500);   // each clock read advances 1.5 s
+  const r=s.run(), text=s.lines.join('\n');
+  assert.deepEqual(r.results.map(x=>x.seconds),[1.5,1.5,1.5,1.5,undefined,undefined,undefined]);
+  assert.match(text,/\n  snapshot\s+1\.5 s\s+ran/); assert.match(text,/\(6\.0 s\):/);
+  assert.match(text,/\n  prepare\s+not reached/);
 });
 
 // ---- Stop at the first failure; name it; leave earlier outputs alone; resume. ----

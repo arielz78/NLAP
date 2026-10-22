@@ -158,7 +158,8 @@ function defaultExec(cmd,args,o){
 }
 // Runs the chain. Returns {code, failed, results, preview}; never throws for a stage failure.
 function runWeek(issue,opts={},injected={}){
-  const deps={root:ROOT,exec:defaultExec,now:()=>Date.now(),log:console.log,error:console.error,...injected};
+  // `clock` times the stages; `now` is the freshness clock, which tests pin.
+  const deps={root:ROOT,exec:defaultExec,now:()=>Date.now(),clock:()=>Date.now(),log:console.log,error:console.error,...injected};
   if(!isDate(issue))throw new Error('The issue date must be a real date, YYYY-MM-DD'+(issue?' (got '+issue+')':''));
   if(opts.snapshot!==undefined&&!isStamp(opts.snapshot))throw new Error('--snapshot must be a snapshot stamp, YYYY-MM-DD_HHMM');
   if(opts.r1MaxAgeHours!==undefined&&!(opts.r1MaxAgeHours>0))throw new Error('--r1-max-age-hours must be a positive number');
@@ -167,16 +168,18 @@ function runWeek(issue,opts={},injected={}){
   for(const name of STAGES){
     if(failed){results.push({stage:name,status:'not reached',detail:''});continue;}
     deps.log('['+name+']');
-    try{results.push({stage:name,...RUNNERS[name](c,deps)});}
+    const started=deps.clock(), seconds=()=>(deps.clock()-started)/1000;
+    try{results.push({stage:name,...RUNNERS[name](c,deps),seconds:seconds()});}
     catch(e){
       failed=name;code=e instanceof StageError?e.code:EXIT.failed;
-      results.push({stage:name,status:code===EXIT.validation?'stopped (validation)':'failed',detail:e.message});
+      results.push({stage:name,status:code===EXIT.validation?'stopped (validation)':'failed',detail:e.message,seconds:seconds()});
       deps.error('Stage '+name+(code===EXIT.validation?' stopped: ':' failed: ')+e.message);
     }
   }
   const preview=failed?null:c.prepared()+'/editor_preview.html';
-  deps.log('\nWeek build for '+issue+(c.stamp?' on snapshot '+c.stamp:'')+':');
-  for(const r of results)deps.log('  '+r.stage.padEnd(13)+r.status+(r.detail&&r.status!=='failed'&&r.status!=='stopped (validation)'?' — '+r.detail:''));
+  const total=results.reduce((sum,r)=>sum+(r.seconds||0),0);
+  deps.log('\nWeek build for '+issue+(c.stamp?' on snapshot '+c.stamp:'')+' ('+total.toFixed(1)+' s):');
+  for(const r of results)deps.log('  '+r.stage.padEnd(13)+(r.seconds!==undefined?(r.seconds.toFixed(1)+' s').padStart(8)+'  ':' '.repeat(10))+r.status+(r.detail&&r.status!=='failed'&&r.status!=='stopped (validation)'?' — '+r.detail:''));
   if(failed)deps.log((code===EXIT.validation?'Stopped at ':'FAILED at ')+failed+'. Earlier stages\' outputs are in place; rerunning this command resumes from '+failed+'.');
   else{deps.log('Editor preview: '+preview);deps.log(HUMAN_REVIEW+' Sign-off is not part of this command: node '+PRODUCER+' signoff --issue '+issue+' --run-dir '+c.prepared()+' --by "<name>"');}
   return {code,failed,results,preview,stamp:c.stamp};
