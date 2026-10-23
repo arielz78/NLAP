@@ -4,6 +4,9 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-10-23
+- Fixed the editor console's final-check dialog so it fits the screen and scrolls when a lineup has many swaps, keeping the submit button reachable.
+
 ## 2026-10-22
 - First real editor submission through the hosted console; the console now emails the operator the moment a lineup is submitted, and a layout bug that blocked typing in self-filled events was fixed.
 - Built the following week's slate and published it to the console. Hardened the newsletter-history download after a flaky API response truncated it (now incremental, retried, and never allowed to shrink), and added per-stage timing to the weekly build.
