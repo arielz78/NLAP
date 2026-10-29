@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-10-28
+- Upgraded the self-hosted workflow engine to the current release with a full data backup and rollback path, then ran the weekly ingestion on it.
+- Built the following week's slate end to end in one command and published it to the editor console.
+
 ## 2026-10-23
 - Fixed the editor console's final-check dialog so it fits the screen and scrolls when a lineup has many swaps, keeping the submit button reachable.
 
