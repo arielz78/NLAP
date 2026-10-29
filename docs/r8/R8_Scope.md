@@ -176,7 +176,11 @@ live). The self-fill form now accepts input (`dbdc5d8`; a CSS bug the unit tests
 (v9) is published to the console, after v8 ran on a 9-issue history from a bad Beehiiv fetch; the history fetch is now
 incremental and never shrinks (`1812453`). `runWeek` measured at ~2 min, mostly the model call; scheduling R1 is on #161.
 
-**Next:** when the editor submits 2026-10-29: `applySubmission.js --write` → `writeIssuePicks.js --apply
+**Next (2026-10-28):** a 20-minute timeboxed discussion that ends in action items. The editor submitted 2026-10-29 after
+building it in Beehiiv, and 10 of 15 published slots match the submission. Is the console where his decision is made,
+are submissions valid labels, and does the 10-29 write-back (#149) run at all? Do not run `writeIssuePicks.js --apply`
+for 10-29 before then. The 2026-11-05 build is published to the console. *Superseded, earlier text follows:* when the
+editor submits 2026-10-29: `applySubmission.js --write` → `writeIssuePicks.js --apply
 --ensure-issue` (#149, Ariel's go; item 20's writer change wrap-reviewed READY 2026-10-18, range 4dc67cb..5bf96cd) →
 `generateBlurbs.js` → `--lock` → `pushToBeehiiv.js` → send him the export, before he publishes. Stage B is on #161. The ship plan's new §0 states the destination (an editor-run week) and
 stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
