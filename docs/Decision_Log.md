@@ -2380,6 +2380,12 @@ not run, so a person's correction is never rewritten. On past runs, 17 of the 21
 have been automatic. Codex reviewed the change before merge and found one blocker, a quote offset error after
 emoji, fixed with a regression test.
 
+**Amended 2026-11-04 (Ariel):** one narrow exception to "anything ambiguous still stops the run". A history ref
+with no single correction is removed and named in the receipt instead of stopping the run, because it is a
+citation only: no pick or rank moves. The ref is never guessed at. Record ids and quotes still stop the run, and
+a run with a corrections file gets no automatic repair. Trigger: the 2026-11-12 build stopped on one ref the model
+garbled, on a record offered no refs, and weekly builds take no hand repairs (§114).
+
 ---
 
 ## 103. Ship-and-Fix Over Pre-Hardening for V1; Hosting Stays With Nate (2026-10-07)

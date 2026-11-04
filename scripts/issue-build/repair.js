@@ -5,6 +5,8 @@
 //   automatic (mechanical, ship-plan item 16a) — the four bookkeeping defects validation used to stop on:
 //     repeated section, record-id typo, misquoted text, history-ref typo. Each is repaired only when exactly
 //     one correction exists; anything else is left for validation, which still stops the run.
+//     One exception (Decision_Log §102, amended 2026-11-04): a history ref with no single correction is removed
+//     and named in the receipt. It is a citation only, so no pick or rank moves. Ids and quotes still stop the run.
 // Judgment errors (a pick its own reason rejects, a wrong real record, a recent repeat) are not repaired here.
 'use strict';
 const crypto=require('node:crypto');
@@ -154,18 +156,24 @@ function misquotes(rank,byId,out){
 }
 // A history ref that does not exist. Remapped only when exactly one ref offered for that record in the packet
 // (exact-URL or similar-title publications) is one character away. The reason may rest on the mistyped date.
+// Otherwise the ref is removed, never guessed at. A non-string is left for the schema check to stop on.
 function historyRefTypos(rank,byId,refs,out){
   for(const s of rank.sections)for(const row of s.ordered){
     const c=byId.get(row.id);if(!c)continue;
     const offered=[...new Set([...(c.exact_url_publication_refs||[]),...(c.weak_lexical_comparable_refs||[])])].filter(r=>refs.has(r));
-    row.history_refs=row.history_refs.map(ref=>{
-      if(refs.has(ref))return ref;
+    row.history_refs=row.history_refs.flatMap(ref=>{
+      if(refs.has(ref)||typeof ref!=='string')return [ref];
       const near=offered.filter(r=>withinOneEdit(ref,r));
-      if(near.length!==1)return ref;
+      if(near.length!==1){
+        out.push({type:'history_ref_removed',section:s.section,record_id:row.id,title:c.snapshot_fields['Event Title'],removed:ref,
+          action:'removed history ref '+ref+': it is not in the packet and has no single correction; the row and its rank are unchanged',
+          check:'the row\'s reason and warnings were written against a ref that does not exist',authority:'Decision_Log §102, amended 2026-11-04',detected_by:BY});
+        return [];
+      }
       out.push({type:'history_ref_typo',section:s.section,record_id:row.id,title:c.snapshot_fields['Event Title'],from:ref,to:near[0],
         action:'remapped history ref '+ref+' -> '+near[0]+': the only ref offered for this record one character away',
         check:'the row\'s reason and warnings were written against the mistyped ref; read them against '+near[0],authority:AUTH,detected_by:BY});
-      return near[0];
+      return [near[0]];
     });
   }
 }

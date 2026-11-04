@@ -181,9 +181,10 @@ correction exists; otherwise validation stops the run as before. Every repair is
 | `repeated_section` | a section is returned more than once and every copy but one is empty, or all copies are identical | two copies hold different rows |
 | `record_id_typo` | an unknown id is one character (added, dropped or changed) from exactly one shortlisted id, that id is not already in the section, and the row's quote is in that record | two ids are that close, the quote is missing or not in that record, or the id is further off |
 | `quote_text_mismatch` | the quote matches exactly one span of the record's text once case, spacing and typographic quotes/dashes are ignored; the quote is replaced with that span | a word is added or missing, nothing matches, or two different spans match |
-| `history_ref_typo` | an unknown history ref is one character from exactly one ref the packet offered for that record (exact-URL or similar-title publications) | two offered refs are that close, or none is |
+| `history_ref_typo` | an unknown history ref is one character from exactly one ref the packet offered for that record (exact-URL or similar-title publications) | never: see `history_ref_removed` |
+| `history_ref_removed` | an unknown history ref does not qualify as `history_ref_typo`; the ref is removed, and the row and its rank stay (Decision_Log §102, amended 2026-11-04) | never: this one does not stop the run |
 
-A remapped history ref carries a `check` note: the row's reason was written against the mistyped ref.
+A remapped or removed history ref carries a `check` note: the row's reason was written against a ref that does not exist.
 These run in code; no second model call is made. Retrying the call on a stop is a possible later option.
 
 ## Built-in stops

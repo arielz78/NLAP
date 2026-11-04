@@ -5,9 +5,9 @@ approximately 13,000 subscribers. It collects event listings from multiple sourc
 deduplicates them, assembles a constrained editorial slate, generates newsletter copy, and exports
 HTML for final review in Beehiiv.
 
-The workflow is designed, built, and operated by one person. An early version of the ingestion and
-allocation stages has run weekly since December 2025; the components around them have been added
-and substantially rebuilt since, and reached production at different times. See
+The workflow is designed, built, and operated by one person. The ingestion and allocation stages
+run every week; the components around them have been added and substantially rebuilt over time, and
+reached production at different times. See
 [Component Status](#component-status). Ingestion, allocation, copy generation and export are live;
 the models order candidates and ranking work is still in progress. Selection remains
 editor-controlled: automated components prepare and propose each issue, and the editor approves what

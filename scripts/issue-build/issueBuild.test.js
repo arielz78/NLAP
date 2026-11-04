@@ -412,11 +412,25 @@ test('thin supply exits non-zero (2); other failures exit 1; replay path loads n
   assert.equal(hits.length, 1); assert.deepEqual([hits[0].record_id, hits[0].from, hits[0].to], [id('c4'), TYPO, OFFERED]);
   assert.deepEqual(rowOf(out.pool,'c4').history_refs, [OFFERED]); assert.match(out.text, /history_ref_typo/);
  });
- test('16a: a history ref typo stops the run when two offered refs are one character away, or none is offered',()=>{
+ test('a history ref with no single repair is removed and named in the receipt; the row and every rank stay (two offered refs close, or none offered)',()=>{
   const both = rows(); both.find(r=>r.record_id===id('c4')).weak_lexical_comparable_refs = [OFFERED, NEAR];
+  for (const packetRows of [both, rows()]) {
+   const ranking = poolOf(); rowOf(ranking,'c4').history_refs = [TYPO];
+   const out = runFinalize(ranking, packetRows, [hist(OFFERED), hist(NEAR)]), hits = mechanical(out.receipt,'history_ref_removed');
+   assert.equal(hits.length, 1); assert.deepEqual([hits[0].record_id, hits[0].removed], [id('c4'), TYPO]);
+   assert.deepEqual(rowOf(out.pool,'c4').history_refs, []); assert.match(out.text, /history_ref_removed/);
+   assert.deepEqual(out.pool.sections.map(s=>s.ordered.map(o=>o.id)), ranking.sections.map(s=>s.ordered.map(o=>o.id)));
+  }
+ });
+ test('removing an unresolvable history ref leaves a real ref on the same row',()=>{
+  const ranking = poolOf(); rowOf(ranking,'c4').history_refs = [NEAR, TYPO];
+  const out = runFinalize(ranking, rows(), [hist(OFFERED), hist(NEAR)]);
+  assert.deepEqual(rowOf(out.pool,'c4').history_refs, [NEAR]);
+ });
+ test('an unresolvable history ref still stops the run when a corrections file exists (a person owns that response)',()=>{
   const ranking = poolOf(); rowOf(ranking,'c4').history_refs = [TYPO];
-  stops(()=>runFinalize(ranking, both, [hist(OFFERED), hist(NEAR)]), /Unknown history reference/);
-  stops(()=>runFinalize(ranking, rows(), [hist(OFFERED), hist(NEAR)]), /Unknown history reference/);
+  const {ranking:out, receipt} = repair(ranking,{responseSha:'s',corrections:{source_response_sha256:'s',corrections:[]},knownIds:KEYS.map(id),records:rows(),historyRefs:[OFFERED,NEAR]});
+  assert.equal(receipt.automatic.length, 0); assert.deepEqual(rowOf(out,'c4').history_refs, [TYPO]);
  });
  test('16a: hand corrections apply first and leave nothing for the automatic repair to do',()=>{
   const ranking = poolOf(); ranking.sections.push(JSON.parse(JSON.stringify(ranking.sections[1])));
