@@ -187,6 +187,18 @@ correction exists; otherwise validation stops the run as before. Every repair is
 A remapped or removed history ref carries a `check` note: the row's reason was written against a ref that does not exist.
 These run in code; no second model call is made. Retrying the call on a stop is a possible later option.
 
+## Same outing
+
+No two events in a section that a reader could mistake for the same outing. The model marks them with
+`same_outing_as`, the id of another event in that section's list; marks that connect form one group. `allocate`
+keeps the highest-ranked event of a group that can run, and the others stay on the bench, where
+`replaceable_slots` lists only the kept event's slot. Broad categories are not limited: two craft workshops or two
+concerts stay. `RECEIPT.md` and `run_manifest.json` name every event moved to the bench.
+
+A mark that does not name another event in the section is removed and listed as `same_outing_mark_removed`; the row
+and its rank stay. A response saved before the field existed counts as having no marks. If marks leave a section
+short of 5 picks, the thin-supply stop fires. The console does not read these marks: its own check uses `series_id`.
+
 ## Built-in stops
 
 - **Form links (Decision_Log §101).** A record whose URL matches `forms.gle` or `docs.google.com/forms`

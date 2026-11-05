@@ -116,7 +116,7 @@ function requestKey(request,codeHash){return sha(JSON.stringify({request,codeHas
 function makeSchema() {
   const str={type:'string'}, strings={type:'array',items:str};
   const object=properties=>({type:'object',properties,required:Object.keys(properties),additionalProperties:false});
-  const row=object({id:str,reason:str,evidence_quote:str,warnings:strings,history_refs:strings,flex_reason:str});
+  const row=object({id:str,reason:str,evidence_quote:str,warnings:strings,history_refs:strings,flex_reason:str,same_outing_as:str});
   return object({sections:{type:'array',items:object({section:{type:'string',enum:SECTIONS},ordered:{type:'array',items:row}})},
     exclusions:{type:'array',items:object({id:str,reason:str})},notes:strings});
 }
@@ -136,7 +136,9 @@ function validateRanking(r,candidates,history) {
     assert(byId.has(row.id),'Unknown candidate '+row.id);assert(!seen.has(row.id),'Duplicate rank '+row.id);seen.add(row.id);selected.add(row.id);
     assert(row.reason.trim().length>0,'Missing reason');assert(row.history_refs.every(x=>refs.has(x)),'Unknown history reference');
     assert(!row.evidence_quote||recordText(byId.get(row.id)).includes(row.evidence_quote),'Unsupported exact quote '+row.id);
-  }}
+  }
+  for(const row of s.ordered)assert(!row.same_outing_as||(seen.has(row.same_outing_as)&&row.same_outing_as!==row.id),'same_outing_as on '+row.id+' does not name another event in '+s.section);
+  }
   const rejected=new Set();for(const row of r.exclusions){assert(byId.has(row.id),'Unknown excluded ID');assert(!selected.has(row.id),'Ranked and excluded '+row.id);assert(!rejected.has(row.id),'Duplicate exclusion');rejected.add(row.id);}
   return r;
 }
@@ -147,13 +149,25 @@ function accepted(issue,c,section,rank,candidates,locks){
   // Approved is a local adapter eligibility projection, never a persisted editor ruling.
   return buildIssues([...contextRows(candidates),projected],locks,[localDate(issue)],localDate(issue))[0]||null;
 }
+// Same outing (Ariel, 2026-11-04): no two events in a section that a reader could mistake for the same outing.
+// The model marks them with same_outing_as; marks that connect form one group, whichever way they point.
+// Returns a test for one section's rows. An event not ranked in that section is in no group.
+function outingGroups(ordered){
+  const parent=new Map(ordered.map(o=>[o.id,o.id]));
+  const root=id=>{while(parent.get(id)!==id)id=parent.get(id);return id;};
+  for(const o of ordered)if(o.same_outing_as&&parent.has(o.same_outing_as))parent.set(root(o.id),root(o.same_outing_as));
+  return (a,b)=>parent.has(a)&&parent.has(b)&&root(a)===root(b);
+}
 function allocate(issue,candidates,ranked,originalLocks=[]) {
   const byId=new Map(candidates.map(c=>[c.record_id,c]));
   for(const l of originalLocks)assert(byId.has(l.ItemID),'Lock candidate absent from demo input');
   const locks=originalLocks.map(x=>({...x})),trace=[];
   const rankedBySection=new Map(ranked.sections.map(s=>[s.section,s.ordered]));
+  const sameOuting=new Map(ranked.sections.map(s=>[s.section,outingGroups(s.ordered)]));
+  // Sections fill best rank first, so the event that stays is the highest-ranked one able to run.
   const options=section=>(rankedBySection.get(section)||[]).map((offer,i)=>({offer,rank:i+1,c:byId.get(offer.id)}))
     .filter(x=>x.c&&!locks.some(l=>sameOpportunity(x.c,byId.get(l.ItemID))))
+    .filter(x=>!locks.some(l=>l.Section===section&&sameOuting.get(section)(x.offer.id,l.ItemID)))
     .map(x=>({...x,assignment:accepted(issue,x.c,section,x.rank,candidates,locks)})).filter(x=>x.assignment);
   while(true){
     const choices=SECTIONS.map((section,i)=>{
@@ -170,17 +184,26 @@ function allocate(issue,candidates,ranked,originalLocks=[]) {
   }
   const picks=locks.sort((a,b)=>SECTIONS.indexOf(a.Section)-SECTIONS.indexOf(b.Section)||a.Slot-b.Slot);
   const shortfalls=Object.fromEntries(SECTIONS.map(s=>[s,PICKS-picks.filter(p=>p.Section===s&&p.IssueDate===issue).length]));
-  return {picks,trace,shortfalls};
+  const same_outing_held=ranked.sections.flatMap(s=>{
+    const same=sameOuting.get(s.section),inSection=picks.filter(p=>p.Section===s.section);
+    return s.ordered.filter(o=>!picks.some(p=>p.ItemID===o.id)).flatMap(o=>{
+      const kept=inSection.find(p=>same(o.id,p.ItemID));
+      // An event that could not have run anyway (outside the window, say) was not moved by this rule.
+      return kept&&accepted(issue,byId.get(o.id),s.section,1,candidates,[])?[{section:s.section,id:o.id,kept:kept.ItemID}]:[];
+    });
+  });
+  return {picks,trace,shortfalls,same_outing_held};
 }
 function alternatives(issue,candidates,ranked,picks) {
   const byId=new Map(candidates.map(c=>[c.record_id,c]));
   return Object.fromEntries(SECTIONS.map(section=>[section,(ranked.sections.find(s=>s.section===section)?.ordered||[])
     .filter(row=>!picks.some(p=>p.ItemID===row.id))
     .map((row)=>{
-      const c=byId.get(row.id),slots=[];
+      const c=byId.get(row.id),slots=[],same=outingGroups(ranked.sections.find(s=>s.section===section)?.ordered||[]);
       for(const removed of picks.filter(p=>p.Section===section)){
         const held=picks.filter(p=>p!==removed);
         if(held.some(p=>sameOpportunity(c,byId.get(p.ItemID))))continue;
+        if(held.some(p=>p.Section===section&&same(row.id,p.ItemID)))continue;
         if(accepted(issue,c,section,1,candidates,held))slots.push(removed.Slot);
       }
       return {...row,replaceable_slots:slots};
@@ -488,7 +511,7 @@ function buildSlate(week,packet,ranking){
   return {ranked,result,alts,checks,supply,displayed:displayedEvents(week.issue,packet,result,alts),output:render(week,packet,ranked,result,alts)};
 }
 function receiptText(week,manifest){
-  const r=manifest.repair_receipt,line=c=>'  - '+[c.defect,c.type||c.op,c.title||c.record_id||c.id||c.section,c.effect||c.action].filter(Boolean).join(' · ');
+  const held=manifest.same_outing_held||[],r=manifest.repair_receipt,line=c=>'  - '+[c.defect,c.type||c.op,c.title||c.record_id||c.id||c.section,c.effect||c.action].filter(Boolean).join(' · ');
   return ['# Issue build receipt — '+week.issueLong+' ('+week.version+')','',
     '**'+HUMAN_REVIEW+'**','','Reviewed by: ________________    Reviewed at: ________________','',
     'Record it with `node scripts/issue-build/issueBuild.js signoff --issue '+week.issue+' --by "<name>"` (writes `human_review.json`), or fill the line above.','',
@@ -499,7 +522,9 @@ function receiptText(week,manifest){
     '- Form links (Decision_Log §101): '+manifest.form_url_exclusions.length+' record(s) kept out of the shortlist; '+manifest.shortlist_form_url_matches+' shortlist URL(s) match',
     '- Supply: '+SECTIONS.map(s=>s+' '+manifest.supply[s].picks+' picks / '+manifest.supply[s].replaceable_alternatives+' replaceable alternatives').join('; '),
     '- Repairs to the model response: '+r.automatic.length+' automatic, '+r.hand_corrections.length+' from the corrections file',
-    ...r.automatic.map(line),...r.hand_corrections.map(line),''].join('\n');
+    ...r.automatic.map(line),...r.hand_corrections.map(line),
+    '- Same outing: '+held.length+' event(s) moved to the bench',
+    ...held.map(h=>'  - '+h.section+': '+(h.title||h.id)+' (kept '+(h.kept_title||h.kept)+')'),''].join('\n');
 }
 function finalize(dir,opts={}){
   assert(has(dir,'week.json')&&has(dir,'request_manifest.json'),'No prepared request in '+rel(dir)+'; run prepare first');
@@ -533,6 +558,7 @@ function finalize(dir,opts={}){
   const {ranked,result,alts,checks,supply,displayed,output}=built;
   if(!has(dir,'usage.json'))save(dir,'usage.json',usageFrom(body,m,Boolean(replay)));
   const usage=read(dir,'usage.json');
+  const titleOf=id=>packet.candidates.find(c=>c.record_id===id)?.snapshot_fields['Event Title']||id;
   save(dir,'ranked_pool.json',ranked);save(dir,'allocation.json',{...result,alternatives:alts});save(dir,'validation.json',{...checks,supply});
   save(dir,'displayed_events.json',displayed);
   save(dir,'editor_preview.html',output.html);save(dir,'editor_preview.md',output.md);
@@ -540,6 +566,7 @@ function finalize(dir,opts={}){
     mode:replay?'replay':'live',replay,git:git(),git_at_prepare:m.git,
     prompt_template_sha256:m.prompt_template_sha256,editor_rules_template_sha256:m.editor_rules_template_sha256,guidance_sha256:m.guidance_sha256,prompt_rendered_sha256:m.prompt_rendered_sha256,
     human_review:{required:true,statement:HUMAN_REVIEW,reviewed_by:null,reviewed_at:null,recorded_in:'human_review.json (signoff command) or the line in RECEIPT.md'},
+    same_outing_held:result.same_outing_held.map(h=>({...h,title:titleOf(h.id),kept_title:titleOf(h.kept)})),
     repair_receipt:receipt,form_url_exclusions:m.form_url_exclusions,shortlist_form_url_matches:m.shortlist_form_url_matches,page_evidence:m.page_evidence,
     request_key:m.request_key,request_code_sha256:m.code_sha256,render_code_sha256:codeIdentity(),
     allocator_sha256:sha(fs.readFileSync(path.join(ROOT,'scripts/buildIssues.js'))),response_sha256:sha(raw),

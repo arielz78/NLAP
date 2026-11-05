@@ -17,7 +17,7 @@ const candidate = (id, venue, title=id, date=d.addDays(ISSUE,3), url='https://ex
   snapshot_fields:{'Event Title':title,'Start Date':date,URL:url,
     LocationName:venue,Status:'New',DescriptionRaw:null},
   r7:{record_id:id,start_date:date,p_include:0.8,section_probabilities:{[F]:0.2,[C]:0.4,[G]:0.4}}});
-const offer = id => ({id,reason:'A suitable activity.',evidence_quote:'',warnings:[],history_refs:[],flex_reason:''});
+const offer = id => ({id,reason:'A suitable activity.',evidence_quote:'',warnings:[],history_refs:[],flex_reason:'',same_outing_as:''});
 const pool = (f=[],c=[],g=[]) => ({sections:d.SECTIONS.map((section,i)=>({section,ordered:[f,c,g][i].map(offer)})), exclusions:[],notes:[]});
 const week = (issue=ISSUE, opts) => ({...d.weekContext(issue,GUIDANCE,opts), snapshotLabel:'October 4', recent_issues:[-7,-14,-21].map(n=>d.addDays(issue,n))});
 const packetOf = rows => ({candidates:rows, history:[], coverage:{all_candidates:rows.length, click_history_through:null}});
@@ -444,6 +444,102 @@ test('thin supply exits non-zero (2); other failures exit 1; replay path loads n
    corrections:[{op:'set_quote',id:id('c2'),from:'free entry!',to:'FREE ENTRY'}]},knownIds:KEYS.map(id),records:packetRows});
   assert.equal(receipt.automatic.length, 0);
   assert.equal(rowOf(out,'c2').evidence_quote, 'FREE ENTRY');
+ });
+}
+// ---- Same outing: one per section, the highest-ranked stays, the rest go to the bench. ----
+{
+ ISSUE = ISSUES[0];
+ const marked = (ordered, marks) => {
+  const ranked = pool(ordered);
+  for (const [id, target] of Object.entries(marks)) ranked.sections[0].ordered.find(o=>o.id===id).same_outing_as = target;
+  return ranked;
+ };
+ const familyRows = ids => ids.map(id=>candidate(id,'Venue '+id));
+ const pickIds = result => result.picks.filter(p=>p.Section===F).map(p=>p.ItemID);
+
+ test('same outing: the higher-ranked event stays and the next distinct event fills the slot',()=>{
+  const ids=['a','b','c','poke1','poke2','e','f'], rows=familyRows(ids);
+  const r=d.allocate(ISSUE,rows,marked(ids,{poke2:'poke1'}));
+  assert.deepEqual(pickIds(r),['a','b','c','poke1','e']);
+  assert.deepEqual(r.same_outing_held,[{section:F,id:'poke2',kept:'poke1'}]);
+ });
+ test('same outing: no marks gives the same picks as before and holds nothing',()=>{
+  const ids=['a','b','c','e','f','g'], rows=familyRows(ids);
+  const r=d.allocate(ISSUE,rows,pool(ids));
+  assert.deepEqual(pickIds(r),['a','b','c','e','f']); assert.deepEqual(r.same_outing_held,[]);
+ });
+ test('same outing: a mark pointing down the list and a chain of three both form one group',()=>{
+  const ids=['x','a','b','y','z','e','f'], rows=familyRows(ids);
+  assert.deepEqual(pickIds(d.allocate(ISSUE,rows,marked(ids,{x:'y'}))),['x','a','b','z','e']);
+  const chain=d.allocate(ISSUE,rows,marked(ids,{a:'x',b:'a'}));
+  assert.deepEqual(pickIds(chain),['x','y','z','e','f']);
+  assert.deepEqual(chain.same_outing_held.map(h=>[h.id,h.kept]),[['a','x'],['b','x']]);
+ });
+ test('same outing: when the top event cannot run, the next one in its group takes its place',()=>{
+  const ids=['late','next','a','b','c','e'];
+  const rows=ids.map(id=>id==='late'?candidate(id,'Venue late',id,d.addDays(ISSUE,11)):candidate(id,'Venue '+id));
+  const r=d.allocate(ISSUE,rows,marked(ids,{next:'late'}));
+  assert.deepEqual(pickIds(r),['next','a','b','c','e']); assert.deepEqual(r.same_outing_held,[]);
+ });
+ test('same outing: a locked event blocks the rest of its group',()=>{
+  const ids=['poke1','poke2','a','b','c','e'], rows=familyRows(ids);
+  const r=d.allocate(ISSUE,rows,marked(['poke2','a','b','c','e'],{}),[{IssueDate:ISSUE,ItemID:'poke1',Section:F,Slot:1}]);
+  assert.ok(r.picks.some(p=>p.ItemID==='poke2')); // no mark, no limit
+  const ranked=pool(['poke1','poke2','a','b','c','e']); ranked.sections[0].ordered[1].same_outing_as='poke1';
+  const locked=d.allocate(ISSUE,rows,ranked,[{IssueDate:ISSUE,ItemID:'poke1',Section:F,Slot:1}]);
+  assert.ok(!locked.picks.some(p=>p.ItemID==='poke2'));
+ });
+ test('same outing: a benched event can replace only its own group\'s pick',()=>{
+  const ids=['a','b','c','poke1','poke2','e','f'], rows=familyRows(ids), ranked=marked(ids,{poke2:'poke1'});
+  const r=d.allocate(ISSUE,rows,ranked), alts=d.alternatives(ISSUE,rows,ranked,r.picks);
+  assert.deepEqual(alts[F].find(a=>a.id==='poke2').replaceable_slots,[r.picks.find(p=>p.ItemID==='poke1').Slot]);
+  assert.equal(alts[F].find(a=>a.id==='f').replaceable_slots.length,5);
+ });
+ test('same outing: the same record in another section is not limited',()=>{
+  const rows=familyRows(['a','b','c']);
+  const ranked=pool(['a','b'],['c']); ranked.sections[0].ordered[1].same_outing_as='a';
+  const r=d.allocate(ISSUE,rows,ranked);
+  assert.ok(r.picks.some(p=>p.ItemID==='a'&&p.Section===F)&&r.picks.some(p=>p.ItemID==='c'&&p.Section===C)&&!r.picks.some(p=>p.ItemID==='b'));
+ });
+ test('same outing: a saved response without the field still repairs, validates and builds',()=>{
+  const rows=fullRows(), old=fullPool(rows);
+  for (const s of old.sections) for (const row of s.ordered) delete row.same_outing_as;
+  const {ranking,receipt}=repair(old,{responseSha:'s',knownIds:rows.map(x=>x.record_id),records:rows});
+  assert.ok(ranking.sections.every(s=>s.ordered.every(o=>o.same_outing_as==='')));
+  assert.equal(receipt.automatic.length,0); assert.equal(receipt.changed,false);
+  assert.equal(d.buildSlate(week(),packetOf(rows),ranking).result.picks.length,15);
+ });
+ test('same outing: a mark that names nothing usable is removed and named; the row and its rank stay',()=>{
+  const rows=familyRows(['a','b','c','e']);
+  const bad=pool(['a','b','c'],['e']);
+  bad.sections[0].ordered[1].same_outing_as='nope';  // unknown id
+  bad.sections[0].ordered[2].same_outing_as='e';     // lives in another section
+  bad.sections[1].ordered[0].same_outing_as='e';     // itself
+  const {ranking,receipt}=repair(bad,{responseSha:'s',knownIds:rows.map(x=>x.record_id),records:rows});
+  assert.deepEqual(ranking.sections[0].ordered.map(o=>o.id),['a','b','c']);
+  assert.ok(ranking.sections.flatMap(s=>s.ordered).every(o=>o.same_outing_as===''));
+  assert.equal(receipt.automatic.filter(x=>x.type==='same_outing_mark_removed').length,3);
+ });
+ test('same outing: a mark left dangling by a hand correction is removed even with a corrections file',()=>{
+  const rows=familyRows(['a','b']);
+  const ranking=pool(['a','b']); ranking.sections[0].ordered[1].same_outing_as='a';
+  const {ranking:out,receipt}=repair(ranking,{responseSha:'s',corrections:{source_response_sha256:'s',corrections:[{op:'drop_row',section:F,id:'a'}]},knownIds:['a','b'],records:rows});
+  assert.equal(out.sections[0].ordered[0].same_outing_as,'');
+  assert.equal(receipt.automatic.filter(x=>x.type==='same_outing_mark_removed').length,1);
+ });
+ test('same outing: validation refuses a mark outside the section',()=>{
+  const rows=familyRows(['a','b','c']), ranked=pool(['a','b'],['c']);
+  ranked.sections[0].ordered[1].same_outing_as='c';
+  assert.throws(()=>d.validateRanking(ranked,rows,[]),/same_outing_as/);
+ });
+ test('same outing: the request schema requires the field and the receipt names who was held',()=>{
+  const rows=fullRows(), ranked=fullPool(rows); ranked.sections[0].ordered[1].same_outing_as='f0';
+  const built=d.buildSlate(week(),packetOf(rows),ranked);
+  assert.deepEqual(built.result.same_outing_held,[{section:F,id:'f1',kept:'f0'}]);
+  assert.ok(!built.result.picks.some(p=>p.ItemID==='f1'));
+  const text=d.receiptText(week(),{mode:'live',git:{sha:'x'},prompt_template_sha256:'p',form_url_exclusions:[],shortlist_form_url_matches:0,
+   supply:built.supply,repair_receipt:{automatic:[],hand_corrections:[]},same_outing_held:built.result.same_outing_held});
+  assert.match(text,/Same outing: 1 event.*f1 \(kept f0\)/s);
  });
 }
 console.log(cases+' acceptance cases passed.');

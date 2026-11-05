@@ -177,6 +177,23 @@ function historyRefTypos(rank,byId,refs,out){
     });
   }
 }
+// A same-outing mark must name another event in the same section. One that does not is removed and named: the
+// row and its rank stay, so at worst a repeat reaches the editor. Runs with or without a corrections file,
+// because a hand correction that drops a row can leave a mark pointing at nothing. A non-string is left for the schema check.
+function sameOutingMarks(rank,records,out){
+  const byId=new Map(records.map(c=>[c.record_id,c]));
+  for(const s of rank.sections){
+    const ids=new Set(s.ordered.map(o=>o.id));
+    for(const row of s.ordered){
+      const mark=row.same_outing_as;
+      if(typeof mark!=='string'||!mark||(ids.has(mark)&&mark!==row.id))continue;
+      out.push({type:'same_outing_mark_removed',section:s.section,record_id:row.id,title:byId.get(row.id)?.snapshot_fields['Event Title'],removed:mark,
+        action:'removed same_outing_as '+mark+': it does not name another event in '+s.section+'; the row and its rank are unchanged',
+        check:'this event may repeat another one in the section',authority:'Decision_Log, same-outing rule',detected_by:BY});
+      row.same_outing_as='';
+    }
+  }
+}
 function mechanical(rank,records,historyRefs){
   const out=[],byId=new Map(records.map(c=>[c.record_id,c])),refs=new Set(historyRefs);
   repeatedSections(rank,out);
@@ -194,6 +211,8 @@ function repair(ranking,{responseSha,formExcluded=[],corrections=null,correction
   const rank=JSON.parse(JSON.stringify(ranking)),known=new Set(knownIds),automatic=[],hand=[];
   need(Array.isArray(rank.sections)&&Array.isArray(rank.exclusions),'Response has no sections/exclusions arrays');
   for(const s of rank.sections)need(s&&Array.isArray(s.ordered),'Response section has no ordered array');
+  // A response saved before the field existed made no same-outing marks. The live schema requires the field.
+  for(const s of rank.sections)for(const o of s.ordered)if(o&&typeof o==='object'&&!Object.hasOwn(o,'same_outing_as'))o.same_outing_as='';
   const before=count(rank);
   for(const f of formExcluded){
     const removed=rank.sections.flatMap(s=>s.ordered.map((o,i)=>o.id===f.record_id?{section:s.section,rank:i+1}:null).filter(Boolean));
@@ -217,6 +236,7 @@ function repair(ranking,{responseSha,formExcluded=[],corrections=null,correction
   // person's set_quote ('FREE ENTRY' became 'Free entry'; Codex, 2026-10-15). With a corrections file, whatever
   // the person left is checked by validation as it stands.
   if(!corrections)automatic.push(...mechanical(rank,records,historyRefs));
+  sameOutingMarks(rank,records,automatic);
   const receipt={source_response_sha256:responseSha,corrections_file:correctionsSource,
     changed:automatic.length+hand.length>0,automatic,hand_corrections:hand,rows_before:before,rows_after:count(rank),
     reviewed_ranking_sha256:sha(JSON.stringify(rank,null,2)+'\n'),
