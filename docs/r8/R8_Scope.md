@@ -181,8 +181,7 @@ incremental and never shrinks (`1812453`). `runWeek` measured at ~2 min, mostly 
 10-15 submission looks like a test.
 
 **Next (2026-11-04):** the editor discussion (#164), pushed from 10-28. Do not run `writeIssuePicks.js --apply` for 10-29
-or 11-05 before it. Beehiiv draft test (#165) before the plan renewal. The editor submitted 2026-11-05, and the 2026-11-12
-build is published to the console. *Superseded, earlier text follows:* when the
+or 11-05 before it. Beehiiv draft test (#165) before the plan renewal. The editor submitted 2026-11-05. 2026-11-12 build 2 (v10b) is published and awaits his submission; the latest 11-12 submission is against build 1 and is not a label, and production sign-in is untested. The 2026-11-19 v10 run stopped at validation on a quote not in the record and was not hand-repaired; the next paid 11-19 build is around 11-11. *Superseded, earlier text follows:* when the
 editor submits 2026-10-29: `applySubmission.js --write` → `writeIssuePicks.js --apply
 --ensure-issue` (#149, Ariel's go; item 20's writer change wrap-reviewed READY 2026-10-18, range 4dc67cb..5bf96cd) →
 `generateBlurbs.js` → `--lock` → `pushToBeehiiv.js` → send him the export, before he publishes. Stage B is on #161. The ship plan's new §0 states the destination (an editor-run week) and
