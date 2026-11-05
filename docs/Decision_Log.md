@@ -2578,6 +2578,11 @@ which plan the live weeks run on is Ariel's to revisit before the editor starts.
 **What this does not decide:** where the pipeline runs in Stage B. It cannot run on Vercel (long jobs, files
 kept between runs, n8n); whether that machine is always on or started on demand is open.
 
+**Amended 2026-11-04:** the shared login is now a login page and a 90-day signed cookie instead of HTTP Basic,
+because the browser kept asking the editor to sign in. Still one shared login, failing closed, with no new secret;
+changing the password signs everyone out. Accepted: no attempt limit, and a cookie holder could guess a weak
+password offline, so it must be long.
+
 ---
 
 ## 111. The Live n8n Export Is the Repo Copy of R1 (2026-10-15)
@@ -2715,3 +2720,22 @@ and moving the console to a free host that allows commercial use is a few hours.
 
 **What this does not decide:** whether R1 stays in n8n on the runner or is ported to plain Node, and the
 order of the Stage B work against the editor's export-as-download ask.
+
+---
+
+## 116. One Event per Same-Outing Group in a Section; the Ranker Marks, the Allocator Enforces (2026-11-04)
+
+**Decision:** no two events in a section that a reader could mistake for the same outing. The ranker marks them with
+`same_outing_as`; the allocator keeps the highest-ranked one able to run and the rest stay on the bench. Broad
+categories are not limited. Ariel's call.
+
+**Why:** the editor flagged repeats two weeks running (two Pokémon events in Families on 11-05 and 11-12). The prompt
+already advised against this and the model broke it knowingly. Published lineups regularly place broad neighbours
+together (crafts, music), so a category limit would block choices he makes himself. Distance on embeddings would not
+separate the two cases on this little data.
+
+**Accepted cost:** it depends on the model's judgment, and the console's live swap check does not read the marks.
+
+**Not established:** the model made no marks in its first two runs. Build 2 of 11-12 had no Pokémon picks and the
+editor called it better, but that may come from the prompt wording, the added history or run-to-run variation.
+Hypothesis to test on later builds; a section short of 5 picks hits the thin-supply stop.

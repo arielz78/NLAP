@@ -7,6 +7,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 ## 2026-11-04
 - Built and published the week's slate to the editor console.
 - Hardened the build's validation so an unresolvable citation is removed and recorded instead of stopping an unattended run; the ranking itself is untouched.
+- Added a rule that keeps near-identical events out of the same newsletter section, enforced in code and recorded in each build's receipt.
+- Replaced the editor console's browser sign-in popup with a login page and a long-lived signed session.
 
 ## 2026-10-28
 - Upgraded the self-hosted workflow engine to the current release with a full data backup and rollback path, then ran the weekly ingestion on it.

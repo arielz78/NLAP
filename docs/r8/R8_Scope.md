@@ -43,8 +43,8 @@ and build, the `connectAirtable.js` guard test and the issue-producer tests, gre
 not passed. It has been run by hand once (2026-10-13, see below).
 
 **The console is hosted and serves a real build (2026-10-13).** It runs in production mode on Vercel
-against a Neon database, behind one shared login (HTTP Basic on every page and `/api` route; with no
-login configured every request is refused). Ariel set up and owns both accounts (Decision_Log §110).
+against a Neon database, behind one shared login (a login page and a 90-day signed cookie on every page and `/api`
+route, since 2026-11-04; with no login configured every request is refused). Ariel set up and owns both accounts (Decision_Log §110).
 The build it serves is the 2026-10-15 slate rebuilt from the v6b run, published with
 `npm run publish-build`. ⚠️ **That database holds test data:** one submission Ariel made while testing,
 recorded under the editor's identity. **Decided 2026-10-13 (Ariel): the database is reset and re-migrated
@@ -175,6 +175,10 @@ write-back, blurbs and export for it did not run. The console emails Ariel on ev
 live). The self-fill form now accepts input (`dbdc5d8`; a CSS bug the unit tests could not see). The 2026-10-29 build
 (v9) is published to the console, after v8 ran on a 9-issue history from a bad Beehiiv fetch; the history fetch is now
 incremental and never shrinks (`1812453`). `runWeek` measured at ~2 min, mostly the model call; scheduling R1 is on #161.
+
+**Done 2026-11-04, second session:** same-outing rule (Decision_Log §116), 11-12 build 2 published, login page live
+(§110 amended). The editor submitted build 1 unchanged only to close its draft, so that submission is not a label; the
+10-15 submission looks like a test.
 
 **Next (2026-11-04):** the editor discussion (#164), pushed from 10-28. Do not run `writeIssuePicks.js --apply` for 10-29
 or 11-05 before it. Beehiiv draft test (#165) before the plan renewal. The editor submitted 2026-11-05, and the 2026-11-12
