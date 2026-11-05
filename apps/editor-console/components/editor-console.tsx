@@ -375,6 +375,9 @@ export function EditorConsole({
   });
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [error, setError] = useState<string | null>(null);
+  // Set when an /api call answers 401. There is deliberately no automatic jump to the login page:
+  // a half-typed event of his own exists only in this page, so he leaves when he chooses to.
+  const [signedOut, setSignedOut] = useState(false);
   const [confirmingSubmit, setConfirmingSubmit] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -513,6 +516,7 @@ export function EditorConsole({
             }),
           },
         );
+        setSignedOut(response.status === 401);
         const body = (await response.json()) as
           | { draft: EditorWorkspace["draft"]; event: InteractionEvent }
           | { error: string };
@@ -605,6 +609,7 @@ export function EditorConsole({
             }),
           },
         );
+        setSignedOut(response.status === 401);
         const body = (await response.json()) as
           | {
               draft: EditorWorkspace["draft"];
@@ -682,6 +687,7 @@ export function EditorConsole({
             }),
           },
         );
+        setSignedOut(response.status === 401);
         const body = (await response.json()) as EditorWorkspace | { error: string };
         if (!response.ok || !("draft" in body)) {
           throw new Error("error" in body ? body.error : "The issue could not be reopened.");
@@ -761,8 +767,9 @@ export function EditorConsole({
       {error && (
         <div className="error-banner" role="alert">
           <span>{error}</span>
+          {/* Signed out, a reload lands on the login page, then back here with the saved draft. */}
           <button type="button" onClick={() => window.location.reload()}>
-            Reload draft
+            {signedOut ? "Sign in again" : "Reload draft"}
           </button>
         </div>
       )}

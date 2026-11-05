@@ -357,6 +357,86 @@ svg {
   line-height: 1.6;
 }
 
+.login-page {
+  width: min(400px, calc(100% - 2rem));
+  min-height: 100vh;
+  display: grid;
+  align-content: center;
+  gap: 1.25rem;
+  margin: 0 auto;
+  padding: 2rem 0;
+}
+
+.login-page h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2.2rem;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+
+.login-error {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid #edc8ce;
+  border-radius: 10px;
+  color: var(--red);
+  background: var(--red-wash);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.login-form {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.login-form label {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.login-form input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--surface);
+  font: inherit;
+  font-weight: 400;
+}
+
+.login-form input:focus-visible {
+  outline: 3px solid rgba(37, 99, 166, 0.3);
+  outline-offset: 1px;
+  border-color: var(--blue);
+}
+
+.login-button {
+  min-height: 48px;
+  border: 1px solid var(--navy);
+  border-radius: 9px;
+  color: white;
+  background: var(--navy);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(23, 55, 94, 0.15);
+}
+
+.login-button:hover {
+  background: var(--navy-dark);
+}
+
 .submitted-banner.demo-submitted {
   color: #573300;
   background: #fff4d6;

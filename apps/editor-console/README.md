@@ -50,9 +50,25 @@ npm run build
 
 ## Login
 
-Production mode requires `CONSOLE_AUTH_USER` and `CONSOLE_AUTH_PASSWORD`. `proxy.ts` checks them as
-HTTP Basic credentials on every page and every `/api` route. With either one missing, every request
-is refused with a 503. Demo mode has no login.
+Production mode requires `CONSOLE_AUTH_USER` and `CONSOLE_AUTH_PASSWORD`. With either one missing,
+every request is refused with a 503, including the login page. Demo mode has no login.
+
+The editor signs in once at `/login`. `POST /api/login` checks the username and password and sets a
+cookie that lasts 90 days from that sign-in. There is no sign-out button. `proxy.ts` checks the cookie on
+every request:
+
+- Signed in: the request goes through.
+- Signed out, asking for a page: redirected to `/login`.
+- Signed out, calling `/api`: a 401 with a JSON `error`. The console shows that text with a
+  **Sign in again** button. It does not jump to the login page by itself, because an event he is
+  still typing exists only in the open page. Everything already saved is in the database.
+
+A signed-out browser can reach only `/login`, `/api/login` and `/_next/static/`.
+
+The cookie holds an expiry time and a signature of it, never the password. The signing key is made
+from the username and password, so there is no separate secret to set. Changing either one signs
+everyone out. Use a long password: anyone holding a valid cookie could try guesses against its
+signature offline.
 
 ## Publish a build
 
