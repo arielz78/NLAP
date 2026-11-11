@@ -366,16 +366,18 @@ test('thin supply exits non-zero (2); other failures exit 1; replay path loads n
   assert.equal(rowOf(out.pool,'c1').evidence_quote, 'Classic Albums Night:  Side Two');
   assert.match(out.text, /quote_text_mismatch/); assert.match(out.text, /4 automatic/);
  });
- test('16a: a quote with an added word, an invented quote, or one that matches two different source spans stops the run',()=>{
+ test('a quote with an added word, an invented quote, or one that matches two source spans is marked in the warnings; the run finishes and every rank stays (Decision_Log §102, amended 2026-11-11)',()=>{
   const packetRows = rows(), by = k => packetRows.find(r=>r.record_id===id(k));
   by('f1').snapshot_fields['Event Title'] = 'Storytelling and Creative Writing (Grades 3-4)';
-  const added = poolOf(); rowOf(added,'f1').evidence_quote = 'For Grades 3-4'; // v6/v6b shape: not whitespace, a different text
-  stops(()=>runFinalize(added, packetRows), new RegExp('Unsupported exact quote '+id('f1')));
-  const invented = poolOf(); rowOf(invented,'f1').evidence_quote = 'a three-hour class';
-  stops(()=>runFinalize(invented, packetRows), /Unsupported exact quote/);
   by('c2').snapshot_fields.DescriptionRaw = 'Free entry. FREE parking.';
-  const twoSpans = poolOf(); rowOf(twoSpans,'c2').evidence_quote = 'free';
-  stops(()=>runFinalize(twoSpans, packetRows), new RegExp('Unsupported exact quote '+id('c2')));
+  for (const [key, quote] of [['f1','For Grades 3-4'], ['f1','a three-hour class'], ['c2','free']]) {
+   const ranking = poolOf(); rowOf(ranking,key).evidence_quote = quote;
+   const out = runFinalize(ranking, packetRows), hits = mechanical(out.receipt,'quote_marked_unverified');
+   assert.equal(hits.length, 1); assert.equal(hits[0].quote, quote);
+   assert.equal(rowOf(out.pool,key).evidence_quote, '');
+   assert.ok(rowOf(out.pool,key).warnings.some(w=>w.includes(quote)));
+   assert.deepEqual(out.pool.sections.map(s=>s.ordered.map(o=>o.id)), ranking.sections.map(s=>s.ordered.map(o=>o.id)));
+  }
  });
  test('16a: a quote after an emoji maps back to the right source text, and 10² never matches 102 (Codex, 2026-10-15)',()=>{
   assert.deepEqual(quoteMatch('Tickets $10', '🎟 Show\ntickets $100 each.'), {to:'tickets $10'}); // was 'ickets $100'
@@ -426,6 +428,22 @@ test('thin supply exits non-zero (2); other failures exit 1; replay path loads n
   const ranking = poolOf(); rowOf(ranking,'c4').history_refs = [NEAR, TYPO];
   const out = runFinalize(ranking, rows(), [hist(OFFERED), hist(NEAR)]);
   assert.deepEqual(rowOf(out.pool,'c4').history_refs, [NEAR]);
+ });
+ test('an exclusion naming no record in the packet is removed and named; every rank stays and the run finishes (v11 11-19 mistyped id)',()=>{
+  const ranking = poolOf(); ranking.exclusions = [{id:'recNOTINPACKET0', reason:'mistyped id'}];
+  const out = runFinalize(ranking), hits = mechanical(out.receipt,'unknown_exclusion_removed');
+  assert.equal(hits.length, 1); assert.equal(hits[0].removed, 'recNOTINPACKET0');
+  assert.deepEqual(out.pool.sections.map(s=>s.ordered.map(o=>o.id)), ranking.sections.map(s=>s.ordered.map(o=>o.id)));
+  // With a corrections file too: exclusions feed no pick, so the removal still applies.
+  const {ranking:fixed, receipt} = repair(ranking,{responseSha:'s',corrections:{source_response_sha256:'s',corrections:[]},knownIds:KEYS.map(id),records:rows()});
+  assert.deepEqual(fixed.exclusions, []); assert.equal(receipt.automatic.filter(a=>a.type==='unknown_exclusion_removed').length, 1);
+ });
+ test('a ranked record that is also excluded keeps its ranking; the exclusion is removed and its reason named (v6b, v11)',()=>{
+  const ranking = poolOf(), picked = ranking.sections[0].ordered[2].id;
+  ranking.exclusions = [{id:picked, reason:'Not excluded; retained in Families.'}];
+  const out = runFinalize(ranking), hits = mechanical(out.receipt,'ranked_exclusion_removed');
+  assert.equal(hits.length, 1); assert.equal(hits[0].removed, picked); assert.match(hits[0].check, /retained in Families/);
+  assert.deepEqual(out.pool.sections.map(s=>s.ordered.map(o=>o.id)), ranking.sections.map(s=>s.ordered.map(o=>o.id)));
  });
  test('an unresolvable history ref still stops the run when a corrections file exists (a person owns that response)',()=>{
   const ranking = poolOf(); rowOf(ranking,'c4').history_refs = [TYPO];

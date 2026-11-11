@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-11-11
+- Built and published the next week's slate to the editor console on a freshly refreshed event pool.
+- Three more bookkeeping defects in the model's output are now repaired automatically instead of stopping the weekly build; none can change a pick, and every automatic repair is printed prominently at the end of the run.
+
 ## 2026-11-04
 - Built and published the week's slate to the editor console.
 - Hardened the build's validation so an unresolvable citation is removed and recorded instead of stopping an unattended run; the ranking itself is untouched.

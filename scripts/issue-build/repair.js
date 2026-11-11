@@ -147,7 +147,17 @@ function recordIdTypos(rank,byId,out){
 function misquotes(rank,byId,out){
   for(const s of rank.sections)for(const row of s.ordered){
     const c=byId.get(row.id);if(!c||typeof row.evidence_quote!=='string'||!row.evidence_quote)continue;
-    const m=quoteMatch(row.evidence_quote,recordText(c));if(!m.to)continue;
+    const m=quoteMatch(row.evidence_quote,recordText(c));
+    // No single match (a dropped comma, an added word, another event's text): the quote is marked, not deleted.
+    // It moves into the row's warnings, which the preview shows; the pick and its rank stay (Ariel, 2026-11-11).
+    if(!m.exact&&!m.to&&Array.isArray(row.warnings)){
+      out.push({type:'quote_marked_unverified',section:s.section,record_id:row.id,title:c.snapshot_fields['Event Title'],quote:row.evidence_quote,
+        action:'quote moved into the row\'s warnings: it is not in the record word for word',
+        check:'quote not found word for word: '+row.evidence_quote,authority:'Decision_Log §102, amended 2026-11-11',detected_by:BY});
+      row.warnings=[...row.warnings,'Quote not found word for word in the event text: "'+row.evidence_quote+'"'];
+      row.evidence_quote='';continue;
+    }
+    if(!m.to)continue;
     out.push({type:'quote_text_mismatch',section:s.section,record_id:row.id,title:c.snapshot_fields['Event Title'],from:row.evidence_quote,to:m.to,
       action:'evidence_quote replaced with the record\'s own text, which it matches once case, spacing and typographic punctuation are ignored',
       authority:AUTH,detected_by:BY});
@@ -194,6 +204,32 @@ function sameOutingMarks(rank,records,out){
     }
   }
 }
+// An exclusion naming a record that is not in the packet (a mistyped id). Exclusions are notes on what the model
+// left out; no pick or rank reads them, so the row is removed and named, never remapped. Runs with or without a
+// corrections file, like the same-outing check.
+function unknownExclusions(rank,records,out){
+  if(!records.length)return; // no packet given: nothing to check against
+  const ids=new Set(records.map(c=>c.record_id));
+  rank.exclusions=rank.exclusions.filter(row=>{
+    if(!row||typeof row.id!=='string'||ids.has(row.id))return true;
+    out.push({type:'unknown_exclusion_removed',removed:row.id,reason:row.reason,
+      action:'removed exclusion '+row.id+': it names no record in the packet; no pick or rank changes',
+      authority:AUTH,detected_by:BY});
+    return false;
+  });
+}
+// A ranked record that is also in the exclusions (a placement note filed as an exclusion, v6b and v11).
+// The ranking is kept and the exclusion is removed; its reason is carried so the summary shows it.
+function rankedExclusions(rank,out){
+  const ranked=new Set(rank.sections.flatMap(s=>s.ordered.map(o=>o.id)));
+  rank.exclusions=rank.exclusions.filter(row=>{
+    if(!row||!ranked.has(row.id))return true;
+    out.push({type:'ranked_exclusion_removed',removed:row.id,reason:row.reason,
+      action:'removed exclusion '+row.id+': the record is also ranked; the ranking is kept',
+      check:'the model also listed this pick as excluded, saying: '+row.reason,authority:AUTH,detected_by:BY});
+    return false;
+  });
+}
 function mechanical(rank,records,historyRefs){
   const out=[],byId=new Map(records.map(c=>[c.record_id,c])),refs=new Set(historyRefs);
   repeatedSections(rank,out);
@@ -237,6 +273,8 @@ function repair(ranking,{responseSha,formExcluded=[],corrections=null,correction
   // the person left is checked by validation as it stands.
   if(!corrections)automatic.push(...mechanical(rank,records,historyRefs));
   sameOutingMarks(rank,records,automatic);
+  unknownExclusions(rank,records,automatic);
+  rankedExclusions(rank,automatic);
   const receipt={source_response_sha256:responseSha,corrections_file:correctionsSource,
     changed:automatic.length+hand.length>0,automatic,hand_corrections:hand,rows_before:before,rows_after:count(rank),
     reviewed_ranking_sha256:sha(JSON.stringify(rank,null,2)+'\n'),

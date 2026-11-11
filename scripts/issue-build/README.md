@@ -180,7 +180,10 @@ correction exists; otherwise validation stops the run as before. Every repair is
 |---|---|---|
 | `repeated_section` | a section is returned more than once and every copy but one is empty, or all copies are identical | two copies hold different rows |
 | `record_id_typo` | an unknown id is one character (added, dropped or changed) from exactly one shortlisted id, that id is not already in the section, and the row's quote is in that record | two ids are that close, the quote is missing or not in that record, or the id is further off |
-| `quote_text_mismatch` | the quote matches exactly one span of the record's text once case, spacing and typographic quotes/dashes are ignored; the quote is replaced with that span | a word is added or missing, nothing matches, or two different spans match |
+| `quote_text_mismatch` | the quote matches exactly one span of the record's text once case, spacing and typographic quotes/dashes are ignored; the quote is replaced with that span | never: see `quote_marked_unverified` |
+| `quote_marked_unverified` | the quote does not qualify as `quote_text_mismatch` (a word added or missing, nothing matches, two spans match); it is moved into the row's warnings and the row and its rank stay (Decision_Log §102, amended 2026-11-11) | never: this one does not stop the run |
+| `unknown_exclusion_removed` | an exclusion names no record in the packet; it is removed (exclusions feed no pick) | never |
+| `ranked_exclusion_removed` | a ranked record is also in the exclusions; the exclusion is removed, the ranking kept, and its reason carried in `check` | never |
 | `history_ref_typo` | an unknown history ref is one character from exactly one ref the packet offered for that record (exact-URL or similar-title publications) | never: see `history_ref_removed` |
 | `history_ref_removed` | an unknown history ref does not qualify as `history_ref_typo`; the ref is removed, and the row and its rank stay (Decision_Log §102, amended 2026-11-04) | never: this one does not stop the run |
 

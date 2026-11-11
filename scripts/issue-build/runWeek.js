@@ -181,7 +181,14 @@ function runWeek(issue,opts={},injected={}){
   deps.log('\nWeek build for '+issue+(c.stamp?' on snapshot '+c.stamp:'')+' ('+total.toFixed(1)+' s):');
   for(const r of results)deps.log('  '+r.stage.padEnd(13)+(r.seconds!==undefined?(r.seconds.toFixed(1)+' s').padStart(8)+'  ':' '.repeat(10))+r.status+(r.detail&&r.status!=='failed'&&r.status!=='stopped (validation)'?' — '+r.detail:''));
   if(failed)deps.log((code===EXIT.validation?'Stopped at ':'FAILED at ')+failed+'. Earlier stages\' outputs are in place; rerunning this command resumes from '+failed+'.');
-  else{deps.log('Editor preview: '+preview);deps.log(HUMAN_REVIEW+' Sign-off is not part of this command: node '+PRODUCER+' signoff --issue '+issue+' --run-dir '+c.prepared()+' --by "<name>"');}
+  else{
+    // Every repair made without a person, printed here because nobody reads the receipt.
+    let auto=[];try{auto=JSON.parse(fs.readFileSync(path.resolve(deps.root,c.prepared(),'run_manifest.json'),'utf8')).repair_receipt?.automatic||[];}catch{}
+    if(auto.length){
+      deps.log('\n!! '+auto.length+' AUTOMATIC REPAIR(S) — read before publishing:');
+      for(const a of auto)deps.log('  !! '+[a.type,a.title||a.record_id||a.removed||a.section,a.check||a.action].filter(Boolean).join(' · '));
+    }
+    deps.log('Editor preview: '+preview);deps.log(HUMAN_REVIEW+' Sign-off is not part of this command: node '+PRODUCER+' signoff --issue '+issue+' --run-dir '+c.prepared()+' --by "<name>"');}
   return {code,failed,results,preview,stamp:c.stamp};
 }
 

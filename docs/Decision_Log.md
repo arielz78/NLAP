@@ -2386,6 +2386,13 @@ citation only: no pick or rank moves. The ref is never guessed at. Record ids an
 a run with a corrections file gets no automatic repair. Trigger: the 2026-11-12 build stopped on one ref the model
 garbled, on a record offered no refs, and weekly builds take no hand repairs (§114).
 
+**Amended 2026-11-11 (Ariel):** three more defects no longer stop the run, because none moves a pick or a rank. An
+exclusion naming no record in the packet is removed. An exclusion of a record that is also ranked is removed and the
+ranking kept. A quote not found word for word is moved into that row's warnings, which the preview shows, instead of
+stopping; this reverses "quotes still stop the run" above (ids in rankings still stop it). Every automatic repair is
+now printed at the end of `runWeek`'s summary, because nobody reads the receipt. Trigger: the 2026-11-19 builds
+stopped on a mistyped exclusion id, a "Not excluded; retained" exclusion and a quote with a dropped comma.
+
 ---
 
 ## 103. Ship-and-Fix Over Pre-Hardening for V1; Hosting Stays With Nate (2026-10-07)
