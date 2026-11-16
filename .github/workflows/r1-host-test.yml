@@ -88,23 +88,81 @@ jobs:
           python3 - "$OUT" <<'PY'
           import json, re, sys
           text = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+          sys.setrecursionlimit(100000)
           decoder = json.JSONDecoder()
-          run = None
-          for match in re.finditer(r"^\{", text, re.M):
-              try:
-                  run, _ = decoder.raw_decode(text[match.start():])
+          lines = text.split("\n")
+
+          def shape():
+              print("lines:", len(lines))
+              for i, line in enumerate(lines[:40]):
+                  print(f"  line {i}: {len(line)} chars, starts {line[:40]!r}")
+
+          # The data may sit after a log prefix on its line, so try every line's first { or [.
+          doc = None
+          for line in sorted(lines, key=len, reverse=True)[:5]:
+              starts = [p for p in (line.find("{"), line.find("[")) if p >= 0]
+              for pos in sorted(starts):
+                  try:
+                      doc, _ = decoder.raw_decode(line[pos:])
+                      break
+                  except ValueError:
+                      continue
+              if doc is not None:
                   break
+          if doc is None:
+              try:
+                  doc, _ = decoder.raw_decode(text[min(p for p in (text.find("{"), text.find("[")) if p >= 0):])
               except ValueError:
-                  continue
-          if run is None:
-              print("no JSON object found in the output")
+                  print("no JSON found in the output")
+                  shape()
+                  sys.exit(0)
+
+          # n8n may print its stored form: a flat list where every string is an index into the list.
+          if isinstance(doc, list) and doc and isinstance(doc[0], dict):
+              flat, memo = doc, {}
+              def resolve(i):
+                  if i in memo:
+                      return memo[i]
+                  v = flat[i]
+                  if isinstance(v, dict):
+                      out = memo[i] = {}
+                      for k, x in v.items():
+                          out[k] = resolve(int(x)) if isinstance(x, str) else x
+                  elif isinstance(v, list):
+                      out = memo[i] = []
+                      for x in v:
+                          out.append(resolve(int(x)) if isinstance(x, str) else x)
+                  else:
+                      out = memo[i] = v
+                  return out
+              try:
+                  doc = resolve(0)
+              except (ValueError, IndexError):
+                  pass
+
+          def find(obj, key):
+              stack, seen = [obj], set()
+              while stack:
+                  cur = stack.pop()
+                  if id(cur) in seen:
+                      continue
+                  seen.add(id(cur))
+                  if isinstance(cur, dict):
+                      if key in cur:
+                          return cur
+                      stack.extend(cur.values())
+                  elif isinstance(cur, list):
+                      stack.extend(cur)
+              return None
+
+          result = find(doc, "runData")
+          nodes = result and result.get("runData")
+          if not isinstance(nodes, dict) or not nodes:
+              print("no runData found; type:", type(doc).__name__,
+                    "| keys:", sorted(doc.keys())[:20] if isinstance(doc, dict) else len(doc))
+              shape()
               sys.exit(0)
-          result = (run.get("data") or run).get("resultData") or {}
-          nodes = result.get("runData")
-          if not nodes:
-              print("no runData; top-level keys:", sorted(run.keys())[:20])
-              print("data keys:", sorted((run.get("data") or {}).keys())[:20])
-              sys.exit(0)
+          run = find(doc, "status") or {}
           print("status:", run.get("status"), "| finished:", run.get("finished"))
           print("items out of each node (summed over its runs):")
           for name, runs in nodes.items():
