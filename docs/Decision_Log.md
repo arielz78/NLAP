@@ -2728,6 +2728,18 @@ and moving the console to a free host that allows commercial use is a few hours.
 **What this does not decide:** whether R1 stays in n8n on the runner or is ported to plain Node, and the
 order of the Stage B work against the editor's export-as-download ask.
 
+**Amendment (2026-11-16): the host test passed; private files live in a private repo, not Neon.** The 2-hour
+test set in R8 Scope §0 ran. R1 inside the n8n 2.45.5 container on a GitHub runner returned the laptop's
+per-source counts on a back-to-back run (15 feeds; two AllEvents feeds differed by one event each), with
+Eventbrite's token taken from the homepage. GitHub Actions stands as the host and the VM fallback was not
+needed. The gitignored files a run reads and writes (prompt, rules, guidance, editor feedback, R7 training
+files and label pulls, Beehiiv history, snapshots) live in the private repo `arielz78/NLAP-data` and are laid
+over a checkout of this repo at the same paths. For files, this replaces "moves to Neon" above (Ariel,
+2026-11-16). **Why:** the scripts read folders, so a repo that mirrors those folders needs no script change.
+The repo started with the four newest snapshot pairs (2026-11-04 to 2026-11-15); the 113 older snapshot files
+stay on the laptop; every snapshot a run takes from here on is kept. **Not decided:** Confirm's resume rule
+(unchanged above), and where the run folder Build hands to Confirm lives once the buttons exist.
+
 ---
 
 ## 116. One Event per Same-Outing Group in a Section; the Ranker Marks, the Allocator Enforces (2026-11-04)

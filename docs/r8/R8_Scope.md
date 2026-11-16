@@ -39,11 +39,13 @@ test or the host were known, and under-sized the host move).
 - #165 Beehiiv draft test at his first OK, before the 11-26 renewal: duplicate last week's issue into a draft,
   replace one section with approved copy, check layout, images, poll, footer. Note: a pass on legacy Scale does
   not prove Lite.
-- **Host test, 2 hours, Wed 11-18:** start the n8n container on a GitHub runner and run R1 once (building on
-  `.github/workflows/cloud-fetch-probe.yml`). Works within 2 hours → GitHub Actions (Decision_Log §115). Still
-  failing at 2 hours → a small paid VM (Hetzner / DigitalOcean, ~US$5–7/month) as a copy of the laptop; that
-  would amend §115. Either way the private files (snapshots, R7 files, prompts, guidance) need a private home:
-  a private data repo on Actions, the VM's own disk on a VM.
+- **Host test: passed 2026-11-16**, two days early. R1 on a GitHub runner matched the laptop's per-source
+  counts, so the host is GitHub Actions (Decision_Log §115, amendment 2026-11-16). The private files are in the
+  private repo `arielz78/NLAP-data`, and a runner set up from both repos passes the offline tests
+  (`.github/workflows/host-setup-check.yml`). **Left for the host blocks:** four more secrets (Beehiiv, OpenAI,
+  Voyage, Airtable base ID); the first full `runWeek` on a runner (paid calls); saving a run's new files back
+  to `NLAP-data`; Eventbrite's token URL in the live R1 workflow (the test changed a temporary copy only); #167.
+  The `NLAP_DATA_TOKEN` secret expires 2027-01-15.
 - Ariel's call after the meeting: keep the Airtable write-back, or record-only (blurbs then read the Neon
   submission instead of IssueItems; §112 and `generateBlurbs.js` assume the write-back today).
 

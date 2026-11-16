@@ -7,6 +7,8 @@ newest at the top. The candid internal journal lives in `Execution_Log.md`
 ## 2026-11-16
 - Planned the remaining two weeks of the hosted-pipeline work with dated go/no-go gates, after an independent review re-sized the hosting move and re-ordered the plan to settle open unknowns (editor workflow, newsletter-platform draft creation, hosting choice) before building.
 - Cleaned up the release status doc so it carries only current state; earlier status moved to the release log.
+- Ran the weekly event-collection workflow on a cloud runner for the first time; its per-source counts matched a back-to-back run on the local machine, which settles the hosting choice.
+- Moved the pipeline's private working files to a private data repository, and verified that a fresh cloud machine set up from both repositories passes the offline test suites.
 
 ## 2026-11-11
 - Built and published the next week's slate to the editor console on a freshly refreshed event pool.
