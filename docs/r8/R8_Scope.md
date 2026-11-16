@@ -52,7 +52,7 @@ test or the host were known, and under-sized the host move).
 | Block | Work, in plain words |
 |---|---|
 | Mon 11-16 | Editor message + meeting prep (and the meeting, if he is free). |
-| Wed 11-18 | Weekly run (11-26 build) · the 2-hour host test. |
+| Wed 11-18 | Weekly run (11-26 build) on the laptop. Host test already passed 2026-11-16 (§0). |
 | Fri 11-20 | Set up the chosen host: private data, `runWeek` and R1 on it, the stale-snapshot fix ([runWeek.js:73](../../scripts/issue-build/runWeek.js#L73), #167). |
 | Mon 11-23 | Finish the host. Item 18: a failed run notifies Ariel (retry once, then notify); a per-source count check after every run (#158, #128); a CI check that the R1 workflow file still has its trigger and steps (#111). |
 | Wed 11-25 | Weekly run **on the server**, side by side with the laptop on the same week. |
