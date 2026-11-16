@@ -1,0 +1,74 @@
+name: Host setup check
+
+# Can a GitHub runner be set up like the laptop? Checks out the code and the private data repo, lays the private
+# files over the code, installs Node and Python, and runs the offline tests. No paid calls, no Airtable writes.
+#
+# The repo is public, so this log is public: file contents from NLAP-data are never printed.
+on:
+  workflow_dispatch:
+  push:
+    branches: [host-test]
+    paths: ['.github/workflows/host-setup-check.yml']
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out the private data repo
+        uses: actions/checkout@v4
+        with:
+          repository: arielz78/NLAP-data
+          token: ${{ secrets.NLAP_DATA_TOKEN }}
+          path: _data
+
+      - name: Lay the private files over the code
+        run: |
+          set -euo pipefail
+          rsync -a --exclude .git --exclude README.md --exclude .gitattributes _data/ ./
+          rm -rf _data
+          missing=0
+          for f in \
+            data/beehiiv/issue_history.json \
+            scripts/issue-build/guidance.json \
+            scripts/issue-build/editor_rules.template.md \
+            scripts/issue-build/ranking_prompt.template.txt \
+            docs/r6/R6_Editor_Feedback.md \
+            models/sectioning/corpora/embeddings_voyage-4-large.npy \
+            models/sectioning/corpora/transfer_cats_voyage-4-large.npy; do
+            if [ -s "$f" ]; then echo "present  $f"; else echo "MISSING  $f"; missing=1; fi
+          done
+          echo "snapshot pairs: $(ls data/tracking/snapshots/candidates_*.json | wc -l)"
+          echo "label pulls: $(ls data/tracking/r7_label_audits/r7_label_deck_*.json | wc -l)"
+          exit $missing
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Python environment where runWeek looks for it
+        run: |
+          set -euo pipefail
+          python -m venv models/.venv
+          models/.venv/bin/pip install -q -r models/requirements.txt voyageai==0.5.0 python-dotenv==1.2.2
+          models/.venv/bin/python -c "import numpy, pandas, sklearn, voyageai, dotenv; print('python packages import')"
+
+      - name: Offline tests on Linux
+        run: |
+          set -uo pipefail
+          fail=0
+          for t in scripts/issue-build/runWeek.test.js scripts/issue-build/issueBuild.test.js; do
+            node "$t" > "$RUNNER_TEMP/test.log" 2>&1; code=$?
+            echo "$t exit $code"
+            # Summary lines only: a failing test could print prompt or guidance text.
+            grep -E '^# (tests|pass|fail|skipped)|^(ok|not ok) ' "$RUNNER_TEMP/test.log" | cut -c1-160 | tail -40
+            [ $code -eq 0 ] || fail=1
+          done
+          rm -f "$RUNNER_TEMP/test.log"
+          exit $fail
