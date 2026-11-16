@@ -1,0 +1,100 @@
+name: R1 host test
+
+# One-off test (R8 Scope §0, Gate 1): can R1 run inside the n8n container on a GitHub-hosted runner?
+# Runs on a push to the host-test branch, or by hand once this file is on the default branch.
+#
+# WRITES TO LIVE AIRTABLE: R1 upserts Candidates, the same as a laptop run.
+#
+# The repo is public, so this log is public. The run output holds event rows (Facebook intake
+# included), so it is written to a file and only counts are printed. No artifact is uploaded.
+on:
+  workflow_dispatch:
+  push:
+    branches: [host-test]
+    paths: ['.github/workflows/r1-host-test.yml']
+
+jobs:
+  r1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      N8N_IMAGE: docker.n8n.io/n8nio/n8n:2.45.5
+      WORKFLOW_ID: 7HsVm0pPg19CJX2k
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare the workflow and the credential
+        env:
+          AIRTABLE_PAT: ${{ secrets.AIRTABLE_PAT }}
+        run: |
+          set -euo pipefail
+          test -n "$AIRTABLE_PAT" || { echo "AIRTABLE_PAT secret is not set"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/in" "$RUNNER_TEMP/out"
+
+          # Eventbrite's browse page answers a datacenter IP with a captcha (Decision_Log §115);
+          # the homepage hands out the same csrftoken. Changed on a temp copy only.
+          sed 's#"url": "https://www.eventbrite.com/d/canada--york/events/"#"url": "https://www.eventbrite.com/"#' \
+            "workflows/NLAP R1.json" > "$RUNNER_TEMP/in/R1.json"
+          if cmp -s "workflows/NLAP R1.json" "$RUNNER_TEMP/in/R1.json"; then
+            echo "The Eventbrite token URL was not found in the workflow file"; exit 1
+          fi
+
+          # Same id and name the workflow's nodes point at.
+          jq -n --arg token "$AIRTABLE_PAT" '[{
+            id: "M4nWbeUFeR35flxq",
+            name: "Airtable Personal Access Token account 3",
+            type: "airtableTokenApi",
+            data: { accessToken: $token }
+          }]' > "$RUNNER_TEMP/in/creds.json"
+
+          docker volume create n8n_data > /dev/null
+          docker pull -q "$N8N_IMAGE"
+
+      - name: Import the credential and the workflow
+        run: |
+          set -euo pipefail
+          n8n() {
+            docker run --rm -v n8n_data:/home/node/.n8n -v "$RUNNER_TEMP/in:/in:ro" "$N8N_IMAGE" "$@"
+          }
+          n8n import:credentials --input=/in/creds.json > "$RUNNER_TEMP/out/import_creds.log" 2>&1 \
+            || { echo "credential import failed"; grep -vE '^\s|^[][{}"]' "$RUNNER_TEMP/out/import_creds.log" | cut -c1-200 | tail -20; exit 1; }
+          rm -f "$RUNNER_TEMP/in/creds.json"
+          n8n import:workflow --input=/in/R1.json > "$RUNNER_TEMP/out/import_wf.log" 2>&1 \
+            || { echo "workflow import failed"; grep -vE '^\s|^[][{}"]' "$RUNNER_TEMP/out/import_wf.log" | cut -c1-200 | tail -20; exit 1; }
+          echo "imported"
+
+      - name: Run R1 once
+        run: |
+          set -uo pipefail
+          docker run --rm -v n8n_data:/home/node/.n8n \
+            -e NODE_FUNCTION_ALLOW_BUILTIN=fs,https \
+            -e GENERIC_TIMEZONE=America/Toronto -e TZ=America/Toronto \
+            "$N8N_IMAGE" execute --id "$WORKFLOW_ID" --rawOutput \
+            > "$RUNNER_TEMP/out/run.json" 2> "$RUNNER_TEMP/out/run.err"
+          echo "R1_EXIT=$?" >> "$GITHUB_ENV"
+
+      - name: Report (counts only)
+        run: |
+          set -uo pipefail
+          OUT="$RUNNER_TEMP/out/run.json"
+          echo "n8n execute exit code: $R1_EXIT"
+          echo "output size: $(wc -c < "$OUT") bytes"
+
+          RUN='(.data.resultData // .resultData)'
+          if jq -e "$RUN.runData" "$OUT" > /dev/null 2>&1; then
+            echo
+            echo "items out of each node (summed over its runs):"
+            jq -r "$RUN.runData | to_entries[]
+              | [.key, ([.value[] | (.data.main // [])[] | (. // []) | length] | add // 0),
+                 (if any(.value[]; .error != null) then \"ERROR\" else \"\" end)] | @tsv" "$OUT" | column -t -s $'\t'
+            echo
+            echo "last node run: $(jq -r "$RUN.lastNodeExecuted // \"?\"" "$OUT")"
+            echo "run error: $(jq -r "($RUN.error.message // \"none\") | .[0:300]" "$OUT")"
+            echo "error node: $(jq -r "$RUN.error.node.name // \"none\"" "$OUT")"
+          else
+            echo "No run data in the output. Lines that are not JSON, cut to 200 characters:"
+            grep -hvE '^\s|^[][{}"]' "$OUT" "$RUNNER_TEMP/out/run.err" | cut -c1-200 | tail -30
+          fi
+
+          rm -rf "$RUNNER_TEMP/in" "$RUNNER_TEMP/out"
+          exit "$R1_EXIT"
