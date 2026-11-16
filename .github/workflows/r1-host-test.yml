@@ -80,21 +80,43 @@ jobs:
           echo "n8n execute exit code: $R1_EXIT"
           echo "output size: $(wc -c < "$OUT") bytes"
 
-          RUN='(.data.resultData // .resultData)'
-          if jq -e "$RUN.runData" "$OUT" > /dev/null 2>&1; then
-            echo
-            echo "items out of each node (summed over its runs):"
-            jq -r "$RUN.runData | to_entries[]
-              | [.key, ([.value[] | (.data.main // [])[] | (. // []) | length] | add // 0),
-                 (if any(.value[]; .error != null) then \"ERROR\" else \"\" end)] | @tsv" "$OUT" | column -t -s $'\t'
-            echo
-            echo "last node run: $(jq -r "$RUN.lastNodeExecuted // \"?\"" "$OUT")"
-            echo "run error: $(jq -r "($RUN.error.message // \"none\") | .[0:300]" "$OUT")"
-            echo "error node: $(jq -r "$RUN.error.node.name // \"none\"" "$OUT")"
-          else
-            echo "No run data in the output. Lines that are not JSON, cut to 200 characters:"
-            grep -hvE '^\s|^[][{}"]' "$OUT" "$RUNNER_TEMP/out/run.err" | cut -c1-200 | tail -30
-          fi
+          echo "log lines that are not JSON, cut to 200 characters:"
+          grep -hvE '^\s|^[][{}"]' "$OUT" "$RUNNER_TEMP/out/run.err" | cut -c1-200 | tail -30
+          echo
+
+          # n8n prints log lines before the run data, so find the first JSON object in the file.
+          python3 - "$OUT" <<'PY'
+          import json, re, sys
+          text = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+          decoder = json.JSONDecoder()
+          run = None
+          for match in re.finditer(r"^\{", text, re.M):
+              try:
+                  run, _ = decoder.raw_decode(text[match.start():])
+                  break
+              except ValueError:
+                  continue
+          if run is None:
+              print("no JSON object found in the output")
+              sys.exit(0)
+          result = (run.get("data") or run).get("resultData") or {}
+          nodes = result.get("runData")
+          if not nodes:
+              print("no runData; top-level keys:", sorted(run.keys())[:20])
+              print("data keys:", sorted((run.get("data") or {}).keys())[:20])
+              sys.exit(0)
+          print("status:", run.get("status"), "| finished:", run.get("finished"))
+          print("items out of each node (summed over its runs):")
+          for name, runs in nodes.items():
+              count = sum(len(branch or []) for r in runs
+                          for branch in ((r.get("data") or {}).get("main") or []))
+              flag = "  ERROR" if any(r.get("error") for r in runs) else ""
+              print(f"{count:7d}  {name}{flag}")
+          error = result.get("error") or {}
+          print("last node run:", result.get("lastNodeExecuted"))
+          print("run error:", str(error.get("message", "none"))[:300])
+          print("error node:", (error.get("node") or {}).get("name", "none"))
+          PY
 
           rm -rf "$RUNNER_TEMP/in" "$RUNNER_TEMP/out"
           exit "$R1_EXIT"
