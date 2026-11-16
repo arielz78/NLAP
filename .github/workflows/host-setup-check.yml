@@ -66,8 +66,9 @@ jobs:
           for t in scripts/issue-build/runWeek.test.js scripts/issue-build/issueBuild.test.js; do
             node "$t" > "$RUNNER_TEMP/test.log" 2>&1; code=$?
             echo "$t exit $code"
-            # Summary lines only: a failing test could print prompt or guidance text.
-            grep -E '^# (tests|pass|fail|skipped)|^(ok|not ok) ' "$RUNNER_TEMP/test.log" | cut -c1-160 | tail -40
+            # Case names and the total only: a failing test's detail could print prompt or guidance text.
+            echo "  PASS lines: $(grep -c '^PASS ' "$RUNNER_TEMP/test.log" || true)"
+            grep -E '^FAIL |acceptance cases passed' "$RUNNER_TEMP/test.log" | cut -c1-160 | tail -20 || true
             [ $code -eq 0 ] || fail=1
           done
           rm -f "$RUNNER_TEMP/test.log"
