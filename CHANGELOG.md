@@ -4,6 +4,10 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-11-16
+- Planned the remaining two weeks of the hosted-pipeline work with dated go/no-go gates, after an independent review re-sized the hosting move and re-ordered the plan to settle open unknowns (editor workflow, newsletter-platform draft creation, hosting choice) before building.
+- Cleaned up the release status doc so it carries only current state; earlier status moved to the release log.
+
 ## 2026-11-11
 - Built and published the next week's slate to the editor console on a freshly refreshed event pool.
 - Three more bookkeeping defects in the model's output are now repaired automatically instead of stopping the weekly build; none can change a pick, and every automatic repair is printed prominently at the end of the run.

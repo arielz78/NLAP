@@ -1,6 +1,6 @@
 # R8 Scope — The Editor Console
 
-**Owner:** Ariel · **Builder:** Nate · **Committed delivery:** 2026-09-08
+**Owner:** Ariel · **Builder:** Ariel (Nate off the project since 2026-10-18) · **Committed delivery:** 2026-09-08
 
 **Type: Release-working.** Decisions home in `docs/Decision_Log.md`. Session recaps in
 `logs/R8_Log.md`. Everything Nate-facing — scope of his build, decision rights, checkpoints —
@@ -25,176 +25,68 @@ After every R8 session:
 
 ---
 
-## 0. Status (2026-10-18)
+## 0. Status (2026-11-16)
 
-R8 is open ahead of the R6 gate, on a delivery commitment to the editor. R7 is closeout-only and
-off the critical path.
+### Finish plan (set 2026-11-16, Sprint 5)
 
-**Nate's #135 (`8396a79`) and #136 (`c45a7ad`) have landed** (2026-09-18) on top of the `1370f77`
-foundation: versioned reopen lifecycle with one-current-revision DB constraints, immutable
-submissions, submissions carrying full provenance, stricter training-pair qualification, slot-scoped
-undo fix, explicit demo-vs-production modes where production fails closed, and a PostgreSQL
-integration suite. **Both issues remain open on GitHub.** `c45a7ad` is the last commit touching
-`apps/editor-console/`.
+**Goal:** Stage B and the finish line by **Sun 2026-11-29**. Not done by then → NLAP pauses to the weekly
+run until after finals (Personal OS Sprint 5). **Principle: settle the unknowns first, then build** (a Fable
+review on 2026-11-16 found the first draft of this plan built item 17 before the editor's answers, the Beehiiv
+test or the host were known, and under-sized the host move).
 
-**CI exists since 2026-10-11** (`.github/workflows/ci.yml`): every push runs the console's tests, lint
-and build, the `connectAirtable.js` guard test and the issue-producer tests, green on `master` at
-`b8b6a68`. ⚠️ The integration suite is still gated behind `R8_REQUIRE_INTEGRATION_DB=1`; CI reports it as skipped,
-not passed. It has been run by hand once (2026-10-13, see below).
+**Settle first (this week):**
+- Editor meeting (#164), asked for 2026-11-16; agenda below.
+- #165 Beehiiv draft test at his first OK, before the 11-26 renewal: duplicate last week's issue into a draft,
+  replace one section with approved copy, check layout, images, poll, footer. Note: a pass on legacy Scale does
+  not prove Lite.
+- **Host test, 2 hours, Wed 11-18:** start the n8n container on a GitHub runner and run R1 once (building on
+  `.github/workflows/cloud-fetch-probe.yml`). Works within 2 hours → GitHub Actions (Decision_Log §115). Still
+  failing at 2 hours → a small paid VM (Hetzner / DigitalOcean, ~US$5–7/month) as a copy of the laptop; that
+  would amend §115. Either way the private files (snapshots, R7 files, prompts, guidance) need a private home:
+  a private data repo on Actions, the VM's own disk on a VM.
+- Ariel's call after the meeting: keep the Airtable write-back, or record-only (blurbs then read the Neon
+  submission instead of IssueItems; §112 and `generateBlurbs.js` assume the write-back today).
 
-**The console is hosted and serves a real build (2026-10-13).** It runs in production mode on Vercel
-against a Neon database, behind one shared login (a login page and a 90-day signed cookie on every page and `/api`
-route, since 2026-11-04; with no login configured every request is refused). Ariel set up and owns both accounts (Decision_Log §110).
-The build it serves is the 2026-10-15 slate rebuilt from the v6b run, published with
-`npm run publish-build`. ⚠️ **That database holds test data:** one submission Ariel made while testing,
-recorded under the editor's identity. **Decided 2026-10-13 (Ariel): the database is reset and re-migrated
-once, immediately before the first real build is published (2026-10-22 at the earliest; the first issue
-after the editor walkthrough).** Everything in it before that reset is test data, including anything the
-editor submits while trying the console; real data starts with that build. Rows in `submissions` and `issue_builds` cannot be deleted one at a time, so the reset
-also removes the published 2026-10-15 build, which was a test rebuild. The reset has not been run. No
-write-back to Airtable has run. `lib/mock-issue.ts` is now the demo-mode fixture only.
+| Block | Work, in plain words |
+|---|---|
+| Mon 11-16 | Editor message + meeting prep (and the meeting, if he is free). |
+| Wed 11-18 | Weekly run (11-26 build) · the 2-hour host test. |
+| Fri 11-20 | Set up the chosen host: private data, `runWeek` and R1 on it, the stale-snapshot fix ([runWeek.js:73](../../scripts/issue-build/runWeek.js#L73), #167). |
+| Mon 11-23 | Finish the host. Item 18: a failed run notifies Ariel (retry once, then notify); a per-source count check after every run (#158, #128); a CI check that the R1 workflow file still has its trigger and steps (#111). |
+| Wed 11-25 | Weekly run **on the server**, side by side with the laptop on the same week. |
+| Fri 11-27 | Item 17, Confirm half (if #165 passed): blurbs from his submission to his copy rules (#166) + a script, not a model, that fills the duplicated draft through the beehiiv MCP. HTML export stays as the fallback. |
+| Sun 11-29 | Check-in: done or pause. Declare R6 done. Issue sweep. The hours number is measured after this. |
 
-**TODO-0 is resolved: the premise holds.** ⚠️ *Contested 2026-10-10: ordinary picks also come from outside
-the pool. See `docs/v1/V1_Ship_Plan.md` §2 and #146. Ariel chose D0 option (a), a per-slot "I'm filling this myself", on 2026-10-11 (ship plan §0 and §4); see Decision_Log §106.* Sponsored events go into a separate section, so no
-console slot is ever filled from outside the candidate pool.
+**Gates (rules written before the results):**
 
-**Weight after Sept 13 (set 2026-09-17, Personal OS planning sitting):** NLAP holds at 3 × 3h/week.
-Work order is finish R8, then bring R6 into it. **Open, not settled:** how much of R6 is actually
-done — its slate has reached the editor two weeks running — and what "done enough to inject into
-R8" requires. Resolve in an NLAP session before encoding it anywhere as architecture. Hours re-checked
-against the log at the Sept 27 sprint boundary.
+| Gate | Date | Pass → | Fail → |
+|---|---|---|---|
+| 1. Unknowns settled | Wed 11-18 | Meeting held and host chosen → build as planned | No meeting yet → build the host anyway; the Confirm half waits for him |
+| 2. Host works | Sun 11-22 check-in | Server runs the build → on track | Not running → cut the Confirm half; the rest goes to the host |
+| 3. Unattended run | Wed 11-25 | Server run finishes, per-source counts match the laptop → it's real | Laptop stays primary; the server keeps getting fixed |
+| 4. Beehiiv test | Thu 11-26 | Draft works → Fri 11-27 builds Confirm → draft | Keep the HTML export; Fri 11-27 goes to stretch |
+| Finish | Sun 11-29 | Done | Pause until after finals |
 
-**Done 2026-10-11:** `docs/v1/V1_Ship_Plan.md` §3 items 1 (CI), 2 (`connectAirtable.js` guard, #144), 4
-(repeatable producer, `scripts/issue-build/`) and 5 (console date fix, #145), each against its acceptance
-test. The producer's live `prepare --fetch-pages`, `call` and `finalize` path ran
-on 2026-10-11 for the 2026-10-15 issue: v6 stopped on the thin-supply gate, v6b was signed off by Ariel and sent.
+**Editor meeting agenda (#164):** does he decide in the console · who writes the copy (planned: we do; confirm) ·
+OK for the draft test · what the draft leaves for him · how he picks Local Aroma.
 
-**Built and tested 2026-10-11, none yet run live:** item 3 (`scripts/writeIssuePicks.js`, #149; its one
-read-only dry run resolved all 15 v6b picks and found no Issues record for 2026-10-15), item 4a
-(`scripts/issue-build/runWeek.js`; stubbed stages only, and it checks R1, it does not run it) and item 13a
-(`scripts/weeklyComparison.js`; reproduces the hand-scored 8 of 15 for 2026-09-17, counting rule in
-Decision_Log §107). Item 6: the console unit suite passes (16 passed, 2 skipped); the integration suite is
-still not run. **Item 10 is half built:** `scripts/issue-build/to-bundle.js` converts a run folder to the
-console contract and **refuses every real run**, because the producer does not supply `build_version`,
-`seriesId`, `classification`, or a description for every event (ship-plan item 10a, #150). `publish-build.ts` does
-not exist.
+**Ariel's calls:** host (after the test) · Airtable write-back kept, or record-only · R6 done = the current producer.
 
-**Built and tested 2026-10-13, none yet run live:** item 9 (replacement checks; Decision_Log §108). The console
-now assesses every swap against the current lineup (`lib/replacement-rules.ts`), warns and never refuses, and
-`to-bundle.js` fills the assessment table from the producer's `replaceable_slots`. The allocator's venue match
-ignores capitals and extra spaces, held to the console's copy by `scripts/venue_match_cases.json`. Item 7 is
-built against fixtures (`scripts/applySubmission.js`): it maps a submission to the writer's picks file and never
-calls Airtable; the live database read is a stub awaiting Neon credentials, and its "I'm filling this myself"
-field is an assumption until the console writes one (#152). Item 10a is half done: the producer now supplies
-`build_version` and a description for every displayed event, so a rebuilt run is refused for `seriesId` and
-`classification` only (#150). Item 12's message is drafted and unsent.
-The submit record carries the verdict saved with the swap event (Ariel, 2026-10-13; #151 closed), so the
-console no longer reads the bundle's assessment table at all. ⚠️ The PostgreSQL integration test for this was
-rewritten and has not been run.
+**Stretch, in order:** Build button (item 17's other half) · item 19, two weeks open (Ariel wants it; the review
+said cut) · lead-image replacement in the Beehiiv draft · Local Aroma section in the console (Places API + history rotation; rules from the meeting) · 4b.
 
-**Done 2026-10-13, second session:** item 10a is complete: the producer writes a `series_id` and a
-`classification` for every displayed event into `displayed_events.json` (Decision_Log §109; #150), and a run
-finalized with this code converts with no missing-field diagnostics. Item 10 is complete:
-`apps/editor-console/scripts/publish-build.ts` checks a bundle and inserts it, dry run by default. Item 11
-is complete on its first acceptance test (unauthenticated page and API requests return 401; the real build
-renders after sign-in). The chain ran once on real data, by hand: producer run → bundle → database → hosted
-console → a submission → `applySubmission.js` dry run (15 picks, matching the submission). A run folder
-finalized before 2026-10-13 is still refused by the converter and is not rewritten; the v6b bundle came from
-a rebuild of that run's saved inputs, with a lineup byte-identical to the one sent.
+**After finals:** #160 (moot until the writer runs) · 16b · learned ranker from swaps (Bradley–Terry; ~24 pairs
+so far) · click/CTR data for ranking (#116, #139) · agents for checking picks or finding sources · switching
+Voyage models.
 
-**Done 2026-10-13, third session:** item 7's live read is wired: `applySubmission.js` reads the latest
-submission for an issue date from the console's database with one read-only query, and refuses a submission
-the editor reopened and has not resubmitted. Run once against the hosted database (dry run): 15 picks,
-matching the published build. The console has the "I'm filling this myself" control (#152): a marked slot
-keeps its pick underneath, cannot be replaced until unmarked, and records no replacement and no preference
-pair; the submission lists the marked slots and the bridge skips them. The swap-reason question now also
-appears above the alternatives after a swap, and the submit dialog lists swaps with no reason (#153; what an
-unreasoned swap means is unchanged, Decision_Log §108). Migration `0003` (allows the `self_fill` event) is
-applied to the hosted database. Item 6: the PostgreSQL integration suite ran once by hand against a Neon
-branch copied from production, 3 passed. Item 4a: `runWeek.js` ran end to end on real data for 2026-10-22
-with `--skip-r1` (217 candidates scored, 88 to the model, no repairs), a rerun repeated no paid call, and the
-run converted and passed the `publish-build` dry run. That run was a rehearsal on a pool last refreshed
-2026-10-11; its R7 and run folders were deleted so the real week is not pinned to its snapshot.
+**Facts checked 2026-11-16:** self-fill is recorded in Neon (`interaction_events`, used 3 of 4 weeks). Beehiiv
+(Codex, from official docs, untested): the ChatGPT plugin and the MCP are one beehiiv-built integration; on Lite it
+can create, duplicate and edit drafts, not schedule or send; REST create-post is Pro only. Untested: whether a
+server can keep the MCP's OAuth sign-in renewed without a person. Fallback if beehiiv gates it: the HTML paste.
 
-**Done 2026-10-14:** Swap warnings no longer count a slot marked "I'm filling this myself" (`674e296`; the
-editor's own pick in that slot is his to check). `generateBlurbs.js` makes one model call per event, so copy can
-only land on the row it was written for; it now has an offline test in CI. `applySubmission.js` prints which
-database it reads and where the URL came from. A writer test covers a self-filled gap in a section. Item 3's
-bounded review (#149) returned READY with no blockers, and a second review (Codex) agreed. Item 6: CI now runs
-the PostgreSQL suite on a throwaway Neon branch made from an empty `ci-empty` parent, unproven until its first
-GitHub run. Evidence for items 14 and 16 is on #147 and #133.
+---
 
-**Done 2026-10-14, second session:** blurb titles carry exactly one emoji: a strict response schema, a prompt
-that keeps the emoji out of the title, and a backstop that strips a stray one or a doubled title; warnings print
-in the terminal and `Notes` is no longer written (`32957b3`). A real-model dry run for 2026-05-28 returned 10 of 10
-clean titles (the first try, before the prompt fix, broke 4 of 10). Item 14 is built (`5067362`, Decision_Log §105
-amendment): per-site description extraction, redirects discarded, Pinot's skipped; live on the 2026-09-24
-shortlist, 21 of 23 pages gave event text. The editor's Pinot's rule (Couples or Golden only, one per section) is
-in the local, gitignored editor guidance. The ship plan's work map now splits item 16 and adds alerts as item 18
-(`fa8963c`).
-
-**Not yet run:** the writer's live `--apply` (item 3, #149), blurbs and export after a console submission,
-`runWeek.js`'s R1 freshness stage (skipped in the rehearsal; n8n was down), and the "I'm filling this
-myself" control against the hosted database (tried in demo mode only), and item 14's extraction inside a full
-`prepare` run. CI's PostgreSQL job (`editor-console-db`) first timed out at
-vitest's 5-second default while applying every migration to a cold branch; with a 30-second limit (`d803dd8`)
-all 3 tests pass on a throwaway Neon branch, so the integration suite now runs on every push.
-
-**Done 2026-10-15:** six R1 sources were failing silently and are fixed in live n8n (source sheet PL 2026-10-15;
-the repo copy is the live export, Decision_Log §111). Item 16a is merged (Decision_Log §102 amendment). ⚠️ **The
-10-22 window still holds 57 pre-fix rows with wrong dates** (56 VPL, 1 OnRichmondHill): R1 never deletes, and
-the issue build does not filter on `Last Auto Update`. Before the 10-22 `runWeek`, Ariel chooses how they are
-excluded (the held stale-row rule for VPL and OnRichmondHill, or one-off Rejected marks; #157). The walkthrough
-(#154) is unaffected.
-
-**Done 2026-10-15, second session:** item 12 is done: Ariel walked the editor through the console
-(`meetings/2026-10-15.md`). For it, `runWeek.js` built 2026-10-22 (`--version demo`; one call, 4 hand repairs), and
-`to-bundle.js` → `publish-build --apply` published it to the hosted console **without a sign-off and without the
-database reset**, to run the way the finished version will. ⚠️ One of the 57 wrong-dated rows (#157) is a selected
-pick: reclRZj71TSBESMCL Photo Club (VPL, 2026-10-28, Golden Age; last updated by the pre-fix 16:29Z run). The editor has not submitted yet. The meeting added ship-plan items 19 (several weeks open)
-and 20 (typing a self-filled event in), and amended 17 (the export is a download in the console). **Open, not
-settled:** whether the database reset of 2026-10-13 still happens, now that the build the editor uses sits on the
-un-reset database.
-
-**Done 2026-10-18:** the three Stage B calls are made: Confirm runs the write-back on the server and a failed run
-resumes (Decision_Log §112, reverses §96); a self-filled slot takes a typed title, link and date and becomes an
-`Editor` Candidates row (§113, amends §106); judgment errors are fixed in code where checkable and warned otherwise,
-with no reviewer before the editor (§114, item 16b). Item 20 is built and tested, not yet run live: console fields
-and the submit block, `applySubmission.js` passes the typed event, `writeIssuePicks.js` creates or reuses the
-Candidates row before the IssueItems row. §113's pool-exclusion guard is not built (#160). Photo Club's page says
-2026-11-23, so that pick is wrong-dated; the editor has not opened the console since the walkthrough (Neon, last
-activity 2026-10-15 3:21 PM). Nate is no longer on the project; items listed as his (11, 15, 17) are Ariel's.
-
-**Decided 2026-10-18 (later session):** Stage B runs on GitHub Actions; the console stays on Vercel
-(Decision_Log §115). A probe from a GitHub runner reached 11 of 12 sources; Eventbrite works once its token
-comes from the homepage. Nothing of Stage B is built.
-
-**Done 2026-10-22:** the editor made the first real submission (2026-10-22, revision 1, 15 picks; the
-`applySubmission.js` dry run matched the published build). He published 2026-10-22 in Beehiiv without our export; the
-write-back, blurbs and export for it did not run. The console emails Ariel on every submission (`bfc9978`, verified
-live). The self-fill form now accepts input (`dbdc5d8`; a CSS bug the unit tests could not see). The 2026-10-29 build
-(v9) is published to the console, after v8 ran on a 9-issue history from a bad Beehiiv fetch; the history fetch is now
-incremental and never shrinks (`1812453`). `runWeek` measured at ~2 min, mostly the model call; scheduling R1 is on #161.
-
-**Done 2026-11-04, second session:** same-outing rule (Decision_Log §116), 11-12 build 2 published, login page live
-(§110 amended). The editor submitted build 1 unchanged only to close its draft, so that submission is not a label; the
-10-15 submission looks like a test.
-
-**Next (2026-11-04):** the editor discussion (#164), pushed from 10-28. Do not run `writeIssuePicks.js --apply` for 10-29
-or 11-05 before it. Beehiiv draft test (#165) before the plan renewal. The editor submitted 2026-11-05. 2026-11-12 build 2 (v10b) is published and awaits his submission; the latest 11-12 submission is against build 1 and is not a label, and production sign-in is untested. The 2026-11-19 v10 run stopped at validation on a quote not in the record and was not hand-repaired; the next paid 11-19 build is around 11-11. *Superseded, earlier text follows:* when the
-editor submits 2026-10-29: `applySubmission.js --write` → `writeIssuePicks.js --apply
---ensure-issue` (#149, Ariel's go; item 20's writer change wrap-reviewed READY 2026-10-18, range 4dc67cb..5bf96cd) →
-`generateBlurbs.js` → `--lock` → `pushToBeehiiv.js` → send him the export, before he publishes. Stage B is on #161. The ship plan's new §0 states the destination (an editor-run week) and
-stages the work as Stage A (items 1–14, Ariel runs the commands) and Stage B (items 15–17, the buttons);
-**where V1 closes is not settled.** D0 is chosen (Decision_Log §106), so it no longer
-blocks items 9, 10 and 13. That doc
-is the planning artifact for the remaining path to a first complete release — **it is a working doc, not a
-status source**, and its filename is deliberately outside `/start`'s `docs/r*/R*_Scope.md` glob, so this
-pointer is how it is found.
-
-**How R6 and R8 combine into a first complete release is deferred to that session and is not settled
-here.** A plan exists and Ariel approved it as a draft only; the release-structure question was
-explicitly parked.
+*Status text from 2026-10-18 and earlier moved to `logs/R8_Log.md` (entry 2026-11-16, "R8 Scope §0 history"). The finish plan above supersedes its `Next`.*
 
 ---
 
