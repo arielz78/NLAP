@@ -66,11 +66,14 @@ jobs:
       - name: Run R1 once
         run: |
           set -uo pipefail
-          docker run --rm -v n8n_data:/home/node/.n8n \
+          # Written to a file inside the container: through docker's pipe the output was cut off
+          # at a different point on every run (2.5, 3.4 and 5.4 MB) when n8n exited.
+          chmod 777 "$RUNNER_TEMP/out"
+          docker run --rm -v n8n_data:/home/node/.n8n -v "$RUNNER_TEMP/out:/out" \
             -e NODE_FUNCTION_ALLOW_BUILTIN=fs,https \
             -e GENERIC_TIMEZONE=America/Toronto -e TZ=America/Toronto \
-            "$N8N_IMAGE" execute --id "$WORKFLOW_ID" --rawOutput \
-            > "$RUNNER_TEMP/out/run.json" 2> "$RUNNER_TEMP/out/run.err"
+            --entrypoint sh "$N8N_IMAGE" \
+            -c "n8n execute --id $WORKFLOW_ID --rawOutput > /out/run.json 2> /out/run.err"
           echo "R1_EXIT=$?" >> "$GITHUB_ENV"
 
       - name: Report (counts only)
@@ -99,7 +102,13 @@ jobs:
 
           # The data may sit after a log prefix on its line, so try every line's first { or [.
           doc = None
-          for line in sorted(lines, key=len, reverse=True)[:5]:
+          for match in re.finditer(r"^\{", text, re.M):
+              try:
+                  doc, _ = decoder.raw_decode(text[match.start():])
+                  break
+              except ValueError:
+                  continue
+          for line in ([] if doc is not None else sorted(lines, key=len, reverse=True)[:5]):
               starts = [p for p in (line.find("{"), line.find("[")) if p >= 0]
               for pos in sorted(starts):
                   try:
