@@ -6,7 +6,8 @@ run-name: Build ${{ inputs.issue_date }}
 # run folder into a console bundle, publishes it to the console's database, and saves every file the run
 # made back to the private repo NLAP-data, so a rerun resumes and the paid calls are never repeated.
 #
-# It does not run R1 (still the laptop's n8n) and never signs off a slate.
+# R1 runs first in the n8n container (run_r1, default on): it WRITES LIVE AIRTABLE Candidates, as a laptop
+# run does. It never signs off a slate.
 # The repo is public, so this log is public: the run's own output goes to a file and only the stage
 # summary is printed. Run outputs are saved to the private repo, never uploaded as public artifacts.
 on:
@@ -19,6 +20,10 @@ on:
         description: Publish the build to the console
         type: boolean
         default: true
+      run_r1:
+        description: Run R1 (n8n) first. WRITES LIVE AIRTABLE Candidates, as a laptop run does.
+        type: boolean
+        default: true
 
 concurrency:
   group: build-week
@@ -27,9 +32,11 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 80
     env:
       ISSUE: ${{ inputs.issue_date }}
+      N8N_IMAGE: docker.n8n.io/n8nio/n8n:2.45.5
+      WORKFLOW_ID: 7HsVm0pPg19CJX2k
     steps:
       - name: Check the issue date
         run: |
@@ -38,6 +45,54 @@ jobs:
           [ "$(date -d "$ISSUE" +%u)" = 4 ] || { echo "$ISSUE is not a Thursday"; exit 1; }
 
       - uses: actions/checkout@v4
+
+      # ---- R1 in n8n, as proven by r1-host-test.yml on 2026-11-16. Its output holds event rows
+      # (Facebook intake included), so it stays in a file and only the exit code is printed.
+      - name: R1 — prepare the workflow and the credential
+        if: inputs.run_r1
+        env:
+          AIRTABLE_PAT: ${{ secrets.AIRTABLE_PAT }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/r1in" "$RUNNER_TEMP/r1out"
+          # Eventbrite's browse page answers a datacenter IP with a captcha (Decision_Log §115).
+          sed 's#"url": "https://www.eventbrite.com/d/canada--york/events/"#"url": "https://www.eventbrite.com/"#' \
+            "workflows/NLAP R1.json" > "$RUNNER_TEMP/r1in/R1.json"
+          if cmp -s "workflows/NLAP R1.json" "$RUNNER_TEMP/r1in/R1.json"; then
+            echo "The Eventbrite token URL was not found in the workflow file"; exit 1
+          fi
+          jq -n --arg token "$AIRTABLE_PAT" '[{
+            id: "M4nWbeUFeR35flxq",
+            name: "Airtable Personal Access Token account 3",
+            type: "airtableTokenApi",
+            data: { accessToken: $token }
+          }]' > "$RUNNER_TEMP/r1in/creds.json"
+          docker volume create n8n_data > /dev/null
+          docker pull -q "$N8N_IMAGE"
+          n8n() { docker run --rm -v n8n_data:/home/node/.n8n -v "$RUNNER_TEMP/r1in:/in:ro" "$N8N_IMAGE" "$@"; }
+          n8n import:credentials --input=/in/creds.json > "$RUNNER_TEMP/r1out/import.log" 2>&1 \
+            || { echo "credential import failed"; grep -vE '^\s|^[][{}"]' "$RUNNER_TEMP/r1out/import.log" | cut -c1-200 | tail -20; exit 1; }
+          rm -f "$RUNNER_TEMP/r1in/creds.json"
+          n8n import:workflow --input=/in/R1.json > "$RUNNER_TEMP/r1out/import.log" 2>&1 \
+            || { echo "workflow import failed"; grep -vE '^\s|^[][{}"]' "$RUNNER_TEMP/r1out/import.log" | cut -c1-200 | tail -20; exit 1; }
+
+      - name: R1 — run
+        if: inputs.run_r1
+        run: |
+          set -uo pipefail
+          chmod 777 "$RUNNER_TEMP/r1out"
+          # Written to a file inside the container: through docker's pipe n8n's output was cut off at exit.
+          docker run --rm -v n8n_data:/home/node/.n8n -v "$RUNNER_TEMP/r1out:/out" \
+            -e NODE_FUNCTION_ALLOW_BUILTIN=fs,https \
+            -e GENERIC_TIMEZONE=America/Toronto -e TZ=America/Toronto \
+            --entrypoint sh "$N8N_IMAGE" \
+            -c "n8n execute --id $WORKFLOW_ID --rawOutput > /out/run.json 2> /out/run.err"
+          code=$?
+          echo "R1 exit $code, output $(wc -c < "$RUNNER_TEMP/r1out/run.json") bytes"
+          [ $code -eq 0 ] || grep -hvE '^\s|^[][{}"]' "$RUNNER_TEMP/r1out/run.json" "$RUNNER_TEMP/r1out/run.err" | cut -c1-200 | tail -30
+          echo "R1 exit $code" >> "$GITHUB_STEP_SUMMARY"
+          rm -rf "$RUNNER_TEMP/r1in" "$RUNNER_TEMP/r1out"
+          exit $code
 
       - name: Check out the private data repo
         uses: actions/checkout@v4
