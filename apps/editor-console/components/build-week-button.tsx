@@ -73,6 +73,13 @@ export function BuildWeekButton() {
   const [starting, setStarting] = useState(false);
   const [showSteps, setShowSteps] = useState(false);
 
+  useEffect(() => {
+    if (!showSteps) return;
+    const close = (event: KeyboardEvent) => event.key === "Escape" && setShowSteps(false);
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [showSteps]);
+
   const refresh = useCallback(
     () =>
       fetchBuildState().then((result) => {
@@ -163,16 +170,44 @@ export function BuildWeekButton() {
         </button>
       )}
       {showSteps && run && steps.length > 0 && (
-        <div className="build-steps-panel" role="status">
-          <div className="build-steps-heading">
-            Build {run.issueDate ? day(run.issueDate) : ""} · started {minutesSince(run.startedAt)} min ago
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={(event) => event.target === event.currentTarget && setShowSteps(false)}
+        >
+          <div className="build-steps-dialog" role="dialog" aria-modal="true" aria-labelledby="build-steps-title">
+            <div className="build-steps-header">
+              <div>
+                <h2 id="build-steps-title">Build {run.issueDate ? day(run.issueDate) : ""} issue</h2>
+                <p className="build-steps-sub">
+                  {running
+                    ? `Running · started ${minutesSince(run.startedAt)} min ago · updates every 15 s`
+                    : run.conclusion === "success"
+                      ? `Finished · started ${minutesSince(run.startedAt)} min ago`
+                      : `Stopped · started ${minutesSince(run.startedAt)} min ago`}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="build-steps-close"
+                aria-label="Close"
+                onClick={() => setShowSteps(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <StepList steps={steps} />
+            {steps.some((s) => s.conclusion === "failure") && (
+              <p className="build-steps-note">
+                Ariel has been emailed. Full details are saved privately for him.
+              </p>
+            )}
+            {!running && run.conclusion === "success" && (
+              <button type="button" className="submit-button build-steps-open" onClick={() => window.location.reload()}>
+                Open the slate
+              </button>
+            )}
           </div>
-          <StepList steps={steps} />
-          {steps.some((s) => s.conclusion === "failure") && (
-            <p className="build-steps-note">
-              Ariel has been emailed. Full details are saved privately for him.
-            </p>
-          )}
         </div>
       )}
       {state && !running && !starting && (

@@ -210,24 +210,46 @@ svg {
   white-space: nowrap;
 }
 
-.build-steps-panel {
-  position: absolute;
-  top: calc(100% + 0.6rem);
-  right: 0;
-  z-index: 30;
-  width: min(360px, calc(100vw - 32px));
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: white;
-  box-shadow: 0 12px 32px rgba(23, 55, 94, 0.16);
+.build-steps-dialog {
+  width: min(480px, 100%);
+  max-height: calc(100dvh - 3rem);
+  overflow-y: auto;
+  padding: 1.6rem 1.8rem;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 30px 80px rgba(5, 18, 34, 0.28);
 }
 
-.build-steps-heading {
-  font-size: 0.74rem;
-  font-weight: 700;
+.build-steps-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.build-steps-header h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+}
+
+.build-steps-sub {
+  margin: 0.3rem 0 0;
+  font-size: 0.78rem;
   color: var(--ink-soft);
-  margin-bottom: 0.6rem;
+}
+
+.build-steps-close {
+  border: 0;
+  background: none;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.3rem;
+  color: var(--ink-soft);
+  cursor: pointer;
 }
 
 .build-steps {
@@ -235,15 +257,27 @@ svg {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .build-step {
   display: grid;
-  grid-template-columns: 1.1rem 1fr auto;
+  grid-template-columns: 1.2rem 1fr auto;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.86rem;
+}
+
+.build-step + .build-step {
+  border-top: 1px solid var(--line);
+}
+
+.build-steps-open {
+  width: 100%;
+  margin-top: 1.1rem;
 }
 
 .build-step-time {
