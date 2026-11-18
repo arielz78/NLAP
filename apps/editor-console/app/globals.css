@@ -172,6 +172,53 @@ svg {
   gap: 1.2rem;
 }
 
+.build-week {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.build-week-button {
+  min-height: 42px;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--navy);
+  border-radius: 9px;
+  color: var(--navy);
+  background: white;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.build-week-button:hover {
+  background: #eef2f7;
+}
+
+.build-week-status {
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  border: 0;
+  background: none;
+  padding: 0;
+}
+
+.build-week-status.running {
+  color: var(--navy);
+}
+
+.build-week-status.ready {
+  color: var(--green);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.build-week-status.failed {
+  color: var(--red);
+}
+
 .save-state {
   gap: 0.36rem;
   color: var(--green);

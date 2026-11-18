@@ -22,6 +22,7 @@ import {
 } from "@/lib/draft-domain";
 import { assessReplacement } from "@/lib/replacement-rules";
 import { formatSchedule } from "@/lib/format-schedule";
+import { BuildWeekButton } from "@/components/build-week-button";
 
 const issueDateFormatter = new Intl.DateTimeFormat("en-CA", {
   month: "long",
@@ -721,6 +722,7 @@ export function EditorConsole({
           {isDemo && <span className="demo-pill">Demo · browser only</span>}
         </div>
         <div className="topbar-actions">
+          {!isDemo && <BuildWeekButton />}
           <div className={`save-state ${saveState}`} role="status">
             {saveState === "saving" ? <Icon name="clock" /> : <Icon name="check" />}
             {saveState === "saving"
