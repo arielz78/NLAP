@@ -73,13 +73,18 @@ export function BuildWeekButton({ currentIssueDate }: { currentIssueDate: string
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [showSteps, setShowSteps] = useState(false);
+  const [confirmingRebuild, setConfirmingRebuild] = useState(false);
 
   useEffect(() => {
-    if (!showSteps) return;
-    const close = (event: KeyboardEvent) => event.key === "Escape" && setShowSteps(false);
+    if (!showSteps && !confirmingRebuild) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setShowSteps(false);
+      setConfirmingRebuild(false);
+    };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
-  }, [showSteps]);
+  }, [showSteps, confirmingRebuild]);
 
   const refresh = useCallback(
     () =>
@@ -116,6 +121,7 @@ export function BuildWeekButton({ currentIssueDate }: { currentIssueDate: string
   }, [running, starting]);
 
   async function start() {
+    setConfirmingRebuild(false);
     setStarting(true);
     setError(null);
     try {
@@ -216,9 +222,38 @@ export function BuildWeekButton({ currentIssueDate }: { currentIssueDate: string
         document.body,
       )}
       {state && !running && !starting && (
-        <button type="button" className="build-week-button" onClick={() => void start()}>
+        <button
+          type="button"
+          className="build-week-button"
+          // A finished build for this issue: ask first, because a rebuild repeats it and changes nothing.
+          onClick={() => (forThisIssue && run?.conclusion === "success" ? setConfirmingRebuild(true) : void start())}
+        >
           {forThisIssue ? "Rebuild" : "Build"} {day(state.issueDate)} issue
         </button>
+      )}
+      {confirmingRebuild && state && createPortal(
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={(event) => event.target === event.currentTarget && setConfirmingRebuild(false)}
+        >
+          <div className="submit-dialog" role="dialog" aria-modal="true" aria-labelledby="rebuild-title">
+            <h2 id="rebuild-title">The {day(state.issueDate)} slate is already built.</h2>
+            <p className="heading-copy">
+              Rebuilding runs the same build again on the same events and gives the same slate. It costs
+              nothing, but it changes nothing either. Your picks and changes are not affected.
+            </p>
+            <div className="dialog-actions">
+              <button type="button" onClick={() => setConfirmingRebuild(false)}>
+                Keep the current build
+              </button>
+              <button type="button" className="confirm-submit" onClick={() => void start()}>
+                Rebuild anyway
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
