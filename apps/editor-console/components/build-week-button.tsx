@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 type BuildRun = {
   issueDate: string | null;
@@ -169,7 +170,8 @@ export function BuildWeekButton() {
           {showSteps ? "Hide steps" : "Steps"}
         </button>
       )}
-      {showSteps && run && steps.length > 0 && (
+      {/* Portalled to <body>: the topbar's backdrop-filter would otherwise pin a fixed dialog to the topbar. */}
+      {showSteps && run && steps.length > 0 && createPortal(
         <div
           className="modal-backdrop"
           role="presentation"
@@ -208,7 +210,8 @@ export function BuildWeekButton() {
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
       {state && !running && !starting && (
         <button type="button" className="build-week-button" onClick={() => void start()}>
