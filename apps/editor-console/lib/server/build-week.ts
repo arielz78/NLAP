@@ -9,7 +9,15 @@ const REPO = "arielz78/NLAP";
 const WORKFLOW = "build-week.yml";
 const API = `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}`;
 
+export type BuildStep = {
+  name: string;
+  status: "queued" | "in_progress" | "completed" | "pending" | string;
+  conclusion: string | null;
+  seconds: number | null;
+};
+
 export type BuildRun = {
+  id: number;
   issueDate: string | null;
   status: "queued" | "in_progress" | "completed" | string;
   conclusion: string | null;
@@ -65,6 +73,51 @@ export async function startBuild(
   }
 }
 
+// The workflow's steps, grouped into what the editor needs to see. A step not listed here is hidden.
+const STEP_GROUPS: Array<[label: string, steps: string[]]> = [
+  ["Set up the server", ["Check the issue date", "Run actions/checkout@v4", "Check out the private data repo", "Make the private log folder"]],
+  ["Collect this week's events (R1)", ["R1 — prepare the workflow and the credential", "R1 — run"]],
+  ["Install the pipeline", ["Lay the private files over the code", "Run actions/setup-node@v4", "Run npm ci", "Run actions/setup-python@v5", "Python environment where runWeek looks for it"]],
+  ["Filter, score and rank the events", ["Run the week"]],
+  ["Publish the slate to the console", ["Make the console bundle", "Publish to the console"]],
+  ["Save the run's files", ["Save the run's files to NLAP-data"]],
+];
+
+type GitHubStep = { name: string; status: string; conclusion: string | null; started_at?: string | null; completed_at?: string | null };
+
+export function groupSteps(steps: GitHubStep[]): BuildStep[] {
+  return STEP_GROUPS.map(([name, members]) => {
+    const own = steps.filter((s) => members.includes(s.name));
+    const done = own.filter((s) => s.status === "completed");
+    const failed = done.find((s) => s.conclusion === "failure" || s.conclusion === "cancelled");
+    let status = "pending";
+    let conclusion: string | null = null;
+    if (failed) [status, conclusion] = ["completed", failed.conclusion];
+    else if (own.length && done.length === own.length)
+      [status, conclusion] = ["completed", done.every((s) => s.conclusion === "skipped") ? "skipped" : "success"];
+    else if (own.some((s) => s.status === "in_progress") || done.length) status = "in_progress";
+    const seconds = own.reduce((sum, s) => {
+      const start = Date.parse(s.started_at ?? ""), end = Date.parse(s.completed_at ?? "");
+      return Number.isFinite(start) && Number.isFinite(end) ? sum + Math.max(0, (end - start) / 1000) : sum;
+    }, 0);
+    return { name, status, conclusion, seconds: done.length ? Math.round(seconds) : null };
+  });
+}
+
+export async function runSteps(
+  runId: number,
+  env: Record<string, string | undefined> = process.env,
+  fetchImpl: typeof fetch = fetch,
+): Promise<BuildStep[]> {
+  const response = await fetchImpl(`https://api.github.com/repos/${REPO}/actions/runs/${runId}/jobs`, {
+    headers: headers(env),
+    cache: "no-store",
+  });
+  if (!response.ok) throw new BuildWeekError(`GitHub did not answer (HTTP ${response.status}).`);
+  const body = (await response.json()) as { jobs?: Array<{ steps?: GitHubStep[] }> };
+  return groupSteps(body.jobs?.[0]?.steps ?? []);
+}
+
 export async function latestRun(
   env: Record<string, string | undefined> = process.env,
   fetchImpl: typeof fetch = fetch,
@@ -76,6 +129,7 @@ export async function latestRun(
   if (!response.ok) throw new BuildWeekError(`GitHub did not answer (HTTP ${response.status}).`);
   const body = (await response.json()) as {
     workflow_runs?: Array<{
+      id: number;
       display_title?: string;
       status: string;
       conclusion: string | null;
@@ -87,6 +141,7 @@ export async function latestRun(
   const run = body.workflow_runs?.[0];
   if (!run) return null;
   return {
+    id: run.id,
     issueDate: /\d{4}-\d{2}-\d{2}/.exec(run.display_title ?? "")?.[0] ?? null,
     status: run.status,
     conclusion: run.conclusion,

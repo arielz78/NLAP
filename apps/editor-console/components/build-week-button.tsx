@@ -9,7 +9,40 @@ type BuildRun = {
   startedAt: string;
   url: string;
 };
-type BuildState = { issueDate: string; run: BuildRun | null };
+type BuildStep = { name: string; status: string; conclusion: string | null; seconds: number | null };
+type BuildState = { issueDate: string; run: BuildRun | null; steps?: BuildStep[] };
+
+const duration = (s: number | null) =>
+  s === null ? "" : s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
+
+function StepList({ steps }: { steps: BuildStep[] }) {
+  return (
+    <ol className="build-steps" aria-label="Build steps">
+      {steps.map((step) => {
+        const kind =
+          step.status !== "completed"
+            ? step.status === "in_progress"
+              ? "running"
+              : "pending"
+            : step.conclusion === "success"
+              ? "done"
+              : step.conclusion === "skipped"
+                ? "skipped"
+                : "failed";
+        const mark = { running: "●", pending: "○", done: "✓", skipped: "–", failed: "✗" }[kind];
+        return (
+          <li key={step.name} className={`build-step ${kind}`}>
+            <span className="build-step-mark" aria-hidden="true">{mark}</span>
+            <span className="build-step-name">{step.name}</span>
+            <span className="build-step-time">
+              {kind === "running" ? "running…" : kind === "skipped" ? "skipped" : duration(step.seconds)}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 const POLL_MS = 15000;
 const dayFormatter = new Intl.DateTimeFormat("en-CA", {
@@ -38,6 +71,7 @@ export function BuildWeekButton() {
   const [state, setState] = useState<BuildState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [showSteps, setShowSteps] = useState(false);
 
   const refresh = useCallback(
     () =>
@@ -114,9 +148,33 @@ export function BuildWeekButton() {
       </a>
     );
 
+  const steps = state?.steps ?? [];
   return (
     <div className="build-week">
       {status}
+      {run && steps.length > 0 && (
+        <button
+          type="button"
+          className="build-week-toggle"
+          aria-expanded={showSteps}
+          onClick={() => setShowSteps((open) => !open)}
+        >
+          {showSteps ? "Hide steps" : "Steps"}
+        </button>
+      )}
+      {showSteps && run && steps.length > 0 && (
+        <div className="build-steps-panel" role="status">
+          <div className="build-steps-heading">
+            Build {run.issueDate ? day(run.issueDate) : ""} · started {minutesSince(run.startedAt)} min ago
+          </div>
+          <StepList steps={steps} />
+          {steps.some((s) => s.conclusion === "failure") && (
+            <p className="build-steps-note">
+              Ariel has been emailed. Full details are saved privately for him.
+            </p>
+          )}
+        </div>
+      )}
       {state && !running && !starting && (
         <button type="button" className="build-week-button" onClick={() => void start()}>
           {forThisIssue ? "Rebuild" : "Build"} {day(state.issueDate)} issue

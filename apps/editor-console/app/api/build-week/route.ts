@@ -4,6 +4,7 @@ import {
   BuildWeekError,
   latestRun,
   nextIssueDate,
+  runSteps,
   startBuild,
   torontoDate,
 } from "@/lib/server/build-week";
@@ -14,9 +15,11 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    const run = await latestRun();
     return NextResponse.json({
       issueDate: nextIssueDate(torontoDate(new Date())),
-      run: await latestRun(),
+      run,
+      steps: run ? await runSteps(run.id) : [],
     });
   } catch (error) {
     return failure(error);

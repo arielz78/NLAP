@@ -1,6 +1,51 @@
 import { describe, expect, it } from "vitest";
 
-import { latestRun, nextIssueDate, startBuild, torontoDate } from "./build-week";
+import { groupSteps, latestRun, nextIssueDate, startBuild, torontoDate } from "./build-week";
+
+describe("groupSteps", () => {
+  const done = (name: string, conclusion = "success") => ({
+    name,
+    status: "completed",
+    conclusion,
+    started_at: "2026-11-18T19:00:00Z",
+    completed_at: "2026-11-18T19:00:30Z",
+  });
+
+  it("shows a failed step as failed and later groups as pending", () => {
+    const steps = groupSteps([
+      done("Check the issue date"),
+      done("Run actions/checkout@v4"),
+      done("R1 — prepare the workflow and the credential"),
+      done("R1 — run", "failure"),
+      { name: "Run the week", status: "pending", conclusion: null },
+    ]);
+    expect(steps.map((s) => [s.name, s.status, s.conclusion])).toEqual([
+      ["Set up the server", "completed", "success"],
+      ["Collect this week's events (R1)", "completed", "failure"],
+      ["Install the pipeline", "pending", null],
+      ["Filter, score and rank the events", "pending", null],
+      ["Publish the slate to the console", "pending", null],
+      ["Save the run's files", "pending", null],
+    ]);
+    expect(steps[1].seconds).toBe(60);
+  });
+
+  it("marks a group running when only some of its steps are done", () => {
+    const [, r1] = groupSteps([
+      done("R1 — prepare the workflow and the credential"),
+      { name: "R1 — run", status: "in_progress", conclusion: null },
+    ]);
+    expect(r1.status).toBe("in_progress");
+  });
+
+  it("marks a group skipped when every step in it was skipped", () => {
+    const [, r1] = groupSteps([
+      done("R1 — prepare the workflow and the credential", "skipped"),
+      done("R1 — run", "skipped"),
+    ]);
+    expect(r1.conclusion).toBe("skipped");
+  });
+});
 
 describe("nextIssueDate", () => {
   it.each([
