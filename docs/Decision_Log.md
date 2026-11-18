@@ -2740,6 +2740,17 @@ The repo started with the four newest snapshot pairs (2026-11-04 to 2026-11-15);
 stay on the laptop; every snapshot a run takes from here on is kept. **Not decided:** Confirm's resume rule
 (unchanged above), and where the run folder Build hands to Confirm lives once the buttons exist.
 
+**Amendment (2026-11-18): the weekly build runs on the runner, from the console and on a schedule.** The
+console's Build button and a Wednesday 11:30 UTC schedule (slate in the console by 8 AM Toronto, the editor's
+time, 2026-11-18) run `.github/workflows/build-week.yml`: R1 in the n8n 2.45.5 container, then `runWeek`, bundle
+and publish. The runner imports a temporary copy of `workflows/NLAP R1.json` with two patches, Eventbrite's
+homepage token URL and 3 retries on every HTTP Request node; the repo file is unchanged under R7 Scope's open
+TODO. **Why:** the host test had shown the container matching the laptop, and one OnRichmondHill HTTP 525 stopped
+R1 twice on 11-18 because no node retries. Every run's full logs go to `logs/build-week/` in NLAP-data; the
+public log carries summaries only. Files checked by hash (R7's step-4b answer key and blind sheet) are kept in
+NLAP-data with the laptop's CRLF bytes, because the runner's LF checkout fails the check. **Not decided:**
+porting R1 to Node; what a fresh slate does to an open editor draft (#168).
+
 ---
 
 ## 116. One Event per Same-Outing Group in a Section; the Ranker Marks, the Allocator Enforces (2026-11-04)

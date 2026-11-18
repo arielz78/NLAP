@@ -25,7 +25,7 @@ After every R8 session:
 
 ---
 
-## 0. Status (2026-11-16)
+## 0. Status (2026-11-18)
 
 ### Finish plan (set 2026-11-16, Sprint 5)
 
@@ -35,16 +35,17 @@ review on 2026-11-16 found the first draft of this plan built item 17 before the
 test or the host were known, and under-sized the host move).
 
 **Settle first (this week):**
-- Editor meeting (#164), asked for 2026-11-16; agenda below.
-- #165 Beehiiv draft test at his first OK, before the 11-26 renewal: duplicate last week's issue into a draft,
-  replace one section with approved copy, check layout, images, poll, footer. Note: a pass on legacy Scale does
-  not prove Lite.
+- Editor meeting (#164): **held 2026-11-18**; he agreed to the plan; an SOP for the recipe and Local Aroma is coming.
+- #165 Beehiiv draft test: **passed 2026-11-18** (duplicate plus a one-item edit; nothing else changed). Repeat
+  one write after the 11-26 move to Lite (a pass on legacy Scale does not prove Lite). A plain script signed into
+  the beehiiv MCP and renewed from a refresh token; the token rotates, so each run must save the new one.
 - **Host test: passed 2026-11-16**, two days early. R1 on a GitHub runner matched the laptop's per-source
   counts, so the host is GitHub Actions (Decision_Log §115, amendment 2026-11-16). The private files are in the
   private repo `arielz78/NLAP-data`, and a runner set up from both repos passes the offline tests
-  (`.github/workflows/host-setup-check.yml`). **Left for the host blocks:** four more secrets (Beehiiv, OpenAI,
-  Voyage, Airtable base ID); the first full `runWeek` on a runner (paid calls); saving a run's new files back
-  to `NLAP-data`; Eventbrite's token URL in the live R1 workflow (the test changed a temporary copy only); #167.
+  (`.github/workflows/host-setup-check.yml`). **Hosted build working 2026-11-18:** the console's Build button
+  and a Wednesday 11:30 UTC schedule run R1 → `runWeek` → publish on a runner (`build-week.yml`, Decision_Log
+  §115 amendment 2026-11-18); the Nov 26 build was published from it. **Left:** Eventbrite's token URL in the
+  laptop's live R1 workflow; #167; item 18 (#158, #128, #111).
   The `NLAP_DATA_TOKEN` secret expires 2027-01-15.
 - Ariel's call after the meeting: keep the Airtable write-back, or record-only (blurbs then read the Neon
   submission instead of IssueItems; §112 and `generateBlurbs.js` assume the write-back today).

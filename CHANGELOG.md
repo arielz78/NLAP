@@ -4,6 +4,11 @@ Short, public-facing summary of work per session. One entry per session,
 newest at the top. The candid internal journal lives in `Execution_Log.md`
 (private); this is the distilled, shareable version.
 
+## 2026-11-18
+- The editor console can now build the week's slate itself: one button (or a weekly schedule) runs event collection, filtering and ranking on a cloud runner and publishes the slate to the console, with a live step-by-step progress view.
+- Hardened the cloud run after its first live attempts: full private logs on every run, retries on flaky source pages, and a line-ending fix for files that are checked by hash.
+- Verified that newsletter drafts can be created and edited programmatically, and that a script can keep its own sign-in renewed without a person.
+
 ## 2026-11-16
 - Planned the remaining two weeks of the hosted-pipeline work with dated go/no-go gates, after an independent review re-sized the hosting move and re-ordered the plan to settle open unknowns (editor workflow, newsletter-platform draft creation, hosting choice) before building.
 - Cleaned up the release status doc so it carries only current state; earlier status moved to the release log.
