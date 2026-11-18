@@ -68,7 +68,7 @@ async function fetchBuildState(): Promise<BuildState | { error: string }> {
 }
 
 /** Starts the build-week workflow and follows its latest run until it finishes. */
-export function BuildWeekButton() {
+export function BuildWeekButton({ currentIssueDate }: { currentIssueDate: string }) {
   const [state, setState] = useState<BuildState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
@@ -139,21 +139,23 @@ export function BuildWeekButton() {
   else if (starting) status = <span className="build-week-status">Starting…</span>;
   else if (running && run)
     status = (
-      <span className="build-week-status running">
+      <button type="button" className="build-week-pill running" onClick={() => setShowSteps(true)}>
+        <span className="build-week-dot" aria-hidden="true" />
         Building {run.issueDate ? day(run.issueDate) : ""} · {minutesSince(run.startedAt)} min
-      </span>
-    );
-  else if (forThisIssue && run.conclusion === "success")
-    status = (
-      <button type="button" className="build-week-status ready" onClick={() => window.location.reload()}>
-        Build ready · open it
       </button>
     );
-  else if (forThisIssue && run.conclusion)
+  // Ready, and the console is still showing an older issue: offer to open the new slate.
+  else if (forThisIssue && run.conclusion === "success" && run.issueDate !== currentIssueDate)
     status = (
-      <a className="build-week-status failed" href={run.url} target="_blank" rel="noreferrer">
-        Last build failed · details
-      </a>
+      <button type="button" className="build-week-pill ready" onClick={() => window.location.reload()}>
+        ✓ {day(run.issueDate!)} slate ready · Open
+      </button>
+    );
+  else if (forThisIssue && run.conclusion && run.conclusion !== "success")
+    status = (
+      <button type="button" className="build-week-pill failed" onClick={() => setShowSteps(true)}>
+        ✗ Build failed · See steps
+      </button>
     );
 
   const steps = state?.steps ?? [];

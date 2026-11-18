@@ -321,19 +321,58 @@ svg {
   padding: 0;
 }
 
-.build-week-status.running {
-  color: var(--navy);
-}
-
-.build-week-status.ready {
-  color: var(--green);
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
 .build-week-status.failed {
   color: var(--red);
+}
+
+.build-week-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 42px;
+  padding: 0.6rem 1rem;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.build-week-pill.ready {
+  color: white;
+  background: var(--green);
+  box-shadow: 0 8px 20px rgba(20, 110, 70, 0.18);
+}
+
+.build-week-pill.ready:hover {
+  filter: brightness(0.94);
+}
+
+.build-week-pill.running {
+  color: var(--navy);
+  background: #eef2f7;
+  border-color: #d5deea;
+}
+
+.build-week-pill.failed {
+  color: var(--red);
+  background: #fdf0f0;
+  border-color: #f1c7c7;
+}
+
+.build-week-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--navy);
+  animation: build-week-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes build-week-pulse {
+  50% {
+    opacity: 0.3;
+  }
 }
 
 .save-state {

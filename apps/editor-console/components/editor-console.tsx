@@ -722,7 +722,7 @@ export function EditorConsole({
           {isDemo && <span className="demo-pill">Demo · browser only</span>}
         </div>
         <div className="topbar-actions">
-          {!isDemo && <BuildWeekButton />}
+          {!isDemo && <BuildWeekButton currentIssueDate={workspace.build.issueDate} />}
           <div className={`save-state ${saveState}`} role="status">
             {saveState === "saving" ? <Icon name="clock" /> : <Icon name="check" />}
             {saveState === "saving"
