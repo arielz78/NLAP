@@ -88,6 +88,13 @@ jobs:
           if cmp -s "workflows/NLAP R1.json" "$RUNNER_TEMP/r1in/R1.json"; then
             echo "The Eventbrite token URL was not found in the workflow file"; exit 1
           fi
+          # No node retries, so one failed page (OnRichmondHill answered HTTP 525 on 2026-11-18, twice) stopped
+          # all of R1. Every HTTP Request node retries 3 times, 3 s apart. Temp copy only: the repo file is
+          # untouched (R7 Scope's open TODO on NLAP R1.json).
+          jq '(.nodes[] | select(.type == "n8n-nodes-base.httpRequest")) |= (.retryOnFail = true | .maxTries = 3 | .waitBetweenTries = 3000)' \
+            "$RUNNER_TEMP/r1in/R1.json" > "$RUNNER_TEMP/r1in/R1.retry.json"
+          mv "$RUNNER_TEMP/r1in/R1.retry.json" "$RUNNER_TEMP/r1in/R1.json"
+          echo "HTTP nodes set to retry: $(jq '[.nodes[] | select(.retryOnFail == true)] | length' "$RUNNER_TEMP/r1in/R1.json")"
           jq -n --arg token "$AIRTABLE_PAT" '[{
             id: "M4nWbeUFeR35flxq",
             name: "Airtable Personal Access Token account 3",
