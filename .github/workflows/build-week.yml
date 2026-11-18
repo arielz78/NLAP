@@ -1,5 +1,5 @@
 name: Build week
-run-name: Build ${{ inputs.issue_date }}
+run-name: Build ${{ inputs.issue_date || 'scheduled' }}
 
 # Stage B item 15/17: the console's "Build this week" button starts this. It runs item 4a's command
 # (runWeek: snapshot -> R1 freshness -> history -> R7 -> prepare -> call -> finalize) on a runner, turns the
@@ -11,6 +11,11 @@ run-name: Build ${{ inputs.issue_date }}
 # The repo is public, so this log is public: the run's own output goes to a file and only the stage
 # summary is printed. Run outputs are saved to the private repo, never uploaded as public artifacts.
 on:
+  # Every Wednesday, so the slate is in the console by 8 AM Toronto (editor, 2026-11-18). 11:30 UTC is
+  # 6:30 AM in winter and 7:30 AM in summer; GitHub can start a scheduled run late, hence the margin.
+  # A scheduled run builds the next issue by the console's rule, with R1 and publish on.
+  schedule:
+    - cron: '30 11 * * 3'
   workflow_dispatch:
     inputs:
       issue_date:
@@ -35,21 +40,43 @@ jobs:
     timeout-minutes: 80
     env:
       ISSUE: ${{ inputs.issue_date }}
+      SCHEDULED: ${{ github.event_name == 'schedule' }}
       N8N_IMAGE: docker.n8n.io/n8nio/n8n:2.45.5
       WORKFLOW_ID: 7HsVm0pPg19CJX2k
     steps:
       - name: Check the issue date
         run: |
           set -euo pipefail
+          if [ "$SCHEDULED" = true ]; then
+            # Same rule as the console (lib/server/build-week.ts): the first Thursday at least 3 days away.
+            today=$(TZ=America/Toronto date +%F); dow=$(date -d "$today" +%u)
+            days=$(( (4 - dow + 7) % 7 )); [ $days -lt 3 ] && days=$((days + 7))
+            ISSUE=$(date -d "$today + $days days" +%F)
+            echo "ISSUE=$ISSUE" >> "$GITHUB_ENV"
+            echo "Scheduled build for $ISSUE"
+          fi
           [[ "$ISSUE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "Not a date: $ISSUE"; exit 1; }
           [ "$(date -d "$ISSUE" +%u)" = 4 ] || { echo "$ISSUE is not a Thursday"; exit 1; }
 
       - uses: actions/checkout@v4
 
+      # First, so every later step can write its full log into the private repo (logs/build-week/<run id>/).
+      # The public log gets summaries only; the full output of every run, pass or fail, is saved there.
+      - name: Check out the private data repo
+        uses: actions/checkout@v4
+        with:
+          repository: arielz78/NLAP-data
+          token: ${{ secrets.NLAP_DATA_TOKEN }}
+          path: _data
+      - name: Make the private log folder
+        run: |
+          echo "LOGS=$GITHUB_WORKSPACE/_data/logs/build-week/$(date -u +%Y-%m-%d)_run${{ github.run_id }}" >> "$GITHUB_ENV"
+          mkdir -p "$GITHUB_WORKSPACE/_data/logs/build-week/$(date -u +%Y-%m-%d)_run${{ github.run_id }}"
+
       # ---- R1 in n8n, as proven by r1-host-test.yml on 2026-11-16. Its output holds event rows
       # (Facebook intake included), so it stays in a file and only the exit code is printed.
       - name: R1 — prepare the workflow and the credential
-        if: inputs.run_r1
+        if: github.event_name == 'schedule' || inputs.run_r1
         env:
           AIRTABLE_PAT: ${{ secrets.AIRTABLE_PAT }}
         run: |
@@ -77,9 +104,10 @@ jobs:
             || { echo "workflow import failed"; grep -vE '^\s|^[][{}"]' "$RUNNER_TEMP/r1out/import.log" | cut -c1-200 | tail -20; exit 1; }
 
       - name: R1 — run
-        if: inputs.run_r1
+        if: github.event_name == 'schedule' || inputs.run_r1
         run: |
-          set -uo pipefail
+          # GitHub runs steps with bash -e; without +e a failing n8n exits the step before the report.
+          set +e -uo pipefail
           chmod 777 "$RUNNER_TEMP/r1out"
           # Written to a file inside the container: through docker's pipe n8n's output was cut off at exit.
           docker run --rm -v n8n_data:/home/node/.n8n -v "$RUNNER_TEMP/r1out:/out" \
@@ -89,20 +117,66 @@ jobs:
             -c "n8n execute --id $WORKFLOW_ID --rawOutput > /out/run.json 2> /out/run.err"
           code=$?
           echo "R1 exit $code, output $(wc -c < "$RUNNER_TEMP/r1out/run.json") bytes"
-          [ $code -eq 0 ] || grep -hvE '^\s|^[][{}"]' "$RUNNER_TEMP/r1out/run.json" "$RUNNER_TEMP/r1out/run.err" | cut -c1-200 | tail -30
+          if [ $code -ne 0 ]; then
+            echo "log lines that are not JSON:"
+            grep -hvE '^\s|^[][{}"]' "$RUNNER_TEMP/r1out/run.json" "$RUNNER_TEMP/r1out/run.err" | cut -c1-200 | tail -30
+            # Node names and error messages only, never item data.
+            python3 - "$RUNNER_TEMP/r1out/run.json" <<'PY'
+          import json, re, sys
+          text = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+          sys.setrecursionlimit(100000)
+          dec, doc = json.JSONDecoder(), None
+          for m in re.finditer(r"[\[{]", text):
+              try:
+                  doc, _ = dec.raw_decode(text[m.start():]); break
+              except ValueError:
+                  continue
+          if isinstance(doc, list) and doc and isinstance(doc[0], dict):
+              flat, memo = doc, {}
+              def res(i):
+                  if i in memo: return memo[i]
+                  v = flat[i]
+                  if isinstance(v, dict):
+                      o = memo[i] = {}
+                      for k, x in v.items(): o[k] = res(int(x)) if isinstance(x, str) else x
+                  elif isinstance(v, list):
+                      o = memo[i] = []
+                      for x in v: o.append(res(int(x)) if isinstance(x, str) else x)
+                  else:
+                      o = memo[i] = v
+                  return o
+              try: doc = res(0)
+              except (ValueError, IndexError): pass
+          def find(o, key):
+              st, seen = [o], set()
+              while st:
+                  c = st.pop()
+                  if id(c) in seen: continue
+                  seen.add(id(c))
+                  if isinstance(c, dict):
+                      if key in c: return c
+                      st.extend(c.values())
+                  elif isinstance(c, list): st.extend(c)
+          r = find(doc, "runData") or {}
+          for name, runs in (r.get("runData") or {}).items():
+              for x in runs:
+                  if x.get("error"): print("NODE ERROR", name, "|", str(x["error"].get("message", ""))[:200])
+          e = r.get("error") or {}
+          print("last node:", r.get("lastNodeExecuted"), "| run error:", str(e.get("message", "none"))[:200],
+                "| error node:", (e.get("node") or {}).get("name", "none"))
+          PY
+          fi
           echo "R1 exit $code" >> "$GITHUB_STEP_SUMMARY"
+          # Full output to the private log folder (compressed: a run is several MB of JSON).
+          for f in run.json run.err import.log; do
+            [ -f "$RUNNER_TEMP/r1out/$f" ] && gzip -c "$RUNNER_TEMP/r1out/$f" > "$LOGS/r1_$f.gz"
+          done
+          echo "Full R1 output saved privately: logs/build-week/$(basename "$LOGS")/"
           rm -rf "$RUNNER_TEMP/r1in" "$RUNNER_TEMP/r1out"
           exit $code
 
-      - name: Check out the private data repo
-        uses: actions/checkout@v4
-        with:
-          repository: arielz78/NLAP-data
-          token: ${{ secrets.NLAP_DATA_TOKEN }}
-          path: _data
-
       - name: Lay the private files over the code
-        run: rsync -a --exclude .git --exclude README.md --exclude .gitattributes _data/ ./
+        run: rsync -a --exclude .git --exclude README.md --exclude .gitattributes --exclude logs _data/ ./
 
       - uses: actions/setup-node@v4
         with:
@@ -127,7 +201,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
         run: |
-          set -uo pipefail
+          set +e -uo pipefail   # bash -e would exit on runWeek's code before the summary is printed
           node scripts/issue-build/runWeek.js --issue "$ISSUE" > "$RUNNER_TEMP/runweek.log" 2>&1; code=$?
           # Stage summary, stop reasons and counts only, all written by runWeek or the producer itself.
           # Automatic-repair lines ("!!") name events, so only their count is printed (event rows stay out of
@@ -142,7 +216,8 @@ jobs:
           run_dir=$(ls -d data/tracking/issue_build/*_"$ISSUE"_snapshot_* 2>/dev/null | while read -r d; do
             [ -f "$d/run_manifest.json" ] && echo "$d"; done | tail -1)
           echo "run_dir=$run_dir" >> "$GITHUB_OUTPUT"
-          rm -f "$RUNNER_TEMP/runweek.log"
+          mv "$RUNNER_TEMP/runweek.log" "$LOGS/runweek.log"
+          echo "Full runWeek log saved privately: logs/build-week/$(basename "$LOGS")/runweek.log"
           exit $code
 
       - name: Make the console bundle
@@ -150,7 +225,7 @@ jobs:
         run: node scripts/issue-build/to-bundle.js "${{ steps.week.outputs.run_dir }}"
 
       - name: Publish to the console
-        if: steps.week.outcome == 'success' && inputs.publish
+        if: steps.week.outcome == 'success' && (github.event_name == 'schedule' || inputs.publish)
         working-directory: apps/editor-console
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -163,6 +238,7 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
+          [ -d _data ] || { echo "Stopped before the private repo was checked out; nothing to save."; exit 0; }
           for p in data/tracking/snapshots data/tracking/r7_live_runner data/tracking/issue_build data/beehiiv/issue_history.json; do
             [ -e "$p" ] || continue
             if [ -d "$p" ]; then mkdir -p "_data/$p"; rsync -a "$p/" "_data/$p/"; else mkdir -p "_data/$(dirname "$p")"; cp "$p" "_data/$p"; fi
